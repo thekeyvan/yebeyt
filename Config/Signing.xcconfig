@@ -1,0 +1,8 @@
+// Signing and bundle id. Put your own values in Config/Local.xcconfig (not committed):
+//   DEVELOPMENT_TEAM = ABCDE12345
+//   PRODUCT_BUNDLE_IDENTIFIER = com.yourname.beyt
+PRODUCT_BUNDLE_IDENTIFIER = app.beyt.dev
+DEVELOPMENT_TEAM =
+CODE_SIGN_STYLE = Automatic
+
+#include? "Local.xcconfig"
