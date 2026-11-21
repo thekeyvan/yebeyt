@@ -3,7 +3,7 @@
 The MIT license in [`LICENSE`](LICENSE) covers the code in this repository. It does **not** cover
 the fonts or the poetry data listed below; those keep their own terms.
 
-## Fonts (`Beyt/Resources/Fonts`)
+## Fonts (`Yebeyt/Resources/Fonts`)
 
 All fonts are under the SIL Open Font License 1.1. Full license texts are in [`LICENSES/fonts`](LICENSES/fonts).
 The files were converted from WOFF2 to TTF without other changes.
@@ -23,7 +23,7 @@ The files were converted from WOFF2 to TTF without other changes.
   The classical poems themselves are in the public domain. Many meanings and summaries were written
   with AI help (the app marks them with a sparkle icon). `ganjoor-data` has not published a license
   for the meanings and summaries, so they are **not** covered by this repository's MIT license.
-  The bundled subset lives in `Beyt/Resources/Data` and `tools/source`.
+  The bundled subset lives in `Yebeyt/Resources/Data` and `tools/source`.
 - Recitations (audio and timing) are streamed at runtime from `api.ganjoor.net`; no audio is stored
   in this repository.
 - No Ganjoor user data (comments, accounts) is included.

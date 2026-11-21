@@ -7,7 +7,7 @@
 	<key>CFBundleLocalizations</key>
 	<array><string>fa</string></array>
 	<key>CFBundleDisplayName</key>
-	<string>بیت</string>
+	<string>یه بیت</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -24,10 +24,21 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>BeytAPIURL</key>
+	<string>$(BEYT_API_URL)</string>
+	<key>GIDClientID</key>
+	<string>$(GOOGLE_CLIENT_ID)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array><string>$(GOOGLE_REVERSED_CLIENT_ID)</string></array>
+		</dict>
+	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>برای ذخیره‌ی کارت استوری بیت در گالری.</string>
+	<string>برای ذخیره‌ی کارت استوری یه بیت در گالری.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Parastoo.ttf</string>

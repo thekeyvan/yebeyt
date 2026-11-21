@@ -11,3 +11,6 @@ Config/Local.xcconfig
 xcuserdata/
 *.xcuserstate
 .DS_Store
+
+# Local tool settings
+.claude/

@@ -254,7 +254,7 @@ struct StoryCard: View {
                 }
                 VStack(alignment: .leading) {
                     HStack {
-                        Text("بیت").font(.custom("Vazirmatn", size: 20 * k).weight(.heavy))
+                        Text("یه بیت").font(.custom("Vazirmatn", size: 18 * k).weight(.heavy))
                         Spacer()
                         Text(poet).font(.custom("Vazirmatn", size: 11 * k).weight(.bold))
                     }

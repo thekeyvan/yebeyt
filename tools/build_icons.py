@@ -1,5 +1,5 @@
 """Converts the prototype's inline SVG icons (path / circle / rect) into one path string each,
-and writes Beyt/UI/IconData.swift. Usage: python3 build_icons.py design/prototype.html Beyt/UI/IconData.swift"""
+and writes Yebeyt/UI/IconData.swift. Usage: python3 build_icons.py design/prototype.html Yebeyt/UI/IconData.swift"""
 import re, sys
 src = open(sys.argv[1]).read()
 

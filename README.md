@@ -1,6 +1,8 @@
-# بیت · Beyt
+# یه بیت · yebeyt
 
-**A calm Persian poetry reader for iOS.** Classical Persian poetry in today's language: a daily card deck,
+**A calm Persian poetry reader for iOS** · [yebeyt.com](https://yebeyt.com)
+
+ Classical Persian poetry in today's language: a daily card deck,
 line-by-line meanings, real recitations that follow the text, and a full library of 246 poets.
 
 <p>
@@ -31,7 +33,7 @@ Requirements: Xcode 26 or later, iOS 17+, [XcodeGen](https://github.com/yonaskol
 
 ```sh
 xcodegen generate
-open Beyt.xcodeproj
+open Yebeyt.xcodeproj
 ```
 
 To run on a device, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set your
@@ -40,7 +42,7 @@ To run on a device, copy `Config/Local.xcconfig.example` to `Config/Local.xcconf
 ## Project layout
 
 ```
-Beyt/
+Yebeyt/
   App/        app entry, navigation, tab bar
   Core/       data (Library), settings (Prefs), audio, curated content
   Art/        type-art renderer (scenes drawn from a couplet's letters)
@@ -55,9 +57,9 @@ tools/        scripts that build the bundled data, icons and app icon
 ## Regenerating assets
 
 ```sh
-python3 tools/build_data.py tools/source/data.json tools/source/allp.json tools/source/books-text.json Beyt/Resources/Data
-python3 tools/build_icons.py design/prototype.html Beyt/UI/IconData.swift
-swift tools/make_icon.swift Beyt/Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png
+python3 tools/build_data.py tools/source/data.json tools/source/allp.json tools/source/books-text.json Yebeyt/Resources/Data
+python3 tools/build_icons.py design/prototype.html Yebeyt/UI/IconData.swift
+swift tools/make_icon.swift Yebeyt/Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png
 ```
 
 Debug builds accept launch arguments that open a screen directly (handy for screenshots):

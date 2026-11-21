@@ -18,6 +18,7 @@ struct MeView: View {
                         Text("هر بیتی که نگه داری اینجا می‌مونه").font(.ui(13)).foregroundStyle(Palette.muted)
                     }
                 }
+                AccountSection()
                 HStack(spacing: 10) {
                     stat(prefs.readCount, "بیت خوندی")
                     stat(prefs.streak, "روز پشتِ هم")
@@ -77,7 +78,7 @@ struct MeView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                Text("بیت · نسخه‌ی آزمایشی \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")".fa)
+                Text("یه بیت · نسخه‌ی \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")".fa)
                     .font(.ui(12)).foregroundStyle(Palette.muted).frame(maxWidth: .infinity)
             }
             .pagePadding().padding(.top, 14).padding(.bottom, 120)

@@ -141,8 +141,27 @@ private struct DeckCard: View {
         .opacity(flung == 0 ? 1 : 0)
         .contentShape(RoundedRectangle(cornerRadius: 30))
         .onTapGesture { if isTop { router.openPoem(ref.url, focus: ref.index) } }
-        .simultaneousGesture(isTop ? swipe : nil)
-        .simultaneousGesture(isTop ? hold : nil)
+        .modifier(SwipeModifier(enabled: isTop, swipe: swipe, onChange: { t in
+            guard lens == nil else { return }
+            drag = CGSize(width: t, height: 0)
+        }, onEnd: { t, v in
+            guard lens == nil else { return }
+            if abs(t) > 90 || abs(v) > 700 {
+                let dir = (t != 0 ? t : v) > 0 ? 1 : -1
+                withAnimation(.easeIn(duration: 0.3)) { flung = dir; drag = .zero }
+                Task { @MainActor in try? await Task.sleep(for: .milliseconds(280)); onDone(dir) }
+            } else {
+                withAnimation(.spring(duration: 0.35)) { drag = .zero }
+            }
+        }))
+        .modifier(HoldModifier(enabled: isTop, hold: hold) { p in
+            if let p {
+                if lens == nil { UIImpactFeedbackGenerator(style: .soft).impactOccurred() }
+                lens = p
+            } else {
+                withAnimation(.easeOut(duration: 0.2)) { lens = nil }
+            }
+        })
         .allowsHitTesting(isTop)
         .accessibilityElement(children: .contain)
     }
@@ -276,5 +295,98 @@ extension View {
             if let tint { shape.fill(tint) } else { shape.fill(.ultraThinMaterial).overlay(shape.fill(.white.opacity(0.06))) }
         }
         .overlay(shape.stroke(.white.opacity(0.12), lineWidth: 0.5))
+    }
+}
+
+/// Horizontal swipe that leaves vertical scrolling to the page.
+/// iOS 18+: a UIKit pan that only begins for sideways movement. iOS 17: the SwiftUI drag.
+private struct SwipeModifier<G: Gesture>: ViewModifier {
+    let enabled: Bool
+    let swipe: G
+    let onChange: (CGFloat) -> Void
+    let onEnd: (CGFloat, CGFloat) -> Void
+
+    func body(content: Self.Content) -> some View {
+        if #available(iOS 18.0, *) {
+            if enabled { content.gesture(HorizontalPan(onChange: onChange, onEnd: onEnd)) } else { content }
+        } else {
+            content.simultaneousGesture(enabled ? swipe : nil)
+        }
+    }
+}
+
+@available(iOS 18.0, *)
+private struct HorizontalPan: UIGestureRecognizerRepresentable {
+    let onChange: (CGFloat) -> Void
+    let onEnd: (CGFloat, CGFloat) -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let g = UIPanGestureRecognizer()
+        g.delegate = context.coordinator
+        return g
+    }
+
+    func handleUIGestureRecognizerAction(_ g: UIPanGestureRecognizer, context: Context) {
+        // UIKit coordinates are never mirrored, so +x is always "to the right".
+        let t = g.translation(in: g.view).x
+        switch g.state {
+        case .began, .changed: onChange(t)
+        case .ended: onEnd(t, g.velocity(in: g.view).x)
+        case .cancelled, .failed: onEnd(0, 0)
+        default: break
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+            guard let p = g as? UIPanGestureRecognizer else { return true }
+            let v = p.velocity(in: p.view)
+            return abs(v.x) > abs(v.y) * 1.2
+        }
+    }
+}
+
+/// Hold-to-see lens that lets the page scroll unless the finger stays still.
+private struct HoldModifier<G: Gesture>: ViewModifier {
+    let enabled: Bool
+    let hold: G
+    let onChange: (CGPoint?) -> Void
+
+    func body(content: Self.Content) -> some View {
+        if #available(iOS 18.0, *) {
+            if enabled { content.gesture(HoldPress(onChange: onChange)) } else { content }
+        } else {
+            content.simultaneousGesture(enabled ? hold : nil)
+        }
+    }
+}
+
+@available(iOS 18.0, *)
+private struct HoldPress: UIGestureRecognizerRepresentable {
+    let onChange: (CGPoint?) -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
+
+    func makeUIGestureRecognizer(context: Context) -> UILongPressGestureRecognizer {
+        let g = UILongPressGestureRecognizer()
+        g.minimumPressDuration = 0.32
+        g.allowableMovement = 10
+        g.cancelsTouchesInView = false
+        g.delegate = context.coordinator
+        return g
+    }
+
+    func handleUIGestureRecognizerAction(_ g: UILongPressGestureRecognizer, context: Context) {
+        switch g.state {
+        case .began, .changed: onChange(context.converter.localLocation)
+        case .ended, .cancelled, .failed: onChange(nil)
+        default: break
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
     }
 }

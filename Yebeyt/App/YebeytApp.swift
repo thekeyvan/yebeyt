@@ -1,11 +1,13 @@
 import SwiftUI
+import GoogleSignIn
 
 @main
-struct BeytApp: App {
+struct YebeytApp: App {
     @State private var library = Library()
     @State private var prefs = Prefs()
     @State private var router = Router()
     @State private var audio = AudioPlayer()
+    @State private var account = Account()
 
     var body: some SwiftUI.Scene {
         WindowGroup {
@@ -14,6 +16,9 @@ struct BeytApp: App {
                 .environment(prefs)
                 .environment(router)
                 .environment(audio)
+                .environment(account)
+                .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
+                .task { account.attach(prefs) }
                 .environment(\.layoutDirection, .rightToLeft)
                 .environment(\.locale, Locale(identifier: "fa_IR"))
                 .preferredColorScheme(.dark)
@@ -66,6 +71,7 @@ struct RootView: View {
             }
         }
         if d.bool(forKey: "beytSkip") { prefs.onboarded = true }
+        if d.bool(forKey: "beytOnboarding") { prefs.onboarded = false }
         if d.bool(forKey: "beytSeedSaved"), prefs.saved.isEmpty {
             for m in Content.moods { for r in m.items.prefix(2) where !prefs.isSaved(r) { prefs.toggleSave(r) } }
         }

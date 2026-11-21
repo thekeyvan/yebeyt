@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Three calm steps: a couplet writing itself, picking moods, and trying the reading style.
+/// Four calm, swipeable steps: a couplet writing itself, moods, reading style, and an optional account.
 struct OnboardingView: View {
     @Environment(Library.self) private var library
     @Environment(Prefs.self) private var prefs
@@ -9,26 +9,25 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             Palette.bg.ignoresSafeArea()
-            if step == 0, let c = library.couplet(Content.today) {
+            if let c = library.couplet(Content.today) {
                 ArtView(scene: .moon, seed: c.text, text: c.text, blur: 16)
                     .ignoresSafeArea()
                     .overlay(LinearGradient(stops: [.init(color: Palette.bg.opacity(0.25), location: 0), .init(color: Palette.bg.opacity(0.45), location: 0.45), .init(color: Palette.bg, location: 0.82)],
                                             startPoint: .top, endPoint: .bottom).ignoresSafeArea())
-                    .transition(.opacity)
+                    .opacity(step == 0 ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.4), value: step)
             }
             VStack(spacing: 0) {
-                topBar
-                Group {
-                    switch step {
-                    case 0: WelcomeStep { next() }
-                    case 1: MoodsStep { next() }
-                    default: StyleStep { finish() }
-                    }
+                topBar.padding(.horizontal, 22)
+                // Swipe between steps, or use the buttons.
+                TabView(selection: $step) {
+                    WelcomeStep { next() }.padding(.horizontal, 22).tag(0)
+                    MoodsStep { next() }.padding(.horizontal, 22).tag(1)
+                    StyleStep { next() }.padding(.horizontal, 22).tag(2)
+                    AccountStep { finish() }.padding(.horizontal, 22).tag(3)
                 }
-                .id(step)
-                .transition(.asymmetric(insertion: .move(edge: .leading).combined(with: .opacity), removal: .opacity))
+                .tabViewStyle(.page(indexDisplayMode: .never))
             }
-            .padding(.horizontal, 22)
             .padding(.bottom, 12)
         }
         .animation(.spring(duration: 0.45), value: step)
@@ -42,26 +41,26 @@ struct OnboardingView: View {
     private var topBar: some View {
         HStack {
             if step > 0 {
-                IconButton(icon: "chevron.backward", label: "قبلی") { step -= 1 }
+                IconButton(icon: "chevron.backward", label: "قبلی") { withAnimation { step -= 1 } }
             } else {
                 Color.clear.frame(width: 64, height: 44)
             }
             Spacer()
             HStack(spacing: 6) {
-                ForEach(0..<3) { i in Capsule().fill(i == step ? prefs.accent : .white.opacity(0.2)).frame(width: i == step ? 20 : 6, height: 6) }
+                ForEach(0..<4) { i in Capsule().fill(i == step ? prefs.accent : .white.opacity(0.2)).frame(width: i == step ? 20 : 6, height: 6) }
             }
-            .accessibilityLabel("مرحله‌ی \((step + 1).fa) از ۳")
+            .accessibilityLabel("مرحله‌ی \((step + 1).fa) از ۴")
             Spacer()
             Button("رد شو") { finish() }
                 .font(.ui(14)).foregroundStyle(Palette.muted)
                 .frame(width: 64, height: 44, alignment: .trailing)
-                .opacity(step == 2 ? 0 : 1)
+                .opacity(step == 3 ? 0 : 1)
         }
         .frame(height: 44)
         .padding(.top, 8)
     }
 
-    private func next() { step = min(2, step + 1) }
+    private func next() { withAnimation { step = min(3, step + 1) } }
     private func finish() { prefs.onboarded = true }
 }
 
@@ -245,7 +244,7 @@ private struct StyleStep: View {
                 .padding(.top, 14)
             }
             .scrollIndicators(.hidden)
-            PillButton(title: "شروع کن", kind: .primary, grow: true, action: onDone)
+            PillButton(title: "بعدی", kind: .primary, grow: true, action: onDone)
                 .frame(height: 54).padding(.top, 12)
         }
     }
@@ -258,5 +257,38 @@ private struct StyleStep: View {
                 .background(Capsule().fill(on ? prefs.accent.opacity(0.22) : .clear))
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// Optional account: sign in to keep the divan on every device, or carry on without one.
+private struct AccountStep: View {
+    let onDone: () -> Void
+    @Environment(Account.self) private var account
+    @Environment(Prefs.self) private var prefs
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer()
+            VStack(alignment: .leading, spacing: 18) {
+                Emblem(d: IconData.motifs["moon"] ?? "", size: 64, lineWidth: 1.6).foregroundStyle(prefs.accent)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("دیوانت همراهت باشه").font(.ui(25, .semibold))
+                    Text("با یه حساب، بیت‌هایی که نگه می‌داری و جایی که خوندی روی همه‌ی گوشی‌هات می‌مونه. بدون حساب هم همه‌چیز کار می‌کنه و هر وقت خواستی از «من» وارد می‌شی.")
+                        .font(.ui(14.5)).foregroundStyle(Palette.muted).lineSpacing(6).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer()
+            VStack(spacing: 12) {
+                if account.phase == .signedIn {
+                    Text("وارد شدی" + (account.user?.name.map { "، " + $0 } ?? "")).font(.ui(15, .medium)).frame(maxWidth: .infinity)
+                    PillButton(title: "شروع کن", kind: .primary, grow: true, action: onDone).frame(height: 54)
+                } else {
+                    SignInButtons(onSignedIn: onDone)
+                    Button("بدون حساب ادامه بده", action: onDone)
+                        .font(.ui(15, .medium)).foregroundStyle(Palette.ink)
+                        .frame(maxWidth: .infinity).frame(height: 48)
+                }
+            }
+        }
     }
 }
