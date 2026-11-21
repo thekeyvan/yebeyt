@@ -16,7 +16,8 @@ line-by-line meanings, real recitations that follow the text, and a full library
 - **Daily deck**: swipe right to keep a couplet, left for the next; hold to see the picture, tap to read the poem.
 - **Type-art**: every couplet gets its own scene drawn out of its own letters (moon, candle, cups…), softly blurred or clean.
 - **Reader**: one couplet at a time or the whole poem, simple meanings for every line, eight open-source verse fonts.
-- **Recitations**: real Ganjoor recitations; the reader follows the voice hemistich by hemistich.
+- **Recitations**: real Ganjoor recitations; the reader follows the voice hemistich by hemistich. An Apple Music style player: a mini player on every screen, a Now Playing screen with the couplets as lyrics, speed control, a choice of readers, play from any couplet, and lock-screen controls.
+- **Your divan**: kept couplets in their own list, with search, poet filters and swipe to remove.
 - **Library**: 246 poets. Hafez's ghazals, Khayyam's quatrains and Baba Taher are bundled with meanings;
   every other book loads on demand from Ganjoor's public data and stays on the phone.
 - **Moods**, **search**, **Fal-e Hafez**, **story cards** to share, and a personal **divan** of kept couplets.

@@ -21,15 +21,31 @@ struct MeView: View {
                 HStack(spacing: 10) {
                     stat(prefs.readCount, "بیت خوندی")
                     stat(prefs.streak, "روز پشتِ هم")
-                    stat(prefs.saved.count, "نگه داشتی")
+                    Button { router.open(.saved) } label: { stat(prefs.saved.count, "نگه داشتی") }.buttonStyle(PressStyle())
                 }
-                VStack(alignment: .leading, spacing: 10) {
-                    SectionTitle("نگه‌داشته‌ها")
+                VStack(alignment: .leading, spacing: 4) {
+                    SectionTitle(title: "نگه‌داشته‌ها") {
+                        if prefs.saved.count > 3 {
+                            Button("همه · \(prefs.saved.count.fa)") { router.open(.saved) }.font(.ui(13, .bold)).foregroundStyle(prefs.accent)
+                        }
+                    }
                     if prefs.saved.isEmpty {
-                        EmptyNote(text: "هنوز چیزی نگه نداشتی.\nکارت‌ها رو به راست بکش تا اینجا بیان.")
+                        EmptyNote(text: "هنوز چیزی نگه نداشتی.\nکارت‌ها رو به راست بکش تا اینجا بیان.").padding(.top, 6)
                     } else {
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
-                            ForEach(prefs.saved) { r in SavedTile(ref: r) }
+                        ForEach(prefs.saved.prefix(3)) { r in
+                            SavedRow(ref: r).padding(.vertical, 10)
+                                .overlay(alignment: .bottom) { Rectangle().fill(Palette.line).frame(height: 1) }
+                        }
+                        if prefs.saved.count > 3 {
+                            Button { router.open(.saved) } label: {
+                                HStack {
+                                    Text("دیدن همه‌ی \(prefs.saved.count.fa) بیت").font(.ui(15, .medium))
+                                    Spacer()
+                                    LineIcon(name: "fwd", size: 18).foregroundStyle(Palette.muted)
+                                }
+                                .foregroundStyle(Palette.ink).padding(.vertical, 14).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -91,39 +107,5 @@ struct MeView: View {
                 .foregroundStyle(Palette.ink).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-}
-
-/// A kept couplet: clear painted scene with the first line.
-struct SavedTile: View {
-    let ref: CoupletRef
-    @Environment(Library.self) private var library
-    @Environment(Prefs.self) private var prefs
-    @Environment(Router.self) private var router
-    var body: some View {
-        if let p = library.poem(ref.url), let c = library.couplet(ref) {
-            Button { router.openPoem(ref.url, focus: ref.index) } label: {
-                Color.clear
-                    .aspectRatio(3 / 4, contentMode: .fit)
-                    .overlay {
-                        ZStack(alignment: .bottomLeading) {
-                            ArtView(ref, text: c.text, painted: true)
-                            LinearGradient(colors: [.clear, Color(hex: 0x0A0A0C, alpha: 0.92)], startPoint: UnitPoint(x: 0.5, y: 0.3), endPoint: .bottom)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(c.m1).font(prefs.verseFont(14)).foregroundStyle(.white).lineLimit(2).multilineTextAlignment(.leading)
-                                Text(library.nick(p.poet)).font(.ui(11)).foregroundStyle(Palette.softText)
-                            }
-                            .padding(10)
-                        }
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Palette.line, lineWidth: 1))
-            }
-            .buttonStyle(PressStyle())
-            .contextMenu {
-                Button(role: .destructive) { prefs.toggleSave(ref) } label: { Label("برداشتن از دیوان", systemImage: "heart.slash") }
-                Button { router.show(.share(ref.url, ref.index)) } label: { Label("استوری", systemImage: "square.and.arrow.up") }
-            }
-        }
     }
 }

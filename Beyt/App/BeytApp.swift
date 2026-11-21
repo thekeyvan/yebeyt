@@ -27,6 +27,7 @@ struct RootView: View {
     @Environment(Library.self) private var library
     @Environment(Prefs.self) private var prefs
     @Environment(Router.self) private var router
+    @Environment(AudioPlayer.self) private var audio
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
@@ -58,7 +59,16 @@ struct RootView: View {
     private func debugLaunch() {
         #if DEBUG
         let d = UserDefaults.standard
+        if let u = d.string(forKey: "beytPlay") {
+            Task { @MainActor in
+                if let p = try? await library.load(u) { await audio.play(p, poet: library.nick(p.poet), reciter: 0, from: d.object(forKey: "beytFrom") as? Int) }
+                if d.bool(forKey: "beytNowPlaying") { try? await Task.sleep(for: .seconds(1)); router.nowPlaying = true }
+            }
+        }
         if d.bool(forKey: "beytSkip") { prefs.onboarded = true }
+        if d.bool(forKey: "beytSeedSaved"), prefs.saved.isEmpty {
+            for m in Content.moods { for r in m.items.prefix(2) where !prefs.isSaved(r) { prefs.toggleSave(r) } }
+        }
         if let t = d.string(forKey: "beytTab"), let tab = Tab(rawValue: t) { router.tab = tab }
         if let r = d.string(forKey: "beytRoute") {
             let parts = r.split(separator: ":", maxSplits: 1).map(String.init)
@@ -69,6 +79,7 @@ struct RootView: View {
             case "book": router.open(.book(parts[1]))
             case "fal": router.open(.fal)
             case "search": router.open(.search)
+            case "saved": router.open(.saved)
             default: break
             }
         }
@@ -93,6 +104,7 @@ struct RootView: View {
 struct MainView: View {
     @Environment(Router.self) private var router
     @Environment(Prefs.self) private var prefs
+    @Environment(AudioPlayer.self) private var audio
 
     var body: some View {
         @Bindable var router = router
@@ -106,7 +118,11 @@ struct MainView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                TabBar()
+                .safeAreaInset(edge: .bottom, spacing: 0) { if audio.now != nil { Color.clear.frame(height: 66) } }
+                VStack(spacing: 8) {
+                    MiniPlayer()
+                    TabBar()
+                }
             }
             .background(Palette.bg)
             .toolbar(.hidden, for: .navigationBar)
@@ -118,11 +134,22 @@ struct MainView: View {
                     case .search: SearchView()
                     case .fal: FalView()
                     case let .book(u): BookView(url: u)
+                    case .saved: SavedView()
                     }
                 }
                 .toolbar(.hidden, for: .navigationBar)
                 .background(Palette.bg)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if audio.now != nil { MiniPlayer().padding(.bottom, 4).padding(.top, 6) }
+                }
             }
+        }
+        .animation(.spring(duration: 0.4), value: audio.now?.url)
+        .sheet(isPresented: $router.nowPlaying) {
+            NowPlayingView()
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(.black)
+                .presentationCornerRadius(36)
         }
         .sheet(item: $router.sheet) { s in
             SheetHost(route: s)

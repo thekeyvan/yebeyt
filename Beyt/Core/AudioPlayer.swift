@@ -1,8 +1,11 @@
 import Foundation
 import AVFoundation
+import MediaPlayer
+import UIKit
 import Observation
 
-/// Real Ganjoor recitations: audio plus line-by-line timing, fetched on demand.
+/// Real Ganjoor recitations with line-by-line timing.
+/// One poem is "now playing" at a time; it keeps playing while you browse (like Apple Music).
 @Observable
 final class AudioPlayer {
     struct Recitation: Identifiable, Hashable {
@@ -12,12 +15,22 @@ final class AudioPlayer {
         let xml: URL?
     }
 
-    enum State: Equatable { case idle, loading, ready, failed }
+    /// What's loaded into the player.
+    struct NowPlaying: Equatable {
+        let url: String
+        let title: String
+        let poet: String
+        let scene: ArtScene
+        let seed: String
+        let couplets: [Couplet]
+    }
 
-    private(set) var url: String?
+    static let rates: [Float] = [0.75, 1, 1.25, 1.5, 1.75]
+
+    private(set) var now: NowPlaying?
     private(set) var recitations: [Recitation] = []
     private(set) var current = 0
-    private(set) var state: State = .idle
+    private(set) var loading = false
     private(set) var playing = false
     private(set) var time: Double = 0
     private(set) var duration: Double = 0
@@ -25,61 +38,170 @@ final class AudioPlayer {
     private(set) var sync: [Double] = []
     /// Index of the hemistich being read right now.
     private(set) var line: Int?
+    private(set) var rate: Float = UserDefaults.standard.object(forKey: "beyt.rate") as? Float ?? 1
+
+    var url: String? { now?.url }
+    var artist: String { recitations.indices.contains(current) ? recitations[current].artist : "" }
+    /// Couplet being read right now.
+    var couplet: Int? { line.map { $0 / 2 } }
 
     private var player: AVPlayer?
     private var observer: Any?
-    private var cache: [String: [Recitation]] = [:]
+    private var endObserver: NSObjectProtocol?
+    private var listCache: [String: [Recitation]] = [:]
+    private var syncCache: [URL: [Double]] = [:]
+    private var artwork: MPMediaItemArtwork?
 
-    var artist: String { recitations.indices.contains(current) ? recitations[current].artist : "" }
+    init() { setupRemoteCommands() }
 
-    /// Loads the list of readers for a poem (cached per poem).
-    func prepare(_ poemURL: String, preferred: Int = 0) async {
-        if url == poemURL, state == .ready || state == .loading { return }
-        stop()
-        url = poemURL
-        recitations = []
-        state = .loading
-        if let c = cache[poemURL] {
-            recitations = c
-        } else {
-            do {
-                recitations = try await AudioPlayer.fetchRecitations(poemURL)
-                cache[poemURL] = recitations
-            } catch {
-                state = .failed
-                return
-            }
+    // MARK: loading
+
+    /// Readers available for a poem (cached). Empty when there are none or the network failed.
+    func recitations(for url: String) async -> [Recitation] {
+        if let c = listCache[url] { return c }
+        guard let r = try? await AudioPlayer.fetchRecitations(url) else { return [] }
+        listCache[url] = r
+        return r
+    }
+
+    /// Starts a poem (or restarts it with another reader), optionally from a couplet.
+    @MainActor
+    func play(_ poem: Poem, poet: String, reciter: Int, from coupletIndex: Int? = nil) async {
+        let isSame = now?.url == poem.url && current == reciter && player != nil
+        if isSame {
+            if let i = coupletIndex { await seek(couplet: i) }
+            resume()
+            return
         }
-        guard url == poemURL else { return }
-        current = min(preferred, max(0, recitations.count - 1))
-        state = recitations.isEmpty ? .failed : .ready
-    }
-
-    func toggle() {
-        if playing { pause(); return }
-        guard state == .ready, recitations.indices.contains(current) else { return }
-        if player == nil { start() } else { player?.play(); playing = true }
-    }
-
-    func pause() { player?.pause(); playing = false }
-
-    func choose(_ i: Int) {
-        guard recitations.indices.contains(i) else { return }
-        let wasPlaying = playing
         teardown()
+        loading = true
+        let recs = await recitations(for: poem.url)
+        guard !recs.isEmpty else { loading = false; return }
+        recitations = recs
+        current = min(max(0, reciter), recs.count - 1)
+        let first = poem.couplets.first?.text ?? poem.url
+        now = NowPlaying(url: poem.url, title: poem.title, poet: poet, scene: Content.scene(for: poem.url), seed: first, couplets: poem.couplets)
+        if let x = recs[current].xml { sync = await loadSync(x) }
+        start(at: coupletIndex.flatMap(startTime(ofCouplet:)) ?? 0)
+        loading = false
+        makeArtwork()
+    }
+
+    func toggle() { playing ? pause() : resume() }
+
+    func pause() {
+        player?.pause()
+        playing = false
+        updateNowPlayingInfo()
+    }
+
+    func resume() {
+        guard let player else { return }
+        try? AVAudioSession.sharedInstance().setActive(true)
+        if duration > 0, time >= duration - 0.5 { player.seek(to: .zero) }
+        player.defaultRate = rate
+        player.playImmediately(atRate: rate)
+        playing = true
+        updateNowPlayingInfo()
+    }
+
+    func seek(to seconds: Double) {
+        let t = max(0, duration > 0 ? min(seconds, duration - 0.1) : seconds)
+        time = t
+        updateLine()
+        player?.seek(to: CMTime(seconds: t, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+        updateNowPlayingInfo()
+    }
+
+    @MainActor
+    func seek(couplet i: Int) async {
+        if sync.isEmpty, recitations.indices.contains(current), let x = recitations[current].xml { sync = await loadSync(x) }
+        if let t = startTime(ofCouplet: i) { seek(to: t) }
+    }
+
+    func skip(by seconds: Double) { seek(to: time + seconds) }
+
+    func nextCouplet() {
+        guard let n = now else { return }
+        let i = (couplet ?? -1) + 1
+        if i < n.couplets.count, let t = startTime(ofCouplet: i) { seek(to: t) } else { skip(by: 15) }
+    }
+
+    func previousCouplet() {
+        let c = couplet ?? 0
+        // Like a music player: first tap goes back to the start of this couplet, a quick second tap to the one before.
+        if let t = startTime(ofCouplet: c), time - t > 2 { seek(to: t) }
+        else if let t = startTime(ofCouplet: max(0, c - 1)) { seek(to: t) }
+        else { skip(by: -15) }
+    }
+
+    func setRate(_ r: Float) {
+        rate = r
+        UserDefaults.standard.set(r, forKey: "beyt.rate")
+        player?.defaultRate = r
+        if playing { player?.rate = r }
+        updateNowPlayingInfo()
+    }
+
+    /// Another reader for the same poem; keeps the place (couplet).
+    @MainActor
+    func choose(_ i: Int) async {
+        guard let n = now, recitations.indices.contains(i), i != current else { return }
+        let at = couplet
+        let wasPlaying = playing
+        let couplets = n.couplets
+        teardown(keepNow: true)
         current = i
-        if wasPlaying { start() }
+        if let x = recitations[i].xml { sync = await loadSync(x) }
+        start(at: at.flatMap(startTime(ofCouplet:)) ?? 0, autoplay: wasPlaying)
+        _ = couplets
     }
 
     func stop() {
         teardown()
-        url = nil
-        state = .idle
+        now = nil
+        recitations = []
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
-    private func teardown() {
+    // MARK: engine
+
+    private func startTime(ofCouplet i: Int) -> Double? {
+        if sync.indices.contains(i * 2) { return sync[i * 2] }
+        guard let n = now, !n.couplets.isEmpty, duration > 0 else { return i == 0 ? 0 : nil }
+        return duration * Double(i) / Double(n.couplets.count)
+    }
+
+    private func start(at seconds: Double, autoplay: Bool = true) {
+        guard recitations.indices.contains(current) else { return }
+        let rec = recitations[current]
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
+        try? AVAudioSession.sharedInstance().setActive(true)
+        let item = AVPlayerItem(url: rec.mp3)
+        item.audioTimePitchAlgorithm = .timeDomain // keeps the voice natural at other speeds
+        let p = AVPlayer(playerItem: item)
+        p.defaultRate = rate
+        player = p
+        observer = p.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.2, preferredTimescale: 600), queue: .main) { [weak self] t in
+            guard let self else { return }
+            self.time = t.seconds
+            if let d = p.currentItem?.duration.seconds, d.isFinite, d != self.duration { self.duration = d; self.updateNowPlayingInfo() }
+            self.updateLine()
+        }
+        endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
+            self?.playing = false
+            self?.updateNowPlayingInfo()
+        }
+        if seconds > 0 { p.seek(to: CMTime(seconds: seconds, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero); time = seconds }
+        if autoplay { p.playImmediately(atRate: rate); playing = true }
+        updateLine()
+        updateNowPlayingInfo()
+    }
+
+    private func teardown(keepNow: Bool = false) {
         if let o = observer { player?.removeTimeObserver(o) }
-        observer = nil
+        if let e = endObserver { NotificationCenter.default.removeObserver(e) }
+        observer = nil; endObserver = nil
         player?.pause()
         player = nil
         playing = false
@@ -87,37 +209,68 @@ final class AudioPlayer {
         duration = 0
         line = nil
         sync = []
-    }
-
-    private func start() {
-        let rec = recitations[current]
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
-        try? AVAudioSession.sharedInstance().setActive(true)
-        let item = AVPlayerItem(url: rec.mp3)
-        let p = AVPlayer(playerItem: item)
-        player = p
-        observer = p.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.2, preferredTimescale: 600), queue: .main) { [weak self] t in
-            guard let self else { return }
-            self.time = t.seconds
-            if let d = p.currentItem?.duration.seconds, d.isFinite { self.duration = d }
-            self.updateLine()
-            if self.duration > 0, self.time >= self.duration - 0.25 { self.playing = false }
-        }
-        p.play()
-        playing = true
-        if let x = rec.xml {
-            Task { [weak self] in
-                guard let s = try? await AudioPlayer.fetchSync(x) else { return }
-                await MainActor.run { self?.sync = s }
-            }
-        }
+        if !keepNow { artwork = nil }
     }
 
     private func updateLine() {
         guard !sync.isEmpty else { line = nil; return }
         var idx: Int? = nil
-        for (i, s) in sync.enumerated() where time >= s { idx = i }
+        for (i, s) in sync.enumerated() where time >= s - 0.05 { idx = i }
         if idx != line { line = idx }
+    }
+
+    private func loadSync(_ x: URL) async -> [Double] {
+        if let c = syncCache[x] { return c }
+        guard let s = try? await AudioPlayer.fetchSync(x) else { return [] }
+        syncCache[x] = s
+        return s
+    }
+
+    // MARK: lock screen & Control Center
+
+    private func setupRemoteCommands() {
+        let c = MPRemoteCommandCenter.shared()
+        c.playCommand.addTarget { [weak self] _ in self?.resume(); return .success }
+        c.pauseCommand.addTarget { [weak self] _ in self?.pause(); return .success }
+        c.togglePlayPauseCommand.addTarget { [weak self] _ in self?.toggle(); return .success }
+        c.nextTrackCommand.addTarget { [weak self] _ in self?.nextCouplet(); return .success }
+        c.previousTrackCommand.addTarget { [weak self] _ in self?.previousCouplet(); return .success }
+        c.changePlaybackPositionCommand.addTarget { [weak self] e in
+            guard let e = e as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+            self?.seek(to: e.positionTime); return .success
+        }
+        c.changePlaybackRateCommand.supportedPlaybackRates = AudioPlayer.rates.map { NSNumber(value: $0) }
+        c.changePlaybackRateCommand.addTarget { [weak self] e in
+            guard let e = e as? MPChangePlaybackRateCommandEvent else { return .commandFailed }
+            self?.setRate(e.playbackRate); return .success
+        }
+    }
+
+    private func makeArtwork() {
+        guard let n = now else { return }
+        let (sc, seed) = (n.scene, n.seed)
+        Task.detached(priority: .utility) { [weak self] in
+            let img = SceneArt.image(scene: sc, seed: seed, text: seed, size: CGSize(width: 400, height: 400), painted: true)
+            await MainActor.run {
+                self?.artwork = MPMediaItemArtwork(boundsSize: img.size) { _ in img }
+                self?.updateNowPlayingInfo()
+            }
+        }
+    }
+
+    private func updateNowPlayingInfo() {
+        guard let n = now else { return }
+        var info: [String: Any] = [
+            MPMediaItemPropertyTitle: n.title,
+            MPMediaItemPropertyArtist: artist,
+            MPMediaItemPropertyAlbumTitle: n.poet,
+            MPNowPlayingInfoPropertyElapsedPlaybackTime: time,
+            MPNowPlayingInfoPropertyPlaybackRate: playing ? Double(rate) : 0,
+            MPNowPlayingInfoPropertyDefaultPlaybackRate: Double(rate),
+        ]
+        if duration > 0 { info[MPMediaItemPropertyPlaybackDuration] = duration }
+        if let artwork { info[MPMediaItemPropertyArtwork] = artwork }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 
     // MARK: network
@@ -129,7 +282,7 @@ final class AudioPlayer {
             [URLQueryItem(name: "recitations", value: "true")]
         let (d, _) = try await URLSession.shared.data(from: c.url!)
         struct R: Decodable {
-            struct Rec: Decodable { let id: Int; let audioArtist: String?; let mp3Url: String?; let xmlUrl: String?; let inSyncWithText: Bool?; let recitationType: Int? }
+            struct Rec: Decodable { let id: Int; let audioArtist: String?; let mp3Url: String?; let xmlUrl: String?; let recitationType: Int? }
             let recitations: [Rec]?
         }
         let r = try JSONDecoder().decode(R.self, from: d)
@@ -151,9 +304,9 @@ final class AudioPlayer {
 
     private final class SyncParser: NSObject, XMLParserDelegate {
         var pairs: [(Int, Double)] = []
-        private var el = "", order: Int?, ms: Double?, text = ""
+        private var order: Int?, ms: Double?, text = ""
         func parser(_ p: XMLParser, didStartElement e: String, namespaceURI: String?, qualifiedName: String?, attributes: [String: String] = [:]) {
-            el = e; text = ""
+            text = ""
             if e == "SyncInfo" { order = nil; ms = nil }
         }
         func parser(_ p: XMLParser, foundCharacters s: String) { text += s }

@@ -21,6 +21,8 @@ struct ReaderView: View {
     @State private var allMeanings = false
     @State private var listShown: Set<Int> = []
     @State private var listTop = 0
+    @State private var recs: [AudioPlayer.Recitation] = []
+    @State private var starting = false
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -61,8 +63,8 @@ struct ReaderView: View {
             poem = p
             prefs.remember(url, couplet: start)
             if !p.couplets.isEmpty { prefs.markSeen(CoupletRef(url, start)) }
-            await audio.prepare(url, preferred: prefs.reciter(for: url))
-            if autoplay, audio.state == .ready, !audio.playing { audio.toggle() }
+            recs = await audio.recitations(for: url)
+            if autoplay, !recs.isEmpty { await listen(from: focus) }
         } catch {
             failed = true
         }
@@ -149,17 +151,33 @@ struct ReaderView: View {
                 prefs.remember(url, couplet: i)
                 prefs.markSeen(CoupletRef(url, i))
             }
-            if page < n, !(p.couplets[page].meaning.isEmpty) {
-                Button { toggleMeaning(page) } label: {
-                    HStack(spacing: 6) {
-                        AppIcon("lightbulb", size: 14).foregroundStyle(prefs.accent)
-                        Text(shown.contains(page) ? "بستن معنی" : "یعنی چی؟").font(.ui(13, .medium)).foregroundStyle(Palette.ink)
+            if page < n {
+                HStack(spacing: 10) {
+                    if !p.couplets[page].meaning.isEmpty {
+                        Button { toggleMeaning(page) } label: {
+                            HStack(spacing: 6) {
+                                AppIcon("lightbulb", size: 14).foregroundStyle(prefs.accent)
+                                Text(shown.contains(page) ? "بستن معنی" : "یعنی چی؟").font(.ui(13, .medium)).foregroundStyle(Palette.ink)
+                            }
+                            .padding(.horizontal, 16).frame(height: 38)
+                            .glass(Capsule(), interactive: true)
+                        }
+                        .buttonStyle(PressStyle())
                     }
-                    .padding(.horizontal, 16).frame(height: 38)
-                    .glass(Capsule(), interactive: true)
+                    if !recs.isEmpty, !(audio.url == url && audio.playing && audio.couplet == page) {
+                        Button { Task { await listen(from: page) } } label: {
+                            HStack(spacing: 6) {
+                                LineIcon(name: "play", size: 13).foregroundStyle(prefs.accent)
+                                Text("از این بیت بخون").font(.ui(13, .medium)).foregroundStyle(Palette.ink)
+                            }
+                            .padding(.horizontal, 16).frame(height: 38)
+                            .glass(Capsule(), interactive: true)
+                        }
+                        .buttonStyle(PressStyle())
+                    }
                 }
-                .buttonStyle(PressStyle())
                 .padding(.top, 6).padding(.bottom, 12)
+                .frame(minHeight: 56)
             } else {
                 Color.clear.frame(height: 56)
             }
@@ -259,11 +277,25 @@ struct ReaderView: View {
                             CoupletLines(couplet: c, base: 21, highlight: hl)
                                 .contentShape(Rectangle())
                                 .onTapGesture { router.show(.couplet(url, i)) }
-                            if !c.meaning.isEmpty {
-                                Button {
-                                    withAnimation { if listShown.contains(i) { listShown.remove(i) } else { listShown.insert(i) } }
-                                } label: { tinyToggle(listShown.contains(i) ? "بستن" : "معنی") }
+                            HStack(spacing: 8) {
+                                if !c.meaning.isEmpty {
+                                    Button {
+                                        withAnimation { if listShown.contains(i) { listShown.remove(i) } else { listShown.insert(i) } }
+                                    } label: { tinyToggle(listShown.contains(i) ? "بستن" : "معنی") }
+                                        .buttonStyle(.plain)
+                                }
+                                if !recs.isEmpty {
+                                    Button { Task { await listen(from: i) } } label: {
+                                        HStack(spacing: 4) { LineIcon(name: "play", size: 10); Text("از اینجا بخون").font(.ui(12, .bold)) }
+                                            .foregroundStyle(prefs.accent)
+                                            .padding(.horizontal, 10).padding(.vertical, 4)
+                                            .background(Capsule().fill(prefs.accent.opacity(0.15)))
+                                    }
                                     .buttonStyle(.plain)
+                                    .accessibilityLabel("از این بیت بخون")
+                                }
+                            }
+                            if !c.meaning.isEmpty {
                                 if listShown.contains(i) {
                                     HStack(alignment: .top, spacing: 8) {
                                         if c.ai { AITag() }
@@ -300,51 +332,50 @@ struct ReaderView: View {
 
     // MARK: player
 
+    /// While another poem (or nothing) is playing, a bar to start listening to this one.
+    /// Once this poem plays, the app-wide mini player takes over.
     @ViewBuilder private func playerBar(_ p: Poem) -> some View {
-        if audio.url == url, audio.state == .ready || audio.state == .loading {
+        if audio.url != url, !recs.isEmpty {
+            let reader = recs[min(prefs.reciter(for: url), recs.count - 1)]
             HStack(spacing: 12) {
-                Button { audio.toggle() } label: {
+                Button { Task { await listen(from: mode == "focus" ? min(page, max(0, p.couplets.count - 1)) : nil) } } label: {
                     Group {
-                        if audio.state == .loading { ProgressView().tint(prefs.onAccent) }
-                        else { AppIcon(audio.playing ? "pause.fill" : "play.fill", size: 18) }
+                        if starting || audio.loading { ProgressView().tint(prefs.onAccent) }
+                        else { LineIcon(name: "play", size: 20) }
                     }
                     .foregroundStyle(prefs.onAccent)
                     .frame(width: 44, height: 44)
                     .background(Circle().fill(prefs.accent))
                 }
                 .buttonStyle(PressStyle(scale: 0.92))
-                .accessibilityLabel(audio.playing ? "توقف" : "پخش")
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Button { if audio.recitations.count > 1 { router.show(.reciters(url)) } } label: {
-                            HStack(spacing: 4) {
-                                Text(audio.state == .loading ? "خوانش" : audio.artist).font(.ui(13, .bold)).lineLimit(1)
-                                if audio.recitations.count > 1 { AppIcon("chevron.down", size: 10).opacity(0.6) }
-                            }
-                            .foregroundStyle(Palette.ink)
+                .accessibilityLabel("پخش")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("گوش بده").font(.ui(14, .bold)).foregroundStyle(Palette.ink)
+                    Button { if recs.count > 1 { router.show(.reciters(url)) } } label: {
+                        HStack(spacing: 4) {
+                            Text("با صدای \(reader.artist)").font(.ui(12)).lineLimit(1)
+                            if recs.count > 1 { Text("· \(recs.count.fa) خوانش").font(.ui(12)); AppIcon("chevron.down", size: 9).opacity(0.6) }
                         }
-                        .buttonStyle(.plain)
-                        Spacer()
-                        Text(mmss(audio.time)).font(.ui(11)).foregroundStyle(Palette.ink.opacity(0.75)).monospacedDigit()
+                        .foregroundStyle(Palette.muted)
                     }
-                    GeometryReader { g in
-                        Capsule().fill(Palette.bg.opacity(0.4)).overlay(alignment: .leading) {
-                            Capsule().fill(prefs.accent).frame(width: audio.duration > 0 ? g.size.width * CGFloat(audio.time / audio.duration) : 0)
-                        }
-                    }
-                    .frame(height: 4)
+                    .buttonStyle(.plain)
                 }
+                Spacer()
             }
-            .padding(.vertical, 10).padding(.leading, 12).padding(.trailing, 14)
-            .glass(RoundedRectangle(cornerRadius: 24))
-            .padding(.horizontal, 12).padding(.bottom, 10)
+            .padding(.vertical, 8).padding(.leading, 10).padding(.trailing, 14)
+            .glass(RoundedRectangle(cornerRadius: 22))
+            .padding(.horizontal, 12).padding(.bottom, 8)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 
-    private func mmss(_ t: Double) -> String {
-        let s = max(0, Int(t))
-        return "\(s / 60):\(String(format: "%02d", s % 60))".fa
+    /// Plays this poem, from a couplet if given.
+    private func listen(from couplet: Int?) async {
+        guard let p = poem ?? library.poem(url) else { return }
+        starting = true
+        await audio.play(p, poet: library.nick(p.poet), reciter: prefs.reciter(for: url), from: couplet)
+        starting = false
+        if let c = couplet, mode == "focus", c != page { withAnimation { page = c } }
     }
 
     private func follow(_ line: Int?) {

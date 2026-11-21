@@ -7,7 +7,7 @@ struct SheetHost: View {
         switch route {
         case .poet(let s): PoetSheet(slug: s).presentationDetents([.large])
         case .couplet(let u, let i): CoupletSheet(url: u, index: i).presentationDetents([.medium, .large])
-        case .share(let u, let i): ShareSheet(url: u, index: i).presentationDetents([.large])
+        case .share(let u, let i, let clear): ShareSheet(url: u, index: i, clear: clear).presentationDetents([.large])
         case .font: FontSheet().presentationDetents([.large])
         case .more(let u): MoreSheet(url: u).presentationDetents([.medium])
         case .summary(let u): SummarySheet(url: u).presentationDetents([.medium, .large])
@@ -122,13 +122,14 @@ struct CoupletSheet: View {
 struct ShareSheet: View {
     let url: String
     let index: Int
+    @State var clear = false
     @Environment(Library.self) private var library
     @Environment(Prefs.self) private var prefs
     @Environment(Router.self) private var router
     @Environment(\.dismiss) private var dismiss
     @State private var bg: StoryCard.Background = .art
     @State private var withMeaning = false
-    @State private var rendered: Image?
+    @State private var rendered: UIImage?
 
     var body: some View {
         SheetBody {
@@ -138,7 +139,7 @@ struct ShareSheet: View {
                 IconButton(icon: "xmark", size: 36, label: "بستن") { dismiss() }
             }
             if let p = library.poem(url), let c = library.couplet(CoupletRef(url, index)) {
-                StoryCard(ref: CoupletRef(url, index), poem: p, couplet: c, poet: library.nick(p.poet), background: bg, meaning: withMeaning, font: prefs.font)
+                StoryCard(ref: CoupletRef(url, index), poem: p, couplet: c, poet: library.nick(p.poet), background: bg, meaning: withMeaning, font: prefs.font, clear: clear)
                     .frame(width: 230, height: 409)
                     .clipShape(RoundedRectangle(cornerRadius: 22))
                     .shadow(color: .black.opacity(0.38), radius: 17, y: 14)
@@ -154,23 +155,30 @@ struct ShareSheet: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                if bg == .art {
+                    Toggle(isOn: $clear.animation(.easeInOut(duration: 0.4))) {
+                        HStack(spacing: 8) { LineIcon(name: "eye", size: 20).foregroundStyle(prefs.accent); Text("تصویر واضح").font(.ui(15, .medium)) }
+                    }
+                    .tint(Palette.good)
+                }
                 Toggle(isOn: $withMeaning) { Text("معنی هم بیاد").font(.ui(15, .medium)) }
                     .tint(Palette.good)
                     .disabled(c.meaning.isEmpty)
                 if let rendered {
-                    ShareLink(item: rendered, preview: SharePreview(p.title, image: rendered)) {
+                    Button { ShareService.share(rendered) } label: {
                         HStack(spacing: 8) { AppIcon("square.and.arrow.up"); Text("ذخیره یا فرستادن").font(.ui(14, .bold)) }
                             .foregroundStyle(prefs.onAccent)
                             .frame(maxWidth: .infinity).frame(height: 48)
                             .background(Capsule().fill(prefs.accent))
                     }
+                    .buttonStyle(PressStyle())
                 } else {
                     ProgressView().frame(maxWidth: .infinity)
                 }
                 Note("کارت با کیفیت بالا ساخته می‌شه. از همین منو می‌تونی توی گالری ذخیره‌ش کنی یا برای استوری اینستاگرام بفرستی.")
             }
         }
-        .task(id: "\(bg)\(withMeaning)") { await render() }
+        .task(id: "\(bg)\(withMeaning)\(clear)") { await render() }
     }
 
     @MainActor private func render() async {
@@ -181,14 +189,15 @@ struct ShareSheet: View {
         if bg == .art {
             let size = CGSize(width: 360, height: 640)
             let sc = Content.scene(for: url, index: index)
-            _ = await Task.detached { SceneArt.image(scene: sc, seed: c.text, text: c.text, size: size, painted: false) }.value
+            let pt = clear
+            _ = await Task.detached { SceneArt.image(scene: sc, seed: c.text, text: c.text, size: size, painted: pt) }.value
         }
-        let card = StoryCard(ref: ref, poem: p, couplet: c, poet: library.nick(p.poet), background: bg, meaning: withMeaning, font: prefs.font, staticArt: true)
+        let card = StoryCard(ref: ref, poem: p, couplet: c, poet: library.nick(p.poet), background: bg, meaning: withMeaning, font: prefs.font, clear: clear, staticArt: true)
             .frame(width: 360, height: 640)
             .environment(\.layoutDirection, .rightToLeft)
         let r = ImageRenderer(content: card)
         r.scale = 3
-        if let ui = r.uiImage { rendered = Image(uiImage: ui) }
+        rendered = r.uiImage
     }
 }
 
@@ -224,6 +233,8 @@ struct StoryCard: View {
     let background: Background
     let meaning: Bool
     let font: VerseFont
+    /// Clean painted picture instead of the blurred letters.
+    var clear = false
     var staticArt = false
 
     var body: some View {
@@ -232,12 +243,14 @@ struct StoryCard: View {
             ZStack {
                 background.fill
                 if background == .art {
-                    if staticArt, let img = SceneArt.cached(scene: Content.scene(for: ref.url, index: ref.index), seed: couplet.text, size: CGSize(width: 360, height: 640), painted: false) {
-                        Image(uiImage: img).resizable().blur(radius: 16 * k / 1.56, opaque: true).scaleEffect(1.12)
+                    if staticArt, let img = SceneArt.cached(scene: Content.scene(for: ref.url, index: ref.index), seed: couplet.text, size: CGSize(width: 360, height: 640), painted: clear) {
+                        if clear { Image(uiImage: img).resizable() }
+                        else { Image(uiImage: img).resizable().blur(radius: 16 * k / 1.56, opaque: true).scaleEffect(1.12) }
                     } else {
-                        ArtView(ref, text: couplet.text, blur: 16)
+                        ArtView(ref, text: couplet.text, painted: clear, blur: clear ? 0 : 16)
                     }
-                    LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: UnitPoint(x: 0.5, y: 0.25), endPoint: .bottom)
+                    // A clear picture is brighter, so the verse gets a deeper shade to stay readable.
+                    LinearGradient(colors: [.clear, .black.opacity(clear ? 0.88 : 0.75)], startPoint: UnitPoint(x: 0.5, y: clear ? 0.35 : 0.25), endPoint: .bottom)
                 }
                 VStack(alignment: .leading) {
                     HStack {
@@ -265,6 +278,7 @@ struct StoryCard: View {
                     .opacity(0.7)
                 }
                 .foregroundStyle(background.ink)
+                .shadow(color: .black.opacity(background == .art ? (clear ? 0.85 : 0.4) : 0), radius: 10 * k)
                 .padding(.horizontal, 16 * k).padding(.vertical, 22 * k)
             }
         }
@@ -405,22 +419,26 @@ struct RecitersSheet: View {
     @Environment(Prefs.self) private var prefs
     @Environment(Router.self) private var router
     @Environment(\.dismiss) private var dismiss
+    @State private var recs: [AudioPlayer.Recitation] = []
+
     var body: some View {
+        let chosen = audio.url == url ? audio.current : prefs.reciter(for: url)
         SheetBody {
             Text("کی بخونه؟").font(.ui(17, .bold))
-            Note("\(audio.recitations.count.fa) نفر این شعر رو خوندن. هر خوانش، بیت‌به‌بیت با متن هماهنگ شده.")
+            Note("\(recs.count.fa) نفر این شعر رو خوندن. هر خوانش، بیت‌به‌بیت با متن هماهنگ شده.")
             VStack(spacing: 0) {
-                ForEach(Array(audio.recitations.enumerated()), id: \.element.id) { i, r in
-                    IconRow(title: r.artist, subtitle: i == audio.current ? (audio.playing ? "در حال پخش" : "انتخاب شده") : "خوانش") { IconSquare(icon: "headphones") } action: {
-                        audio.choose(i)
+                ForEach(Array(recs.enumerated()), id: \.element.id) { i, r in
+                    IconRow(title: r.artist, subtitle: i == chosen ? (audio.url == url && audio.playing ? "در حال پخش" : "انتخاب شده") : "خوانش") { IconSquare(icon: "headphones") } action: {
                         prefs.setReciter(i, for: url)
+                        if audio.url == url { Task { await audio.choose(i) } }
                         dismiss()
-                        router.say("صدا عوض شد: " + r.artist)
+                        router.say("صدا: " + r.artist)
                     }
                     Divider().overlay(Palette.line)
                 }
             }
         }
+        .task { recs = await audio.recitations(for: url) }
     }
 }
 
@@ -437,5 +455,19 @@ struct AboutSheet: View {
             Fact(label: "خوانش‌ها", value: "صدای واقعی خواننده‌های گنجور، هماهنگ با هر مصراع")
             Note("معنی‌ها و خلاصه‌هایی که آیکون ستاره دارن با کمک هوش مصنوعی نوشته شدن. منبع: ganjoor.net")
         }
+    }
+}
+
+/// Opens the system share sheet with a real image, so every app (Telegram, Instagram, Photos…) can take it.
+enum ShareService {
+    @MainActor static func share(_ image: UIImage) {
+        guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+              var top = scene.keyWindow?.rootViewController else { return }
+        while let next = top.presentedViewController { top = next }
+        // A flattened JPEG travels best between apps; keep PNG quality-level sharpness.
+        let item: Any = image.jpegData(compressionQuality: 0.95).flatMap(UIImage.init(data:)) ?? image
+        let vc = UIActivityViewController(activityItems: [item], applicationActivities: nil)
+        vc.popoverPresentationController?.sourceView = top.view
+        top.present(vc, animated: true)
     }
 }

@@ -22,6 +22,7 @@ struct DeckView: View {
                         DeckCard(ref: pair.element, position: pair.offset + 1, total: items.count, depth: depth, isTop: depth == 0, size: geo.size) { dir in
                             finish(pair.element, dir)
                         }
+                        .environment(\.layoutDirection, .leftToRight) // swipe maths in screen coordinates
                         .zIndex(Double(10 - depth))
                     }
                 }
@@ -92,10 +93,13 @@ private struct DeckCard: View {
                 .opacity(painted ? 1 : 0)
                 .animation(.easeInOut(duration: 0.5), value: painted)
             if let p = lens {
-                ArtView(ref, text: text, painted: true)
-                    .mask(Circle().frame(width: 132, height: 132).position(p))
-                Circle().stroke(.white.opacity(0.7), lineWidth: 1.5).frame(width: 132, height: 132).position(p)
-                    .shadow(color: .black.opacity(0.45), radius: 15, y: 10)
+                Group {
+                    ArtView(ref, text: text, painted: true)
+                        .mask(Circle().frame(width: 132, height: 132).position(p))
+                    Circle().stroke(.white.opacity(0.7), lineWidth: 1.5).frame(width: 132, height: 132).position(p)
+                        .shadow(color: .black.opacity(0.45), radius: 15, y: 10)
+                }
+                .environment(\.layoutDirection, .leftToRight)
             }
             LinearGradient(stops: [.init(color: .black.opacity(0.28), location: 0), .init(color: .clear, location: 0.22), .init(color: .clear, location: 0.38),
                                    .init(color: Color(hex: 0x08080A, alpha: 0.72), location: 0.66), .init(color: Color(hex: 0x08080A, alpha: 0.9), location: 1)],
@@ -105,20 +109,27 @@ private struct DeckCard: View {
             if isTop, let poem, let c {
                 content(poem, c).opacity(lens == nil ? 1 : 0.15)
             }
-            // Keep / pass hint while dragging
-            if isTop, abs(drag.width) > 40 {
+            // Keep / next hint while dragging: centred in the picture area, fades in with the drag.
+            if isTop, abs(drag.width) > 24 {
                 let keep = drag.width > 0
-                Text(keep ? "نگه دار" : "بعدی")
-                    .font(.ui(15, .bold)).foregroundStyle(keep ? prefs.onAccent : Palette.ink)
-                    .padding(.horizontal, 16).padding(.vertical, 8)
-                    .background(Capsule().fill(keep ? prefs.accent : Palette.sunk))
-                    .rotationEffect(.degrees(keep ? -8 : 8))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: keep ? .topTrailing : .topLeading)
-                    .padding(.top, 70).padding(.horizontal, 24)
-                    .environment(\.layoutDirection, .leftToRight)
-                    .transition(.opacity)
+                HStack(spacing: 8) {
+                    LineIcon(name: keep ? "check" : "close", size: 20)
+                    Text(keep ? "نگه دار" : "بعدی").font(.ui(16, .bold))
+                }
+                .foregroundStyle(keep ? prefs.onAccent : Palette.ink)
+                .padding(.horizontal, 20).frame(height: 46)
+                .background(Capsule().fill(keep ? prefs.accent : Palette.sunk.opacity(0.95)))
+                .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
+                .scaleEffect(0.9 + 0.1 * min(1, (abs(drag.width) - 24) / 70))
+                .opacity(min(1, (abs(drag.width) - 24) / 50))
+                .frame(maxWidth: .infinity)
+                .frame(height: size.height * 0.48)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .allowsHitTesting(false)
+                .transition(.opacity)
             }
         }
+        .environment(\.layoutDirection, .rightToLeft)
         .frame(width: size.width, height: size.height)
         .clipShape(RoundedRectangle(cornerRadius: 30))
         .overlay(RoundedRectangle(cornerRadius: 30).stroke(.white.opacity(0.1), lineWidth: 1))
@@ -142,7 +153,7 @@ private struct DeckCard: View {
                 tag(Content.mood(of: ref)?.title ?? poem.formatLabel)
                 Spacer()
                 tag("\(position.fa) از \(total.fa)")
-                glassIcon("square.and.arrow.up", "استوری") { router.show(.share(ref.url, ref.index)) }
+                glassIcon("square.and.arrow.up", "استوری") { router.show(.share(ref.url, ref.index, clear: painted)) }
                 glassIcon(painted ? "eye.fill" : "eye", "نمایش تصویر", on: painted) { painted.toggle() }
             }
             .padding(14)
@@ -169,7 +180,7 @@ private struct DeckCard: View {
                         HStack(spacing: 8) { AppIcon("book", size: 16); Text("کل شعر").font(.ui(14, .semibold)) }
                             .frame(maxWidth: .infinity).frame(height: 48)
                             .foregroundStyle(.white)
-                            .glass(Capsule(), interactive: true)
+                            .cardChrome(Capsule())
                     }
                     .buttonStyle(PressStyle(scale: 0.94))
                     deckButton(icon: "xmark", label: "بعدی") { fling(-1) }
@@ -183,7 +194,7 @@ private struct DeckCard: View {
     private func tag(_ t: String) -> some View {
         Text(t).font(.ui(12, .medium)).foregroundStyle(.white)
             .padding(.horizontal, 13).padding(.vertical, 7)
-            .glass(Capsule())
+            .cardChrome(Capsule())
     }
 
     private func glassIcon(_ icon: String, _ label: String, on: Bool = false, action: @escaping () -> Void) -> some View {
@@ -191,7 +202,7 @@ private struct DeckCard: View {
             AppIcon(icon, size: 15)
                 .foregroundStyle(on ? prefs.onAccent : .white)
                 .frame(width: 38, height: 38)
-                .glass(Circle(), tint: on ? prefs.accent : nil, interactive: true)
+                .cardChrome(Circle(), tint: on ? prefs.accent : nil)
         }
         .buttonStyle(PressStyle(scale: 0.9))
         .accessibilityLabel(label)
@@ -201,7 +212,7 @@ private struct DeckCard: View {
         Button(action: action) {
             AppIcon(icon, size: 18).foregroundStyle(.white)
                 .frame(maxWidth: .infinity).frame(height: 48)
-                .glass(Capsule(), interactive: true)
+                .cardChrome(Capsule())
         }
         .buttonStyle(PressStyle(scale: 0.92))
         .accessibilityLabel(label)
@@ -254,5 +265,16 @@ private struct DeckCard: View {
                 }
             }
             .onEnded { _ in withAnimation(.easeOut(duration: 0.2)) { lens = nil } }
+    }
+}
+
+extension View {
+    /// Frosted chrome for controls on the moving card. Liquid Glass doesn't follow the card's tilt and
+    /// slide well, so the card uses material; glass stays on the fixed navigation layer.
+    func cardChrome<S: Shape>(_ shape: S, tint: Color? = nil) -> some View {
+        background {
+            if let tint { shape.fill(tint) } else { shape.fill(.ultraThinMaterial).overlay(shape.fill(.white.opacity(0.06))) }
+        }
+        .overlay(shape.stroke(.white.opacity(0.12), lineWidth: 0.5))
     }
 }

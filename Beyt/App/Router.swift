@@ -26,13 +26,15 @@ enum Route: Hashable {
     case search
     case fal
     case book(String)
+    case saved
 }
 
 /// Bottom sheets.
 enum SheetRoute: Identifiable, Hashable {
     case poet(String)
     case couplet(String, Int)
-    case share(String, Int)
+    /// `clear`: start with the clean (eye-on) picture.
+    case share(String, Int, clear: Bool = false)
     case font
     case more(String)
     case summary(String)
@@ -48,6 +50,8 @@ final class Router {
     var tab: Tab = .home
     var path: [Route] = []
     var sheet: SheetRoute?
+    /// Full-screen Now Playing.
+    var nowPlaying = false
     var toast: String?
     private var toastTask: Task<Void, Never>?
 
