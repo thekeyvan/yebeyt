@@ -1,0 +1,64 @@
+{
+  "tool": "built-in image_gen",
+  "shared": "Shared style (every image):\n- Looks like a top-chart Gen Z app icon designed by Apple's own icon team: one bold, simple, instantly memorable mark. Confident, playful, a little cheeky, never corporate, never old-fashioned, never \"cultural heritage\", no ornaments, no books, no scrolls, no pens, no letters or text of any script.\n- Big shapes: the mark fills about 60–70% of the canvas, centred with optical balance. Must read at 40px.\n- Rich but simple rendering: smooth soft-3D/clay or glossy glass volume, crisp highlight from the top, soft contact shadow. Perfectly smooth, no grain, no noise, no scattered background stars, no vignette.\n- Palette: dark background (deep ink-navy #0B1426 to deep teal #0E3A44) with turquoise #2EC4D6 as the hero colour; electric tints #5FF2FF and #C9F6FA allowed; ONE small pop accent allowed (soft lilac #B79CFF or warm peach #FFB38A) if it helps.\n- Square 1024×1024, full-bleed, do NOT draw rounded corners or a frame around the image, no device or mockup.\n\n",
+  "concepts": {
+    "A": {
+      "tries": 3,
+      "selected": 3,
+      "source": "/Users/saina/.codex/generated_images/01a1ffe1-4560-7150-8e08-7a1a7c89551d/exec-c48c9351-64cd-4f0a-a49f-cc32490c0986.png",
+      "prompt": "sleepy moon mascot\nA cute minimal mascot: a chubby turquoise crescent moon character with two closed, content curved eyes and tiny blush, slight smug smile, soft clay-3D. Tiny peach star tucked in its curve. Kawaii but cool, like a sticker Gen Z would put on a laptop. No other elements.",
+      "refinements": [
+        "Art direction refinement: retain the chubby moon, two closed eyes, tiny blush, slight smug smile and tiny peach star, but express a cool deadpan designer collectible character for older teens. Matte satin clay, restrained highlights, very tiny blush, subtle asymmetric smirk. Avoid baby-toy shine and oversized marshmallow peach star. The peach star is only 12% of mark width. Mark occupies 68% canvas width, calm uniform ink-navy background.",
+        "Final refinement: keep the required kawaii sleepy moon concept but elevate it into an art-toy mascot for 20-year-olds. Chubby asymmetrical crescent, two half-length closed curved eyes, minuscule low-saturation peach blush, subtly off-center smug smile. Tiny peach four-point star tucked in crescent. Absolutely perfectly smooth satin clay, no pores, texture, fuzz, grain or rubber texture. Reduce toy-like baby sweetness; attitude comes from facial placement. One top soft highlight, no glow, no bevel lines. Flat uniform #0B1426 background. 68% mark width."
+      ]
+    },
+    "B": {
+      "tries": 3,
+      "selected": 3,
+      "source": "/Users/saina/.codex/generated_images/01a1ffe1-4560-7150-8e08-7a1a7c89551d/exec-b2f63e7c-a6b3-417f-b9be-4f6a85ab8094.png",
+      "prompt": "the swipe deck\nThree rounded cards fanned out like a hand of cards being swiped, front card bright turquoise with a single small white sparkle (four-point star) in its centre, the cards behind in deeper teal and lilac. Bold, glossy, playful tilt, feels like \"swipe for today's drop\".",
+      "refinements": [
+        "Art direction refinement: make the three-card fanning gesture unmistakeable, with three broad separated top edges, deliberate angular rhythmic spacing and front card tilted playfully clockwise. Rich turquoise satin gloss front, deeper teal middle, restrained lilac rear. Tiny white four-point sparkle only 15% of front-card width. No translucent luminous outline or bright edge rim. Premium editorial object design, substantial simple surfaces. Entire mark 68% canvas width. Uniform ink-navy background.",
+        "Final refinement: very deliberate wide fan of THREE cards around a shared bottom pivot. Rear lilac card leans LEFT 22 degrees, dark teal middle card nearly UPRIGHT, bright turquoise front card leans RIGHT 20 degrees. Three clear card tops and three readable silhouettes at 40px. Front-card single white four-point sparkle is small and crisp. More bold graphic rhythm, less stock clipart balloon inflation. Controlled glossy volume, pristine surfaces. No bright border or inset perimeter lines. Uniform #0B1426 background. Overall fan width 68% canvas."
+      ]
+    },
+    "C": {
+      "tries": 3,
+      "selected": 3,
+      "source": "/Users/saina/.codex/generated_images/01a1ffe1-4560-7150-8e08-7a1a7c89551d/exec-74ad0870-ae73-4279-b6c6-b6c928fbd8d1.png",
+      "prompt": "two bubbles, one spark\nTwo chunky rounded speech-bubble blobs overlapping, one turquoise and one lilac, their overlap glowing brighter, and a small white sparkle where they touch. Means two friends trading a line. Soft-3D, glossy, very simple.",
+      "refinements": [
+        "Art direction refinement: distinctive chunky asymmetric bubble silhouettes with short clear tails, tightly interlocked as a single compact social symbol, turquoise dominates; lilac bubble only about 60% the size of turquoise one. Confident inflated sculptural shapes, restrained soft gloss, no bright edge tracing. Tiny crisp four-point white spark at their contact. Avoid stock messenger logo and symmetric Venn diagram composition. Uniform ink-navy background. Combined mark 68% canvas width.",
+        "Final refinement: two rounded chunky speech-bubble blobs, optically locked into a memorable compact diagonal silhouette. Upper-left turquoise blob has a subtly squarish broad upper shoulder and a short tail on bottom-left; lower-right lilac blob is 60% the size with a short tail on bottom-right. Bright overlap, one tiny crisp white four-point contact spark. Keep the spark understated. Gentle sculptural soft-3D finish with one controlled top highlight, no luminous borders or outline strokes. Absolutely no extra elements. Uniform #0B1426 background. Overall width 68% canvas."
+      ]
+    },
+    "D": {
+      "tries": 2,
+      "selected": 2,
+      "source": "/Users/saina/.codex/generated_images/01a1ffe1-4560-7150-8e08-7a1a7c89551d/exec-723c8226-36de-4df6-845b-6fcfc0be1f97.png",
+      "prompt": "the fortune eye\nA bold, friendly stylised eye shape (almond) made of turquoise glass, its pupil a small glowing crescent moon, three tiny lash ticks on top. Mystical-cool, tarot/astrology energy that Gen Z loves, but clean and graphic.",
+      "refinements": [
+        "Art direction refinement: eye is a solid substantial sculpted almond of rich turquoise glass, never a glowing neon outline. Dark iris recess, crisp small pale icy crescent as pupil. Three genuinely tiny integrated lash ticks, each only 5% of eye width, not large separate exclamation bars. Restrained glass highlights, no glow bloom, no halo. Strong bold graphic silhouette with polished tactile depth. Uniform ink-navy background. Eye width 68% canvas."
+      ]
+    },
+    "E": {
+      "tries": 3,
+      "selected": 3,
+      "source": "/Users/saina/.codex/generated_images/01a1ffe1-4560-7150-8e08-7a1a7c89551d/exec-8d3f82d5-73e3-452b-85fc-76b4b450a701.png",
+      "prompt": "moon + spark mark\nAn ultra-simple bold logo mark: a thick, perfectly geometric turquoise crescent with a single chunky four-point white sparkle nestled in its opening, slight glossy volume. As iconic and minimal as the best social-app logos.",
+      "refinements": [
+        "Art direction refinement: strict geometric thick crescent with crisp tapered horns and a chunky clean geometric four-point white sparkle nesting tightly in its opening, as one compact custom logo silhouette. Slight glossy volume only, restrained single top highlight. Avoid inflated balloon shapes and stock 3D clipart. No glow, no luminous outline, no vignette. Uniform deep ink-navy background. Mark 68% canvas width. Keep simple moon-plus-spark concept exactly.",
+        "Final refinement: a perfectly geometric thick crescent, clean circular outer curve, circular inner cutout, sharp but substantial tapered horns, turquoise with shallow polished volume. A crisp compact white four-point sparkle fits close into its opening, deliberately offset upward to make one memorable optical lockup. The sparkle is angular with straight pointed tips and concave sides, not a marshmallow. Single restrained top highlight, very shallow depth, no balloon inflation, no bloom, no neon rim. No extra elements. Uniform #0B1426 background. Overall width 68% canvas."
+      ]
+    },
+    "F": {
+      "tries": 2,
+      "selected": 2,
+      "source": "/Users/saina/.codex/generated_images/01a1ffe1-4560-7150-8e08-7a1a7c89551d/exec-8bdbeb3a-b882-469f-b85a-9a72657b7a86.png",
+      "prompt": "the drop\nA glossy turquoise rounded square tile (like a single message or story card) with a small speech-bubble tail at the bottom-left, slightly tilted, a tiny lilac heart-shaped sparkle popping off its top-right corner. Fun, tactile, sticker-like.",
+      "refinements": [
+        "Art direction refinement: one substantial glossy turquoise rounded-square speech tile with a small unmistakable tail at bottom-left, tilted slightly counterclockwise. Tiny lilac heart-shaped sparkle touching its upper-right corner, only 15% of tile width. No extra decorative ticks, rays, or floating specks. No luminous outline, no inset perimeter seam or bevel frame, smooth uninterrupted face. Restrained satin gloss, premium playful tactile shape. Uniform ink-navy background, total mark 68% canvas width."
+      ]
+    }
+  }
+}

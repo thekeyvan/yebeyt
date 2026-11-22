@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Icon preview</title>
+<style>
+  :root { --mask: 22.4%; }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(160deg, #1d2b4a 0%, #3a2a55 45%, #0f1e2e 100%);
+    font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
+    color: #fff; padding: 56px 24px 40px;
+  }
+  h2 { font-size: 13px; font-weight: 500; opacity: .7; margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px 0; justify-items: center; margin-bottom: 40px; }
+  .app { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 72px; }
+  .icon { width: 62px; height: 62px; border-radius: var(--mask); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+  .icon img { width: 100%; height: 100%; display: block; }
+  .ph { background: rgba(255,255,255,.18); }
+  .ph.a { background: linear-gradient(#6fd36f,#2f9e44); }
+  .ph.b { background: linear-gradient(#ffd166,#f08c00); }
+  .ph.c { background: linear-gradient(#74c0fc,#1c7ed6); }
+  .ph.d { background: linear-gradient(#ff8787,#e03131); }
+  .label { font-size: 11px; text-align: center; white-space: nowrap; }
+  .big { display: flex; justify-content: center; gap: 28px; }
+  .big .icon { width: 120px; height: 120px; }
+  .big .app { width: auto; }
+  .dock { display: flex; justify-content: space-around; background: rgba(255,255,255,.14); border-radius: 30px; padding: 14px 10px; margin-top: 10px; }
+</style>
+</head>
+<body>
+  <h2>صفحه‌ی اصلی (اندازه‌ی واقعی)</h2>
+  <div class="grid">
+    <div class="app"><div class="icon"><img src="simurgh.png" alt=""></div><div class="label">یه بیت · سیمرغ</div></div>
+    <div class="app"><div class="icon ph a"></div><div class="label">App</div></div>
+    <div class="app"><div class="icon"><img src="quill.png" alt=""></div><div class="label">یه بیت · قلم</div></div>
+    <div class="app"><div class="icon ph b"></div><div class="label">App</div></div>
+    <div class="app"><div class="icon ph c"></div><div class="label">App</div></div>
+    <div class="app"><div class="icon"><img src="current.png" alt=""></div><div class="label">آیکون فعلی</div></div>
+    <div class="app"><div class="icon ph d"></div><div class="label">App</div></div>
+    <div class="app"><div class="icon ph"></div><div class="label">App</div></div>
+  </div>
+  <h2>بزرگ</h2>
+  <div class="big">
+    <div class="app"><div class="icon"><img src="simurgh.png" alt=""></div><div class="label">سیمرغ</div></div>
+    <div class="app"><div class="icon"><img src="quill.png" alt=""></div><div class="label">قلم</div></div>
+  </div>
+  <div class="dock">
+    <div class="app"><div class="icon ph c"></div></div>
+    <div class="app"><div class="icon"><img src="simurgh.png" alt=""></div></div>
+    <div class="app"><div class="icon"><img src="quill.png" alt=""></div></div>
+    <div class="app"><div class="icon ph a"></div></div>
+  </div>
+</body>
+</html>
