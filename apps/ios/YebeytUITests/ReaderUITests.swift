@@ -16,7 +16,7 @@ final class ReaderUITests: XCTestCase {
             "close": app.buttons["بستن"].frame,
             "title": app.staticTexts["readerTitle"].frame,
             "subtitle": app.staticTexts["readerSubtitle"].frame,
-            "game": app.buttons["بازی با این بیت"].frame,
+            "game": app.buttons["بازی با این غزل"].frame,
             "text": app.buttons["اندازه‌ی حروف"].frame,
             "toggle": app.otherElements["حالت خوندن"].frame,
         ]
@@ -69,7 +69,7 @@ final class ReaderUITests: XCTestCase {
         let couplet = secondCouplet(app)
         XCTAssertTrue(couplet.waitForExistence(timeout: 5))
         couplet.press(forDuration: 1.2)
-        XCTAssertTrue(app.otherElements["کارهای این بیت"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["کارهای این بیت"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["کپی متن"].exists)
         XCTAssertTrue(app.buttons["بازی با این بیت"].exists)
         XCTAssertTrue(app.buttons["معنی این بیت"].exists)
@@ -80,7 +80,7 @@ final class ReaderUITests: XCTestCase {
         let couplet = secondCouplet(app)
         XCTAssertTrue(couplet.waitForExistence(timeout: 5))
         couplet.press(forDuration: 1.2)
-        let menu = app.otherElements["کارهای این بیت"]
+        let menu = app.descendants(matching: .any)["کارهای این بیت"]
         XCTAssertTrue(menu.waitForExistence(timeout: 5))
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).tap()
         XCTAssertTrue(menu.waitForNonExistence(timeout: 5))

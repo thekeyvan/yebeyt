@@ -70,7 +70,7 @@ struct ReaderView: View {
     /// At the left edge, in the middle of the screen. `.trailing` is the physical left in right-to-left.
     private func rail(_ theme: ReaderTheme) -> some View {
         ProgressRail(index: model.index, count: model.couplets.count, theme: theme)
-            .padding(.trailing, 14)
+            .padding(.trailing, 17)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
             .ignoresSafeArea()
             .allowsHitTesting(false)
@@ -96,6 +96,8 @@ struct ReaderView: View {
             TextSheet { model.textSheetOpen = false }
                 .transition(.move(edge: .bottom))
         }
+        .accessibilityAddTraits(.isModal)
+        .accessibilityAction(.escape) { model.textSheetOpen = false }
     }
 
     @ViewBuilder private var toast: some View {

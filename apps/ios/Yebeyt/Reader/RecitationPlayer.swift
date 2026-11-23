@@ -28,6 +28,7 @@ final class RecitationPlayer {
     @ObservationIgnored private var player: AVPlayer?
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var statusObserver: NSKeyValueObservation?
+    @ObservationIgnored private var controlObserver: NSKeyValueObservation?
     @ObservationIgnored private var endObserver: (any NSObjectProtocol)?
     @ObservationIgnored private var startTask: Task<Void, Never>?
 
@@ -67,6 +68,7 @@ final class RecitationPlayer {
             startTask?.cancel()
             state = .idle
         case .idle:
+            state = .loading  // at once, so a second tap before the task runs cancels instead of starting another
             startTask = Task { await start() }
         }
     }
@@ -87,6 +89,7 @@ final class RecitationPlayer {
                 list = recitations
             } else {
                 list = try await fetchRecitations()
+                try Task.checkCancellation()
                 recitations = list
             }
             guard let recitation = list.first else {
@@ -100,8 +103,9 @@ final class RecitationPlayer {
             }
             try Task.checkCancellation()
             begin(recitation.mp3Url)
-        } catch is CancellationError {
-            state = .idle
+        } catch where Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled {
+            // Stopped while loading: nothing went wrong, so no «خوانش باز نشد».
+            if state == .loading { state = .idle }
         } catch {
             fail()
         }
@@ -120,6 +124,10 @@ final class RecitationPlayer {
         endObserver = NotificationCenter.default.addObserver(forName: AVPlayerItem.didPlayToEndTimeNotification, object: item, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.finish() }
         }
+        // The system can pause the audio itself (a call, Siri, headphones unplugged) and resume it; follow it.
+        controlObserver = player.observe(\.timeControlStatus) { [weak self] _, _ in
+            Task { @MainActor in self?.timeControlChanged() }
+        }
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] time in
             MainActor.assumeIsolated { self?.tick(time.seconds) }
         }
@@ -127,6 +135,20 @@ final class RecitationPlayer {
         state = .playing
         registerRemoteCommands()
         publishNowPlaying()
+    }
+
+    private func timeControlChanged() {
+        guard let player else { return }
+        switch (player.timeControlStatus, state) {
+        case (.paused, .playing):
+            state = .paused
+            publishNowPlaying()
+        case (.playing, .paused):
+            state = .playing
+            publishNowPlaying()
+        default:
+            break
+        }
     }
 
     private func tick(_ seconds: Double) {
@@ -154,8 +176,10 @@ final class RecitationPlayer {
         timeObserver = nil
         endObserver = nil
         statusObserver = nil
+        controlObserver = nil
         player?.pause()
         player = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         let commands = MPRemoteCommandCenter.shared()
         commands.playCommand.removeTarget(nil)
         commands.pauseCommand.removeTarget(nil)

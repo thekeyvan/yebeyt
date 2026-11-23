@@ -29,7 +29,7 @@ struct ReaderHeader: View {
                         .accessibilityIdentifier("readerSubtitle")
                 }
                 .frame(maxWidth: .infinity)
-                circle(label: "بازی با این بیت", action: playWithCouplet) {
+                circle(label: "بازی با این غزل", action: playWithCouplet) {
                     LineIcon(shape: GamesIcon(), size: 20, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.lapis)
                 }
                 .disabled(!isLoaded)

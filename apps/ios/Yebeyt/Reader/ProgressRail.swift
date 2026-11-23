@@ -29,6 +29,7 @@ struct ProgressRail: View {
                 .foregroundStyle(theme.secondary)
                 .padding(.top, 4)
                 .fixedSize()
+                .frame(width: 5)  // the text is wider than the bars and spills over both sides, so the rail's inset stays the board's
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(ReaderText.progressLabel(index: index, count: count))

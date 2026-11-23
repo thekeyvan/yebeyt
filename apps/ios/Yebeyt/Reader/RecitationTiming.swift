@@ -64,7 +64,8 @@ private final class SyncReader: NSObject, XMLParserDelegate {
         case "VerseOrder": verse = value
         case "AudioMiliseconds": milliseconds = value
         case "SyncInfo":
-            if let verse, let milliseconds, !finished { starts.append(.init(verse: verse, milliseconds: milliseconds)) }
+            // Real files end with a marker entry whose VerseOrder is negative (-2); it starts no verse.
+            if let verse, verse >= 0, let milliseconds, !finished { starts.append(.init(verse: verse, milliseconds: milliseconds)) }
             verse = nil
             milliseconds = nil
         case "PoemAudio":

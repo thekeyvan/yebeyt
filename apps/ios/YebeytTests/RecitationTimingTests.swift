@@ -60,6 +60,20 @@ struct RecitationTimingTests {
         #expect(timing.couplet(at: 10, in: ghazal) == 1)
     }
 
+    @Test func negativeVerseOrdersAreSkipped() throws {
+        let xml = """
+        <A><PoemAudio><SyncArray>
+        <SyncInfo><VerseOrder>0</VerseOrder><AudioMiliseconds>0</AudioMiliseconds></SyncInfo>
+        <SyncInfo><VerseOrder>2</VerseOrder><AudioMiliseconds>9000</AudioMiliseconds></SyncInfo>
+        <SyncInfo><VerseOrder>-2</VerseOrder><AudioMiliseconds>40000</AudioMiliseconds></SyncInfo>
+        </SyncArray></PoemAudio></A>
+        """
+        let timing = try RecitationTiming(xml: Data(xml.utf8))
+        #expect(timing.starts.map(\.verse) == [0, 2])
+        // The end marker would otherwise read as verse -2 and send the text back to the first couplet.
+        #expect(timing.couplet(at: 45, in: ghazal) == 1)
+    }
+
     @Test func aFileWithoutTimingsIsRejected() {
         #expect(throws: RecitationTiming.ParseError.self) { try RecitationTiming(xml: Data("<A/>".utf8)) }
         #expect(throws: RecitationTiming.ParseError.self) { try RecitationTiming(xml: Data("not xml".utf8)) }

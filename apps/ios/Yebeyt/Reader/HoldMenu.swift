@@ -10,23 +10,56 @@ struct HoldMenu: View {
     let dismiss: () -> Void
     let playWithCouplet: () -> Void
 
+    /// The board puts the lifted couplet 258pt below the top of the screen (844pt tall).
+    private static let boardTop: CGFloat = 258
+    private static let bottomMargin: CGFloat = 24
+
+    @State private var menuHeight: CGFloat = 0
+
     var body: some View {
-        ZStack(alignment: .top) {
-            Tokens.Colors.ink.opacity(0.38)
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture(perform: dismiss)
-                .accessibilityHidden(true)
-            VStack(spacing: 12) {
-                lifted
-                icons
-                list
+        GeometryReader { screen in
+            ZStack(alignment: .top) {
+                Tokens.Colors.ink.opacity(0.38)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: dismiss)
+                    .accessibilityHidden(true)
+                ScrollView {
+                    menu
+                        .background {
+                            GeometryReader { proxy in
+                                Color.clear.onAppear { menuHeight = proxy.size.height }
+                                    .onChange(of: proxy.size.height) { _, new in menuHeight = new }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, top(screenHeight: screen.size.height, safeTop: screen.safeAreaInsets.top))
+                        .padding(.bottom, Self.bottomMargin)
+                        // The scroll view fills the screen, so a tap on its empty part has to dismiss too.
+                        .frame(maxWidth: .infinity, minHeight: screen.size.height, alignment: .top)
+                        .background(Color.clear.contentShape(Rectangle()).onTapGesture(perform: dismiss))
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .scrollIndicators(.hidden)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 262)
             .accessibilityElement(children: .contain)
             .accessibilityLabel("کارهای این بیت")
+            .accessibilityAddTraits(.isModal)
+            .accessibilityAction(.escape, dismiss)
         }
+        .ignoresSafeArea()
+    }
+
+    private var menu: some View {
+        VStack(spacing: 12) {
+            lifted
+            icons
+            list
+        }
+    }
+
+    /// The board's top, moved up on a short screen so the whole menu stays in view (never above the status bar).
+    private func top(screenHeight: CGFloat, safeTop: CGFloat) -> CGFloat {
+        max(min(Self.boardTop, screenHeight - menuHeight - Self.bottomMargin), safeTop + 8)
     }
 
     /// The held couplet: bigger, tilted, with a long shadow, like a sticker in the hand.

@@ -94,7 +94,7 @@ private struct CoupletPage: View {
             .foregroundStyle(Tokens.Colors.lapis)
             .padding(.horizontal, 16)
             .padding(.vertical, 7)
-            .background(Capsule().fill(ReaderStyle.lapisTint))
+            .background(Capsule().fill(Tokens.Colors.lapisTint))
         }
         .buttonStyle(.plain)
     }

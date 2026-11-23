@@ -1,15 +1,5 @@
 import SwiftUI
 
-/// Colours the reader boards use that are not role colours.
-enum ReaderStyle {
-    /// The light lapis of the «معنی این بیت» chip and the idle play button.
-    static let lapisTint = Color(hex: 0xE8E9FF)
-    /// A font chip's border when it is not chosen.
-    static let chipBorder = Color(hex: 0xEEEBF2)
-    /// The slider track and the theme chips' border.
-    static let trackLight = Color(hex: 0xE6E3EC)
-}
-
 /// The play / pause button of a couplet: lapis with two bars while playing, light lapis with a triangle when not.
 struct PlayToggle: View {
     let player: RecitationPlayer
@@ -21,7 +11,7 @@ struct PlayToggle: View {
             player.toggle()
         } label: {
             ZStack {
-                Circle().fill(on ? Tokens.Colors.lapis : ReaderStyle.lapisTint)
+                Circle().fill(on ? Tokens.Colors.lapis : Tokens.Colors.lapisTint)
                 if on {
                     HStack(spacing: 3) {
                         RoundedRectangle(cornerRadius: 2).frame(width: 3.5, height: 12)

@@ -53,8 +53,9 @@ struct TextSheet: View {
                                 .foregroundStyle(chosen ? Tokens.Colors.lapis : Tokens.Colors.muted)
                         }
                         .frame(width: 72)
-                        .padding(EdgeInsets(top: 6, leading: 0, bottom: 5, trailing: 0))
-                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(chosen ? Tokens.Colors.lapis : ReaderStyle.chipBorder, lineWidth: 3))
+                        // The board's chip: 72pt of content, 4pt padding and a 3pt border each side, so 86pt in all.
+                        .padding(EdgeInsets(top: 6 + 3, leading: 4 + 3, bottom: 5 + 3, trailing: 4 + 3))
+                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(chosen ? Tokens.Colors.lapis : Tokens.Colors.chipBorder, lineWidth: 3))
                         .background(RoundedRectangle(cornerRadius: 16).fill(Tokens.Colors.white))
                     }
                     .buttonStyle(.plain)
@@ -103,7 +104,7 @@ struct TextSheet: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: 14).fill(theme.background))
-                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(chosen ? Tokens.Colors.lapis : ReaderStyle.trackLight, lineWidth: 3))
+                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(chosen ? Tokens.Colors.lapis : Tokens.Colors.trackLight, lineWidth: 3))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(theme.title)
@@ -173,7 +174,7 @@ private struct SizeSlider: View {
         GeometryReader { proxy in
             let width = proxy.size.width
             ZStack(alignment: .leading) {
-                Capsule().fill(ReaderStyle.trackLight).frame(height: 6)
+                Capsule().fill(Tokens.Colors.trackLight).frame(height: 6)
                 Capsule().fill(Tokens.Colors.lapis).frame(width: width * fraction, height: 6)
                     .offset(x: width * (1 - fraction))
                 Circle().fill(Tokens.Colors.white)

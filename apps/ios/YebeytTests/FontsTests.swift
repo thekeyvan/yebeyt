@@ -14,4 +14,10 @@ struct FontsTests {
     func fontFileIsBundled(token: FontToken) {
         #expect(Bundle.main.url(forResource: token.file, withExtension: nil) != nil)
     }
+
+    @Test("the reader's text sheet fonts load by PostScript name", arguments: Tokens.ReaderFonts.all)
+    func readerFontLoads(token: FontToken) {
+        #expect(UIFont(name: token.postScript, size: 17) != nil, "\(token.postScript) is not registered")
+        #expect(Bundle.main.url(forResource: token.file, withExtension: nil) != nil)
+    }
 }

@@ -22,13 +22,13 @@ enum ReaderFont: String, CaseIterable, Codable, Sendable {
     func postScript(bold: Bool) -> String {
         switch self {
         case .parastoo: bold ? Tokens.Fonts.poem.postScript : Tokens.Fonts.poemRegular.postScript
-        case .naskh: "NotoNaskhArabic-Regular"
-        case .nastaliq: "NotoNastaliqUrdu-Regular"
-        case .gandom: "Gandom-WOL"
-        case .markazi: "MarkaziText-Regular"
-        case .shabnam: "Shabnam-WOL"
-        case .sahel: "Sahel-WOL"
-        case .vazir: "Vazirmatn-Regular"
+        case .naskh: Tokens.ReaderFonts.naskh.postScript
+        case .nastaliq: Tokens.ReaderFonts.nastaliq.postScript
+        case .gandom: Tokens.ReaderFonts.gandom.postScript
+        case .markazi: Tokens.ReaderFonts.markazi.postScript
+        case .shabnam: Tokens.ReaderFonts.shabnam.postScript
+        case .sahel: Tokens.ReaderFonts.sahel.postScript
+        case .vazir: Tokens.ReaderFonts.vazir.postScript
         }
     }
 
@@ -79,30 +79,27 @@ enum ReaderTheme: String, CaseIterable, Codable, Sendable {
     var background: Color {
         switch self {
         case .light: Tokens.Colors.white
-        case .paper: Self.boardPaper
+        case .paper: Tokens.Colors.boardPaper
         case .dark: Tokens.Colors.ink
         }
     }
 
     /// The text colour: ink on light and paper, paper on ink.
     var foreground: Color {
-        self == .dark ? Self.boardPaper : Tokens.Colors.ink
+        self == .dark ? Tokens.Colors.boardPaper : Tokens.Colors.ink
     }
 
     /// Quieter text: the subtitle, the progress count.
     var secondary: Color {
-        isDark ? Self.boardPaper.opacity(0.65) : Tokens.Colors.muted
+        isDark ? Tokens.Colors.boardPaper.opacity(0.65) : Tokens.Colors.muted
     }
 
     /// The part of the progress rail that is not read yet.
     var track: Color {
-        isDark ? Self.boardPaper.opacity(0.2) : Tokens.Colors.ring
+        isDark ? Tokens.Colors.boardPaper.opacity(0.2) : Tokens.Colors.ring
     }
 
     var isDark: Bool { self == .dark }
-
-    /// The reader boards' paper (#F7F5F0), a little lighter than the dotted sheet's.
-    static let boardPaper = Color(hex: 0xF7F5F0)
 }
 
 /// The settings of the «آ» sheet. They apply to both reading modes and are kept on the phone.

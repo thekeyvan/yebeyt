@@ -21,7 +21,10 @@ def swift(t):
     L += ["    }", "", "    enum Fonts {"]
     for k, v in t["fonts"].items():
         L.append(f'        static let {k} = FontToken(file: "{v["file"]}", postScript: "{v["postScript"]}", sizeAdjust: {num(v["sizeAdjust"])})')
-    L += ["        static let all = [" + ", ".join(t["fonts"]) + "]", "    }", "", "    enum Sticker {"]
+    L += ["        static let all = [" + ", ".join(t["fonts"]) + "]", "    }", "", "    /// The fonts of the reader's text sheet besides Parastoo (which is `Fonts.poem` and `Fonts.poemRegular`).", "    enum ReaderFonts {"]
+    for k, v in t["readerFonts"].items():
+        L.append(f'        static let {k} = FontToken(file: "{v["file"]}", postScript: "{v["postScript"]}", sizeAdjust: {num(v["sizeAdjust"])})')
+    L += ["        static let all = [" + ", ".join(t["readerFonts"]) + "]", "    }", "", "    enum Sticker {"]
     for group in ("borderWidth", "radius", "tilt", "scale"):
         L.append(f"        enum {group[0].upper()}{group[1:]} {{")
         L += [f"            static let {k}: CGFloat = {num(v)}" for k, v in t["sticker"][group].items()]

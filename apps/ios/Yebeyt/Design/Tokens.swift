@@ -35,6 +35,10 @@ enum Tokens {
         static let muted = Color(hex: 0x4A4660)
         static let ring = Color(hex: 0xDAD6E2)
         static let gameRing = Color(hex: 0xC9CBF5)
+        static let lapisTint = Color(hex: 0xE8E9FF)
+        static let chipBorder = Color(hex: 0xEEEBF2)
+        static let trackLight = Color(hex: 0xE6E3EC)
+        static let boardPaper = Color(hex: 0xF7F5F0)
     }
 
     enum Fonts {
@@ -43,6 +47,18 @@ enum Tokens {
         static let poem = FontToken(file: "Parastoo-Bold.ttf", postScript: "Parastoo-Bold", sizeAdjust: 0.84)
         static let poemRegular = FontToken(file: "Parastoo.ttf", postScript: "Parastoo-WOL", sizeAdjust: 0.84)
         static let all = [title, ui, poem, poemRegular]
+    }
+
+    /// The fonts of the reader's text sheet besides Parastoo (which is `Fonts.poem` and `Fonts.poemRegular`).
+    enum ReaderFonts {
+        static let naskh = FontToken(file: "NotoNaskhArabic.ttf", postScript: "NotoNaskhArabic-Regular", sizeAdjust: 1.0)
+        static let nastaliq = FontToken(file: "NotoNastaliqUrdu.ttf", postScript: "NotoNastaliqUrdu-Regular", sizeAdjust: 1.0)
+        static let gandom = FontToken(file: "Gandom.ttf", postScript: "Gandom-WOL", sizeAdjust: 1.0)
+        static let markazi = FontToken(file: "MarkaziText.ttf", postScript: "MarkaziText-Regular", sizeAdjust: 1.0)
+        static let shabnam = FontToken(file: "Shabnam.ttf", postScript: "Shabnam-WOL", sizeAdjust: 1.0)
+        static let sahel = FontToken(file: "Sahel.ttf", postScript: "Sahel-WOL", sizeAdjust: 1.0)
+        static let vazir = FontToken(file: "Vazirmatn.ttf", postScript: "Vazirmatn-Regular", sizeAdjust: 1.0)
+        static let all = [naskh, nastaliq, gandom, markazi, shabnam, sahel, vazir]
     }
 
     enum Sticker {
