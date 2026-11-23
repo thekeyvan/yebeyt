@@ -48,6 +48,8 @@ The full rules are on the `StickerSystem` board. In short:
 
 **Long names.** Poets have a short display name; full names appear on their own pages. In the Explore poet row the label is a fixed width and wraps to a second line under the name; the avatar always stays a circle. Book titles wrap to two lines.
 
+**Pictures that grow over time** (poet portraits now; later book covers, game art and the like). The phone has a default for every item; for poets it is a sticker circle in the poet's colour with the first letter of their name. The real picture comes from the server (api.yebeyt.com on Railway) and, once loaded, is kept on the phone, so new pictures appear without an app update, and with no network the saved or default picture shows. The 16 ready portraits in `design/poets` go only to the server, not into the app. Pictures are uploaded with a script at first, later from the admin dashboard. Slice 2 builds Explore with the defaults; slice 4 adds the picture endpoint and loading them in the app.
+
 **Library (row ۲).** All books (search, continue reading, type chips, grid) → one book (cover, continue, random poem, sections) → a section's list (search, sort by number / last letter / most read; read and in-progress marks) → the poem.
 
 **Games (rows ۴ and ۵).** Nine games, each with its own icon: معمای امروز (missing word from letter stickers, 3 tries, streak), جورچین بیت, حدس شاعر (four faces with names), مصراع دوم, از کدوم کتاب؟ (poet shown, pick the book), معنی‌یاب (match words to meanings), گوش کن (recitation with the text hidden; answers are hemistichs, since most poems have no title), مشاعره and بازی رودررو (with friends). Nothing teaches during the timer; after every answer, right or wrong, a sheet shows the full couplet, a one-line meaning, poet and book, with «کل شعر / نگه دار / بفرست» and a big «بیت بعدی». The round ends with a list of its couplets and an invitation to challenge someone (`ChallengeSend`). Leaderboard: plain rows, medals for 1–3, your own row tinted, no podium. Show scores per face; never "x : y" or "۸ / ۱۰" (they reorder in right-to-left text); write «۸ از ۱۰».
@@ -76,7 +78,7 @@ One slice per branch, each reviewed before the next starts. The lead confirms th
 1. **Poetry data and reading** (row ۳): the data pipeline from Ganjoor's repositories into bundled data, the poem models, then the reader: shared header and toggle, whole poem, «آ» sheet, long-press.
 2. **Home, Explore, Library** (row ۲).
 3. **Solo games** (row ۴), starting with جورچین and معمای امروز, scores kept on the phone; the after-answer sheet; then the other solo games.
-4. **New server, onboarding, account gate, username** (row ۱): `apps/server` on Railway with Sign in with Apple and Google, usernames and the `packages/api` contract.
+4. **New server, onboarding, account gate, username** (row ۱): `apps/server` on Railway with Sign in with Apple and Google, usernames, the poet pictures endpoint (and loading them in the app) and the `packages/api` contract.
 5. **Me** (row ۷): profile, divan (with sync), privacy, avatar.
 6. **Feedback** (row ۸), with the server endpoint, privacy label and policy text.
 7. **Server for friends**: friends, scores and leaderboard, games with friends (live over WebSocket), messages.
