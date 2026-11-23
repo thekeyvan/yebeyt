@@ -16,11 +16,12 @@ const FRIENDS_MAX = 100;
 const rowSchema = z
   .object({
     rank: z.number().int().min(1),
-    username: z.string().nullable().openapi({ description: "Null for someone who has not chosen a username yet." }),
+    username: z.string().nullable().openapi({ description: "Null for someone who has not chosen a username yet, and when `hidden`." }),
     displayName: z.string().nullable(),
     avatar: avatarSchema.nullable(),
     points: z.number().int(),
     isMe: z.boolean(),
+    hidden: z.boolean().openapi({ description: "League only: a stranger who keeps off the global leaderboard. Show «یه نفر»; username, name and picture are null, the points are real." }),
   })
   .openapi("LeaderboardRow");
 const week = z.string().openapi({ example: "2026-W23", description: "The Tehran week, Saturday to Friday." });
@@ -64,7 +65,7 @@ export function leaderboardRoutes(deps: Deps) {
       tags: ["leaderboard"],
       summary: "My league this week",
       description:
-        "Groups of up to 30 people of one tier. The first score of a week puts me in a group of the tier I earned last week (tier 0 to begin with). " +
+        "Groups of up to 30 people of one tier. A stranger in the group who is not on the global list is `hidden`: no username, name or picture (the app shows «یه نفر»), but their points and rank are real; friends and people on the global list show normally. The first score of a week puts me in a group of the tier I earned last week (tier 0 to begin with). " +
         "At the week's end the top 5 move up a tier and the bottom 5 down (ties go to the earlier last score). Before my first score of the week `rows` is empty and `tier` is the one I will start in.",
       security,
       responses: responses(leagueSchema, "The standings."),
@@ -78,14 +79,25 @@ export function leaderboardRoutes(deps: Deps) {
       if (mine) {
         const totals = weekTotals(db, current, sql`${scoreEvents.userId} in (select user_id from league_members where group_id = ${mine.groupId})`);
         const points = sql<number>`coalesce(${totals.points}, 0)`;
+        // A stranger who is not on the global list shows as «یه نفر»: the points count, the person stays unnamed.
+        const hidden = sql<boolean>`(${users.id} <> ${userId} and not coalesce(${privacySettings.inGlobalLeaderboard}, false) and ${users.id} not in ${friendIdsOf(userId)})`;
         const found = await db
-          .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar, points })
+          .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar, points, hidden })
           .from(leagueMembers)
           .innerJoin(users, eq(users.id, leagueMembers.userId))
+          .leftJoin(privacySettings, eq(privacySettings.userId, leagueMembers.userId))
           .leftJoin(totals, eq(totals.userId, leagueMembers.userId))
           .where(eq(leagueMembers.groupId, mine.groupId))
           .orderBy(desc(points), asc(totals.lastAt), asc(users.id));
-        rows = found.map((r, i) => ({ rank: i + 1, username: r.username, displayName: r.displayName, avatar: r.avatar, points: r.points, isMe: r.id === userId }));
+        rows = found.map((r, i) => ({
+          rank: i + 1,
+          username: r.hidden ? null : r.username,
+          displayName: r.hidden ? null : r.displayName,
+          avatar: r.hidden ? null : r.avatar,
+          points: r.points,
+          isMe: r.id === userId,
+          hidden: r.hidden,
+        }));
       }
       return c.json(
         {
@@ -124,7 +136,7 @@ export function leaderboardRoutes(deps: Deps) {
         .where(circle)
         .orderBy(desc(points), asc(users.username), asc(users.id))
         .limit(FRIENDS_MAX);
-      const rows = found.map((r, i) => ({ rank: i + 1, username: r.username, displayName: r.displayName, avatar: r.avatar, points: r.points, isMe: r.id === userId }));
+      const rows = found.map((r, i) => ({ rank: i + 1, username: r.username, displayName: r.displayName, avatar: r.avatar, points: r.points, isMe: r.id === userId, hidden: false }));
       return c.json({ week: current, rows }, 200);
     },
   );
@@ -164,7 +176,7 @@ export function leaderboardRoutes(deps: Deps) {
         .limit(PAGE + 1);
       const first = after?.rank ?? 0;
       const page = found.slice(0, PAGE);
-      const toRow = (r: (typeof found)[number], rank: number) => ({ rank, username: r.username, displayName: r.displayName, avatar: r.avatar, points: r.points, isMe: r.id === userId });
+      const toRow = (r: (typeof found)[number], rank: number) => ({ rank, username: r.username, displayName: r.displayName, avatar: r.avatar, points: r.points, isMe: r.id === userId, hidden: false });
       const rows = page.map((r, i) => toRow(r, first + i + 1));
       const last = page.at(-1);
 

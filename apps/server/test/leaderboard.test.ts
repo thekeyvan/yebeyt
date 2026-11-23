@@ -44,15 +44,15 @@ describe("friends leaderboard", () => {
     const board = await friends(ali.token);
     expect(board.week).toBe("2026-W23");
     expect(board.rows).toEqual([
-      { rank: 1, username: "sara", displayName: null, avatar: null, points: 300, isMe: false },
-      { rank: 2, username: "ali", displayName: null, avatar: null, points: 100, isMe: true },
-      { rank: 3, username: "reza", displayName: null, avatar: null, points: 0, isMe: false },
+      { rank: 1, username: "sara", displayName: null, avatar: null, points: 300, isMe: false, hidden: false },
+      { rank: 2, username: "ali", displayName: null, avatar: null, points: 100, isMe: true, hidden: false },
+      { rank: 3, username: "reza", displayName: null, avatar: null, points: 0, isMe: false, hidden: false },
     ]);
   });
 
   it("shows only me when I have no friends, and needs sign-in", async () => {
     const ali = await h.signUp("ali");
-    expect((await friends(ali.token)).rows).toEqual([{ rank: 1, username: "ali", displayName: null, avatar: null, points: 0, isMe: true }]);
+    expect((await friends(ali.token)).rows).toEqual([{ rank: 1, username: "ali", displayName: null, avatar: null, points: 0, isMe: true, hidden: false }]);
     expect((await h.request("/v1/leaderboard/friends")).status).toBe(401);
   });
 

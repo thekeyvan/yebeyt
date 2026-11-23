@@ -13,7 +13,7 @@ const befriend = async (a: User, b: User) => {
   await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
   await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
 };
-const react = (u: User, kind: "like" | "repost", key: string, method = "PUT") => h.request(`/v1/reactions/${kind}`, { method, token: u.token, json: { key } });
+const react = (u: User, kind: "like" | "repost", key: string, method = "PUT") => h.request(`/v1/reactions/${kind}?key=${encodeURIComponent(key)}`, { method, token: u.token });
 const daily = (u: User, solved: boolean, tries: number, date = "2026-06-01") => h.request("/v1/daily", { method: "POST", token: u.token, json: { date, solved, tries } });
 const feed = async (u: User, cursor?: string) => {
   const res = await h.request(`/v1/feed${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, { token: u.token });
@@ -99,14 +99,23 @@ describe("GET /v1/feed", () => {
     expect((await feed(ali)).items.map((i) => [i.type, i.user.username])).toEqual([["daily", "sara"]]);
   });
 
-  it("still shows likes and reposts of a friend whose daily is private", async () => {
+  it("keeps the two switches apart: keptVisibility hides likes and reposts, dailyVisibility hides the daily", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara");
+    const reza = await h.signUp("reza");
     await befriend(ali, sara);
-    await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { dailyVisibility: "me", keptVisibility: "me" } });
-    await daily(sara, true, 1);
-    await react(sara, "like", "/a/b#1");
-    expect((await feed(ali)).items.map((i) => i.type)).toEqual(["like"]);
+    await befriend(ali, reza);
+    await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { dailyVisibility: "me" } });
+    await h.request("/v1/me/privacy", { method: "PUT", token: reza.token, json: { keptVisibility: "me" } });
+    for (const u of [sara, reza]) {
+      await daily(u, true, 1);
+      await react(u, "like", "/a/b#1");
+      await react(u, "repost", "/a/b#2");
+    }
+    const items = (await feed(ali)).items.map((i) => `${i.type}:${i.user.username}`).sort();
+    expect(items).toEqual(["daily:reza", "like:sara", "repost:sara"]);
+    await h.request("/v1/me/privacy", { method: "PUT", token: reza.token, json: { keptVisibility: "friends" } });
+    expect((await feed(ali)).items).toHaveLength(5);
   });
 
   it("pages 30 at a time, without skipping items that share a second", async () => {

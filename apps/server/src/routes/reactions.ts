@@ -12,7 +12,7 @@ const security = [{ bearerAuth: [] }];
 const MAX_KEYS = 50;
 
 const kindSchema = z.enum(["like", "repost"]);
-const bodySchema = z.strictObject({ key: coupletKeySchema }).openapi("ReactionRequest");
+const keyQuery = z.object({ key: coupletKeySchema.openapi({ description: "The couplet key; the `#` must be percent-encoded (`%23`)." }) });
 const countsSchema = z
   .object({ likes: z.number().int(), reposts: z.number().int(), likedByMe: z.boolean(), repostedByMe: z.boolean() })
   .openapi("ReactionCounts");
@@ -54,10 +54,7 @@ export function reactionRoutes(deps: Deps) {
   const app = newRouter();
   const { db } = deps;
   const limiter = createRateLimiter(120, 60_000, deps.now);
-  const request = {
-    params: z.object({ kind: kindSchema }),
-    body: { required: true, content: { "application/json": { schema: bodySchema } } },
-  };
+  const request = { params: z.object({ kind: kindSchema }), query: keyQuery };
   const responses = {
     200: { description: "The couplet's counts after the change.", content: { "application/json": { schema: countsSchema } } },
     400: errorResponse("invalid_request: a bad kind or key."),
@@ -71,7 +68,7 @@ export function reactionRoutes(deps: Deps) {
       path: "/v1/reactions/{kind}",
       tags: ["reactions"],
       summary: "Like or repost a couplet",
-      description: "`kind` is `like` or `repost`. Idempotent. A reaction is social by nature: friends see it in their feed. Reposting a couplet is only this reaction.",
+      description: "`kind` is `like` or `repost`. Idempotent. The couplet is the `key` query parameter (no body). A reaction is social by nature: friends see it in their feed. Reposting a couplet is only this reaction.",
       security,
       request,
       responses,
@@ -79,7 +76,7 @@ export function reactionRoutes(deps: Deps) {
     async (c) => {
       const userId = c.get("userId");
       if (!limiter.take(userId)) throw new ApiError(429, "rate_limited");
-      const { key } = c.req.valid("json");
+      const { key } = c.req.valid("query");
       await db.insert(reactions).values({ userId, key, kind: c.req.valid("param").kind, createdAt: deps.now() }).onConflictDoNothing();
       return c.json((await countsFor(db, userId, [key]))[key]!, 200);
     },
@@ -91,7 +88,7 @@ export function reactionRoutes(deps: Deps) {
       path: "/v1/reactions/{kind}",
       tags: ["reactions"],
       summary: "Take back a like or a repost",
-      description: "Idempotent.",
+      description: "Idempotent. The couplet is the `key` query parameter (no body).",
       security,
       request,
       responses,
@@ -99,7 +96,7 @@ export function reactionRoutes(deps: Deps) {
     async (c) => {
       const userId = c.get("userId");
       if (!limiter.take(userId)) throw new ApiError(429, "rate_limited");
-      const { key } = c.req.valid("json");
+      const { key } = c.req.valid("query");
       await db.delete(reactions).where(and(eq(reactions.userId, userId), eq(reactions.key, key), eq(reactions.kind, c.req.valid("param").kind)));
       return c.json((await countsFor(db, userId, [key]))[key]!, 200);
     },

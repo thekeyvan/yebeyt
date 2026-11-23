@@ -49,8 +49,8 @@ export function feedRoutes(deps: Deps) {
       tags: ["feed"],
       summary: "What my friends did: the home «دوستات» feed",
       description:
-        "Newest first, 30 a page, from friends only (people who follow each other). Likes and reposts are always shown, since they are social by nature. " +
-        "A friend's solved daily puzzle is shown only when their `dailyVisibility` is `friends`. Taking back a like, or ending the friendship, removes the item.",
+        "Newest first, 30 a page, from friends only (people who follow each other). A friend's likes and reposts are shown only when their `keptVisibility` is `friends` (the switch that also hides their divan). " +
+        "Their solved daily puzzles are shown only when their `dailyVisibility` is `friends`. Taking back a like, or ending the friendship, removes the item.",
       security,
       request: { query: z.object({ cursor: cursorSchema.optional() }) },
       responses: {
@@ -83,7 +83,14 @@ export function feedRoutes(deps: Deps) {
           tie: reactionTie.as("tie"),
         })
         .from(reactions)
-        .where(and(sql`${reactions.userId} in ${friends}`, before(sql`${reactions.createdAt}`, reactionTie)));
+        .where(
+          and(
+            sql`${reactions.userId} in ${friends}`,
+            // The switch that keeps a friend's divan to themselves also keeps their likes and reposts out of the feed.
+            sql`not exists (select 1 from privacy_settings p where p.user_id = ${reactions.userId} and p.kept_visibility = 'me')`,
+            before(sql`${reactions.createdAt}`, reactionTie),
+          ),
+        );
       const fromDaily = db
         .select({
           kind: sql<string>`'daily'::text`.as("kind"),

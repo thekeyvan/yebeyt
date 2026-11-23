@@ -12,6 +12,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -183,10 +184,14 @@ export const scoreEvents = pgTable(
     points: integer("points").notNull(),
     playedAt: timestamptz("played_at").notNull(),
     week: text("week").notNull(),
+    /** The Tehran day the round was played, for the daily puzzle only (it counts once a day). */
+    day: date("day", { mode: "string" }),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
   (t) => [
     check("score_events_points", sql`${t.points} >= 0`),
+    uniqueIndex("score_events_daily_once").on(t.userId, t.day).where(sql`${t.game} = 'daily'`),
+    uniqueIndex("score_events_onboarding_once").on(t.userId).where(sql`${t.game} = 'onboarding'`),
     index("score_events_user_week").on(t.userId, t.week),
     index("score_events_week_user").on(t.week, t.userId, t.points),
   ],

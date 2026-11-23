@@ -75,6 +75,7 @@ export function scoreRoutes(deps: Deps) {
       summary: "Report a finished round",
       description:
         "Idempotent on `roundId` (the same user sending it again gets the stored result and nothing is added; another user's round id is 409 `conflict`). " +
+        "`daily` counts once per user per Tehran day (of `playedAt`) and `onboarding` once per user ever: a second round of either, with a new `roundId`, is 409 `conflict`. " +
         "`points` over the game's cap is 400 `points_too_high` (daily 100, jigsaw 320, poet, second and book 440, match 50, listen 100, onboarding 50). " +
         "`playedAt` must be within the last 48 hours and at most 5 minutes ahead (400 `bad_timestamp`). The round counts for the Tehran week the server receives it in, " +
         "and the first score of a week puts the user in a league group.",
@@ -83,7 +84,7 @@ export function scoreRoutes(deps: Deps) {
       responses: {
         200: { description: "The week and the user's points this week.", content: { "application/json": { schema: scoreResultSchema } } },
         400: errorResponse("invalid_request, points_too_high or bad_timestamp."),
-        409: errorResponse("conflict: the round id belongs to another user."),
+        409: errorResponse("conflict: the round id belongs to another user, or a daily / onboarding round already counted."),
         ...limits,
       },
     }),
@@ -103,14 +104,18 @@ export function scoreRoutes(deps: Deps) {
       const added = await db.transaction(async (tx) => {
         const inserted = await tx
           .insert(scoreEvents)
-          .values({ id: body.roundId, userId, game: body.game, points: body.points, playedAt, week, createdAt: now })
+          .values({ id: body.roundId, userId, game: body.game, points: body.points, playedAt, week, day: body.game === "daily" ? tehranDate(playedAt) : null, createdAt: now })
           .onConflictDoNothing()
           .returning({ id: scoreEvents.id });
-        if (inserted.length === 0) return false; // the same round arrived twice at once
+        if (inserted.length === 0) return false; // the same round arrived twice at once, or the daily of that day / the onboarding round is already in
         await joinLeague(tx, userId, week);
         return true;
       });
-      if (!added) return c.json((await stored(userId, body.roundId))!, 200);
+      if (!added) {
+        const same = await stored(userId, body.roundId);
+        if (!same) throw new ApiError(409, "conflict"); // another round of a game that counts once
+        return c.json(same, 200);
+      }
       return c.json({ week, weekPoints: await weekPointsOf(db, userId, week) }, 200);
     },
   );

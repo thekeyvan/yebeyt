@@ -15,6 +15,7 @@ const NEXT_WEEK = "2026-W24";
 const minutes = (n: number) => new Date(h.clock.time.getTime() + n * 60_000).toISOString();
 const score = (token: string, points: number) =>
   h.request("/v1/scores", { method: "POST", token, json: { roundId: randomUUID(), game: "poet", points, playedAt: minutes(-1) } });
+const allowGlobal = (token: string) => h.request("/v1/me/privacy", { method: "PUT", token, json: { inGlobalLeaderboard: true } });
 const league = async (token: string) => {
   const res = await h.request("/v1/leaderboard/league", { token });
   expect(res.status).toBe(200);
@@ -22,7 +23,7 @@ const league = async (token: string) => {
     week: string;
     tier: number;
     endsAt: string;
-    rows: { rank: number; username: string | null; displayName: string | null; avatar: unknown; points: number; isMe: boolean }[];
+    rows: { rank: number; username: string | null; displayName: string | null; avatar: unknown; points: number; isMe: boolean; hidden: boolean }[];
     promoteCount: number;
     demoteCount: number;
   };
@@ -52,6 +53,7 @@ describe("joining a league", () => {
   it("puts a user in a group of tier 0 on their first score of the week, and shows the standings", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara", { displayName: "سارا" });
+    await allowGlobal(sara.token);
     const before = await league(ali.token);
     expect(before).toMatchObject({ week: WEEK, tier: 0, rows: [], promoteCount: 5, demoteCount: 5, endsAt: "2026-06-05T20:30:00.000Z" });
 
@@ -61,17 +63,45 @@ describe("joining a league", () => {
     const board = await league(ali.token);
     expect(board.tier).toBe(0);
     expect(board.rows).toEqual([
-      { rank: 1, username: "sara", displayName: "سارا", avatar: null, points: 150, isMe: false },
-      { rank: 2, username: "ali", displayName: null, avatar: null, points: 120, isMe: true },
+      { rank: 1, username: "sara", displayName: "سارا", avatar: null, points: 150, isMe: false, hidden: false },
+      { rank: 2, username: "ali", displayName: null, avatar: null, points: 120, isMe: true, hidden: false },
     ]);
     const members = await h.db.select().from(leagueMembers);
     expect(members).toHaveLength(2);
     expect(new Set(members.map((m) => m.groupId)).size).toBe(1);
   });
 
+  it("shows strangers who keep off the global list as hidden: points and rank, no name", async () => {
+    const ali = await h.signUp("ali");
+    const friend = await h.signUp("friend", { displayName: "دوست" });
+    const open = await h.signUp("open");
+    const stranger = await h.signUp("stranger", { displayName: "غریبه" });
+    const oneWay = await h.signUp("oneway"); // follows me only: still a stranger
+    await h.request("/v1/follows/friend", { method: "PUT", token: ali.token });
+    await h.request("/v1/follows/ali", { method: "PUT", token: friend.token });
+    await h.request("/v1/follows/ali", { method: "PUT", token: oneWay.token });
+    await allowGlobal(open.token);
+    await h.request("/v1/me/avatar", { method: "PUT", token: stranger.token, json: { face: "f1", eyes: "e1", hair: "h1", mouth: "m1", accessory: "a1", background: "b1" } });
+    for (const [u, points] of [[ali, 10], [friend, 20], [open, 30], [stranger, 40], [oneWay, 50]] as const) await score(u.token, points);
+
+    const rows = (await league(ali.token)).rows;
+    expect(rows).toEqual([
+      { rank: 1, username: null, displayName: null, avatar: null, points: 50, isMe: false, hidden: true },
+      { rank: 2, username: null, displayName: null, avatar: null, points: 40, isMe: false, hidden: true },
+      { rank: 3, username: "open", displayName: null, avatar: null, points: 30, isMe: false, hidden: false },
+      { rank: 4, username: "friend", displayName: "دوست", avatar: null, points: 20, isMe: false, hidden: false },
+      { rank: 5, username: "ali", displayName: null, avatar: null, points: 10, isMe: true, hidden: false },
+    ]);
+    // I am hidden to the stranger, who sees me as «یه نفر» too (I keep off the list), and sees themselves.
+    const theirs = (await league(stranger.token)).rows;
+    expect(theirs.find((r) => r.points === 10)).toMatchObject({ username: null, hidden: true });
+    expect(theirs.find((r) => r.points === 40)).toMatchObject({ username: "stranger", displayName: "غریبه", isMe: true, hidden: false });
+  });
+
   it("breaks ties by the earlier last score", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara");
+    await allowGlobal(sara.token);
     await score(ali.token, 50);
     h.clock.time = new Date(h.clock.time.getTime() + 60_000);
     await score(sara.token, 50);

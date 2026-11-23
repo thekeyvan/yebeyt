@@ -22,7 +22,7 @@ const profileSchema = shortPersonSchema
     isFollowing: z.boolean(),
     followsYou: z.boolean(),
     isFriend: z.boolean(),
-    league: z.object({ tier: z.number().int().min(0).max(4) }).nullable().openapi({ description: "This week's tier; null before their first score of the week." }),
+    league: z.object({ tier: z.number().int().min(0).max(4) }).nullable().openapi({ description: "This week's tier; null before their first score of the week, and for a stranger who keeps off the global leaderboard (same rule as `weekPoints`)." }),
     weekPoints: z.number().int().nullable().openapi({ description: "Only for a friend, for yourself, or someone who allows the global leaderboard; else null." }),
   })
   .openapi("PublicProfile");
@@ -86,7 +86,7 @@ export function peopleRoutes(deps: Deps) {
       tags: ["friends"],
       summary: "A person's public profile",
       description:
-        "Name, avatar, how many friends they have, how we follow each other and their league tier this week. Their points this week are given only to a friend, to themselves " +
+        "Name, avatar, how many friends they have, how we follow each other. Their league tier and points this week are given only to a friend, to themselves " +
         "and when they allow the global leaderboard.",
       security,
       request: { params: z.object({ username: usernameSchema }) },
@@ -116,6 +116,7 @@ export function peopleRoutes(deps: Deps) {
           ),
         leagueOf(db, person.id, week),
       ]);
+      // Tier and points follow one rule: a friend, yourself, or someone who allows the global leaderboard.
       const sharesPoints = relation.isFriend || person.id === me || privacy?.inGlobal === true;
       return c.json(
         {
@@ -124,7 +125,7 @@ export function peopleRoutes(deps: Deps) {
           avatar: person.avatar,
           friendsCount: count!.n,
           ...relation,
-          league: league ? { tier: league.tier } : null,
+          league: league && sharesPoints ? { tier: league.tier } : null,
           weekPoints: sharesPoints ? await weekPointsOf(db, person.id, week) : null,
         },
         200,

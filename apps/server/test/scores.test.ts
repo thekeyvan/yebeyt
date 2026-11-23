@@ -86,6 +86,41 @@ describe("POST /v1/scores", () => {
     }
   });
 
+  it("counts the daily once per user per Tehran day, and onboarding once ever", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    const roundId = randomUUID();
+    expect((await postScore(ali.token, { roundId, game: "daily", points: 100 })).status).toBe(200);
+    // The same round again is a retry, not a second daily.
+    expect(await (await postScore(ali.token, { roundId, game: "daily", points: 100 })).json()).toEqual({ week: "2026-W23", weekPoints: 100 });
+    const second = await postScore(ali.token, { game: "daily", points: 40 });
+    expect(second.status).toBe(409);
+    expect(await second.json()).toEqual({ error: "conflict" });
+    // Yesterday's daily (Tehran) is another day; another user's today is another user.
+    expect((await postScore(ali.token, { game: "daily", points: 70, playedAt: minutes(-24 * 60) })).status).toBe(200);
+    expect((await postScore(sara.token, { game: "daily", points: 70 })).status).toBe(200);
+    expect((await stats(ali.token)).totalPoints).toBe(170);
+
+    expect((await postScore(ali.token, { game: "onboarding", points: 50 })).status).toBe(200);
+    expect((await postScore(ali.token, { game: "onboarding", points: 10 })).status).toBe(409);
+    h.clock.time = new Date(h.clock.time.getTime() + 40 * 24 * 3_600_000); // weeks later: still once
+    const later = (await h.signIn("g-ali")).accessToken;
+    expect((await postScore(later, { game: "onboarding", points: 10 })).status).toBe(409);
+    const saraLater = (await h.signIn("g-sara")).accessToken;
+    expect((await postScore(saraLater, { game: "onboarding", points: 10 })).status).toBe(200);
+    expect((await stats(later)).totalPoints).toBe(220);
+  });
+
+  it("splits the daily by Tehran midnight (20:30 UTC), not UTC midnight", async () => {
+    await h.signUp("ali");
+    h.clock.time = new Date("2026-06-01T21:00:00Z"); // 00:30 on 2 June in Tehran
+    const token = (await h.signIn("g-ali")).accessToken;
+    expect((await postScore(token, { game: "daily", points: 50, playedAt: "2026-06-01T20:29:00Z" })).status).toBe(200); // 1 June
+    expect((await postScore(token, { game: "daily", points: 50, playedAt: "2026-06-01T20:31:00Z" })).status).toBe(200); // 2 June
+    expect((await postScore(token, { game: "daily", points: 50, playedAt: "2026-06-01T20:40:00Z" })).status).toBe(409);
+    expect((await postScore(token, { game: "daily", points: 50, playedAt: "2026-06-01T10:00:00Z" })).status).toBe(409); // 1 June again
+  });
+
   it("limits how fast one user may report (120 a minute)", async () => {
     const ali = await h.signUp("ali");
     let last = 200;

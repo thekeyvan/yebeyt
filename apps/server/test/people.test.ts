@@ -53,11 +53,20 @@ describe("GET /v1/users/{username}", () => {
     expect(await (await profile(sara.token, "ali")).json()).toMatchObject({ friendsCount: 1, isFollowing: true, followsYou: true });
   });
 
-  it("shows the league tier once they have scored this week", async () => {
+  it("shows the league tier like the points: to a friend or when they allow the global list, else null", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara");
+    const reza = await h.signUp("reza");
+    expect((await (await profile(ali.token, "sara")).json()).league).toBeNull(); // not scored yet
     await score(sara.token, 50);
+    await score(reza.token, 50);
+    expect((await (await profile(ali.token, "sara")).json()).league).toBeNull(); // an opted-out stranger
+    await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { inGlobalLeaderboard: true } });
     expect((await (await profile(ali.token, "sara")).json()).league).toEqual({ tier: 0 });
+    await befriend(ali, reza);
+    expect((await (await profile(ali.token, "reza")).json()).league).toEqual({ tier: 0 });
+    await score(ali.token, 5);
+    expect((await (await profile(ali.token, "ali")).json()).league).toEqual({ tier: 0 }); // yourself
   });
 
   it("gives the week's points to a friend, to yourself, and when they allow the global list; else null", async () => {

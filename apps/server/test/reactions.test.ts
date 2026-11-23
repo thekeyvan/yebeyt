@@ -8,8 +8,8 @@ beforeEach(async () => {
 
 const K1 = "/hafez/ghazal/sh3#0";
 const K2 = "/saadi/ghazal/sh1#4";
-const react = (token: string, method: "PUT" | "DELETE", kind: string, key: unknown) =>
-  h.request(`/v1/reactions/${kind}`, { method, token, json: { key } });
+const react = (token: string, method: "PUT" | "DELETE", kind: string, key: string) =>
+  h.request(`/v1/reactions/${kind}?key=${encodeURIComponent(key)}`, { method, token });
 const counts = async (token: string, keys: string[]) => {
   const res = await h.request(`/v1/reactions/counts?keys=${encodeURIComponent(keys.join(","))}`, { token });
   expect(res.status).toBe(200);
@@ -18,8 +18,9 @@ const counts = async (token: string, keys: string[]) => {
 
 describe("reactions", () => {
   it("requires sign-in", async () => {
-    expect((await h.request("/v1/reactions/like", { method: "PUT", json: { key: K1 } })).status).toBe(401);
-    expect((await h.request("/v1/reactions/like", { method: "DELETE", json: { key: K1 } })).status).toBe(401);
+    const q = `?key=${encodeURIComponent(K1)}`;
+    expect((await h.request(`/v1/reactions/like${q}`, { method: "PUT" })).status).toBe(401);
+    expect((await h.request(`/v1/reactions/like${q}`, { method: "DELETE" })).status).toBe(401);
     expect((await h.request(`/v1/reactions/counts?keys=${encodeURIComponent(K1)}`)).status).toBe(401);
   });
 
@@ -71,11 +72,15 @@ describe("reactions", () => {
     expect(await res.json()).toEqual({ error: "invalid_request" });
   });
 
-  it("rejects bad keys, kinds and bodies", async () => {
+  it("rejects bad keys and kinds, and a missing key", async () => {
     const ali = await h.signUp("ali");
-    for (const key of ["", "nope", "/hafez#x", 5, null]) expect((await react(ali.token, "PUT", "like", key)).status, String(key)).toBe(400);
-    expect((await react(ali.token, "PUT", "love", K1)).status).toBe(400);
-    expect((await h.request("/v1/reactions/like", { method: "PUT", token: ali.token, json: { key: K1, extra: 1 } })).status).toBe(400);
+    for (const method of ["PUT", "DELETE"] as const) {
+      for (const key of ["", "nope", "/hafez#x"]) expect((await react(ali.token, method, "like", key)).status, `${method} ${key}`).toBe(400);
+      expect((await h.request("/v1/reactions/like", { method, token: ali.token })).status).toBe(400);
+      expect((await react(ali.token, method, "love", K1)).status).toBe(400);
+    }
+    // The key is not read from a body any more.
+    expect((await h.request("/v1/reactions/like", { method: "PUT", token: ali.token, json: { key: K1 } })).status).toBe(400);
     for (const keys of ["", "nope", `${K1},`, `${K1},bad`]) {
       expect((await h.request(`/v1/reactions/counts?keys=${encodeURIComponent(keys)}`, { token: ali.token })).status, keys).toBe(400);
     }

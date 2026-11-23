@@ -19,8 +19,8 @@ describe("DELETE /v1/me with social data", () => {
     for (const u of [ali, sara]) {
       await h.request("/v1/scores", { method: "POST", token: u.token, json: { roundId: randomUUID(), game: "poet", points: 50, playedAt: h.clock.time.toISOString() } });
       await h.request("/v1/daily", { method: "POST", token: u.token, json: { date: "2026-06-01", solved: true, tries: 1 } });
-      await h.request("/v1/reactions/like", { method: "PUT", token: u.token, json: { key: "/a/b#1" } });
-      await h.request("/v1/reactions/repost", { method: "PUT", token: u.token, json: { key: "/a/b#1" } });
+      await h.request("/v1/reactions/like?key=%2Fa%2Fb%231", { method: "PUT", token: u.token });
+      await h.request("/v1/reactions/repost?key=%2Fa%2Fb%231", { method: "PUT", token: u.token });
     }
     await closeWeek(h.db, "2026-W23", h.clock.time); // gives both a tier
 
