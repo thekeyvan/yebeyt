@@ -2,29 +2,38 @@
 
 This file is the one source of rules for every coding agent on this repo: Claude Code, Codex and GitHub Copilot. `CLAUDE.md` and `.github/copilot-instructions.md` only point here.
 
-yebeyt («یه بیت») is a Persian poetry app for iOS. Version 1.0 (a calm reader) is on the App Store. We are now building **yebeyt 2.0**: a sticker-style redesign with games, friends and messages. The design and every product decision for it are in [docs/yebeyt-2.md](docs/yebeyt-2.md). Read that before planning any 2.0 work.
+yebeyt («یه بیت») is a Persian poetry app with games, friends and messages, in a sticker style. It is being built **from scratch** as a monorepo: iOS first, then the server, the website and links; a web app, an admin dashboard and Android come later. No earlier code or user data is carried over (the old 1.0 app was never distributed; it lives only in git history, `main` before the foundations slice). The design and every product decision are in [docs/yebeyt-2.md](docs/yebeyt-2.md). Read that before planning any work.
 
 ## Repo map
 
+Folders are added only when their first slice lands.
+
 | Path | What |
 |---|---|
-| `Yebeyt/` | SwiftUI app (iOS 17+, XcodeGen `project.yml`, target `Yebeyt`). `App/`, `Core/`, `Art/`, `Features/`, `UI/`, `Resources/` |
-| `server/` | Backend at api.yebeyt.com: Hono + TypeScript + Postgres; Sign in with Apple and Google, divan sync. Hosted on Railway |
-| `site/` | yebeyt.com (static, Cloudflare Pages): home, privacy, terms, support |
-| `design/canvas/` | The 2.0 design: one HTML file per screen in `project/`, the scripts that make them, and their `README.md` |
-| `tools/` | Scripts that build the bundled poetry data, icons and app icon |
+| `apps/ios/` | SwiftUI app (iOS 17+, Swift 6, XcodeGen `project.yml`, targets `Yebeyt` and `YebeytTests`, bundle id `com.yebeyt.app`) |
+| `apps/server/` | (slice 4) Backend at api.yebeyt.com: TypeScript, Hono, Postgres, Drizzle, Zod/OpenAPI, WebSocket for live games. Hosted on Railway |
+| `apps/web/` | (slice 9) Next.js: yebeyt.com, the link pages `/c` `/i` `/g`, apple-app-site-association; later the web app. Hosted on Railway |
+| `apps/admin/`, `apps/android/` | (later) Admin dashboard (Next.js), Android (Kotlin + Jetpack Compose) |
+| `packages/tokens/` | `tokens.json`: the one source of colours, fonts and sticker sizes. `tools/make_tokens.py` writes the platform files from it |
+| `packages/api/` | (slice 4) The OpenAPI contract; clients for each platform are generated from it |
+| `assets/fonts/` | Every font file and its licence (`licenses/`). Apps take the fonts they use from here |
+| `design/canvas/` | The design: one HTML file per screen in `project/`, the scripts that make them, and their `README.md` |
+| `tools/` | Scripts: tokens, agent roles, poetry data from Ganjoor, icons and app icon |
+
+JavaScript and TypeScript packages will share one pnpm workspace with Turborepo, added with the first such package.
 
 ## Build and check
 
-- iOS (needs a Mac with Xcode 26 and `brew install xcodegen`):
+- iOS (needs a Mac with Xcode 26 or later and `brew install xcodegen`):
   ```bash
-  xcodegen generate
-  xcodebuild -project Yebeyt.xcodeproj -scheme Yebeyt -destination 'platform=iOS Simulator,name=iPhone 17' build
+  cd apps/ios && xcodegen generate
+  xcodebuild test -project Yebeyt.xcodeproj -scheme Yebeyt -destination 'platform=iOS Simulator,name=iPhone 17'
   ```
-  Use any simulator from `xcrun simctl list devices available`. The unit test target is not there yet; adding it (`YebeytTests` in `project.yml`, run with `xcodebuild test`) is the first 2.0 slice.
-- Server: `cd server && npm ci && npm run build`. The server has no tests yet either; the slice that first changes it adds them (`node --test`).
+  Use any simulator from `xcrun simctl list devices available`.
+- Tokens: after editing `packages/tokens/tokens.json`, run `python3 tools/make_tokens.py`; `python3 tools/make_tokens.py --check` fails when a generated file is out of date. Never edit generated token files by hand.
+- Server (from slice 4): its own tests run with the server's test command, documented in `apps/server/`.
 - Design canvas: see `design/canvas/README.md`. Edit the `gen_*.py` scripts, never the boards by hand.
-- Debug launch arguments open a screen directly, which helps for simulator screenshots: `-beytSkip YES`, `-beytTab library|me`, `-beytRoute poem:<url>|mood:<key>|book:<url>|fal|search`, `-beytSheet poet:<slug>|share:<url>|font`.
+- Debug launch arguments open a screen directly, which helps for simulator screenshots: `-beytTab home|explore|games|messages|me`, `-beytUnread <n>` (unread badge), `-beytRoute stickers` (the sticker sheet). Each slice adds its own and lists them here.
 
 ## Rules
 
@@ -37,9 +46,9 @@ Product:
 
 Code and data:
 - Keep files small and simple. No dead code, no speculative abstractions. Handle errors at the boundaries.
-- Never commit secrets: `Config/Local.xcconfig`, `.p8` keys, tokens, `.env` files. Never commit user data or Ganjoor reader comments.
-- Fonts and poetry data keep their own licences; add any new font's licence next to it and to `THIRD_PARTY_NOTICES.md`.
-- Host services on Railway, never Vercel.
+- Never commit secrets: `apps/ios/Config/Local.xcconfig`, `.p8` keys, tokens, `.env` files. Never commit user data or Ganjoor reader comments.
+- Poetry data comes from Ganjoor's public repositories (github.com/ganjoor). Fonts and poetry data keep their own licences; add any new font to `assets/fonts/` with its licence in `assets/fonts/licenses/` and a row in `THIRD_PARTY_NOTICES.md`.
+- Host every service on Railway (server, web, admin, databases), never Vercel.
 
 Git:
 - Commit with the GitHub no-reply address. On a new machine, once: `git config user.email 5063636+thekeyvan@users.noreply.github.com`.

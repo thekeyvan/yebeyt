@@ -1,11 +1,13 @@
 # yebeyt 2.0 · what we are building
 
-Many look-alike Persian poetry apps launched in 2026. yebeyt 2.0 sets itself apart with a playful personality: games, a small circle of friends, and messages, around the same calm reader. The design was settled screen by screen with the owner; this file is the decision record for building it. Anything not written here or on a board is still open: ask the user, don't invent.
+Many look-alike Persian poetry apps launched in 2026. yebeyt 2.0 sets itself apart with a playful personality: games, a small circle of friends, and messages, around a calm reader. The design was settled screen by screen with the owner; this file is the decision record for building it. Anything not written here or on a board is still open: ask the user, don't invent.
+
+It is a new app built from scratch, in a monorepo (layout in `AGENTS.md`). Nothing from the earlier 1.0 code or its server is reused and there is no earlier user data to migrate; 1.0 was never distributed. 2.0 ships as the same App Store app (`com.yebeyt.app`). iOS comes first; the web app, admin dashboard and Android come after the iOS slices and are not designed yet.
 
 ## Where the design lives
 
 - Every screen is a board in `design/canvas/project/<Name>.dc.html` (390×844, one phone screen each). `design/canvas/project/canvas.json` holds each board's title and number.
-- To look at boards, render them to PNG from the repo root: `mkdir -p /tmp/shots && python3 -I design/canvas/shoot.py design /tmp/shots Poem.dc.html Calm.dc.html` (needs Google Chrome on a Mac; it maps the canvas font URLs to the files in `design/canvas/fonts/` and `Yebeyt/Resources/Fonts/`). Read the HTML for exact sizes, colours and copy.
+- To look at boards, render them to PNG from the repo root: `mkdir -p /tmp/shots && python3 -I design/canvas/shoot.py design /tmp/shots Poem.dc.html Calm.dc.html` (needs Google Chrome on a Mac; it maps the canvas font URLs to the files in `design/canvas/fonts/` and `assets/fonts/`). Read the HTML for exact sizes, colours and copy.
 - The live canvas (private, owner only) is https://claude.ai/artifact/JiaDy1vekUMDw6QxCTJNoH. The repo copy is the same content.
 - Board numbers like «۴-۲» mean row 4, screen 2. The rows:
 
@@ -31,7 +33,8 @@ The full rules are on the `StickerSystem` board. In short:
 - Stickers have a white border (3–5 pt) and a soft shadow (about `0 3 10` at 18% ink). No ink outlines.
 - Cards, buttons, badges and text are always straight. Only decorative stickers tilt 5–12°, two or three per screen at most. One peeled corner per screen at most, on a big card. A sticker you are holding is bigger, tilted, with a longer shadow.
 - Dotted paper background, like a sticker sheet. The home tab (آروم) has a plain background.
-- Fonts: titles **Lalezar**, interface **Vazirmatn**, poems **Parastoo Bold** (`design/canvas/fonts/Parastoo-Bold.ttf`, OFL; add it to `Yebeyt/Resources/Fonts/` with its licence). The text sheet also offers regular Parastoo.
+- Fonts: titles **Lalezar**, interface **Vazirmatn**, poems **Parastoo Bold** (the default poem font). The text sheet also offers regular Parastoo. All four live in `assets/fonts/` with their OFL licences.
+- Tab bar: the `nav()` function in `design/canvas/gen_explore.py` is its exact spec (white card, raised round «بازی» in the middle, avatar on «من», unread badge on «پیام‌ها»). Until avatars exist (slice 5) «من» shows our own line icon in the same ring.
 - Icons are our own (the app's line icons and the game icons in `design/canvas/gameicons.py`: round stickers, white border, one colour per game). No SF Symbols in the visible design.
 - Tabs: خونه · کاوش · بازی · پیام‌ها · من.
 
@@ -63,22 +66,24 @@ The full rules are on the `StickerSystem` board. In short:
 | یه بازی پیشنهاد بدم | no | text only |
 | خوشم اومد | no | text only |
 
-Technical info is shown as one collapsed row «اطلاعات فنی · ببین چیه», only on bug reports. App version and phone model go with every type, silently. Never send text typed elsewhere, messages, phone number, IP or location. Shake can be turned off in settings. Shipping this needs the App Store privacy label (Diagnostics, Product Interaction) and a clause in the privacy policy (site/privacy).
+Technical info is shown as one collapsed row «اطلاعات فنی · ببین چیه», only on bug reports. App version and phone model go with every type, silently. Never send text typed elsewhere, messages, phone number, IP or location. Shake can be turned off in settings. Shipping this needs the App Store privacy label (Diagnostics, Product Interaction) and a clause in the privacy policy (on the new website, slice 9; until then the policy text is kept with the feedback slice).
 
 ## Build order
 
 One slice per branch, each reviewed before the next starts. The lead confirms the order with the user before starting.
 
-0. **Foundations**: `YebeytTests` unit test target; design tokens (colours, fonts with Parastoo Bold, sticker card/button/badge styles, dotted background); the new tab bar.
-1. **Reading** (row ۳) on the existing reader: shared header and toggle, whole poem, «آ» sheet, long-press.
+0. **Foundations**: remove the old code; the monorepo layout; the new iOS app (`apps/ios`, iOS 17+, Swift 6) with the `YebeytTests` target; design tokens from `packages/tokens/tokens.json` (colours, the four fonts, sticker card/button/badge/word-sticker styles, dotted background); the new tab bar with empty tabs.
+1. **Poetry data and reading** (row ۳): the data pipeline from Ganjoor's repositories into bundled data, the poem models, then the reader: shared header and toggle, whole poem, «آ» sheet, long-press.
 2. **Home, Explore, Library** (row ۲).
 3. **Solo games** (row ۴), starting with جورچین and معمای امروز, scores kept on the phone; the after-answer sheet; then the other solo games.
-4. **Onboarding, account gate, username** (row ۱), with the server work for usernames.
-5. **Me** (row ۷): profile, divan, privacy, avatar.
+4. **New server, onboarding, account gate, username** (row ۱): `apps/server` on Railway with Sign in with Apple and Google, usernames and the `packages/api` contract.
+5. **Me** (row ۷): profile, divan (with sync), privacy, avatar.
 6. **Feedback** (row ۸), with the server endpoint, privacy label and policy text.
-7. **Server for friends**: friends, scores and leaderboard, games with friends, messages.
+7. **Server for friends**: friends, scores and leaderboard, games with friends (live over WebSocket), messages.
 8. **Playing with friends and messages** (rows ۵ and ۶), shared divan.
-9. **Links**: Universal Links, the web fallback page in `site/`, App Clip, deferred links, invite friends.
+9. **Website and links**: `apps/web` (yebeyt.com, privacy, terms, support, the fallback pages), Universal Links, App Clip, deferred links, invite friends.
+
+After these: the web app, the admin dashboard and Android, each designed first.
 
 ## Still open (ask the user)
 
