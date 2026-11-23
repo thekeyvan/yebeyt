@@ -63,6 +63,9 @@ enum Tokens {
             static let word: CGFloat = 7
             static let decorative: CGFloat = 5
         }
+        enum Scale {
+            static let held: CGFloat = 1.1
+        }
         enum Shadow {
             static let card = ShadowToken(y: 3, blur: 10, opacity: 0.18)
             static let button = ShadowToken(y: 3, blur: 10, opacity: 0.25)

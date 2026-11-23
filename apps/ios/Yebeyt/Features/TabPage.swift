@@ -9,7 +9,6 @@ struct TabPage: View {
         Text(tab.title)
             .font(.title(titleSize))
             .foregroundStyle(Tokens.Colors.ink)
-            .frame(height: titleSize * 1.05)
             .accessibilityAddTraits(.isHeader)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(.horizontal, 18)

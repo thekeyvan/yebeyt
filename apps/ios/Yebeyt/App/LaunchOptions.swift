@@ -4,7 +4,7 @@ import Foundation
 /// Debug launch arguments, for opening a screen straight away (simulator screenshots):
 /// `-beytTab home|explore|games|messages|me`, `-beytUnread <n>`, `-beytRoute stickers`.
 /// Values that don't parse are ignored.
-struct LaunchOptions: Equatable {
+struct LaunchOptions {
     enum Route: String { case stickers }
 
     private(set) var tab: Tab?

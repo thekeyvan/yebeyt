@@ -22,7 +22,7 @@ def swift(t):
     for k, v in t["fonts"].items():
         L.append(f'        static let {k} = FontToken(file: "{v["file"]}", postScript: "{v["postScript"]}", sizeAdjust: {num(v["sizeAdjust"])})')
     L += ["        static let all = [" + ", ".join(t["fonts"]) + "]", "    }", "", "    enum Sticker {"]
-    for group in ("borderWidth", "radius", "tilt"):
+    for group in ("borderWidth", "radius", "tilt", "scale"):
         L.append(f"        enum {group[0].upper()}{group[1:]} {{")
         L += [f"            static let {k}: CGFloat = {num(v)}" for k, v in t["sticker"][group].items()]
         L.append("        }")

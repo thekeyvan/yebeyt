@@ -30,7 +30,7 @@ struct StickerBadge: View {
         .padding(.horizontal, 11)
         .padding(.vertical, 3)
         .sticker(fill: fill, radius: Tokens.Sticker.Radius.pill, border: Tokens.Sticker.BorderWidth.badge, shadow: Tokens.Sticker.Shadow.badge)
-        .rotationEffect(.degrees(tilt))
+        .tilted(tilt)
     }
 
     private var fill: Color {
@@ -54,7 +54,7 @@ struct StickerBadge: View {
     }
 }
 
-/// A word on a sticker sheet: loose on the sheet, stuck in place, held in the hand (tilted, longer shadow) or correct.
+/// A word on a sticker sheet: loose on the sheet, stuck in place, held in the hand (bigger, tilted, longer shadow) or correct.
 struct WordSticker: View {
     enum Status { case onSheet, stuck, held, correct }
 
@@ -63,13 +63,15 @@ struct WordSticker: View {
 
     var body: some View {
         let loose = status == .onSheet
+        let held = status == .held
         Text(word)
             .font(.poem(21))
             .fixedSize()
             .foregroundStyle(textColor)
             .padding(EdgeInsets(top: 0, leading: loose ? 14 : 12, bottom: loose ? 4 : 2, trailing: loose ? 14 : 12))
             .sticker(fill: fill, radius: Tokens.Sticker.Radius.word, border: loose ? 0 : Tokens.Sticker.BorderWidth.word, shadow: shadow)
-            .rotationEffect(.degrees(status == .held ? Double(Tokens.Sticker.Tilt.word) : 0))
+            .scaleEffect(held ? Tokens.Sticker.Scale.held : 1)
+            .tilted(held ? Double(Tokens.Sticker.Tilt.word) : 0)
     }
 
     private var fill: Color {

@@ -15,7 +15,7 @@ struct StickerSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 logo
                 colours
                 section("حروف") { type }
@@ -30,11 +30,16 @@ struct StickerSheet: View {
 
     private var logo: some View {
         HStack(spacing: 16) {
+            // The board's mark (150×120): lapis on the right, fire on the left, both 76×96. Left-to-right
+            // inside so the offsets and tilts are the board's own.
             ZStack {
-                blank(Tokens.Colors.lapis, tilt: -7).offset(x: 14)
-                blank(Tokens.Colors.fire, tilt: 6).offset(x: -14, y: 8)
+                blank(Tokens.Colors.lapis, tilt: -7).offset(x: 37, y: -8)
+                blank(Tokens.Colors.fire, tilt: 6).offset(x: -37, y: 4)
             }
-            .frame(width: 80, height: 56)
+            .frame(width: 150, height: 120)
+            .scaleEffect(0.6)
+            .frame(width: 90, height: 72)
+            .environment(\.layoutDirection, .leftToRight)
             VStack(alignment: .leading, spacing: 2) {
                 Text("یه بیت").font(.title(44)).frame(height: 44 * 0.95)
                 Text("هر بیت، یه بازی.").font(.ui(14, weight: .medium))
@@ -46,9 +51,11 @@ struct StickerSheet: View {
     }
 
     private func blank(_ colour: Color, tilt: Double) -> some View {
-        RoundedRectangle(cornerRadius: 8).fill(Tokens.Colors.white).frame(width: 30, height: 4).padding(.vertical, 18).padding(.horizontal, 10)
-            .sticker(fill: colour, radius: 14, border: 4, shadow: Tokens.Sticker.Shadow.button)
-            .rotationEffect(.degrees(tilt))
+        RoundedRectangle(cornerRadius: 5).fill(Tokens.Colors.white).frame(width: 40, height: 9)
+            .frame(width: 76, height: 96)
+            .background(RoundedRectangle(cornerRadius: 16).fill(colour).padding(6))
+            .background(RoundedRectangle(cornerRadius: 22).fill(Tokens.Colors.white).stickerShadow(ShadowToken(y: 4, blur: 12, opacity: 0.25)))
+            .tilted(tilt)
     }
 
     private var colours: some View {
@@ -59,7 +66,7 @@ struct StickerSheet: View {
                     Text(swatch.hex).font(.ui(9))
                 }
                 .foregroundStyle(swatch.light ? Tokens.Colors.white : Tokens.Colors.ink)
-                .frame(maxWidth: .infinity, minHeight: 30, alignment: .bottomLeading)
+                .frame(maxWidth: .infinity, minHeight: 26, alignment: .bottomLeading)
                 .padding(4)
                 .sticker(fill: swatch.fill, radius: Tokens.Sticker.Radius.card, border: Tokens.Sticker.BorderWidth.card, shadow: Tokens.Sticker.Shadow.card)
             }
@@ -72,7 +79,7 @@ struct StickerSheet: View {
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
+        .padding(6)
         .stickerCard()
     }
 
@@ -108,8 +115,8 @@ struct StickerSheet: View {
     }
 
     private var words: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 2), spacing: 10) {
-            ForEach([("روی برگه", WordSticker.Status.onSheet), ("چسبیده", .stuck), ("دسته", .held), ("درست بود", .correct)], id: \.0) { label, status in
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 2), spacing: 2) {
+            ForEach([("روی برگه", WordSticker.Status.onSheet), ("دستته", .held), ("چسبیده", .stuck), ("درست بود", .correct)], id: \.0) { label, status in
                 VStack(alignment: .leading, spacing: 4) {
                     WordSticker(word: "گوهرند", status: status)
                     Text(label).font(.ui(12)).foregroundStyle(Tokens.Colors.muted)

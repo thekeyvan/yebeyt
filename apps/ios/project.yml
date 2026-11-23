@@ -11,6 +11,8 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: 2.0.0
+    CURRENT_PROJECT_VERSION: 1
     TARGETED_DEVICE_FAMILY: "1"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -33,6 +35,8 @@ targets:
         CFBundleDisplayName: یه بیت
         CFBundleDevelopmentRegion: fa
         CFBundleLocalizations: [fa]
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UIAppFonts:
           - Lalezar-Regular.ttf
           - Vazirmatn.ttf
@@ -54,6 +58,16 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yebeyt.app.tests
         GENERATE_INFOPLIST_FILE: YES
+  YebeytUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [YebeytUITests]
+    dependencies:
+      - target: Yebeyt
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yebeyt.app.uitests
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   Yebeyt:
     build:
@@ -66,3 +80,4 @@ schemes:
       config: Debug
       targets:
         - YebeytTests
+        - YebeytUITests

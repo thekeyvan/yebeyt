@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Our own icons, drawn in a 24×24 box (hand-translated from the SVG paths in design/canvas/gen_explore.py).
-/// A shape scales that box to its frame.
+/// A shape scales that box to its frame. They are never mirrored in right-to-left (`.fixed`): the paper plane,
+/// the magnifier and the flame keep their direction.
 private struct Box {
     let scale: CGFloat
     let origin: CGPoint
@@ -26,6 +27,8 @@ private struct Box {
 
 /// خونه
 struct HomeIcon: Shape {
+    var layoutDirectionBehavior: LayoutDirectionBehavior { .fixed }
+
     func path(in rect: CGRect) -> Path {
         let b = Box(rect)
         var p = Path()
@@ -45,6 +48,8 @@ struct HomeIcon: Shape {
 
 /// کاوش
 struct ExploreIcon: Shape {
+    var layoutDirectionBehavior: LayoutDirectionBehavior { .fixed }
+
     func path(in rect: CGRect) -> Path {
         let b = Box(rect)
         var p = Path()
@@ -57,6 +62,8 @@ struct ExploreIcon: Shape {
 
 /// بازی (a game controller; the two buttons are tiny circles that the stroke turns into dots)
 struct GamesIcon: Shape {
+    var layoutDirectionBehavior: LayoutDirectionBehavior { .fixed }
+
     func path(in rect: CGRect) -> Path {
         let b = Box(rect)
         var p = Path()
@@ -73,6 +80,8 @@ struct GamesIcon: Shape {
 
 /// پیام‌ها
 struct MessagesIcon: Shape {
+    var layoutDirectionBehavior: LayoutDirectionBehavior { .fixed }
+
     func path(in rect: CGRect) -> Path {
         let b = Box(rect)
         var p = Path()
@@ -89,6 +98,8 @@ struct MessagesIcon: Shape {
 
 /// من: a head and shoulders (until avatars exist)
 struct PersonIcon: Shape {
+    var layoutDirectionBehavior: LayoutDirectionBehavior { .fixed }
+
     func path(in rect: CGRect) -> Path {
         let b = Box(rect)
         var p = Path()
@@ -101,6 +112,8 @@ struct PersonIcon: Shape {
 
 /// The streak flame (filled).
 struct FlameShape: Shape {
+    var layoutDirectionBehavior: LayoutDirectionBehavior { .fixed }
+
     func path(in rect: CGRect) -> Path {
         let b = Box(rect)
         var p = Path()
@@ -118,6 +131,8 @@ struct FlameShape: Shape {
 
 /// The points star (filled).
 struct StarShape: Shape {
+    var layoutDirectionBehavior: LayoutDirectionBehavior { .fixed }
+
     func path(in rect: CGRect) -> Path {
         let b = Box(rect)
         var p = Path()
