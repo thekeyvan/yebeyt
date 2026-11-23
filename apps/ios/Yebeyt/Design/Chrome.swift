@@ -1,0 +1,125 @@
+import SwiftUI
+
+/// The round white button of the screen headers (back, bookmark): 44pt, soft shadow.
+struct RoundButton<Content: View>: View {
+    let label: String
+    let action: () -> Void
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        Button(action: action) {
+            content
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(Tokens.Colors.white).shadow(color: Tokens.Colors.ink.opacity(0.16), radius: 4, x: 0, y: 2))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+}
+
+/// The back button of pushed screens: a round button with the chevron pointing right.
+struct BackButton: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        RoundButton(label: "برگشت", action: { dismiss() }) {
+            LineIcon(shape: ChevronRightIcon(), size: 20, lineWidth: 2.6, fill: nil).foregroundStyle(Tokens.Colors.ink)
+        }
+        .accessibilityIdentifier("back")
+    }
+}
+
+/// The header of Library, Section and similar screens: back button, title (Lalezar 30) and a small line under it.
+struct ScreenHeader: View {
+    let title: String
+    var subtitle: String?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            BackButton()
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title).font(.title(30)).foregroundStyle(Tokens.Colors.ink).lineLimit(2)
+                    .accessibilityAddTraits(.isHeader)
+                if let subtitle {
+                    Text(subtitle).font(.ui(12)).foregroundStyle(Tokens.Colors.muted)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+/// «شاعرها … همه»: a Lalezar heading with a link at the other end.
+struct SectionHeading: View {
+    let title: String
+    var link: String?
+    var destination: Destination?
+
+    var body: some View {
+        HStack {
+            Text(title).font(.title(22)).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
+            Spacer()
+            if let link, let destination {
+                NavigationLink(value: destination) {
+                    Text(link).font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.lapis)
+                }
+            }
+        }
+    }
+}
+
+/// The search field of the library screens: a white box with the magnifier.
+struct SearchBox: View {
+    enum Style { case round, square }
+
+    @Binding var text: String
+    let placeholder: String
+    var style = Style.square
+    var focus: FocusState<Bool>.Binding?
+
+    var body: some View {
+        let round = style == .round
+        HStack(spacing: 10) {
+            LineIcon(shape: ExploreIcon(), size: round ? 20 : 18, lineWidth: round ? 2.4 : 2.2, fill: nil).foregroundStyle(Tokens.Colors.muted)
+            field
+        }
+        .padding(.horizontal, 16)
+        .frame(height: round ? 50 : 48)
+        .background {
+            RoundedRectangle(cornerRadius: round ? 25 : 16)
+                .fill(Tokens.Colors.white)
+                .shadow(color: Tokens.Colors.ink.opacity(round ? 0.12 : 0.06), radius: round ? 5 : 4, x: 0, y: 2)
+        }
+    }
+
+    @ViewBuilder private var field: some View {
+        let input = TextField("", text: $text, prompt: Text(placeholder).foregroundStyle(Color(hex: 0x8A8698)))
+            .font(.ui(style == .round ? 15 : 14))
+            .foregroundStyle(Tokens.Colors.ink)
+            .submitLabel(.search)
+            .autocorrectionDisabled()
+        if let focus { input.focused(focus) } else { input }
+    }
+}
+
+/// The white card of a list row (sections, poems, search results).
+extension View {
+    func listCard(fill: Color = Tokens.Colors.white, radius: CGFloat = 18) -> some View {
+        background {
+            RoundedRectangle(cornerRadius: radius).fill(fill)
+                .shadow(color: Tokens.Colors.ink.opacity(0.05), radius: 4, x: 0, y: 2)
+        }
+    }
+}
+
+extension UINavigationController: UIGestureRecognizerDelegate {
+    /// Screens hide the system navigation bar for their round back button; this keeps the swipe-back gesture.
+    override open func viewDidLoad() {
+        super.viewDidLoad()
+        interactivePopGestureRecognizer?.delegate = self
+    }
+
+    public func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
+        viewControllers.count > 1
+    }
+}

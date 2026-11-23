@@ -7,6 +7,8 @@ struct CoupletEntry: Identifiable, Hashable, Sendable {
     var couplet: Couplet
     /// The poet's slug.
     var poet: String
+    /// «غزل ۳»
+    var title: String
     /// How many recitations the poem has: the popular ones come first.
     var popularity: Int
     /// Both hemistichs, normalised (`TextNormalizer`).
@@ -24,7 +26,7 @@ struct CoupletCorpus: Sendable {
         entries = poems.flatMap { item in
             item.poem.couplets.enumerated().map { index, couplet in
                 CoupletEntry(
-                    path: item.poem.path, index: index, couplet: couplet, poet: item.slug,
+                    path: item.poem.path, index: index, couplet: couplet, poet: item.slug, title: ReaderText.shortTitle(item.poem.title),
                     popularity: popularity[item.poem.path] ?? 0,
                     text: TextNormalizer.normalize("\(couplet.m1) \(couplet.m2)")
                 )

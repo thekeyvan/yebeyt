@@ -129,6 +129,11 @@ struct LibraryBook: Decodable, Hashable, Sendable, Identifiable {
     func section(id target: Int) -> BookSection? { asSection.find(id: target) }
     func section(path target: String) -> BookSection? { asSection.find(path: target) }
 
+    /// «غزل ۳»: what the poem is called in «شروع» and «ادامه», from its section's unit and its number.
+    func shortTitle(of poem: IndexedPoem) -> String {
+        "\(section(id: poem.catId)?.unit ?? unit) \(PersianDigits.string(poem.number))"
+    }
+
     /// «قرن هشتم · ۶۹۵ شعر · با خوانش»; the parts that are not known are left out.
     var meta: String {
         [century, "\(PersianDigits.string(count)) شعر", recited ? "با خوانش" : nil].compactMap { $0 }.joined(separator: " · ")

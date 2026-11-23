@@ -31,6 +31,11 @@ enum TextNormalizer {
         return String(result).lowercased().split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
+    /// The text without diacritics and tatweel, for list rows (the first lines of the index keep Ganjoor's marks).
+    static func plain(_ text: String) -> String {
+        String(String.UnicodeScalarView(text.unicodeScalars.filter { !(0x064B...0x065F).contains($0.value) && $0.value != 0x0670 && $0.value != 0x0640 }))
+    }
+
     /// Whether `text` contains `query` once both are normalised. An empty query matches nothing.
     static func contains(_ text: String, query: String) -> Bool {
         let wanted = normalize(query)

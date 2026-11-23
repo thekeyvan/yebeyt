@@ -35,6 +35,18 @@ struct BookIndex: Sendable {
     func poem(path: String) -> IndexedPoem? {
         poems.first { $0.path == path }
     }
+
+    /// The first poem of a section and everything below it, in the book's order.
+    func first(in section: BookSection) -> IndexedPoem? {
+        let ids = section.subtreeIds
+        return poems.first { ids.contains($0.catId) }
+    }
+
+    /// How far along the book a poem is: its place among all the poems, from 0 to 1.
+    func fraction(of path: String) -> Double? {
+        guard let position = poems.firstIndex(where: { $0.path == path }) else { return nil }
+        return Double(position + 1) / Double(poems.count)
+    }
 }
 
 extension BookIndex {

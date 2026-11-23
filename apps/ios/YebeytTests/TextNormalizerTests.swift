@@ -41,6 +41,11 @@ struct TextNormalizerTests {
         #expect(!TextNormalizer.contains("عشق", query: "عاشق"))
     }
 
+    @Test func plainOnlyRemovesTheMarks() {
+        #expect(TextNormalizer.plain("اَلا یا اَیُّهَا السّاقی اَدِرْ کَأسَاً") == "الا یا ایها الساقی ادر کأسا")
+        #expect(TextNormalizer.plain("می\u{200C}رود، آي") == "می\u{200C}رود، آي")
+    }
+
     @Test func anEmptyQueryMatchesNothing() {
         #expect(!TextNormalizer.contains("عشق", query: ""))
         #expect(!TextNormalizer.contains("عشق", query: " ؟ "))
