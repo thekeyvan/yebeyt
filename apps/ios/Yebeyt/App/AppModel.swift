@@ -20,14 +20,31 @@ enum Tab: String, CaseIterable, Sendable {
 final class AppModel {
     private(set) var selectedTab: Tab
     var unreadCount: Int
+    /// The poem on screen in the full-screen reader, nil when it is closed.
+    var reader: ReaderRoute?
 
-    init(tab: Tab = .home, unreadCount: Int = 0) {
+    init(tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil) {
         selectedTab = tab
         self.unreadCount = unreadCount
+        self.reader = reader
     }
 
     func select(_ tab: Tab) {
         selectedTab = tab
+    }
+
+    func openReader(_ route: ReaderRoute) {
+        reader = route
+    }
+
+    func closeReader() {
+        reader = nil
+    }
+
+    /// «بازی با این بیت»: for now it only leaves the reader for the games tab (slice 3 starts a game with the couplet).
+    func playWithCouplet() {
+        reader = nil
+        selectedTab = .games
     }
 
     /// The text in the «پیام‌ها» badge; nil (badge hidden) when nothing is unread.

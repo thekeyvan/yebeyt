@@ -28,6 +28,12 @@ targets:
           - Vazirmatn.ttf
           - Parastoo-Bold.ttf
           - Parastoo.ttf
+          - NotoNaskhArabic.ttf
+          - NotoNastaliqUrdu.ttf
+          - Gandom.ttf
+          - MarkaziText.ttf
+          - Shabnam.ttf
+          - Sahel.ttf
         buildPhase: resources
     info:
       path: Yebeyt/Info.plist
@@ -42,6 +48,13 @@ targets:
           - Vazirmatn.ttf
           - Parastoo-Bold.ttf
           - Parastoo.ttf
+          - NotoNaskhArabic.ttf
+          - NotoNastaliqUrdu.ttf
+          - Gandom.ttf
+          - MarkaziText.ttf
+          - Shabnam.ttf
+          - Sahel.ttf
+        UIBackgroundModes: [audio]
         UIUserInterfaceStyle: Light
         UILaunchScreen:
           UIColorName: LaunchBackground

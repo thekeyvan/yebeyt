@@ -9,8 +9,8 @@ enum Fixtures {
     /// The app bundle, which holds the bundled poetry data.
     static let appBundle = Bundle(for: PoetryStore.self)
 
-    static func data(_ name: String) throws -> Data {
-        let url = try #require(Bundle(for: Token.self).url(forResource: name, withExtension: "json"))
+    static func data(_ name: String, extension fileExtension: String = "json") throws -> Data {
+        let url = try #require(Bundle(for: Token.self).url(forResource: name, withExtension: fileExtension))
         return try Data(contentsOf: url)
     }
 }

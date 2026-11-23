@@ -22,6 +22,22 @@ struct AppModelTests {
         #expect(model.selectedTab == .me)
     }
 
+    @Test func theReaderOpensOnAPoemAndCloses() {
+        let model = AppModel()
+        #expect(model.reader == nil)
+        model.openReader(ReaderRoute(path: "/hafez/ghazal/sh3", couplet: 2))
+        #expect(model.reader?.path == "/hafez/ghazal/sh3")
+        model.closeReader()
+        #expect(model.reader == nil)
+    }
+
+    @Test func playingWithACoupletClosesTheReaderAndShowsTheGamesTab() {
+        let model = AppModel(reader: ReaderRoute(path: "/hafez/ghazal/sh3"))
+        model.playWithCouplet()
+        #expect(model.reader == nil)
+        #expect(model.selectedTab == .games)
+    }
+
     @Test func unreadBadgeIsHiddenAtZero() {
         let model = AppModel()
         #expect(model.unreadBadgeText == nil)

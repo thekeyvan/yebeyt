@@ -32,6 +32,16 @@
 		<string>Vazirmatn.ttf</string>
 		<string>Parastoo-Bold.ttf</string>
 		<string>Parastoo.ttf</string>
+		<string>NotoNaskhArabic.ttf</string>
+		<string>NotoNastaliqUrdu.ttf</string>
+		<string>Gandom.ttf</string>
+		<string>MarkaziText.ttf</string>
+		<string>Shabnam.ttf</string>
+		<string>Sahel.ttf</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict>
