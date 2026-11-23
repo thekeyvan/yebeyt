@@ -48,7 +48,7 @@ Code and data:
 - Keep files small and simple. No dead code, no speculative abstractions. Handle errors at the boundaries.
 - Never commit secrets: `apps/ios/Config/Local.xcconfig`, `.p8` keys, tokens, `.env` files. Never commit user data or Ganjoor reader comments.
 - Poetry data comes from Ganjoor's public repositories (github.com/ganjoor). Fonts and poetry data keep their own licences; add any new font to `assets/fonts/` with its licence in `assets/fonts/licenses/` and a row in `THIRD_PARTY_NOTICES.md`.
-- Host every service on Railway (server, web, admin, databases), never Vercel.
+- Host every service on Railway (server, web, admin, databases).
 
 Git:
 - Commit with the GitHub no-reply address. On a new machine, once: `git config user.email 5063636+thekeyvan@users.noreply.github.com`.
