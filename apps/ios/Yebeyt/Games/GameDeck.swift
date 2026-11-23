@@ -13,6 +13,9 @@ struct GameCouplet: Hashable, Sendable, Identifiable {
     /// The poet's short name.
     var poetName: String
     var bookTitle: String
+    /// The curated book's path (`/moulavi/masnavi`): its title and colour are in library.json. Empty for a couplet of a
+    /// poem the reader has open.
+    var bookPath = ""
     /// The meaning was written by an AI (no marker is shown yet).
     var meaningIsAI = false
 
@@ -35,6 +38,7 @@ final class GameDeck: Observable, Sendable {
         var meaning: String
         var ai: Bool?
         var poet: String
+        var book: String?
         var bookTitle: String
     }
 
@@ -54,7 +58,7 @@ final class GameDeck: Observable, Sendable {
         couplets = entries.map {
             GameCouplet(
                 poem: $0.poem, index: $0.index, m1: $0.m1, m2: $0.m2, meaning: $0.meaning, poetSlug: $0.poet,
-                poetName: poetNames[$0.poet] ?? "", bookTitle: $0.bookTitle, meaningIsAI: $0.ai == true
+                poetName: poetNames[$0.poet] ?? "", bookTitle: $0.bookTitle, bookPath: $0.book ?? "", meaningIsAI: $0.ai == true
             )
         }
     }

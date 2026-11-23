@@ -24,9 +24,12 @@ final class RecitationPlayer {
     @ObservationIgnored private let onFailure: @MainActor () -> Void
 
     @ObservationIgnored private var recitations: [Recitation]?
+    /// Set for a game clip: only this part of the audio is played.
+    @ObservationIgnored private var clip: ListenClip?
     @ObservationIgnored private var timing: RecitationTiming?
     @ObservationIgnored private var player: AVPlayer?
     @ObservationIgnored private var timeObserver: Any?
+    @ObservationIgnored private var boundaryObserver: Any?
     @ObservationIgnored private var statusObserver: NSKeyValueObservation?
     @ObservationIgnored private var controlObserver: NSKeyValueObservation?
     @ObservationIgnored private var endObserver: (any NSObjectProtocol)?
@@ -36,6 +39,13 @@ final class RecitationPlayer {
 
     /// Activating and deactivating the audio session can block, and must keep their order: one serial queue for both.
     private static let sessionQueue = DispatchQueue(label: "com.yebeyt.audio-session")
+
+    /// گوش کن: plays only the clip (the first hemistich of a couplet), from its start to its end. The recitations are
+    /// already known, so nothing is fetched; «خوانش باز نشد» comes from `onFailure` as in the reader.
+    convenience init(clip: ListenClip, title: String, onFailure: @escaping @MainActor () -> Void) {
+        self.init(couplets: [], title: title, artist: "", fetchRecitations: { [] }, onFailure: onFailure)
+        self.clip = clip
+    }
 
     init(
         couplets: [Couplet], title: String, artist: String,
@@ -91,6 +101,11 @@ final class RecitationPlayer {
     }
 
     private func start(_ current: Int) async {
+        if let clip {
+            guard current == generation else { return }
+            begin(clip.audio)
+            return
+        }
         do {
             let list: [Recitation]
             if let recitations {
@@ -147,6 +162,14 @@ final class RecitationPlayer {
         timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] time in
             MainActor.assumeIsolated { self?.tick(time.seconds) }
         }
+        if let clip {
+            // A boundary is exact; the 0.25 s tick above could let a bit of the second hemistich through.
+            let end = NSValue(time: CMTime(seconds: clip.end, preferredTimescale: 600))
+            boundaryObserver = player.addBoundaryTimeObserver(forTimes: [end], queue: .main) { [weak self] in
+                MainActor.assumeIsolated { self?.finish() }
+            }
+            player.seek(to: CMTime(seconds: clip.start, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+        }
         player.play()
         state = .playing
         registerRemoteCommands()
@@ -188,8 +211,10 @@ final class RecitationPlayer {
 
     private func teardown() {
         if let timeObserver { player?.removeTimeObserver(timeObserver) }
+        if let boundaryObserver { player?.removeTimeObserver(boundaryObserver) }
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         timeObserver = nil
+        boundaryObserver = nil
         endObserver = nil
         statusObserver = nil
         controlObserver = nil

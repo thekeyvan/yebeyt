@@ -38,6 +38,16 @@ struct RecitationTiming: Equatable, Sendable {
         }
         return couplets.count - 1
     }
+
+    /// The seconds the first hemistich of a couplet is read: from the start of its verse to the start of the next
+    /// verse. Nil when the couplet has no second hemistich, or either verse has no timing.
+    func firstHemistich(ofCouplet index: Int, in couplets: [Couplet]) -> ClosedRange<Double>? {
+        guard couplets.indices.contains(index), !couplets[index].m2.isEmpty else { return nil }
+        let verse = couplets[..<index].reduce(0) { $0 + ($1.m2.isEmpty ? 1 : 2) }
+        guard let start = starts.first(where: { $0.verse == verse }), let end = starts.first(where: { $0.verse == verse + 1 }),
+              end.milliseconds > start.milliseconds else { return nil }
+        return Double(start.milliseconds) / 1000...Double(end.milliseconds) / 1000
+    }
 }
 
 /// Reads the `SyncInfo` entries of the first `PoemAudio` in the file.

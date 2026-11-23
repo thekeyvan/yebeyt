@@ -26,4 +26,19 @@ enum Scoring {
     static func jigsawTimeBonus(secondsLeft: Int) -> Int {
         max(0, secondsLeft) * jigsawSecondLeft
     }
+
+    /// The quiz games (حدس شاعر, مصراع دوم, از کدوم کتاب؟, گوش کن): 20 for a right answer.
+    static let quizBase = 20
+    /// … and 2 for each second left of the 12 a question gets.
+    static let quizSecondLeft = 2
+    static let quizWindow = 12
+    /// ۵۰:۵۰ and «یه کلمه» cost this much each.
+    static let quizHintCost = 20
+    /// معنی‌یاب: points for each pair.
+    static let matchPair = 10
+
+    /// A right answer of a quiz: 20 and 2 per second left, less the hints used; never below zero.
+    static func quiz(secondsLeft: Int, hints: Int) -> Int {
+        max(0, quizBase + max(0, secondsLeft) * quizSecondLeft - hints * quizHintCost)
+    }
 }
