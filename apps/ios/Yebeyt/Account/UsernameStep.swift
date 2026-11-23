@@ -27,6 +27,10 @@ struct UsernameStep: View {
         nameFromProvider = saved == nil && account.providerName != nil
     }
 
+    private var nameProblem: DisplayNameRules.Problem? {
+        DisplayNameRules.problem(name.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
     private var provider: AuthProvider? { account.provider ?? account.session.user?.providers.first }
 
     var body: some View {
@@ -85,6 +89,9 @@ struct UsernameStep: View {
                 .frame(height: 52)
                 .background(RoundedRectangle(cornerRadius: 16).fill(Tokens.Colors.white))
                 .accessibilityIdentifier("displayName")
+            if let problem = nameProblem {
+                Text(problem.message).font(.ui(12)).foregroundStyle(Tokens.Colors.fire).accessibilityIdentifier("nameProblem")
+            }
         }
     }
 
@@ -179,7 +186,7 @@ struct UsernameStep: View {
             if let error { Text(error).font(.ui(12, weight: .medium)).foregroundStyle(Tokens.Colors.fire).accessibilityIdentifier("saveError") }
             Button("همینه") { save() }
                 .buttonStyle(OnbButtonStyle())
-                .disabled(!availability.isAvailable || saving)
+                .disabled(!availability.isAvailable || saving || nameProblem != nil)
                 .accessibilityIdentifier("usernameDone")
         }
         .padding(.horizontal, 22)

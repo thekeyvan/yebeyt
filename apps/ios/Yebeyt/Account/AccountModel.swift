@@ -57,14 +57,19 @@ final class AccountModel {
     }
     #endif
 
-    /// Runs `action` when there is an account; otherwise shows the gate, and runs it after sign-in
-    /// (and the username, when there is none yet). «بعداً» drops it.
-    func require(_ feature: AccountFeature, then action: @escaping @MainActor () -> Void) {
-        if isSignedIn {
-            action()
-        } else {
+    /// Runs `action` when there is an account with a username; shows the gate when there is no account, and the
+    /// username step when there is an account without one. The action waits and runs when that is done; «بعداً»
+    /// drops it. `needed: false` is for what a guest may still do (taking back a like).
+    func require(_ feature: AccountFeature, needed: Bool = true, then action: @escaping @MainActor () -> Void) {
+        guard needed else { return action() }
+        if !isSignedIn {
             pending = action
             prompt = .gate(feature)
+        } else if let user = session.user, user.username == nil {
+            pending = action
+            prompt = .username
+        } else {
+            action()
         }
     }
 
@@ -123,16 +128,17 @@ final class AccountModel {
         }
     }
 
-    /// «همینه»: saves the username and then the display name. Returns the line to show when it failed.
+    /// «همینه»: saves the display name, then the username (the one that can be refused), so a name that fails leaves
+    /// nothing half done and a taken username can be fixed and sent again. Returns the line to show when it failed.
     func saveProfile(displayName: String, username: String) async -> String? {
+        let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let problem = DisplayNameRules.problem(name) { return problem.message }
         do {
-            let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let api = session.api
-            var user = try await session.authorized { try await api.setUsername(username, token: $0) }
-            if !name.isEmpty, name != user.displayName {
-                user = try await session.authorized { try await api.setDisplayName(name, token: $0) }
+            if !name.isEmpty, name != session.user?.displayName {
+                session.update(user: try await session.authorized { try await api.setDisplayName(name, token: $0) })
             }
-            session.update(user: user)
+            session.update(user: try await session.authorized { try await api.setUsername(username, token: $0) })
             providerName = nil
             return nil
         } catch let error as APIError {

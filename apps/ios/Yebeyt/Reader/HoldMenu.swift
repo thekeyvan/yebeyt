@@ -89,12 +89,12 @@ struct HoldMenu: View {
             let liked = marks.contains(.liked, poemPath: model.path, couplet: couplet)
             round("پسند", on: liked) {
                 LineIcon(shape: HeartIcon(), size: 22, lineWidth: 2.2, fill: liked ? Tokens.Colors.magenta : nil).foregroundStyle(Tokens.Colors.magenta)
-            } action: { account.require(.likes) { marks.toggle(.liked, poemPath: model.path, couplet: couplet) } }
+            } action: { account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: model.path, couplet: couplet) } }
             Spacer()
             let reposted = marks.contains(.reposted, poemPath: model.path, couplet: couplet)
             round("بازنشر", on: reposted) {
                 LineIcon(shape: RepostIcon(), size: 22, lineWidth: 2.2, fill: nil).foregroundStyle(reposted ? Tokens.Colors.lapis : Tokens.Colors.ink)
-            } action: { account.require(.likes) { marks.toggle(.reposted, poemPath: model.path, couplet: couplet) } }
+            } action: { account.require(.likes, needed: !reposted) { marks.toggle(.reposted, poemPath: model.path, couplet: couplet) } }
             Spacer()
             round("بفرست", on: false) {
                 LineIcon(shape: MessagesIcon(), size: 22, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.ink)

@@ -52,13 +52,13 @@ struct DailyCard: View {
         let reposted = marks.contains(.reposted, poemPath: pick.path, couplet: pick.index)
         return HStack(spacing: 18) {
             iconButton("پسند", on: liked) {
-                account.require(.likes) { marks.toggle(.liked, poemPath: pick.path, couplet: pick.index) }
+                account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: pick.path, couplet: pick.index) }
             } icon: {
                 LineIcon(shape: HeartIcon(), size: 22, lineWidth: 2.2, fill: liked ? Tokens.Colors.magenta : nil)
                     .foregroundStyle(liked ? Tokens.Colors.magenta : Tokens.Colors.ink)
             }
             iconButton("بازنشر", on: reposted) {
-                account.require(.likes) { marks.toggle(.reposted, poemPath: pick.path, couplet: pick.index) }
+                account.require(.likes, needed: !reposted) { marks.toggle(.reposted, poemPath: pick.path, couplet: pick.index) }
             } icon: {
                 LineIcon(shape: RepostIcon(), size: 22, lineWidth: 2.2, fill: nil)
                     .foregroundStyle(reposted ? Tokens.Colors.lapis : Tokens.Colors.ink)

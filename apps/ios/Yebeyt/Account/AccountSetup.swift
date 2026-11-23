@@ -21,8 +21,9 @@ struct AccountSetup {
         start = options.onboarding
         #else
         let api = API.configured()
-        session = Session(api: api)
         start = OnboardingModel.firstLaunchStep(defaults: defaults)
+        Self.forgetStaleSession(start: start)
+        session = Session(api: api)
         #endif
         self.session = session
         account = AccountModel(session: session, stats: stats)
@@ -37,6 +38,11 @@ struct AccountSetup {
         if options.signedIn { account.debugSignedIn(provider: .apple, name: "نیلوفر") }
         if let gate = options.gate, !session.isSignedIn { account.prompt = .gate(gate) }
         #endif
+    }
+
+    /// The Keychain outlives the app: on a first launch a token left by an earlier install must not sign the new one in.
+    static func forgetStaleSession(start: OnboardingStep?, keychain: KeychainStore = KeychainStore()) {
+        if start != nil { keychain.delete() }
     }
 
     #if DEBUG

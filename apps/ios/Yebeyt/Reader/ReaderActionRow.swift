@@ -45,14 +45,14 @@ struct ReaderActionRow: View {
             if let player = model.player, player.isAvailable { PlayToggle(player: player) }
             let liked = marks.contains(.liked, poemPath: model.path, couplet: couplet)
             button("پسند", on: liked) {
-                account.require(.likes) { marks.toggle(.liked, poemPath: model.path, couplet: couplet) }
+                account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: model.path, couplet: couplet) }
             } icon: {
                 LineIcon(shape: HeartIcon(), size: 21, lineWidth: 2, fill: liked ? Tokens.Colors.magenta : nil)
                     .foregroundStyle(Tokens.Colors.magenta)
             }
             let reposted = marks.contains(.reposted, poemPath: model.path, couplet: couplet)
             button("بازنشر", on: reposted) {
-                account.require(.likes) { marks.toggle(.reposted, poemPath: model.path, couplet: couplet) }
+                account.require(.likes, needed: !reposted) { marks.toggle(.reposted, poemPath: model.path, couplet: couplet) }
             } icon: {
                 LineIcon(shape: RepostIcon(), size: 21, lineWidth: 2.2, fill: nil)
                     .foregroundStyle(reposted ? Tokens.Colors.lapis : theme.foreground)

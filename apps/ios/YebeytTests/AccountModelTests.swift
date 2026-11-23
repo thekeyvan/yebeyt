@@ -173,7 +173,6 @@ struct AccountModelTests {
         f.stub.respond { request in
             switch request.path {
             case "/v1/auth/refresh": .json(200, StubJSON.session(access: "a1", refresh: "r1"))
-            case "/v1/me/username": .json(200, StubJSON.user(username: "ali"))
             default: .json(200, StubJSON.user(username: "ali", displayName: "علی"))
             }
         }
@@ -225,5 +224,70 @@ struct AccountModelTests {
         #expect(payload.streakDays == 1)
         #expect(payload.streakLastDate == "2026-11-22")
         #expect(ProgressPayload(stats: GameStats(defaults: GameFixtures.defaults())).streakLastDate == nil)
+    }
+
+    // MARK: Username required, name limit, order
+
+    @Test func signedInWithoutAUsernameTheActionWaitsForTheUsernameStep() async {
+        let f = fixture(credentials: .google(), username: nil)
+        defer { f.keychain.delete() }
+        _ = await f.account.signIn(with: .google)  // signed in, no username
+        var ran = 0
+        f.account.require(.likes) { ran += 1 }
+        #expect(ran == 0)
+        #expect(f.account.prompt == .username)
+        _ = await f.account.saveProfile(displayName: "", username: "niloofar")
+        f.account.finishPrompt()
+        #expect(ran == 1)
+        f.account.require(.likes) { ran += 1 }  // now there is a username: straight through
+        #expect(ran == 2)
+    }
+
+    @Test func takingBackALikeNeedsNoAccount() {
+        let f = fixture(credentials: .google())
+        defer { f.keychain.delete() }
+        var ran = 0
+        f.account.require(.likes, needed: false) { ran += 1 }
+        #expect(ran == 1)
+        #expect(f.account.prompt == nil)
+    }
+
+    @Test func theNameIsLimitedToThirtyCharactersOnThePhoneToo() async {
+        #expect(DisplayNameRules.problem(String(repeating: "ن", count: 30)) == nil)
+        #expect(DisplayNameRules.problem(String(repeating: "ن", count: 31)) == .tooLong)
+        #expect(DisplayNameRules.Problem.tooLong.message == "حداکثر ۳۰ حرف")
+        #expect(DisplayNameRules.problem("a\nb") == .controlChars)
+        #expect(DisplayNameRules.problem("") == nil)
+        let f = fixture(credentials: .google(), signedIn: true)
+        defer { f.keychain.delete() }
+        let message = await f.account.saveProfile(displayName: String(repeating: "ن", count: 31), username: "niloofar")
+        #expect(message == "حداکثر ۳۰ حرف")
+        #expect(f.stub.requests.isEmpty)  // nothing was sent
+    }
+
+    @Test func aFailedNameLeavesTheUsernameUntouched() async {
+        let f = fixture(credentials: .google(), signedIn: true)
+        defer { f.keychain.delete() }
+        f.stub.respond { request in
+            switch request.path {
+            case "/v1/auth/refresh": .json(200, StubJSON.session(access: "a1", refresh: "r1"))
+            case "/v1/me/profile": .json(400, #"{"error":"invalid_request"}"#)
+            default: .json(200, StubJSON.user(username: "niloofar"))
+            }
+        }
+        let message = await f.account.saveProfile(displayName: "نیلوفر", username: "niloofar")
+        #expect(message != nil)
+        #expect(f.stub.requests(to: "/v1/me/username").isEmpty)  // not half done
+    }
+
+    @Test func theNameIsSavedBeforeTheUsername() async {
+        let f = fixture(credentials: .google(), signedIn: true)
+        defer { f.keychain.delete() }
+        f.stub.respond { request in
+            request.path == "/v1/auth/refresh" ? .json(200, StubJSON.session(access: "a1", refresh: "r1")) : .json(200, StubJSON.user(username: "ali", displayName: "علی"))
+        }
+        _ = await f.account.saveProfile(displayName: "علی", username: "ali")
+        let order = f.stub.requests.map(\.path).filter { $0.hasPrefix("/v1/me/") }
+        #expect(order == ["/v1/me/profile", "/v1/me/username"])
     }
 }

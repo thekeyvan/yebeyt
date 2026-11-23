@@ -68,6 +68,7 @@ final class OnboardingModel {
     /// Signed in on the account step: a new account picks its username, one that has it is done.
     func signedIn(needsUsername: Bool) {
         guard step == .account else { return }
+        defaults.set(true, forKey: Self.doneKey)  // there is an account now: a restart must not sign it out
         if needsUsername { step = .username } else { finish() }
     }
 

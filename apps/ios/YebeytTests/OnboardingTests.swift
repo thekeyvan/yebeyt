@@ -72,6 +72,23 @@ struct OnboardingTests {
         #expect(onboarding.step == .account)
     }
 
+    @Test func signingInMarksOnboardingDoneSoARestartKeepsTheAccount() {
+        let defaults = GameFixtures.defaults()
+        let onboarding = model(start: .account, defaults: defaults)
+        onboarding.signedIn(needsUsername: true)
+        #expect(OnboardingModel.firstLaunchStep(defaults: defaults) == nil)
+    }
+
+    @Test func aFirstLaunchForgetsATokenLeftByAnEarlierInstall() {
+        let keychain = KeychainStore(service: "com.yebeyt.tests.\(UUID().uuidString)")
+        defer { keychain.delete() }
+        keychain.write("old")
+        AccountSetup.forgetStaleSession(start: nil, keychain: keychain)  // not a first launch
+        #expect(keychain.read() == "old")
+        AccountSetup.forgetStaleSession(start: .welcome, keychain: keychain)
+        #expect(keychain.read() == nil)
+    }
+
     @Test func onboardingShowsOnTheFirstLaunchOnly() {
         let defaults = GameFixtures.defaults()
         #expect(OnboardingModel.firstLaunchStep(defaults: defaults) == .welcome)

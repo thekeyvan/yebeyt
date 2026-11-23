@@ -17,7 +17,7 @@ final class Session {
     init(api: API, store: KeychainStore = KeychainStore()) {
         self.api = api
         self.store = store
-        isSignedIn = store.read() != nil
+        isSignedIn = store.load() != .none
     }
 
     /// Debug only: a signed-in state without a server (`-beytSignedIn 1`).
@@ -68,23 +68,33 @@ final class Session {
     /// Swaps the refresh token for a new pair. A refresh already running is waited for instead of started again.
     func refresh() async throws {
         if let refreshTask { return try await refreshTask.value }
-        guard let sent = store.read() else {
+        let sent: String
+        switch store.load() {
+        case .value(let token): sent = token
+        case .unavailable: throw APIError.network  // the Keychain is locked: try later, stay signed in
+        case .none:
             clear()
             throw APIError.server(status: 401, code: .unauthorized, allowedAt: nil)
         }
+        let before = accessToken
         let task = Task { @MainActor [self] in
             defer { refreshTask = nil }
             do {
                 apply(try await api.refresh(refreshToken: sent))
             } catch let error as APIError where error.isUnauthorized {
-                // The token is single use. If the Keychain holds another one now, a refresh that raced this one has
-                // won: its result stands and this is not a sign-out.
-                if let stored = store.read(), stored != sent {
-                    accessToken = nil
+                // The token is single use. If the Keychain holds another one now, a refresh that raced this one (or a
+                // sign-in that landed meanwhile) has won: its result stands and this is not a sign-out. An access token
+                // that came with it is kept; only the one this refresh set out to replace is dropped.
+                switch store.load() {
+                case .value(let stored) where stored != sent:
+                    if accessToken == before { accessToken = nil }
                     return
+                case .unavailable:
+                    throw APIError.network
+                default:
+                    clear()
+                    throw error
                 }
-                clear()
-                throw error
             }
         }
         refreshTask = task

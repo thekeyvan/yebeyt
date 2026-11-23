@@ -145,4 +145,46 @@ struct SessionTests {
         #expect(!again.isSignedIn)
         #expect(keychain.read() == nil)
     }
+
+    @Test func aSignInThatLandsDuringARefusedRefreshKeepsItsAccessToken() async throws {
+        let keychain = store()
+        defer { keychain.delete() }
+        keychain.write("r0")
+        let stub = StubServer { _ in StubJSON.unauthorized }  // the old token is refused, as after a new sign-in
+        stub.delay = 0.2
+        let session = Session(api: stub.api, store: keychain)
+        let refresh = Task { try await session.refresh() }
+        try await Task.sleep(for: .milliseconds(60))
+        session.apply(try JSONDecoder().decode(APISession.self, from: Data(StubJSON.session(access: "a9", refresh: "r9").utf8)))
+        try await refresh.value  // not a sign-out, no error
+        #expect(session.isSignedIn)
+        #expect(keychain.read() == "r9")
+        let used = try await session.authorized { $0 }
+        #expect(used == "a9")  // the new access token was not thrown away
+        #expect(stub.requests(to: "/v1/auth/refresh").count == 1)
+    }
+
+    @Test func aLockedKeychainIsNotASignOut() async {
+        let locked = KeychainStore(service: "com.yebeyt.tests.\(UUID().uuidString)", copyMatching: { _, _ in errSecInteractionNotAllowed })
+        let stub = StubServer { _ in .json(200, StubJSON.session(access: "a", refresh: "r")) }
+        let session = Session(api: stub.api, store: locked)
+        #expect(session.isSignedIn)  // unreadable now, so try later
+        await #expect(throws: APIError.network) { try await session.refresh() }
+        #expect(session.isSignedIn)
+        #expect(stub.requests.isEmpty)
+    }
+
+    @Test func keychainStatusesMapToReadResults() {
+        #expect(KeychainStore.read(status: errSecSuccess, data: Data("t".utf8)) == .value("t"))
+        #expect(KeychainStore.read(status: errSecItemNotFound, data: nil) == .none)
+        #expect(KeychainStore.read(status: errSecInteractionNotAllowed, data: nil) == .unavailable)
+        #expect(KeychainStore.read(status: errSecAuthFailed, data: nil) == .unavailable)
+    }
+
+    @Test func writingReportsSuccessAndFailure() {
+        let keychain = store()
+        defer { keychain.delete() }
+        #expect(keychain.write("r0"))
+        #expect(keychain.load() == .value("r0"))
+    }
 }

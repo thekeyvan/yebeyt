@@ -56,3 +56,28 @@ enum UsernameRules {
         return base.count >= 2 ? base : "beyt"
     }
 }
+
+/// The display name rules, mirroring the server (`apps/server/src/profile.ts`): at most 30 characters, no control
+/// characters. An empty name is fine on the phone: it is just not saved.
+enum DisplayNameRules {
+    static let maxLength = 30
+
+    enum Problem: Equatable, Sendable {
+        case tooLong
+        case controlChars
+
+        var message: String {
+            switch self {
+            case .tooLong: "حداکثر ۳۰ حرف"
+            case .controlChars: APIError.badResponse.persianMessage
+            }
+        }
+    }
+
+    /// Checks a trimmed name.
+    static func problem(_ name: String) -> Problem? {
+        if name.unicodeScalars.count > maxLength { return .tooLong }
+        if name.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) || $0 == "\u{2028}" || $0 == "\u{2029}" }) { return .controlChars }
+        return nil
+    }
+}
