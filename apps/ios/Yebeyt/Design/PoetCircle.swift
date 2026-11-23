@@ -1,11 +1,13 @@
 import SwiftUI
 
-/// A poet's picture: until real pictures come (slice 4) a sticker circle in the poet's colour with the
-/// first letter of their name. The avatar is always a circle.
+/// A poet's picture: the real one from the server when the phone has it, else a sticker circle in the poet's
+/// colour with the first letter of their name. The avatar is always a circle.
 struct PoetCircle: View {
+    @Environment(PoetPictures.self) private var pictures: PoetPictures?
     let poet: LibraryPoet
     var size: CGFloat = 70
     var border: CGFloat = 4
+    var borderColor = Tokens.Colors.white
     /// On the poet's own card the circle is a shade darker than the card.
     var onCard = false
 
@@ -13,15 +15,20 @@ struct PoetCircle: View {
         Circle()
             .fill(onCard ? poet.color.poetCardCircle : poet.color.poetCircle)
             .overlay {
-                Text(poet.initial)
-                    .font(.title(size * 0.5, scaled: false))
-                    .foregroundStyle(Tokens.Colors.white)
-                    .padding(.top, size * 0.1)
+                if let image = pictures?.images[poet.slug] {
+                    Image(uiImage: image).resizable().scaledToFill().clipShape(Circle())
+                } else {
+                    Text(poet.initial)
+                        .font(.title(size * 0.5, scaled: false))
+                        .foregroundStyle(Tokens.Colors.white)
+                        .padding(.top, size * 0.1)
+                }
             }
-            .overlay(Circle().strokeBorder(Tokens.Colors.white, lineWidth: border))
+            .overlay(Circle().strokeBorder(borderColor, lineWidth: border))
             .frame(width: size, height: size)
             .shadow(color: (onCard ? Color(red: 0.04, green: 0.04, blue: 0.24) : Tokens.Colors.ink).opacity(onCard ? 0.3 : 0.22), radius: onCard ? 5 : 4, x: 0, y: onCard ? 3 : 2)
             .accessibilityHidden(true)
+            .task(id: pictures?.versions[poet.slug]) { await pictures?.load(slug: poet.slug) }
     }
 }
 

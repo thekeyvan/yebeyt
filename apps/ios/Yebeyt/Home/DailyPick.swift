@@ -15,6 +15,14 @@ enum DailyPick {
     private static let rejectStep = 7919
     private static let dayStep = 7907
 
+    /// The poems of the poets the person picked in onboarding (the first part of a poem's path is its poet), when
+    /// there are any among `poems`; otherwise all of them.
+    static func preferring(_ poets: Set<String>, in poems: [IndexedPoem]) -> [IndexedPoem] {
+        guard !poets.isEmpty else { return poems }
+        let liked = poems.filter { poem in poem.path.split(separator: "/").first.map { poets.contains(String($0)) } == true }
+        return liked.isEmpty ? poems : liked
+    }
+
     /// Every couplet of the most recited poems, most recited first (ties by path, so the order is stable).
     static func candidates(from poems: [IndexedPoem]) -> [Candidate] {
         let popular = poems.filter { $0.recitations > 0 }

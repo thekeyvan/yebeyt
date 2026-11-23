@@ -35,7 +35,8 @@ final class HomeModel {
 
     func load(poetry: PoetryStore, library: Library) async {
         guard pick == nil else { return }
-        candidates = DailyPick.candidates(from: await library.indexedPoems(coveringAny: poetry.bundledPaths))
+        let poems = DailyPick.preferring(Taste.savedPoets(in: defaults), in: await library.indexedPoems(coveringAny: poetry.bundledPaths))
+        candidates = DailyPick.candidates(from: poems)
         await show(poetry: poetry, library: library)
     }
 
