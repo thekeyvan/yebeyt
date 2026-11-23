@@ -93,26 +93,30 @@ open(os.path.join(P, "PoemText.dc.html"), "w", encoding="utf-8").write(textpage)
 # ---------- flow section headers ----------
 # One row per flow, read right to left. Each entry: (header board, number, title, sticker bg, sticker fg, [(board, page title), ...])
 FLOWS = [
-    ("Flow1.dc.html", "۱", "خونه، کاوش و کتابخونه", "#2F35F5", "#FFFFFF", [
+    ("FlowStart.dc.html", "۱", "شروع و حساب", "#FF4D24", "#FFFFFF", [
+        ("OnbWelcome.dc.html", "خوش اومدی"), ("OnbTaste.dc.html", "سلیقه"), ("OnbGame.dc.html", "اولین بازی"),
+        ("OnbAccount.dc.html", "حساب با اپل یا گوگل"), ("OnbUsername.dc.html", "نام کاربری"), ("OnbFriends.dc.html", "دوستات"),
+        ("AccountGate.dc.html", "وقتی حساب لازمه")]),
+    ("Flow1.dc.html", "۲", "خونه، کاوش و کتابخونه", "#2F35F5", "#FFFFFF", [
         ("Calm.dc.html", "خونه: بیت امروز و دوستات"), ("Explore.dc.html", "کاوش"), ("Poet.dc.html", "صفحه‌ی شاعر"),
         ("Library.dc.html", "همه‌ی کتاب‌ها"), ("Book.dc.html", "یه کتاب: دیوان حافظ"), ("BookSection.dc.html", "فهرست غزل‌ها")]),
-    ("FlowRead.dc.html", "۲", "خوندن شعر", "#6CCB3A", "#14112B", [
+    ("FlowRead.dc.html", "۳", "خوندن شعر", "#6CCB3A", "#14112B", [
         ("Poem.dc.html", "بیت به بیت"), ("PoemMeaning.dc.html", "معنی بیت"), ("PoemText.dc.html", "تنظیم متن (آ)"),
         ("PoemScroll.dc.html", "کل شعر"), ("PoemScrollHold.dc.html", "نگه داشتن روی بیت")]),
-    ("Flow2.dc.html", "۳", "تب بازی و بازی‌های تکی", "#FFB703", "#14112B", [
+    ("Flow2.dc.html", "۴", "تب بازی و بازی‌های تکی", "#FFB703", "#14112B", [
         ("GamesE.dc.html", "تب بازی"), ("PlayDaily.dc.html", "معمای امروز"), ("JigsawE.dc.html", "جورچین بیت"),
         ("JigsawResult.dc.html", "جورچین: بعد از جواب"), ("PlayPoet.dc.html", "حدس شاعر"), ("PlayPoetAnswer.dc.html", "حدس شاعر: جواب درست"),
         ("PlaySecond.dc.html", "مصراع دوم"), ("PlayBook.dc.html", "از کدوم کتاب؟ جواب غلط"), ("PlayMatch.dc.html", "معنی‌یاب"),
         ("PlayListen.dc.html", "گوش کن"), ("ChallengeSend.dc.html", "تموم شد: یکی رو به چالش بکش"), ("LeaderboardS.dc.html", "رده‌بندی")]),
-    ("FlowPlay.dc.html", "۴", "بازی با دوست", "#FF4D24", "#FFFFFF", [
+    ("FlowPlay.dc.html", "۵", "بازی با دوست", "#FF4D24", "#FFFFFF", [
         ("GameLobby.dc.html", "بساز و دعوت کن"), ("ChallengeWeb.dc.html", "لینک دعوت، بدون اپ"), ("ChallengeAccept.dc.html", "لینک دعوت، توی اپ"),
         ("PlayMosh.dc.html", "مشاعره"), ("PlayDuel.dc.html", "بازی رودررو")]),
-    ("Flow3.dc.html", "۵", "پیام‌ها", "#FF3D8B", "#FFFFFF", [
+    ("Flow3.dc.html", "۶", "پیام‌ها", "#FF3D8B", "#FFFFFF", [
         ("Inbox.dc.html", "پیام‌ها"), ("Direct.dc.html", "پیام با سارا"), ("SharedDivan.dc.html", "دیوان مشترک با سارا")]),
-    ("FlowMe.dc.html", "۶", "من", "#14112B", "#FFFFFF", [
+    ("FlowMe.dc.html", "۷", "من", "#14112B", "#FFFFFF", [
         ("Profile.dc.html", "صفحه‌ی من"), ("Divan.dc.html", "دیوان من"), ("Privacy.dc.html", "حریم خصوصی"),
         ("Avatar.dc.html", "ساختن چهره"), ("InviteFriends.dc.html", "دوستاتو بیار")]),
-    ("FlowFeedback.dc.html", "۷", "بازخورد", "#1C20B8", "#FFFFFF", [
+    ("FlowFeedback.dc.html", "۸", "بازخورد", "#1C20B8", "#FFFFFF", [
         ("FeedbackShake.dc.html", "تکون بده: بازخورد"), ("FeedbackBug.dc.html", "باگ دیدم"), ("FeedbackGame.dc.html", "یه بازی پیشنهاد بده")]),
 ]
 REFERENCE = [  # row ۰: the wide reference boards

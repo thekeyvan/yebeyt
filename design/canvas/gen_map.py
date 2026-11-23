@@ -45,19 +45,19 @@ def icon(name, color):
 TABS = [
     ("خونه", "#FF3D8B", "#FFFFFF",
      ["<b>بیت امروز:</b> یه بیت، از روی سلیقه", "رد کن یا نگه دار؛ پسند، بازنشر، بفرست", "<b>دوستات:</b> بیت‌هایی که به اشتراک گذاشتن", "نتیجه‌ی معمای امروزشون و «تو هم»"],
-     [("ردیف ۱", "Flow1.dc.html")], False),
+     [("ردیف ۲", "Flow1.dc.html")], False),
     ("کاوش", "#6CCB3A", "#14112B",
      ["جستجو: شاعر، شعر، یه کلمه، یه تیکه از بیت", "<b>فال حافظ</b>", "موضوع‌ها، پرطرفدارها", "شاعر ← صفحه‌ی شاعر", "<b>کتابخونه:</b> کتاب ← بخش ← فهرست ← غزل"],
-     [("ردیف ۱", "Flow1.dc.html")], False),
+     [("ردیف ۲", "Flow1.dc.html")], False),
     ("بازی", "#FFB703", "#14112B",
      ["<b>معمای امروز</b>", "<b>مشاعره:</b> با یه دوست یا با «یه بیت»", "جورچین بیت · حدس شاعر · مصراع دوم", "از کدوم کتاب؟ · معنی‌یاب · گوش کن", "بازی رودررو · رده‌بندی و لیگ", "<b>بازی با دوست:</b> بساز و با لینک دعوت کن، حتی کسی که اپ رو نداره"],
-     [("ردیف ۳", "Flow2.dc.html"), ("ردیف ۴", "FlowPlay.dc.html")], True),
+     [("ردیف ۴", "Flow2.dc.html"), ("ردیف ۵", "FlowPlay.dc.html")], True),
     ("پیام‌ها", "#FF4D24", "#FFFFFF",
      ["گفتگو با دوستا", "بیت بفرست، مثل کارت پستال", "دعوت به مشاعره و بازی رودررو", "معمای امروز رو بفرست", "<b>دیوان مشترک</b> با هر دوست"],
-     [("ردیف ۵", "Flow3.dc.html")], False),
+     [("ردیف ۶", "Flow3.dc.html")], False),
     ("من", "#14112B", "#FFFFFF",
      ["چهره‌ی من و نام کاربری", "امتیاز، رشته‌ی روزها، نشان‌ها", "<b>دیوان من:</b> بیت‌های نگه‌داشته، با جستجو و دسته‌بندی", "تنظیمات و حریم خصوصی", "<b>تکون بده:</b> باگ، ایده، پیشنهاد بازی", "<b>دوستاتو بیار</b> با یه متن آماده"],
-     [("ردیف ۶", "FlowMe.dc.html"), ("ردیف ۷", "FlowFeedback.dc.html")], False),
+     [("ردیف ۷", "FlowMe.dc.html"), ("ردیف ۸", "FlowFeedback.dc.html")], False),
 ]
 
 def chip(code, board, on_dark):
@@ -83,7 +83,7 @@ def step(t, hi=False):
     st = "background: #6CCB3A; color: #14112B; font-weight: 700;" if hi else "background: #F1EFEA; color: #14112B; font-weight: 500;"
     return f'<span style="{st} border-radius: 999px; padding: 6px 14px; font-size: 13px; white-space: nowrap;">{t}</span>'
 arrow = '<span aria-hidden="true" style="color: #8A8698; font-size: 14px;">←</span>'
-entry = arrow.join([step("صفحه‌ی شروع"), step("یه بازی ۳۰ ثانیه‌ای"), step("«فعلاً بدون حساب»", True) + '<span style="font-size: 12px; color: #4A4660;">یا</span>' + step("ورود با اپل / گوگل / ایمیل"), step("اسم و نام کاربری"), step("سلیقه"), step("پیدا کردن دوستا")])
+entry = arrow.join([step("خوش اومدی"), step("سلیقه"), step("یه بازی ۳۰ ثانیه‌ای"), step("حساب با اپل یا گوگل", True) + '<span style="font-size: 12px; color: #4A4660;">یا</span>' + step("«فعلاً بدون حساب»"), step("نام کاربری"), step("دوستات")]) + chip("ردیف ۱", "FlowStart.dc.html", False)
 
 body = f'''<div dir="rtl" style="width: 1280px; height: 880px; box-sizing: border-box; padding: 36px 48px 0; background-color: #F1EFEA; background-image: radial-gradient(#D9D5CE 1.2px, transparent 1.2px); background-size: 18px 18px; color: #14112B; font-family: 'Vazirmatn', sans-serif; display: flex; flex-direction: column; gap: 18px; overflow: hidden;">
   <div style="display: flex; align-items: baseline; gap: 14px;">
@@ -95,7 +95,7 @@ body = f'''<div dir="rtl" style="width: 1280px; height: 880px; box-sizing: borde
     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><span style="font-family: 'Lalezar', sans-serif; font-size: 20px; line-height: 1; padding: 3px 0 0 6px;">ورود</span>{entry}</div>
     <div style="display: flex; gap: 12px; font-size: 13px; line-height: 1.7;">
       <div style="flex: 1; background: #EEF9E7; border-radius: 16px; padding: 8px 14px;"><b>بدون حساب:</b> کتابخونه و جستجو، بیت امروز، فال، خوندن و شنیدن شعر، بازی تکی، نگه داشتن روی همین گوشی.</div>
-      <div style="flex: 1; background: #E8E9FF; border-radius: 16px; padding: 8px 14px;"><b>حساب لازمه:</b> امتیاز و رده‌بندی، مشاعره و بازی رودررو، پیام‌ها، دوستات، بازنشر، همگام شدن. ورود همون لحظه‌ای پرسیده می‌شه که سراغش بری.</div>
+      <div style="flex: 1; background: #E8E9FF; border-radius: 16px; padding: 8px 14px;"><b>حساب لازمه:</b> امتیاز و رده‌بندی، مشاعره و بازی رودررو، پیام‌ها، دوستات، بازنشر، همگام شدن. همون لحظه که سراغش بری می‌پرسیم؛ فقط با اپل یا گوگل، بعدش یه نام کاربری.</div>
     </div>
   </section>
 
@@ -104,7 +104,7 @@ body = f'''<div dir="rtl" style="width: 1280px; height: 880px; box-sizing: borde
 
   <div style="display: flex; gap: 14px;">
     <section aria-label="خوندن شعر" style="flex: 3; display: flex; flex-direction: column; gap: 8px; background: #FFFFFF; border-radius: 24px; padding: 16px 20px; box-shadow: 0 3px 12px rgba(20,17,43,0.08);">
-      <div style="display: flex; align-items: center; gap: 10px;"><span style="font-family: 'Lalezar', sans-serif; font-size: 20px; line-height: 1; padding-top: 3px;">خوندن شعر</span><span style="font-size: 12px; color: #4A4660;">از هر جای اپ که یه بیت یا غزل باز بشه</span><span style="margin-inline-start: auto; display: flex; gap: 6px;">{chip("ردیف ۲", "FlowRead.dc.html", False)}</span></div>
+      <div style="display: flex; align-items: center; gap: 10px;"><span style="font-family: 'Lalezar', sans-serif; font-size: 20px; line-height: 1; padding-top: 3px;">خوندن شعر</span><span style="font-size: 12px; color: #4A4660;">از هر جای اپ که یه بیت یا غزل باز بشه</span><span style="margin-inline-start: auto; display: flex; gap: 6px;">{chip("ردیف ۳", "FlowRead.dc.html", False)}</span></div>
       <div style="font-size: 13px; line-height: 1.8;"><b>بیت به بیت</b> یا <b>کل شعر</b> · «معنی این بیت» با واژه‌های نقطه‌چین · «آ»: اندازه، قلم، وزن، چینش، زمینه · نگه داشتن روی هر بیت · ▶ خوندن بیت به بیت (اگه خوانش داشته باشه) · بازی با همین غزل</div>
     </section>
     <section aria-label="امتیاز" style="flex: 2; display: flex; flex-direction: column; gap: 8px; background: #14112B; color: #FFFFFF; border-radius: 24px; padding: 16px 20px;">

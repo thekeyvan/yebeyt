@@ -15,7 +15,7 @@ Run each script with the `project` folder as its only argument, in this order. L
 cd design/canvas
 for g in gen_explore gen_calm gen_home gen_player gen_fonts gen_v11 gen_map gen_divan; do python3 -I $g.py project; done
 cp Explore_before_names.html project/Explore.dc.html
-for g in gen_names gen_shared gen_library gen_games gen_invite gen_play gen_icons gen_links apply_fonts gen_v12 gen_feedback; do python3 -I $g.py project; done
+for g in gen_names gen_shared gen_library gen_games gen_invite gen_play gen_icons gen_onboard gen_links apply_fonts gen_v12 gen_feedback; do python3 -I $g.py project; done
 ```
 
 | Script | What it makes |
@@ -30,6 +30,7 @@ for g in gen_names gen_shared gen_library gen_games gen_invite gen_play gen_icon
 | `gen_library` | All books, one book, list of ghazals |
 | `gen_games`, `gen_play`, `gen_icons` | Games catalogue, the nine game screens, game icons (`gameicons.py` is the icon set) |
 | `gen_invite` | Challenge by link, invite friends, play-with-a-friend lobby |
+| `gen_onboard` | Onboarding (welcome, taste, first game), account with Apple or Google only, username, find friends, and the sign-in gate for account-only features |
 | `gen_links` | Wires buttons to the screens they open |
 | `apply_fonts` | Self-hosted fonts and bold Parastoo as the poem font on every board |
 | `gen_v12` | Whole-poem view with the shared header, long-press state, mode toggle on every reading screen |
