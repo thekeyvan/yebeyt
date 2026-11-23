@@ -116,4 +116,6 @@ The owner asked the lead to keep going alone. These were not settled on a board 
 - **فال حافظ** (no flow designed yet): «باز کن» opens a random Hafez ghazal in the whole-poem view.
 - **دنبال کن** on a poet and the bookmark on a book are kept on the phone.
 - **Poet pictures** are the default sticker circles until slice 4.
+- **Owner's answers (23 Nov):** contemporary poets stay out until there is a source or permission. Slices are merged and pushed when the reviewer calls them clean. The old Railway `api` service and its Postgres (1.0 data) are deleted once the new server runs. hello@yebeyt.com (Zoho) is the public contact address; accounts@ksco.nl (Google) is the support email on Google's consent screen.
+- **Left for the owner (another laptop, the corporate proxy blocks gcloud here):** in Google Cloud project `beyt-515410`, rename the display name to yebeyt and set the consent screen (name «یه بیت», domain yebeyt.com, privacy and terms links); check the existing iOS OAuth client for `com.yebeyt.app`. In App Store Connect and the developer site, check the app record and Sign in with Apple for `com.yebeyt.app`.
 
