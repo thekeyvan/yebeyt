@@ -18,11 +18,17 @@ describe("OpenAPI document", () => {
     const paths = Object.keys(openApiDocument().paths ?? {}).sort();
     expect(paths).toEqual([
       "/health",
+      "/v1/admin/feedback",
+      "/v1/admin/feedback/{id}/recording",
+      "/v1/admin/feedback/{id}/screenshot",
       "/v1/admin/poets/{slug}/picture",
       "/v1/auth/apple",
       "/v1/auth/google",
       "/v1/auth/logout",
       "/v1/auth/refresh",
+      "/v1/feedback",
+      "/v1/feedback/{id}/recording",
+      "/v1/feedback/{id}/screenshot",
       "/v1/me",
       "/v1/me/avatar",
       "/v1/me/divan",
