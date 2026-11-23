@@ -5,6 +5,8 @@ import SwiftUI
 struct FontToken: Sendable {
     let file: String
     let postScript: String
+    /// The boards scale Parastoo to 84% (CSS size-adjust); multiply a board size by this.
+    let sizeAdjust: CGFloat
 }
 
 struct ShadowToken: Sendable {
@@ -36,10 +38,10 @@ enum Tokens {
     }
 
     enum Fonts {
-        static let title = FontToken(file: "Lalezar-Regular.ttf", postScript: "Lalezar-Regular")
-        static let ui = FontToken(file: "Vazirmatn.ttf", postScript: "Vazirmatn-Regular")
-        static let poem = FontToken(file: "Parastoo-Bold.ttf", postScript: "Parastoo-Bold")
-        static let poemRegular = FontToken(file: "Parastoo.ttf", postScript: "Parastoo-WOL")
+        static let title = FontToken(file: "Lalezar-Regular.ttf", postScript: "Lalezar-Regular", sizeAdjust: 1.0)
+        static let ui = FontToken(file: "Vazirmatn.ttf", postScript: "Vazirmatn-Regular", sizeAdjust: 1.0)
+        static let poem = FontToken(file: "Parastoo-Bold.ttf", postScript: "Parastoo-Bold", sizeAdjust: 0.84)
+        static let poemRegular = FontToken(file: "Parastoo.ttf", postScript: "Parastoo-WOL", sizeAdjust: 0.84)
         static let all = [title, ui, poem, poemRegular]
     }
 
@@ -54,6 +56,7 @@ enum Tokens {
             static let card: CGFloat = 20
             static let button: CGFloat = 18
             static let word: CGFloat = 12
+            static let pill: CGFloat = 999
             static let tabBar: CGFloat = 26
         }
         enum Tilt {
