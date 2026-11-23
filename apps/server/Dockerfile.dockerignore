@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/dist
+**/.turbo
+apps/ios
+apps/web
+apps/admin
+apps/android
+design
+assets
+tools
+docs
