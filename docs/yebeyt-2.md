@@ -88,12 +88,15 @@ One slice per branch, each reviewed before the next starts. The lead confirms th
 
 After these: the web app, the admin dashboard and Android, each designed first.
 
+## Settled after the boards (owner, 23 Nov)
+
+- Feedback goes inside the app to api.yebeyt.com.
+- Long-press on a couplet works everywhere a couplet is shown (home, games, divan, messages), with the same menu; add it to the map.
+- In chat, a system line appears when a friend adds to a shared divan, and the long-press menu has «به دیوان مشترک».
+- فال حافظ stays a random Hafez ghazal in the whole-poem view; no separate flow.
+
 ## Still open (ask the user)
 
-- Feedback delivery: in the app to api.yebeyt.com (recommended) or by email.
-- Long-press on every couplet everywhere in the app (proposed), and adding it to the map.
-- In chat, a system line when a friend adds to a shared divan, and «به دیوان مشترک» in the long-press menu (proposed).
-- The full fal (فال حافظ) flow is not designed yet.
 - A full end-of-round screen per game (for now `ChallengeSend` covers it).
 
 ## Decisions the lead made while the owner was away (please check)
