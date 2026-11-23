@@ -12,8 +12,10 @@ xcuserdata/
 *.xcuserstate
 .DS_Store
 
-# Local tool settings
-.claude/
+# Local tool settings (the shared agent setup is committed)
+.claude/*
+!.claude/agents/
+!.claude/settings.json
 
 # Image-generation logs
 design/**/*.log

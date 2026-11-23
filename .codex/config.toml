@@ -1,0 +1,3 @@
+# Main Codex session = the lead (high tier). Roles are in .codex/agents/. Codex reads this only for trusted projects.
+model = "gpt-6.2-sol"
+model_reasoning_effort = "high"
