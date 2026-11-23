@@ -2,7 +2,7 @@
 
 This file is the one source of rules for every coding agent on this repo: Claude Code, Codex and GitHub Copilot. `CLAUDE.md` and `.github/copilot-instructions.md` only point here.
 
-yebeyt («یه بیت») is a Persian poetry app with games, friends and messages, in a sticker style. It is being built **from scratch** as a monorepo: iOS first, then the server, the website and links; a web app, an admin dashboard and Android come later. No earlier code or user data is carried over (the old 1.0 app was never distributed; it lives only in git history, `main` before the foundations slice). The design and every product decision are in [docs/yebeyt-2.md](docs/yebeyt-2.md). Read that before planning any work.
+yebeyt («یه بیت») is a Persian poetry app with games, friends and messages, in a sticker style. It is being built **from scratch** as a monorepo: iOS first, then the server, the website and links; a web app, an admin dashboard and Android come later. No earlier code or user data is carried over (the old 1.0 app was never distributed; it lives only in git history, `main` before the foundations slice). The design and every product decision are in [docs/yebeyt-2.md](docs/yebeyt-2.md). Read that before planning any work. What only the owner can do (DNS, cloud consoles, device tests) is listed in [docs/owner-todo.md](docs/owner-todo.md).
 
 ## Repo map
 

@@ -1,8 +1,8 @@
-// Signing and bundle id. Put your own values in Config/Local.xcconfig (not committed):
+// Signing and bundle id (team yebeyt). To build under another team, override in Config/Local.xcconfig (not committed):
 //   DEVELOPMENT_TEAM = ABCDE12345
 //   PRODUCT_BUNDLE_IDENTIFIER = com.yourname.yebeyt
 PRODUCT_BUNDLE_IDENTIFIER = com.yebeyt.app
-DEVELOPMENT_TEAM =
+DEVELOPMENT_TEAM = 95YDC2AP63
 CODE_SIGN_STYLE = Automatic
 
 #include? "Local.xcconfig"
