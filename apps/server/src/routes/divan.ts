@@ -5,28 +5,23 @@ import { divanItems } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { newRouter } from "../router.js";
+import { coupletKeySchema } from "../schemas.js";
 
 const MAX_ITEMS = 2000;
 const MAX_ROWS = 20_000; // kept and removed couplets per user
 const MAX_BODY = 1024 * 1024; // 2000 items with long keys and two timestamps each stay under this
 const FUTURE_SLACK_MS = 5 * 60 * 1000;
 
-const keySchema = z
-  .string()
-  .min(3)
-  .max(200)
-  .regex(/^\/[a-z0-9_\-/]+#\d{1,5}$/)
-  .openapi({ example: "/hafez/ghazal/sh3#0", description: "<poemPath>#<coupletIndex>" });
 const time = z.iso.datetime({ offset: true }).nullish();
 
 const itemSchema = z
-  .object({ key: keySchema, keptAt: z.iso.datetime().nullable(), removedAt: z.iso.datetime().nullable() })
+  .object({ key: coupletKeySchema, keptAt: z.iso.datetime().nullable(), removedAt: z.iso.datetime().nullable() })
   .openapi("DivanItem");
 const stateSchema = z.object({ items: z.array(itemSchema) }).openapi("Divan");
 const putSchema = z
   .object({
     items: z
-      .array(z.strictObject({ key: keySchema, keptAt: time, removedAt: time }))
+      .array(z.strictObject({ key: coupletKeySchema, keptAt: time, removedAt: time }))
       .max(MAX_ITEMS),
   })
   .openapi("DivanSyncRequest");

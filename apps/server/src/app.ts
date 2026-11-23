@@ -7,7 +7,7 @@ import { requireUser } from "./middleware.js";
 import { newRouter } from "./router.js";
 import { authRoutes } from "./routes/auth.js";
 import { divanRoutes } from "./routes/divan.js";
-import { feedbackRoutes } from "./routes/feedback.js";
+import { feedbackRoutes, type UploadBudgets } from "./routes/feedback.js";
 import { feedbackAdminRoutes } from "./routes/feedbackAdmin.js";
 import { healthRoutes } from "./routes/health.js";
 import { meRoutes } from "./routes/me.js";
@@ -16,7 +16,7 @@ import { privacyRoutes } from "./routes/privacy.js";
 import { progressRoutes } from "./routes/progress.js";
 import { usernameRoutes } from "./routes/usernames.js";
 
-export function createApp(deps: Deps) {
+export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
   const app = newRouter();
 
   // One line per request: method, route pattern, status, milliseconds. Nothing else is logged.
@@ -55,7 +55,7 @@ export function createApp(deps: Deps) {
   app.route("/", privacyRoutes(deps));
   app.route("/", usernameRoutes(deps));
   app.route("/", pictureRoutes(deps));
-  app.route("/", feedbackRoutes(deps));
+  app.route("/", feedbackRoutes(deps, uploadBudgets));
   app.route("/", feedbackAdminRoutes(deps));
 
   app.openAPIRegistry.registerComponent("securitySchemes", "bearerAuth", { type: "http", scheme: "bearer", bearerFormat: "JWT" });

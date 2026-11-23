@@ -189,6 +189,7 @@
               "apple_revoke_failed",
               "payload_too_large",
               "unsupported_media_type",
+              "busy",
               "internal_error",
               "unavailable"
             ]
@@ -720,8 +721,10 @@
           },
           "couplet": {
             "type": "string",
-            "pattern": "^\\/[a-z0-9_\\-/]{1,190}#\\d{1,5}$",
-            "example": "/hafez/ghazal/sh3#2",
+            "minLength": 3,
+            "maxLength": 200,
+            "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+            "example": "/hafez/ghazal/sh3#0",
             "description": "<poemPath>#<coupletIndex>"
           },
           "mode": {
@@ -2119,7 +2122,7 @@
           "feedback"
         ],
         "summary": "Attach a screenshot to a report",
-        "description": "For reports of type bug, annoyed, idea; image/jpeg or image/png, at most 3 MB; one per report, within 15 minutes of sending it.",
+        "description": "For reports of type bug, annoyed, idea; image/jpeg or image/png, at most 3 MB, and the first bytes must match the declared type; one per report, within 15 minutes of sending it. Hourly budget: 200 MB per signed-in user, 500 MB for all guests' reports together. At most 3 uploads are handled at once.",
         "parameters": [
           {
             "schema": {
@@ -2213,7 +2216,27 @@
             }
           },
           "415": {
-            "description": "Wrong media type.",
+            "description": "Wrong media type, or the file does not start like the declared type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: the hourly upload budget is used up (200 MB per signed-in user; 500 MB for all guests together).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: too many uploads at once; retry after the Retry-After seconds.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2231,7 +2254,7 @@
           "feedback"
         ],
         "summary": "Attach a recording to a report",
-        "description": "For reports of type bug; video/mp4, at most 25 MB; one per report, within 15 minutes of sending it.",
+        "description": "For reports of type bug; video/mp4, at most 25 MB, and the first bytes must match the declared type; one per report, within 15 minutes of sending it. Hourly budget: 200 MB per signed-in user, 500 MB for all guests' reports together. At most 3 uploads are handled at once.",
         "parameters": [
           {
             "schema": {
@@ -2319,7 +2342,27 @@
             }
           },
           "415": {
-            "description": "Wrong media type.",
+            "description": "Wrong media type, or the file does not start like the declared type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: the hourly upload budget is used up (200 MB per signed-in user; 500 MB for all guests together).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: too many uploads at once; retry after the Retry-After seconds.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2361,7 +2404,6 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^\\d{4}-\\d\\d-\\d\\dT[\\d:.]+Z_[0-9a-f-]{36}$",
               "description": "The `nextBefore` of the previous page."
             },
             "required": false,

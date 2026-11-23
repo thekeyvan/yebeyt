@@ -19,6 +19,7 @@ export const ERROR_CODES = [
   "apple_revoke_failed",
   "payload_too_large",
   "unsupported_media_type",
+  "busy",
   "internal_error",
   "unavailable",
 ] as const;

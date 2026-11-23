@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { makeHarness, type Harness } from "./helpers.js";
+import { fakeFile, makeHarness, type Harness } from "./helpers.js";
 
 let h: Harness;
 beforeEach(async () => {
@@ -43,8 +43,8 @@ describe("admin feedback", () => {
       { type: "bug", text: "دوم", frequency: "once", screen: "reader", technical: { network: "wifi", steps: ["a"] } },
       accessToken,
     );
-    await upload(second.id, "screenshot", second.uploadToken, "image/png", new Uint8Array(1234));
-    await upload(second.id, "recording", second.uploadToken, "video/mp4", new Uint8Array(99));
+    await upload(second.id, "screenshot", second.uploadToken, "image/png", fakeFile("png", 1234));
+    await upload(second.id, "recording", second.uploadToken, "video/mp4", fakeFile("mp4", 99));
 
     const { status, body } = await list();
     expect(status).toBe(200);
@@ -100,13 +100,18 @@ describe("admin feedback", () => {
     expect((await list("?type=idea")).body.items.map((i: any) => i.text)).toEqual(["b"]);
     expect((await list("?type=nope")).status).toBe(400);
     expect((await list("?before=garbage")).status).toBe(400);
+    const at = "2026-06-01T12:00:00.000Z";
+    for (const bad of [`${at}_${"-".repeat(36)}`, `${at}_${"a".repeat(36)}`, `${at}_`, `${at}_not-a-uuid`, `2026-13-45T12:00:00.000Z_11111111-1111-4111-8111-111111111111`, `yesterday_11111111-1111-4111-8111-111111111111`]) {
+      expect((await list(`?before=${encodeURIComponent(bad)}`)).status, bad).toBe(400);
+    }
+    expect((await list(`?before=${at}_11111111-1111-4111-8111-111111111111`)).status).toBe(200);
   });
 
   it("downloads a screenshot and a recording as attachments, with the stored type", async () => {
     const { id, uploadToken } = await send({ type: "bug", text: "x" });
-    const png = new Uint8Array([137, 80, 78, 71, 1, 2, 3]);
+    const png = fakeFile("png", 30);
     await upload(id, "screenshot", uploadToken, "image/png", png);
-    await upload(id, "recording", uploadToken, "video/mp4", new Uint8Array([0, 0, 0, 24]));
+    await upload(id, "recording", uploadToken, "video/mp4", fakeFile("mp4", 40));
 
     const shot = await h.request(`/v1/admin/feedback/${id}/screenshot`, { token: ADMIN });
     expect(shot.status).toBe(200);

@@ -35,7 +35,14 @@ const listSchema = z
   .openapi("AdminFeedbackList");
 
 /** The cursor is the last row's "<createdAt>_<id>", so reports sent in the same millisecond are never skipped. */
-const cursorSchema = z.string().regex(/^\d{4}-\d\d-\d\dT[\d:.]+Z_[0-9a-f-]{36}$/);
+const splitCursor = (cursor: string) => {
+  const [at = "", id = ""] = cursor.split("_");
+  return { at: new Date(at), isoOk: /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(at), id };
+};
+const cursorSchema = z.string().refine((v) => {
+  const { at, isoOk, id } = splitCursor(v);
+  return isoOk && !Number.isNaN(at.getTime()) && z.uuid().safeParse(id).success;
+});
 
 export function feedbackAdminRoutes(deps: Deps) {
   const app = newRouter();
@@ -66,9 +73,7 @@ export function feedbackAdminRoutes(deps: Deps) {
       const { type, before } = c.req.valid("query");
       const conditions: (SQL | undefined)[] = [type ? eq(feedback.type, type) : undefined];
       if (before) {
-        const at = new Date(before.slice(0, before.indexOf("_")));
-        const id = before.slice(before.indexOf("_") + 1);
-        if (Number.isNaN(at.getTime())) throw new ApiError(400, "invalid_request");
+        const { at, id } = splitCursor(before);
         conditions.push(or(lt(feedback.createdAt, at), and(eq(feedback.createdAt, at), lt(feedback.id, id))));
       }
       const rows = await db

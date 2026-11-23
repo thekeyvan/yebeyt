@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+import { coupletKeySchema } from "./schemas.js";
 
 const TYPES = ["bug", "annoyed", "idea", "game", "liked"] as const;
 const text = z.string().trim().min(1).max(2000);
@@ -6,7 +7,7 @@ const text = z.string().trim().min(1).max(2000);
 const technicalSchema = z
   .strictObject({
     screen: z.string().min(1).max(64),
-    couplet: z.string().regex(/^\/[a-z0-9_\-/]{1,190}#\d{1,5}$/).openapi({ example: "/hafez/ghazal/sh3#2", description: "<poemPath>#<coupletIndex>" }),
+    couplet: coupletKeySchema,
     mode: z.string().min(1).max(32),
     recitationPosition: z.number().min(0).max(1_000_000).openapi({ description: "Seconds." }),
     textSettings: z

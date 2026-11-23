@@ -32,3 +32,11 @@ export const refreshBodySchema = z.object({ refreshToken: z.string().min(1).max(
 export const usernameSchema = z.string().min(1).max(64).openapi({ example: "hafez_fan" });
 
 export type UserView = z.infer<typeof userSchema>;
+
+/** A couplet on the phone: "<poemPath>#<coupletIndex>". Used by the divan sync and the feedback technical info. */
+export const coupletKeySchema = z
+  .string()
+  .min(3)
+  .max(200)
+  .regex(/^\/[a-z0-9_\-/]+#\d{1,5}$/)
+  .openapi({ example: "/hafez/ghazal/sh3#0", description: "<poemPath>#<coupletIndex>" });

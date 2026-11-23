@@ -11,6 +11,7 @@ import type { Config } from "../src/config.js";
 import type { Db } from "../src/db/index.js";
 import * as schema from "../src/db/schema.js";
 import type { Deps } from "../src/deps.js";
+import type { UploadBudgets } from "../src/routes/feedback.js";
 
 export const BUNDLE_ID = "com.yebeyt.app";
 export const NONCE = "test-nonce";
@@ -65,7 +66,7 @@ export async function resetDb(db: Db) {
 
 export type Harness = Awaited<ReturnType<typeof makeHarness>>;
 
-export async function makeHarness() {
+export async function makeHarness(uploadBudgets?: UploadBudgets) {
   const db = await testDb();
   await resetDb(db);
   const apple = await makeIssuer("apple-key");
@@ -82,7 +83,7 @@ export async function makeHarness() {
     googleKeys: google.keys,
     log: (line) => logs.push(line),
   };
-  const app = createApp(deps);
+  const app = createApp(deps, uploadBudgets);
 
   const nowSec = () => Math.floor(clock.time.getTime() / 1000);
   const appleToken = (sub: string, extra: JWTPayload = {}, opts: Partial<{ iss: string; aud: string; exp: number }> = {}) =>
@@ -113,4 +114,18 @@ export async function makeHarness() {
   };
 
   return { app, db, deps, clock, logs, fetchMock, appleToken, googleToken, request, signIn };
+}
+
+const HEADERS = {
+  png: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+  jpeg: [0xff, 0xd8, 0xff, 0xe0],
+  mp4: [0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d], // box size, "ftyp", "isom"
+  html: [0x3c, 0x68, 0x74, 0x6d, 0x6c, 0x3e, 0x3c, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x3e],
+};
+
+/** `size` bytes that start like a real PNG, JPEG or MP4 file (or like HTML). */
+export function fakeFile(kind: keyof typeof HEADERS, size: number): Uint8Array {
+  const out = new Uint8Array(size).fill(7);
+  out.set(HEADERS[kind].slice(0, size));
+  return out;
 }

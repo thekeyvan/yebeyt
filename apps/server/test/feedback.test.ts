@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { sha256Hex } from "../src/crypto.js";
 import { feedback, feedbackAttachments } from "../src/db/schema.js";
-import { makeHarness, type Harness } from "./helpers.js";
+import { fakeFile, makeHarness, type Harness } from "./helpers.js";
 
 let h: Harness;
 beforeEach(async () => {
@@ -43,7 +43,6 @@ const put = (id: string, kind: "screenshot" | "recording", body: Uint8Array | st
     headers: { "content-type": contentType, ...(token ? { "x-upload-token": token } : {}) },
     body: body as BodyInit,
   });
-const bytes = (n: number) => new Uint8Array(n).fill(7);
 
 describe("POST /v1/feedback", () => {
   it.each(Object.keys(BODIES) as (keyof typeof BODIES)[])("accepts a %s report and stores it", async (type) => {
@@ -174,7 +173,7 @@ describe("POST /v1/feedback", () => {
       headers: { "x-forwarded-for": ip, "x-real-ip": ip, "cf-connecting-ip": ip, "user-agent": "SecretAgent/1.0" },
     });
     const { id, uploadToken } = (await res.json()) as { id: string; uploadToken: string };
-    await put(id, "screenshot", bytes(10), "image/png", uploadToken);
+    await put(id, "screenshot", fakeFile("png", 10), "image/png", uploadToken);
     const rows = JSON.stringify([await h.db.select().from(feedback), await h.db.select().from(feedbackAttachments), h.logs]);
     expect(rows).not.toContain(ip);
     expect(rows).not.toContain("SecretAgent");
@@ -213,9 +212,9 @@ describe("feedback rate limits", () => {
 describe("feedback attachments", () => {
   it("stores a screenshot and a recording for a bug", async () => {
     const { id, uploadToken } = await created(BODIES.bug);
-    const shot = await put(id, "screenshot", bytes(1000), "image/jpeg", uploadToken);
+    const shot = await put(id, "screenshot", fakeFile("jpeg", 1000), "image/jpeg", uploadToken);
     expect(shot.status).toBe(204);
-    expect((await put(id, "recording", bytes(5000), "video/mp4", uploadToken)).status).toBe(204);
+    expect((await put(id, "recording", fakeFile("mp4", 5000), "video/mp4", uploadToken)).status).toBe(204);
     const rows = await h.db.select().from(feedbackAttachments).where(eq(feedbackAttachments.feedbackId, id));
     expect(rows.map((r) => [r.kind, r.contentType, r.size, r.bytes.length]).sort()).toEqual([
       ["recording", "video/mp4", 5000, 5000],
@@ -225,21 +224,21 @@ describe("feedback attachments", () => {
 
   it.each(["annoyed", "idea"] as const)("allows a screenshot but no recording on %s", async (type) => {
     const { id, uploadToken } = await created(BODIES[type]);
-    expect((await put(id, "screenshot", bytes(10), "image/png", uploadToken)).status).toBe(204);
-    expect((await put(id, "recording", bytes(10), "video/mp4", uploadToken)).status).toBe(400);
+    expect((await put(id, "screenshot", fakeFile("png", 10), "image/png", uploadToken)).status).toBe(204);
+    expect((await put(id, "recording", fakeFile("mp4", 10), "video/mp4", uploadToken)).status).toBe(400);
   });
 
   it.each(["game", "liked"] as const)("allows no attachment on %s", async (type) => {
     const { id, uploadToken } = await created(BODIES[type]);
-    expect((await put(id, "screenshot", bytes(10), "image/png", uploadToken)).status).toBe(400);
-    expect((await put(id, "recording", bytes(10), "video/mp4", uploadToken)).status).toBe(400);
+    expect((await put(id, "screenshot", fakeFile("png", 10), "image/png", uploadToken)).status).toBe(400);
+    expect((await put(id, "recording", fakeFile("mp4", 10), "video/mp4", uploadToken)).status).toBe(400);
   });
 
   it("refuses a missing or wrong token, and another report's token", async () => {
     const a = await created();
     const b = await created();
     for (const token of [null, "wrong", b.uploadToken]) {
-      const res = await put(a.id, "screenshot", bytes(10), "image/png", token);
+      const res = await put(a.id, "screenshot", fakeFile("png", 10), "image/png", token);
       expect(res.status).toBe(403);
       expect(await res.json()).toEqual({ error: "forbidden" });
     }
@@ -249,15 +248,15 @@ describe("feedback attachments", () => {
   it("refuses a token after 15 minutes", async () => {
     const { id, uploadToken } = await created();
     h.clock.time = new Date(h.clock.time.getTime() + 14 * 60_000);
-    expect((await put(id, "screenshot", bytes(10), "image/png", uploadToken)).status).toBe(204);
+    expect((await put(id, "screenshot", fakeFile("png", 10), "image/png", uploadToken)).status).toBe(204);
     h.clock.time = new Date(h.clock.time.getTime() + 60_001);
-    expect((await put(id, "recording", bytes(10), "video/mp4", uploadToken)).status).toBe(403);
+    expect((await put(id, "recording", fakeFile("mp4", 10), "video/mp4", uploadToken)).status).toBe(403);
   });
 
   it("answers 409 already_uploaded for a second upload of the same kind", async () => {
     const { id, uploadToken } = await created();
-    await put(id, "screenshot", bytes(10), "image/png", uploadToken);
-    const res = await put(id, "screenshot", bytes(20), "image/png", uploadToken);
+    await put(id, "screenshot", fakeFile("png", 10), "image/png", uploadToken);
+    const res = await put(id, "screenshot", fakeFile("png", 20), "image/png", uploadToken);
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: "already_uploaded" });
     const [row] = await h.db.select().from(feedbackAttachments);
@@ -266,35 +265,141 @@ describe("feedback attachments", () => {
 
   it("answers 404 for an unknown report and 400 for a malformed id", async () => {
     const { uploadToken } = await created();
-    expect((await put("11111111-1111-4111-8111-111111111111", "screenshot", bytes(10), "image/png", uploadToken)).status).toBe(404);
-    expect((await put("not-an-id", "screenshot", bytes(10), "image/png", uploadToken)).status).toBe(400);
+    expect((await put("11111111-1111-4111-8111-111111111111", "screenshot", fakeFile("png", 10), "image/png", uploadToken)).status).toBe(404);
+    expect((await put("not-an-id", "screenshot", fakeFile("png", 10), "image/png", uploadToken)).status).toBe(400);
   });
 
   it("checks the media type", async () => {
     const { id, uploadToken } = await created();
     for (const type of ["image/webp", "image/gif", "text/html", "video/mp4", "application/octet-stream"]) {
-      expect((await put(id, "screenshot", bytes(10), type, uploadToken)).status).toBe(415);
+      expect((await put(id, "screenshot", fakeFile("png", 10), type, uploadToken)).status).toBe(415);
     }
     for (const type of ["image/png", "video/quicktime", "text/html"]) {
-      expect((await put(id, "recording", bytes(10), type, uploadToken)).status).toBe(415);
+      expect((await put(id, "recording", fakeFile("png", 10), type, uploadToken)).status).toBe(415);
     }
-    expect((await put(id, "screenshot", bytes(10), "image/png; charset=binary", uploadToken)).status).toBe(204);
+    expect((await put(id, "screenshot", fakeFile("png", 10), "image/png; charset=binary", uploadToken)).status).toBe(204);
   });
 
   it("refuses an empty upload", async () => {
     const { id, uploadToken } = await created();
-    expect((await put(id, "screenshot", bytes(0), "image/png", uploadToken)).status).toBe(400);
+    expect((await put(id, "screenshot", fakeFile("png", 0), "image/png", uploadToken)).status).toBe(400);
   });
 
   it("limits a screenshot to 3 MB and a recording to 25 MB", async () => {
     const { id, uploadToken } = await created();
     const MB = 1024 * 1024;
-    const big = await put(id, "screenshot", bytes(3 * MB + 1), "image/png", uploadToken);
+    const big = await put(id, "screenshot", fakeFile("png", 3 * MB + 1), "image/png", uploadToken);
     expect(big.status).toBe(413);
     expect(await big.json()).toEqual({ error: "payload_too_large" });
-    expect((await put(id, "recording", bytes(25 * MB + 1), "video/mp4", uploadToken)).status).toBe(413);
-    expect((await put(id, "screenshot", bytes(3 * MB), "image/png", uploadToken)).status).toBe(204);
-    expect((await put(id, "recording", bytes(2 * MB), "video/mp4", uploadToken)).status).toBe(204);
+    expect((await put(id, "recording", fakeFile("mp4", 25 * MB + 1), "video/mp4", uploadToken)).status).toBe(413);
+    expect((await put(id, "screenshot", fakeFile("png", 3 * MB), "image/png", uploadToken)).status).toBe(204);
+    expect((await put(id, "recording", fakeFile("mp4", 2 * MB), "video/mp4", uploadToken)).status).toBe(204);
+  });
+});
+
+describe("attachment contents", () => {
+  it("accepts files that start like their declared type", async () => {
+    const { id, uploadToken } = await created();
+    expect((await put(id, "screenshot", fakeFile("jpeg", 100), "image/jpeg", uploadToken)).status).toBe(204);
+    expect((await put(id, "recording", fakeFile("mp4", 100), "video/mp4", uploadToken)).status).toBe(204);
+    await h.db.delete(feedbackAttachments);
+    expect((await put(id, "screenshot", fakeFile("png", 100), "image/png", uploadToken)).status).toBe(204);
+  });
+
+  it.each([
+    ["screenshot", "html", "image/png"],
+    ["screenshot", "html", "image/jpeg"],
+    ["screenshot", "jpeg", "image/png"],
+    ["screenshot", "png", "image/jpeg"],
+    ["screenshot", "mp4", "image/png"],
+    ["recording", "png", "video/mp4"],
+    ["recording", "html", "video/mp4"],
+  ] as const)("refuses a %s whose bytes are %s but declared %s", async (kind, real, declared) => {
+    const { id, uploadToken } = await created();
+    const res = await put(id, kind, fakeFile(real, 100), declared, uploadToken);
+    expect(res.status).toBe(415);
+    expect(await res.json()).toEqual({ error: "unsupported_media_type" });
+    expect(await h.db.select().from(feedbackAttachments)).toHaveLength(0);
+  });
+
+  it("refuses files shorter than their signature", async () => {
+    const { id, uploadToken } = await created();
+    expect((await put(id, "screenshot", fakeFile("png", 4), "image/png", uploadToken)).status).toBe(415);
+    expect((await put(id, "recording", fakeFile("mp4", 6), "video/mp4", uploadToken)).status).toBe(415);
+  });
+});
+
+describe("attachment budgets", () => {
+  const KB = 1024;
+  // The real budgets are 500 MB for guests and 200 MB per user; small ones keep the test fast.
+  beforeEach(async () => {
+    h = await makeHarness({ guests: 1000 * KB, user: 400 * KB });
+  });
+  const sendMany = async (token: string | undefined, count: number) => {
+    const { id, uploadToken } = await created(BODIES.bug, token);
+    const file = fakeFile("mp4", 100 * KB);
+    const statuses: number[] = [];
+    for (let i = 0; i < count; i++) {
+      statuses.push((await put(id, "recording", file, "video/mp4", uploadToken)).status);
+      await h.db.delete(feedbackAttachments); // one report may upload again; the budget lives in memory
+    }
+    return { id, uploadToken, statuses };
+  };
+
+  it("gives a signed-in user a budget per hour, and others their own", async () => {
+    const a = await h.signIn("g-1");
+    const b = await h.signIn("g-2");
+    const { statuses, id, uploadToken } = await sendMany(a.accessToken, 5);
+    expect(statuses).toEqual([204, 204, 204, 204, 429]);
+    const refused = await put(id, "recording", fakeFile("mp4", 10), "video/mp4", uploadToken);
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toEqual({ error: "rate_limited" });
+    expect((await sendMany(b.accessToken, 1)).statuses).toEqual([204]);
+  });
+
+  it("gives all guests together one budget, apart from signed-in users", async () => {
+    const { statuses } = await sendMany(undefined, 11);
+    expect(statuses).toEqual([...Array(10).fill(204), 429]);
+    const guest = await created(BODIES.bug);
+    expect((await put(guest.id, "recording", fakeFile("mp4", 10), "video/mp4", guest.uploadToken)).status).toBe(429);
+    const user = await h.signIn();
+    const own = await created(BODIES.bug, user.accessToken);
+    expect((await put(own.id, "recording", fakeFile("mp4", 10), "video/mp4", own.uploadToken)).status).toBe(204);
+  });
+
+  it("starts a new hour after the window", async () => {
+    const user = await h.signIn();
+    const { statuses } = await sendMany(user.accessToken, 5);
+    expect(statuses.at(-1)).toBe(429);
+    h.clock.time = new Date(h.clock.time.getTime() + 61 * 60_000);
+    const next = await created(BODIES.bug, (await h.signIn()).accessToken);
+    expect((await put(next.id, "recording", fakeFile("mp4", 10), "video/mp4", next.uploadToken)).status).toBe(204);
+  });
+
+});
+
+describe("concurrent uploads", () => {
+  const MB = 1024 * 1024;
+
+  it("handles at most 3 uploads at once and answers 503 busy with Retry-After to the rest", async () => {
+    const reports = await Promise.all([1, 2, 3, 4].map(() => created()));
+    const results = await Promise.all(
+      reports.map((r) => put(r.id, "screenshot", fakeFile("png", 2 * MB), "image/png", r.uploadToken)),
+    );
+    const busy = results.filter((r) => r.status === 503);
+    expect(results.filter((r) => r.status === 204)).toHaveLength(3);
+    expect(busy).toHaveLength(1);
+    expect(busy[0]!.headers.get("retry-after")).toBe("5");
+    expect(await busy[0]!.json()).toEqual({ error: "busy" });
+    // the slots are free again afterwards
+    const again = reports.find((_, i) => results[i]!.status === 503)!;
+    expect((await put(again.id, "screenshot", fakeFile("png", 10), "image/png", again.uploadToken)).status).toBe(204);
+  });
+
+  it("frees the slot after a refused upload", async () => {
+    const r = await created();
+    for (let i = 0; i < 5; i++) expect((await put(r.id, "screenshot", fakeFile("html", 10), "image/png", r.uploadToken)).status).toBe(415);
+    expect((await put(r.id, "screenshot", fakeFile("png", 10), "image/png", r.uploadToken)).status).toBe(204);
   });
 });
 
@@ -302,7 +407,7 @@ describe("deleting the account", () => {
   it("keeps the feedback and its attachments as anonymous", async () => {
     const { accessToken, user } = await h.signIn();
     const { id, uploadToken } = await created(BODIES.bug, accessToken);
-    await put(id, "screenshot", bytes(10), "image/png", uploadToken);
+    await put(id, "screenshot", fakeFile("png", 10), "image/png", uploadToken);
     const [before] = await h.db.select().from(feedback).where(eq(feedback.id, id));
     expect(before!.userId).toBe(user.id);
 
