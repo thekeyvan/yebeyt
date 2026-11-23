@@ -173,6 +173,7 @@
             "enum": [
               "invalid_request",
               "bad_timestamp",
+              "divan_full",
               "invalid_token",
               "unauthorized",
               "forbidden",
@@ -1208,7 +1209,7 @@
           "me"
         ],
         "summary": "Merge the phone's divan into the stored one",
-        "description": "Up to 2000 items. Per key the later keptAt and the later removedAt win, so a couplet is kept when keptAt is after removedAt. Repeating a request changes nothing. A timestamp more than 5 minutes ahead of the server's clock is refused (bad_timestamp). Answers the full merged state.",
+        "description": "Up to 2000 items per request and 20000 per user. Items with no timestamp are ignored. Per key the later keptAt and the later removedAt win, so a couplet is kept when keptAt is after removedAt. Repeating a request changes nothing. A timestamp more than 5 minutes ahead of the server's clock is refused (bad_timestamp). Answers the full merged state.",
         "security": [
           {
             "bearerAuth": []
@@ -1256,7 +1257,7 @@
             }
           },
           "413": {
-            "description": "The body is over 1 MB.",
+            "description": "payload_too_large (body over 1 MB), or divan_full (the user would have more than 20 000 items).",
             "content": {
               "application/json": {
                 "schema": {

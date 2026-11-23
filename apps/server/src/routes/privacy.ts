@@ -43,7 +43,7 @@ export function privacyRoutes(deps: Deps) {
   const load = async (userId: string): Promise<Settings> => {
     const [row] = await db.select().from(privacySettings).where(eq(privacySettings.userId, userId));
     if (!row) return DEFAULTS;
-    const { userId: _id, updatedAt: _at, ...settings } = row;
+    const { userId: _id, ...settings } = row;
     return settings;
   };
 
@@ -78,7 +78,7 @@ export function privacyRoutes(deps: Deps) {
         await db
           .insert(privacySettings)
           .values({ ...DEFAULTS, ...patch, userId })
-          .onConflictDoUpdate({ target: privacySettings.userId, set: { ...patch, updatedAt: deps.now() } });
+          .onConflictDoUpdate({ target: privacySettings.userId, set: patch });
       }
       return c.json(await load(userId), 200);
     },

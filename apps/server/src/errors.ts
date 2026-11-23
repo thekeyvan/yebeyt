@@ -3,6 +3,7 @@ import { z } from "@hono/zod-openapi";
 export const ERROR_CODES = [
   "invalid_request",
   "bad_timestamp",
+  "divan_full",
   "invalid_token",
   "unauthorized",
   "forbidden",

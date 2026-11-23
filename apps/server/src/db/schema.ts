@@ -102,5 +102,4 @@ export const privacySettings = pgTable("privacy_settings", {
   messagesFrom: text("messages_from", { enum: ["all", "friends"] }).notNull(),
   gameInvitesFrom: text("game_invites_from", { enum: ["all", "friends"] }).notNull(),
   allowReposts: boolean("allow_reposts").notNull(),
-  updatedAt: timestamptz("updated_at").notNull().defaultNow(),
 });

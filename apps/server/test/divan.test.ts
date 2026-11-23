@@ -84,6 +84,55 @@ describe("divan", () => {
     expect(await res.json()).toEqual({ items: [{ key: A, keptAt: T2, removedAt: T3 }] });
   });
 
+  it("survives two parallel syncs that list the keys in opposite orders", async () => {
+    const { accessToken } = await h.signIn();
+    const keys = Array.from({ length: 300 }, (_, i) => `/hafez/ghazal/sh${i}#0`);
+    const items = keys.map((key) => ({ key, keptAt: T1 }));
+    const results = await Promise.all([put(accessToken, items), put(accessToken, [...items].reverse())]);
+    expect(results.map((r) => r.status)).toEqual([200, 200]);
+    expect((await get(accessToken)).items).toHaveLength(300);
+  });
+
+  it("lists items in plain byte order of the key", async () => {
+    const { accessToken } = await h.signIn();
+    const keys = ["/b/x#1", "/a-b/x#1", "/a/x#10", "/a/x#2", "/a_b/x#1", "/a/x#1"];
+    await put(accessToken, keys.map((key) => ({ key, keptAt: T1 })));
+    expect((await get(accessToken)).items.map((i) => (i as { key: string }).key)).toEqual([...keys].sort());
+  });
+
+  it("accepts offsets and answers in UTC", async () => {
+    const { accessToken } = await h.signIn();
+    const res = await put(accessToken, [{ key: A, keptAt: "2026-06-01T12:30:00+02:00", removedAt: "2026-06-01T10:00:00.000-01:00" }]);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ items: [{ key: A, keptAt: "2026-06-01T10:30:00.000Z", removedAt: "2026-06-01T11:00:00.000Z" }] });
+  });
+
+  it("checks the future limit after turning an offset into UTC", async () => {
+    const { accessToken } = await h.signIn();
+    const res = await put(accessToken, [{ key: A, keptAt: "2026-06-01T14:30:00+02:00" }]); // 12:30Z, clock is 12:00Z
+    expect(await res.json()).toEqual({ error: "bad_timestamp" });
+  });
+
+  it("ignores items with no timestamps", async () => {
+    const { accessToken } = await h.signIn();
+    const res = await put(accessToken, [{ key: A }, { key: B, keptAt: null, removedAt: null }]);
+    expect(await res.json()).toEqual({ items: [] });
+  });
+
+  it("refuses to grow past 20 000 items per user, and rolls the request back", async () => {
+    const { accessToken } = await h.signIn();
+    const batch = (from: number, n: number) => Array.from({ length: n }, (_, i) => ({ key: `/p/x${from + i}#0`, keptAt: T1 }));
+    for (let i = 0; i < 10; i++) expect((await put(accessToken, batch(i * 2000, 2000))).status).toBe(200);
+    const full = await put(accessToken, [...batch(20_000, 1), { key: A, removedAt: T2 }]);
+    expect(full.status).toBe(413);
+    expect(await full.json()).toEqual({ error: "divan_full" });
+    const { items } = await get(accessToken);
+    expect(items).toHaveLength(20_000);
+    expect(items.some((i) => (i as { key: string }).key === A)).toBe(false);
+    // existing keys can still be updated
+    expect((await put(accessToken, [{ key: "/p/x0#0", removedAt: T2 }])).status).toBe(200);
+  });
+
   it("keeps each user's divan apart", async () => {
     const a = await h.signIn("g-1");
     const b = await h.signIn("g-2");

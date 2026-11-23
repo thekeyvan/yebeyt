@@ -14,8 +14,7 @@ CREATE TABLE "privacy_settings" (
 	"in_global_leaderboard" boolean NOT NULL,
 	"messages_from" text NOT NULL,
 	"game_invites_from" text NOT NULL,
-	"allow_reposts" boolean NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"allow_reposts" boolean NOT NULL
 );
 --> statement-breakpoint
 ALTER TABLE "users" ADD COLUMN "avatar" jsonb;--> statement-breakpoint
