@@ -17,7 +17,7 @@ struct JigsawScreen: View {
         ZStack {
             if let session {
                 if session.finished {
-                    RoundEndScreen(session: session)
+                    RoundEndScreen(summary: session.round.summary)
                 } else {
                     play(session)
                 }
@@ -112,17 +112,7 @@ struct JigsawScreen: View {
         HStack(spacing: 12) {
             GameCloseButton { app.closeGame() }
             ProgressDots(round: session.round)
-            HStack(spacing: 4) {
-                LineIcon(shape: SVGShape(d: "M4 13a8 8 0 1 0 16 0a8 8 0 1 0-16 0zM12 9v4l2.5 2M9.5 2.5h5"), size: 15, lineWidth: 2.4, fill: nil)
-                Text(session.timeText).font(.ui(15, weight: .bold))
-            }
-            .foregroundStyle(Tokens.Colors.ink)
-            .padding(.horizontal, 11).padding(.vertical, 6)
-            .background(Capsule().fill(Tokens.Colors.white).shadow(color: Tokens.Colors.ink.opacity(0.14), radius: 4, x: 0, y: 2))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("زمان")
-            .accessibilityValue(session.timeText)
-            .accessibilityIdentifier("timer")
+            TimerCapsule(text: session.timeText)
         }
     }
 
@@ -175,13 +165,30 @@ struct JigsawScreen: View {
     }
 }
 
-/// The ten dots: right couplets green, wrong ones red, the one in play lapis with a halo.
+/// The dots of a round, one for each question: right ones green, wrong ones red, the one in play lapis with a halo.
 struct ProgressDots: View {
-    let round: JigsawRound
+    let total: Int
+    /// One for each question answered so far.
+    let results: [Bool]
+    /// The sheet of the last answer is open, so no dot is «in play».
+    let sheetOpen: Bool
+    /// «بیت ۴ از ۱۰», «سؤال ۴ از ۱۰».
+    let noun: String
+
+    init(round: JigsawRound) {
+        self.init(total: round.questions.count, results: round.answers.map(\.result.isRight), sheetOpen: round.sheetOpen)
+    }
+
+    init(total: Int, results: [Bool], sheetOpen: Bool, noun: String = "بیت") {
+        self.total = total
+        self.results = results
+        self.sheetOpen = sheetOpen
+        self.noun = noun
+    }
 
     var body: some View {
         HStack {
-            ForEach(round.questions.indices, id: \.self) { index in
+            ForEach(0..<total, id: \.self) { index in
                 if index == 0 { dot(index) } else { Spacer(minLength: 0); dot(index) }
             }
         }
@@ -189,14 +196,14 @@ struct ProgressDots: View {
         .frame(maxWidth: .infinity)
         .background(Capsule().fill(Tokens.Colors.white).shadow(color: Tokens.Colors.ink.opacity(0.12), radius: 4, x: 0, y: 2))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("بیت \(PersianDigits.string(min(round.answers.count + 1, round.questions.count))) از \(PersianDigits.string(round.questions.count))")
+        .accessibilityLabel("\(noun) \(PersianDigits.string(min(results.count + 1, total))) از \(PersianDigits.string(total))")
         .accessibilityIdentifier("progress")
     }
 
     @ViewBuilder private func dot(_ index: Int) -> some View {
-        if index < round.answers.count {
-            Circle().fill(round.answers[index].result.isRight ? Tokens.Colors.green : Tokens.Colors.fire).frame(width: 14, height: 14)
-        } else if index == round.answers.count, !round.sheetOpen {
+        if index < results.count {
+            Circle().fill(results[index] ? Tokens.Colors.green : Tokens.Colors.fire).frame(width: 14, height: 14)
+        } else if index == results.count, !sheetOpen {
             Circle().fill(Tokens.Colors.lapis).frame(width: 18, height: 18)
                 .background(Circle().fill(Color(hex: 0xD6D8FF)).frame(width: 24, height: 24))
         } else {

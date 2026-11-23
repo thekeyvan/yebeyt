@@ -70,6 +70,25 @@ struct BulbIcon: View {
     }
 }
 
+/// The white capsule with the clock and the time left («۰:۱۲»).
+struct TimerCapsule: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            LineIcon(shape: SVGShape(d: "M4 13a8 8 0 1 0 16 0a8 8 0 1 0-16 0zM12 9v4l2.5 2M9.5 2.5h5"), size: 15, lineWidth: 2.4, fill: nil)
+            Text(text).font(.ui(15, weight: .bold))
+        }
+        .foregroundStyle(Tokens.Colors.ink)
+        .padding(.horizontal, 11).padding(.vertical, 6)
+        .background(Capsule().fill(Tokens.Colors.white).shadow(color: Tokens.Colors.ink.opacity(0.14), radius: 4, x: 0, y: 2))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("زمان")
+        .accessibilityValue(text)
+        .accessibilityIdentifier("timer")
+    }
+}
+
 /// The amber score sticker: «+۳۶۰».
 struct ScoreSticker: View {
     let points: Int

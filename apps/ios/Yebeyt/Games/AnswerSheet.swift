@@ -7,6 +7,8 @@ struct AnswerSheet: View {
     @Environment(ReaderMarks.self) private var marks
     let couplet: GameCouplet
     let right: Bool
+    /// The title of the sheet; «درست چسبوندی!» / «این یکی نشد» when not given.
+    var title: String?
     /// «+۱۲۰ · ۱۸ ثانیه»
     let detail: String?
     let buttonTitle: String
@@ -59,7 +61,7 @@ struct AnswerSheet: View {
             .frame(width: 46, height: 46)
             .tilted(-8)
             VStack(alignment: .leading, spacing: 0) {
-                Text(right ? "درست چسبوندی!" : "این یکی نشد").font(.title(26)).foregroundStyle(Tokens.Colors.ink)
+                Text(title ?? (right ? "درست چسبوندی!" : "این یکی نشد")).font(.title(26)).foregroundStyle(Tokens.Colors.ink)
                     .accessibilityIdentifier("verdict")
                 if let detail { Text(detail).font(.ui(13)).foregroundStyle(Tokens.Colors.muted) }
             }

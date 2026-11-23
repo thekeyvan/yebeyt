@@ -16,6 +16,10 @@ struct GameHost: View {
                 }
             case .jigsaw(let start):
                 JigsawScreen(start: start)
+            case .quiz(let start):
+                QuizScreen(start: start)
+            case .match:
+                MatchScreen()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

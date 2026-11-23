@@ -1,18 +1,16 @@
 import SwiftUI
 
-/// ChallengeSend, for جورچین: the points, «n از ۱۰», and — until challenges and links exist — the round's
+/// ChallengeSend, for every solo game: the points, «n از ۱۰», and — until challenges and links exist — the round's
 /// couplets as rows that open the reader.
 struct RoundEndScreen: View {
     @Environment(AppModel.self) private var app
-    let session: JigsawSession
-
-    private var round: JigsawRound { session.round }
+    let summary: RoundSummary
 
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
                 topBar
-                summary
+                scoreRow
                 couplets
             }
             .padding(.horizontal, 18)
@@ -30,7 +28,7 @@ struct RoundEndScreen: View {
             }
             .accessibilityIdentifier("roundEndBack")
             Spacer()
-            Text("+\(PersianDigits.string(round.totalPoints)) امتیاز")
+            Text("+\(PersianDigits.string(summary.points)) امتیاز")
                 .font(.title(16)).foregroundStyle(Tokens.Colors.ink)
                 .padding(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
                 .padding(.bottom, 2)
@@ -39,11 +37,11 @@ struct RoundEndScreen: View {
         }
     }
 
-    private var summary: some View {
+    private var scoreRow: some View {
         HStack(spacing: 16) {
             VStack(spacing: 0) {
-                Text(PersianDigits.string(round.rightCount)).font(.title(40)).frame(height: 40).padding(.top, 6)
-                Text("از \(PersianDigits.string(round.questions.count))").font(.ui(12, weight: .bold))
+                Text(PersianDigits.string(summary.right)).font(.title(40)).frame(height: 40).padding(.top, 6)
+                Text("از \(PersianDigits.string(summary.total))").font(.ui(12, weight: .bold))
             }
             .foregroundStyle(Tokens.Colors.white)
             .frame(width: 86, height: 86)
@@ -54,25 +52,17 @@ struct RoundEndScreen: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("تموم شد!").font(.title(28)).foregroundStyle(Tokens.Colors.ink)
                     .accessibilityAddTraits(.isHeader)
-                Text(subtitle).font(.ui(13)).foregroundStyle(Tokens.Colors.muted)
+                Text(summary.subtitle).font(.ui(13)).foregroundStyle(Tokens.Colors.muted)
             }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 4).padding(.top, 4)
     }
 
-    /// «جورچین بیت · ۱۰ بیت سعدی · ۱:۴۲»
-    private var subtitle: String {
-        let seconds = round.elapsed
-        let time = "\(PersianDigits.string(seconds / 60)):\(PersianDigits.string(seconds % 60 / 10))\(PersianDigits.string(seconds % 10))"
-        let count = "\(PersianDigits.string(round.questions.count)) بیت" + (round.singlePoet.map { " \($0)" } ?? "")
-        return "جورچین بیت · \(count) · \(time)"
-    }
-
     private var couplets: some View {
         VStack(spacing: 8) {
-            ForEach(Array(round.questions.enumerated()), id: \.offset) { index, question in
-                row(question.couplet, result: index < round.answers.count ? round.answers[index].result.isRight : nil)
+            ForEach(Array(summary.rows.enumerated()), id: \.offset) { _, item in
+                row(item.couplet, result: item.result)
             }
         }
     }
