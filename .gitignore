@@ -26,3 +26,7 @@ design/**/*.log
 # Downloads cached by tools/ganjoor/build.py
 tools/ganjoor/.cache/
 __pycache__/
+
+# Local environment files
+.env
+.env.*

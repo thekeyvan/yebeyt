@@ -11,16 +11,16 @@ Folders are added only when their first slice lands.
 | Path | What |
 |---|---|
 | `apps/ios/` | SwiftUI app (iOS 17+, Swift 6, XcodeGen `project.yml`, targets `Yebeyt`, `YebeytTests` (unit) and `YebeytUITests` (UI; `xcodebuild test` runs both), bundle id `com.yebeyt.app`) |
-| `apps/server/` | (slice 4) Backend at api.yebeyt.com: TypeScript, Hono, Postgres, Drizzle, Zod/OpenAPI, WebSocket for live games. Hosted on Railway |
+| `apps/server/` | Backend at api.yebeyt.com: TypeScript, Hono, Postgres, Drizzle (migrations in `drizzle/`, applied on start), Zod/OpenAPI; Sign in with Apple and Google, usernames, guest-progress carry-over, poet pictures. WebSocket for live games comes in slice 7. Hosted on Railway (`Dockerfile`, `railway.json`; env vars and deploy in its `README.md`) |
 | `apps/web/` | (slice 9) Next.js: yebeyt.com, the link pages `/c` `/i` `/g`, apple-app-site-association; later the web app. Hosted on Railway |
 | `apps/admin/`, `apps/android/` | (later) Admin dashboard (Next.js), Android (Kotlin + Jetpack Compose) |
 | `packages/tokens/` | `tokens.json`: the one source of colours, fonts and sticker sizes. `tools/make_tokens.py` writes the platform files from it |
-| `packages/api/` | (slice 4) The OpenAPI contract; clients for each platform are generated from it |
+| `packages/api/` | `openapi.json`: the OpenAPI contract, written from the server's routes by `api:generate` (never edit by hand); clients for each platform are generated from it |
 | `assets/fonts/` | Every font file and its licence (`licenses/`). Apps take the fonts they use from here |
 | `design/canvas/` | The design: one HTML file per screen in `project/`, the scripts that make them, and their `README.md` |
 | `tools/` | Scripts: tokens (`make_tokens.py`), agent roles, the placeholder app icon (`make_icon.swift`), and `ganjoor/build.py`, the poetry pipeline: it reads github.com/ganjoor/ganjoor-data at one pinned commit and `ganjoor/curation.json`, and writes `apps/ios/Yebeyt/Resources/Data/` (`poets.json`, the bundled `book-<id>.json` files, `library.json` and one `index-<catId>.json` per library book; download cache in `tools/ganjoor/.cache`, gitignored) |
 
-JavaScript and TypeScript packages will share one pnpm workspace with Turborepo, added with the first such package.
+JavaScript and TypeScript packages share one pnpm workspace (`pnpm-workspace.yaml`: `apps/*`, `packages/*`) with Turborepo (`turbo.json`).
 
 ## Build and check
 
@@ -32,7 +32,15 @@ JavaScript and TypeScript packages will share one pnpm workspace with Turborepo,
   Use any simulator from `xcrun simctl list devices available`.
 - Tokens: after editing `packages/tokens/tokens.json`, run `python3 tools/make_tokens.py`; `python3 tools/make_tokens.py --check` fails when a generated file is out of date. Never edit generated token files by hand.
 - Poetry data: `python3 tools/ganjoor/build.py` rebuilds `apps/ios/Yebeyt/Resources/Data` from ganjoor-data (pinned commit in `build.py`, `--sha` overrides; downloads are cached in `tools/ganjoor/.cache`). `python3 tools/ganjoor/build.py --check` fails when the committed files are out of date, and `python3 -m unittest tools/ganjoor/test_build.py tools/ganjoor/test_library.py` runs the pipeline's tests. Recitation counts (the popularity in the indexes) come from the committed snapshot `tools/ganjoor/recitations.json` ({poemId: count}, sorted): a normal build and `--check` read only it and never call the network. `python3 tools/ganjoor/build.py --refresh-recitations` is the only thing that queries api.ganjoor.net (one query per category, downloaded into `tools/ganjoor/.cache/audio`, which a refresh clears first); it rewrites the snapshot and then builds, so commit both together. Never edit the generated data by hand.
-- Server (from slice 4): its own tests run with the server's test command, documented in `apps/server/`.
+- Server and other TypeScript (Node 22 or newer, pnpm 12; from the repo root):
+  ```bash
+  pnpm install
+  pnpm -r typecheck
+  pnpm -r test                                # vitest; the database is in-process PGlite, no network
+  pnpm --filter @yebeyt/server api:check      # fails when packages/api/openapi.json is stale; fix with api:generate and commit
+  pnpm --filter @yebeyt/server build
+  ```
+  After editing `apps/server/src/db/schema.ts` run `pnpm --filter @yebeyt/server db:generate` and commit the new file in `apps/server/drizzle/`. Env vars, local run, the picture upload script and the Railway deploy are in `apps/server/README.md`.
 - Design canvas: see `design/canvas/README.md`. Edit the `gen_*.py` scripts, never the boards by hand.
 - Debug launch arguments open a screen directly, which helps for simulator screenshots: `-beytTab home|explore|games|messages|me`, `-beytUnread <n>` (unread badge), `-beytRoute stickers` (the sticker sheet), `-beytRoute poem:<path>` (the reader, e.g. `poem:/hafez/ghazal/sh3`) with `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`, `-beytMeaning 1`, `-beytHold <n>`. The library routes `-beytRoute library|book:<path>|section:<path>|poet:<slug>|search:<query>|mood:<key>|poets` open the کاوش tab with those screens pushed (`book:/hafez`, `section:/hafez/ghazal`, `poet:hafez`, `mood:love`). `-beytFresh 1` first forgets what the phone has kept (reading progress, marks, follows, rejected couplets); the UI tests use it. Each slice adds its own and lists them here.
 
