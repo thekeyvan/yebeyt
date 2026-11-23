@@ -10,7 +10,7 @@
 Downloads are cached in tools/ganjoor/.cache (gitignored), so reruns need no network.
 Output: poets.json (every poet, with their books), book-<id>.json for the bundled books,
 library.json (the curated library, see library.py), index-<catId>.json, one list of poems
-(first line, couplet count, rhyme letters, recitations) per curated book, and games.json (the game deck, see games.py). The poems of the
+(first line, couplet count, rhyme letters, recitations) per curated book, games.json (the game deck, see games.py) and glossary.json (the hard words of couplets, checked against the bundled books, see glossary.py). The poems of the
 curated books come from a sparse git checkout in .cache/repo. Popularity (recitations per poem) comes
 from the committed snapshot recitations.json, so a normal build and --check never touch api.ganjoor.net;
 only --refresh-recitations does, and it is the only way the counts change. Years are lunar Hijri, as in Ganjoor.
@@ -27,6 +27,7 @@ from pathlib import Path
 
 import audio
 import games
+import glossary
 import library
 import sparse
 from couplets import group_couplets, short_bio, split_ai
@@ -140,6 +141,15 @@ def dump(value):
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n"
 
 
+def glossary_file(poems, source=HERE / "glossary.json"):
+    """glossary.json for the app: the written glossary, once every word is found in its couplet of a bundled book."""
+    entries = json.loads(source.read_text(encoding="utf-8"))["entries"]
+    problems = glossary.validate(entries, poems)
+    if problems:
+        sys.exit("glossary.json has problems:\n" + "\n".join(problems[:20]))
+    return {"entries": entries}
+
+
 def recitation_counts(poets_dir, curation, refresh, snapshot=RECITATIONS, cache=CACHE / "audio"):
     """{poem id: recitations}. Read from the committed snapshot; only `refresh` asks Ganjoor's API
     (every category of the curated books) and rewrites the snapshot."""
@@ -163,10 +173,13 @@ def build_files(sha, refresh=False):
         "source": {"repo": "ganjoor/ganjoor-data", "sha": sha},
         "poets": [poet for poet, _ in built],
     })}
+    bundled_poems = {}
     for poet, bundled in built:
         if bundled:
             book = build_book(fetch, bundled, poet["id"])
             files[f"book-{book['id']}.json"] = dump(book)
+            bundled_poems.update({poem["path"]: poem["couplets"] for poem in book["poems"]})
+    files["glossary.json"] = dump(glossary_file(bundled_poems))
     curation = json.loads((HERE / "curation.json").read_text(encoding="utf-8"))
     poets_dir = sparse.checkout(CACHE / "repo", sha, [b["path"] for b in curation["books"]])
     recitations = recitation_counts(poets_dir, curation, refresh)

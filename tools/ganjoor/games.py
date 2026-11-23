@@ -1,4 +1,5 @@
 """The game deck: well-known couplets for the games (games.json). Pure selection rules, tested in test_games.py.
+Each entry names its curated book by path (`book`): the app takes the book's title and colour from library.json.
 
 A couplet is in the pool when it has a Ganjoor meaning (the after-answer sheet shows it), both hemistichs are
 there and each has 5-14 words. Poems are taken most recited first; a poem gives at most a few couplets and a
@@ -73,7 +74,7 @@ def build_deck(poets, recitations, curation, per_poet=PER_POET, total=TOTAL):
             for index, c in poem_picks(group_couplets(raw["Verses"])):
                 entry = {
                     "poem": path, "index": index, "m1": c["m1"].strip(), "m2": c["m2"].strip(),
-                    "meaning": clean_meaning(c["meaning"]), "poet": poet, "bookTitle": book["title"], "popularity": count,
+                    "meaning": clean_meaning(c["meaning"]), "poet": poet, "book": book["path"], "bookTitle": book["title"], "popularity": count,
                 }
                 if c.get("ai"):
                     entry["ai"] = True

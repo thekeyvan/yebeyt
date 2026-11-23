@@ -1,4 +1,4 @@
-"""Run: python3 -m unittest tools/ganjoor/test_games.py"""
+"""Run: python3 -m unittest tools/ganjoor/test_games.py (the deck rules, and the glossary rules of glossary.py)"""
 import json
 import sys
 import tempfile
@@ -7,6 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import games
+import glossary
 
 WORDS5 = "یک دو سه چهار پنج"
 
@@ -112,7 +113,7 @@ class Build(unittest.TestCase):
             got = games.build_deck(root, {10: 2, 11: 7}, curation)
         self.assertEqual([(e["poem"], e["index"]) for e in got], [("/p/book/b", 0), ("/p/book/b", 1), ("/p/book/a", 0)])
         self.assertEqual(got[1], {"poem": "/p/book/b", "index": 1, "m1": WORDS5, "m2": WORDS5, "meaning": "دوم",
-                                  "poet": "p", "bookTitle": "کتابِ من"})
+                                  "poet": "p", "book": "/p/book", "bookTitle": "کتابِ من"})
 
     def test_an_ai_meaning_loses_its_label_and_is_flagged(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -131,6 +132,51 @@ class Build(unittest.TestCase):
             curation = {"books": [{"path": "/p/book", "title": "ک", "poet": "p"}]}
             got = games.build_deck(root, {}, curation)
         self.assertEqual(got, [])
+
+
+POEMS = {"/p/b/1": [{"m1": "ای ساقی ادر کأساً و ناولها", "m2": "که عشق آسان نمود اول ولی افتاد مشکل‌ها"}]}
+
+
+def gentry(words, path="/p/b/1", couplet=0):
+    return {"path": path, "couplet": couplet, "words": words}
+
+
+def gword(text, m=1, gloss="معنی"):
+    return {"text": text, "m": m, "gloss": gloss}
+
+
+class GlossaryNormalize(unittest.TestCase):
+    def test_diacritics_arabic_letters_and_half_spaces(self):
+        self.assertEqual(glossary.normalize("كأسًا"), "کاسا")
+        self.assertEqual(glossary.normalize("يَد"), "ید")
+        self.assertEqual(glossary.normalize("می\u200cکند، آری"), "می کند اری")
+
+
+class GlossaryValidate(unittest.TestCase):
+    def test_a_word_of_the_right_hemistich_is_found(self):
+        self.assertEqual(glossary.validate([gentry([gword("ساقی"), gword("نمود", m=2)])], POEMS), [])
+
+    def test_a_phrase_must_match_whole_words(self):
+        self.assertEqual(glossary.validate([gentry([gword("ای ساقی")])], POEMS), [])
+        self.assertEqual(len(glossary.validate([gentry([gword("ساق")])], POEMS)), 1)
+
+    def test_a_word_in_the_other_hemistich_is_wrong(self):
+        self.assertEqual(len(glossary.validate([gentry([gword("نمود", m=1)])], POEMS)), 1)
+
+    def test_a_missing_poem_or_couplet_is_reported(self):
+        self.assertEqual(len(glossary.validate([gentry([gword("ساقی")], path="/x/y/1")], POEMS)), 1)
+        self.assertEqual(len(glossary.validate([gentry([gword("ساقی")], couplet=5)], POEMS)), 1)
+
+    def test_every_word_needs_text_a_gloss_and_a_hemistich_of_1_or_2(self):
+        self.assertEqual(len(glossary.validate([gentry([gword("ساقی", gloss=" ")])], POEMS)), 1)
+        self.assertEqual(len(glossary.validate([gentry([gword("ساقی", m=3)])], POEMS)), 1)
+        self.assertEqual(len(glossary.validate([gentry([gword(" ")])], POEMS)), 1)
+
+    def test_an_entry_without_words_is_reported(self):
+        self.assertEqual(len(glossary.validate([gentry([])], POEMS)), 1)
+
+    def test_a_couplet_twice_is_reported(self):
+        self.assertEqual(len(glossary.validate([gentry([gword("ساقی")]), gentry([gword("ساقی")])], POEMS)), 1)
 
 
 if __name__ == "__main__":
