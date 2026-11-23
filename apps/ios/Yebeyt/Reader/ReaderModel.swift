@@ -10,6 +10,8 @@ final class ReaderModel {
     struct Content {
         var poem: Poem
         var poet: String
+        /// The poet's slug in the library, when the poet is known (the subtitle opens their page).
+        var poetSlug: String?
         var book: String?
         var title: String { ReaderText.shortTitle(poem.title) }
         var subtitle: String { ReaderText.subtitle(poet: poet, book: book) }
@@ -36,6 +38,8 @@ final class ReaderModel {
     var textSheetOpen: Bool
     var holdIndex: Int?
     var share: Share?
+    /// Set when the whole-poem list has been scrolled to its last couplet.
+    private(set) var reachedEnd = false
 
     @ObservationIgnored private var toastTask: Task<Void, Never>?
 
@@ -60,7 +64,7 @@ final class ReaderModel {
             let bookPath = route.path.split(separator: "/", omittingEmptySubsequences: false).dropLast().joined(separator: "/")
             var book = poet?.books.first { $0.path == bookPath }?.title
             if book == nil { book = try? await store.book(path: bookPath).title }
-            let content = Content(poem: poem, poet: poet?.nickname ?? "", book: book)
+            let content = Content(poem: poem, poet: poet?.nickname ?? "", poetSlug: poet?.slug, book: book)
             self.content = content
             index = CoupletPaging.clamp(route.couplet, count: poem.couplets.count)
             topIndex = index
@@ -104,6 +108,11 @@ final class ReaderModel {
         index = CoupletPaging.clamp(target, count: couplets.count)
         meaningExpanded = false
         meaningOpen = withMeaning && hasMeaning(index)
+    }
+
+    /// The whole-poem list shows its last couplet: the poem is read.
+    func markReachedEnd() {
+        reachedEnd = true
     }
 
     func hasMeaning(_ couplet: Int) -> Bool {

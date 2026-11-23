@@ -7,6 +7,7 @@ struct ReaderHeader: View {
     let theme: ReaderTheme
     let close: () -> Void
     let playWithCouplet: () -> Void
+    let openPoet: (() -> Void)?
 
     private var isLoaded: Bool { model.phase == .loaded }
 
@@ -27,6 +28,8 @@ struct ReaderHeader: View {
                         .lineLimit(1)
                         .foregroundStyle(theme.secondary)
                         .accessibilityIdentifier("readerSubtitle")
+                        .onTapGesture { openPoet?() }
+                        .accessibilityAddTraits(openPoet == nil ? [] : .isButton)
                 }
                 .frame(maxWidth: .infinity)
                 circle(label: "بازی با این غزل", action: playWithCouplet) {

@@ -6,7 +6,8 @@ import Foundation
 /// library routes `-beytRoute library|book:<path>|section:<path>|poet:<slug>|search:<query>|mood:<key>|poets`
 /// (they open the کاوش tab with those screens pushed).
 /// With `poem:` the reader opens, and `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`,
-/// `-beytMeaning 1` and `-beytHold <n>` set its state. Values that don't parse are ignored.
+/// `-beytMeaning 1` and `-beytHold <n>` set its state. `-beytFresh 1` first forgets what the phone has kept
+/// (reading progress, marks, follows, rejected couplets). Values that don't parse are ignored.
 struct LaunchOptions {
     enum Route: Equatable {
         case stickers
@@ -47,6 +48,8 @@ struct LaunchOptions {
     private let sheet: String?
     private let meaning: String?
     private let hold: Int?
+    /// `-beytFresh 1`: forget what the phone has kept (progress, marks, follows, rejects) before launching.
+    private(set) var fresh: Bool
 
     init(_ values: [String: Any]) {
         func number(_ key: String) -> Int? {
@@ -61,6 +64,13 @@ struct LaunchOptions {
         sheet = values["beytSheet"] as? String
         meaning = (values["beytMeaning"] as? String) ?? (values["beytMeaning"] as? Int).map(String.init)
         hold = number("beytHold")
+        fresh = number("beytFresh") == 1
+    }
+
+    @MainActor static let savedStateKeys = [ReaderMarks.defaultsKey, ReadingProgress.defaultsKey, Follows.defaultsKey, HomeModel.defaultsKey]
+
+    @MainActor static func resetSavedState(in defaults: UserDefaults = .standard) {
+        savedStateKeys.forEach(defaults.removeObject(forKey:))
     }
 
     /// The screens a library route pushes on the کاوش tab, from the library's books (a route to something

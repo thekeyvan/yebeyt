@@ -1,8 +1,27 @@
 import SwiftUI
 
+/// The page of the selected tab. Each tab has its own navigation stack; screens pushed on it keep the tab bar.
+struct TabPage: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        switch model.selectedTab {
+        case .home:
+            NavigationStack { HomeView() }
+        case .explore:
+            NavigationStack(path: $model.explorePath) {
+                ExploreView()
+                    .navigationDestination(for: Destination.self) { DestinationView(destination: $0) }
+            }
+        case .games, .messages, .me:
+            NavigationStack { PlaceholderPage(tab: model.selectedTab) }
+        }
+    }
+}
+
 /// An empty tab page: only its name as a title, at the top, start-aligned.
 /// Every tab sits on dotted paper.
-struct TabPage: View {
+struct PlaceholderPage: View {
     let tab: Tab
 
     var body: some View {
@@ -14,6 +33,7 @@ struct TabPage: View {
             .padding(.horizontal, 18)
             .padding(.top, 8)
             .dottedPaper()
+            .toolbar(.hidden, for: .navigationBar)
     }
 
     /// The title sizes of the boards: Calm 32, Explore 40, GamesE 40, Inbox 30, Profile 34.

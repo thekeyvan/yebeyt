@@ -15,7 +15,7 @@ final class ReaderUITests: XCTestCase {
         [
             "close": app.buttons["بستن"].frame,
             "title": app.staticTexts["readerTitle"].frame,
-            "subtitle": app.staticTexts["readerSubtitle"].frame,
+            "subtitle": app.descendants(matching: .any)["readerSubtitle"].frame,
             "game": app.buttons["بازی با این غزل"].frame,
             "text": app.buttons["اندازه‌ی حروف"].frame,
             "toggle": app.otherElements["حالت خوندن"].frame,
@@ -27,7 +27,7 @@ final class ReaderUITests: XCTestCase {
         let app = launch()
         let coupletMode = headerFrames(app)
         XCTAssertEqual(app.staticTexts["readerTitle"].label, "غزل ۳")
-        XCTAssertEqual(app.staticTexts["readerSubtitle"].label, "حافظ · غزلیات")
+        XCTAssertEqual(app.descendants(matching: .any)["readerSubtitle"].label, "حافظ · غزلیات")
 
         let rail = app.otherElements["بیت ۱ از ۹"]
         XCTAssertTrue(rail.exists)

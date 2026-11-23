@@ -53,6 +53,7 @@ struct WholePoemView: View {
         let active = model.player?.activeCouplet == index && model.player?.state != .idle
         return CoupletText(couplet: model.couplets[index], settings: settings, size: settings.listSize, factor: settings.listFactor, color: settings.theme.foreground)
             .accessibilityIdentifier("couplet-\(index)")
+            .onAppear { if index == model.couplets.count - 1 { model.markReachedEnd() } }
             .padding(.horizontal, 10)
             .background(RoundedRectangle(cornerRadius: 14).fill(active ? Tokens.Colors.lapis.opacity(0.12) : .clear))
             .padding(.horizontal, -10)

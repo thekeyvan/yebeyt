@@ -5,14 +5,18 @@ import SwiftUI
 struct ReaderView: View {
     @Environment(PoetryStore.self) private var store
     @Environment(TextSettingsStore.self) private var text
+    @Environment(ReadingProgress.self) private var progress
+    @Environment(Library.self) private var library
     @State private var model: ReaderModel
     let close: () -> Void
     let playWithCouplet: () -> Void
+    let openPoet: (String) -> Void
 
-    init(route: ReaderRoute, close: @escaping () -> Void, playWithCouplet: @escaping () -> Void) {
+    init(route: ReaderRoute, close: @escaping () -> Void, playWithCouplet: @escaping () -> Void, openPoet: @escaping (String) -> Void) {
         _model = State(initialValue: ReaderModel(route: route))
         self.close = close
         self.playWithCouplet = playWithCouplet
+        self.openPoet = openPoet
     }
 
     var body: some View {
@@ -37,12 +41,28 @@ struct ReaderView: View {
         .environment(\.layoutDirection, .rightToLeft)
         .preferredColorScheme(theme.isDark ? .dark : .light)  // light status bar text on the dark theme
         .task { await model.load(using: store) }
+        .onChange(of: model.phase) { _, _ in recordProgress() }
+        .onChange(of: model.index) { _, _ in recordProgress() }
+        .onChange(of: model.topIndex) { _, _ in recordProgress() }
+        .onChange(of: model.reachedEnd) { _, reached in if reached { progress.reachedEnd(path: model.path) } }
         .onDisappear { model.close() }
+    }
+
+    /// The subtitle's tap: the poet's page, when the library has one.
+    private var poetAction: (() -> Void)? {
+        guard let slug = model.content?.poetSlug, library.poet(slug: slug) != nil else { return nil }
+        return { openPoet(slug) }
+    }
+
+    /// Remembers where the reader is, for «ادامه» and «خوندی»: the couplet on the page, or the one at the top of the list.
+    private func recordProgress() {
+        guard model.phase == .loaded, let content = model.content else { return }
+        progress.opened(path: model.path, couplet: model.actionIndex, count: content.poem.couplets.count, title: content.title)
     }
 
     private func page(_ theme: ReaderTheme) -> some View {
         VStack(spacing: 8) {
-            ReaderHeader(model: model, theme: theme, close: close, playWithCouplet: playWithCouplet)
+            ReaderHeader(model: model, theme: theme, close: close, playWithCouplet: playWithCouplet, openPoet: poetAction)
             switch model.phase {
             case .loading:
                 Spacer()

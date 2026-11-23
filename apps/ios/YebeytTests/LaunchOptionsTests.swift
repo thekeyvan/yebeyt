@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import Yebeyt
 
@@ -71,6 +72,16 @@ struct LaunchOptionsTests {
         #expect(route("search:عشق") == .search("عشق"))
         #expect(route("search:a:b") == .search("a:b"))
         #expect(route("mood:love") == .mood("love"))
+    }
+
+    @MainActor @Test func theFreshOptionForgetsWhatThePhoneKept() {
+        #expect(LaunchOptions(["beytFresh": "1"]).fresh)
+        #expect(!LaunchOptions(["beytFresh": "0"]).fresh && !LaunchOptions([:]).fresh)
+        let defaults = UserDefaults(suiteName: "yebeyt-tests-\(UUID().uuidString)")!
+        for key in LaunchOptions.savedStateKeys + ["other"] { defaults.set("x", forKey: key) }
+        LaunchOptions.resetSavedState(in: defaults)
+        #expect(LaunchOptions.savedStateKeys.allSatisfy { defaults.object(forKey: $0) == nil })
+        #expect(defaults.string(forKey: "other") == "x")
     }
 
     @Test func badLibraryRoutesAreIgnored() {
