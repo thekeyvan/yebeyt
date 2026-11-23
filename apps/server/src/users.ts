@@ -14,6 +14,7 @@ export async function getUserView(db: Db, id: string): Promise<UserView | null> 
     id: user.id,
     username: user.username,
     displayName: user.displayName,
+    avatar: user.avatar,
     usernameChangedAt: user.usernameChangedAt?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
     providers: providers.map((p) => p.provider).sort(),

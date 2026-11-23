@@ -6,9 +6,11 @@ import { ApiError } from "./errors.js";
 import { requireUser } from "./middleware.js";
 import { newRouter } from "./router.js";
 import { authRoutes } from "./routes/auth.js";
+import { divanRoutes } from "./routes/divan.js";
 import { healthRoutes } from "./routes/health.js";
 import { meRoutes } from "./routes/me.js";
 import { pictureRoutes } from "./routes/pictures.js";
+import { privacyRoutes } from "./routes/privacy.js";
 import { progressRoutes } from "./routes/progress.js";
 import { usernameRoutes } from "./routes/usernames.js";
 
@@ -22,9 +24,9 @@ export function createApp(deps: Deps) {
     deps.log(`${c.req.method} ${routePath(c)} ${c.res.status} ${Math.round(performance.now() - start)}ms`);
   });
 
-  // Every JSON body is tiny. Only the admin picture upload (limited in routes/pictures.ts) may be larger.
+  // Every JSON body is tiny. Only the admin picture upload (limited in routes/pictures.ts) and the divan sync (routes/divan.ts) may be larger.
   const smallBodies = bodyLimit({ maxSize: 64 * 1024, onError: (c) => c.json({ error: "payload_too_large" as const }, 413) });
-  app.use("*", (c, next) => (c.req.path.startsWith("/v1/admin/") ? next() : smallBodies(c, next)));
+  app.use("*", (c, next) => (c.req.path.startsWith("/v1/admin/") || c.req.path === "/v1/me/divan" ? next() : smallBodies(c, next)));
 
   app.onError((err, c) => {
     if (err instanceof ApiError) return c.json({ error: err.code, ...err.extra }, err.status);
@@ -44,6 +46,8 @@ export function createApp(deps: Deps) {
   app.route("/", authRoutes(deps));
   app.route("/", meRoutes(deps));
   app.route("/", progressRoutes(deps));
+  app.route("/", divanRoutes(deps));
+  app.route("/", privacyRoutes(deps));
   app.route("/", usernameRoutes(deps));
   app.route("/", pictureRoutes(deps));
 

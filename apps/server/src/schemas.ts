@@ -1,10 +1,18 @@
 import { z } from "@hono/zod-openapi";
 
+const part = z.string().min(1).max(32).regex(/^[a-z0-9-]+$/);
+
+/** The parts are ids from the app's catalogue; the server only checks their shape. */
+export const avatarSchema = z
+  .strictObject({ face: part, eyes: part, hair: part, mouth: part, accessory: part, background: part })
+  .openapi("Avatar");
+
 export const userSchema = z
   .object({
     id: z.uuid(),
     username: z.string().nullable(),
     displayName: z.string().nullable(),
+    avatar: avatarSchema.nullable(),
     usernameChangedAt: z.iso.datetime().nullable(),
     createdAt: z.iso.datetime(),
     providers: z.array(z.enum(["apple", "google"])),

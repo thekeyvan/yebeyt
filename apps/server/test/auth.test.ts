@@ -202,6 +202,8 @@ describe("DELETE /v1/me", () => {
   it("deletes the user and every row, and revokes the Apple token", async () => {
     const s = await signInApple();
     await h.request("/v1/me/progress", { method: "PUT", token: s.accessToken, json: { points: 5, streakDays: 1, streakLastDate: "2026-06-01", bestByGame: {} } });
+    await h.request("/v1/me/divan", { method: "PUT", token: s.accessToken, json: { items: [{ key: "/hafez/ghazal/sh3#0", keptAt: "2026-06-01T10:00:00.000Z" }] } });
+    await h.request("/v1/me/privacy", { method: "PUT", token: s.accessToken, json: { keptVisibility: "me" } });
     h.fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
 
     const res = await h.request("/v1/me", { method: "DELETE", token: s.accessToken });
@@ -215,7 +217,7 @@ describe("DELETE /v1/me", () => {
     expect(form.get("token_type_hint")).toBe("refresh_token");
     expect(form.get("client_id")).toBe(BUNDLE_ID);
 
-    for (const table of ["users", "identities", "sessions", "progress"]) {
+    for (const table of ["users", "identities", "sessions", "progress", "divan_items", "privacy_settings"]) {
       const rows = await h.db.execute(sql.raw(`select count(*)::int as n from ${table}`));
       expect((rows as unknown as { rows: { n: number }[] }).rows[0]!.n).toBe(0);
     }

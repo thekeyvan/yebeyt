@@ -7,7 +7,7 @@ import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { displayNameSchema, normalizeDisplayName } from "../profile.js";
 import { newRouter } from "../router.js";
-import { userSchema, usernameSchema } from "../schemas.js";
+import { avatarSchema, userSchema, usernameSchema } from "../schemas.js";
 import { normalizeUsername, USERNAME_CHANGE_DAYS, usernameProblem } from "../usernames.js";
 import { getUserView } from "../users.js";
 
@@ -54,7 +54,7 @@ export function meRoutes(deps: Deps) {
         .from(identities)
         .where(and(eq(identities.userId, userId), isNotNull(identities.appleRefreshToken)));
       for (const { token } of apple) if (token) await revokeAppleToken(deps, token);
-      await db.delete(users).where(eq(users.id, userId)); // sessions, identities and progress go with it
+      await db.delete(users).where(eq(users.id, userId)); // sessions, identities, progress, divan and privacy settings go with it
       return c.body(null, 204);
     },
   );
@@ -77,6 +77,28 @@ export function meRoutes(deps: Deps) {
     async (c) => {
       const userId = c.get("userId");
       await db.update(users).set({ displayName: normalizeDisplayName(c.req.valid("json").displayName) }).where(eq(users.id, userId));
+      return c.json((await getUserView(db, userId))!, 200);
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "put",
+      path: "/v1/me/avatar",
+      tags: ["me"],
+      summary: "Set the avatar",
+      description: "Six parts, each an id from the app's catalogue (the server checks only their shape). Replaces the whole avatar.",
+      security,
+      request: { body: { required: true, content: { "application/json": { schema: avatarSchema } } } },
+      responses: {
+        200: { description: "The user with the new avatar.", content: { "application/json": { schema: userSchema } } },
+        400: errorResponse("invalid_request: a part is missing, empty, longer than 32 characters or not lowercase letters, digits and dashes."),
+        401: errorResponse("Not signed in."),
+      },
+    }),
+    async (c) => {
+      const userId = c.get("userId");
+      await db.update(users).set({ avatar: c.req.valid("json") }).where(eq(users.id, userId));
       return c.json((await getUserView(db, userId))!, 200);
     },
   );
