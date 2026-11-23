@@ -43,6 +43,7 @@ struct ReaderView: View {
         .animation(.snappy, value: model.textSheetOpen)
         .animation(.snappy, value: model.toast)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
+        .background { Color.clear.accountPrompt(host: true) }
         .environment(\.layoutDirection, .rightToLeft)
         .preferredColorScheme(theme.isDark ? .dark : .light)  // light status bar text on the dark theme
         .task { await model.load(using: store) }

@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The tab bar: the exact spec is `nav()` in design/canvas/gen_explore.py.
 struct TabBar: View {
+    @Environment(AccountModel.self) private var account
     let model: AppModel
 
     /// Bottom gap 18 + bar height 70: what pages must keep clear.
@@ -29,7 +30,11 @@ struct TabBar: View {
     private func item(_ tab: Tab) -> some View {
         let on = model.selectedTab == tab
         return Button {
-            model.select(tab)
+            if tab == .messages {
+                account.require(.messages) { model.select(tab) }
+            } else {
+                model.select(tab)
+            }
         } label: {
             VStack(spacing: 3) {
                 icon(tab, on: on)

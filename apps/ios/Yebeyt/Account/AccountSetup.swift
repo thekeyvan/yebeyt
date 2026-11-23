@@ -28,7 +28,11 @@ struct AccountSetup {
         account = AccountModel(session: session, stats: stats)
         pictures = PoetPictures(api: session.api)
         taste = Taste(defaults: defaults)
+        #if DEBUG
+        onboarding = OnboardingModel(start: start, gameWon: start == .account, defaults: defaults)  // the account screen as drawn: after a win
+        #else
         onboarding = OnboardingModel(start: start, defaults: defaults)
+        #endif
         #if DEBUG
         if options.signedIn { account.debugSignedIn(provider: .apple, name: "نیلوفر") }
         if let gate = options.gate, !session.isSignedIn { account.prompt = .gate(gate) }

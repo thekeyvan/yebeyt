@@ -33,3 +33,9 @@ The files were converted from WOFF2 to TTF without other changes.
 - No recitation audio and no Ganjoor user data (comments, accounts) is stored in this repository.
 
 Thank you to Ganjoor and its contributors for making this poetry open and readable.
+
+## Libraries (`apps/ios`)
+
+- [GoogleSignIn-iOS](https://github.com/google/GoogleSignIn-iOS) (Apache License 2.0) and its dependencies
+  (AppAuth, GTMAppAuth, GTMSessionFetcher, GoogleUtilities, AppCheck, Promises; all Apache 2.0), added with Swift Package Manager for «ادامه با گوگل».
+- The Apple and Google marks on the sign-in buttons are the only brand art in the app; they are drawn as shapes and belong to Apple and Google.

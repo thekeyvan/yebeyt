@@ -1,0 +1,87 @@
+import SwiftUI
+
+/// OnbGame: the first couplet to stick, in 30 seconds. It is جورچین بیت with one couplet, drawn with the game's own
+/// card and sticker sheet. Winning earns +۵۰; running out of time just goes on to the account step.
+struct OnbGameView: View {
+    @Environment(OnboardingModel.self) private var onboarding
+    @Environment(Taste.self) private var taste
+    @Environment(GameDeck.self) private var deck
+    @Environment(GameStats.self) private var stats
+    @State private var game: OnboardingGame?
+    @State private var slotFrames: [Int: CGRect] = [:]
+
+    var body: some View {
+        VStack(spacing: 16) {
+            OnbTopBar(current: 1) { onboarding.next() }
+            heading
+            if let game { play(game) } else { Spacer() }
+        }
+        .coordinateSpace(name: JigsawSpace.name)
+        .onbPage()
+        .task { await run() }
+        .onChange(of: game?.outcome) { _, outcome in
+            guard let outcome else { return }
+            Task { await finish(won: outcome == .won) }
+        }
+    }
+
+    private var heading: some View {
+        HStack(spacing: 12) {
+            GameIcon(kind: .jigsaw, size: 50)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("اولین بیتت رو بچسبون").font(.title(28)).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
+                Text("برچسب‌ها رو بکن و به ترتیب بچسبون. ۳۰ ثانیه.").font(.ui(13)).foregroundStyle(Tokens.Colors.muted)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    @ViewBuilder private func play(_ game: OnboardingGame) -> some View {
+        JigsawCard(board: game.board, revealed: game.outcome == .won, tapSlot: { position in game.edit { $0.tapSlot(position) } }, slotFrames: $slotFrames)
+        Text(game.progressLine).font(.ui(13, weight: .bold))
+        .foregroundStyle(Tokens.Colors.ink)
+        .padding(.horizontal, 14).padding(.vertical, 4)
+        .sticker(fill: Tokens.Colors.green, radius: Tokens.Sticker.Radius.pill, border: 3, shadow: ShadowToken(y: 2, blur: 6, opacity: 0.2))
+        .accessibilityIdentifier("onbProgress")
+        JigsawStickerSheet(
+            stickers: game.board.onSheet, selected: game.board.selected,
+            extras: game.board.question.stickers.count - game.board.question.missing.count,
+            select: { sticker in game.edit { $0.select(sticker) } },
+            drop: { sticker, point in drop(sticker, at: point, in: game) }
+        )
+        Spacer(minLength: 0)
+        Button("بچسبون!") { game.check() }
+            .buttonStyle(OnbButtonStyle())
+            .disabled(!game.board.isFull)
+            .accessibilityIdentifier("onbCheck")
+    }
+
+    private func drop(_ sticker: JigsawSticker, at point: CGPoint, in game: OnboardingGame) {
+        guard let position = slotFrames.first(where: { $0.value.insetBy(dx: -8, dy: -8).contains(point) })?.key else { return }
+        game.edit { $0.place(sticker, at: position) }
+    }
+
+    /// Builds the game and runs its clock.
+    private func run() async {
+        guard game == nil else { return }
+        var generator = SeededGenerator(seed: .random(in: .min ... .max))
+        guard let made = OnboardingGame.make(deck: deck, preferring: taste.poets, generator: &generator) else {
+            onboarding.next()  // no couplet to play: on to the account step
+            return
+        }
+        game = made
+        while !Task.isCancelled, !made.isOver {
+            try? await Task.sleep(for: .seconds(1))
+            made.tick()
+        }
+    }
+
+    /// A won game shows the stuck couplet for a moment first.
+    private func finish(won: Bool) async {
+        if won {
+            stats.award(OnboardingGame.reward)
+            try? await Task.sleep(for: .milliseconds(900))
+        }
+        onboarding.gameEnded(won: won)
+    }
+}

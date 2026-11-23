@@ -2,7 +2,8 @@
 import Foundation
 
 /// Debug launch arguments of the accounts slice, for simulator screenshots and UI tests:
-/// `-beytOnboarding welcome|taste|game|account|username|friends` starts onboarding at that screen (without it a
+/// `-beytOnboarding welcome|taste|game|account|username|friends` starts onboarding at that screen (`account` as after
+/// a won game, with «آفرین! +۵۰»; without the argument a
 /// debug launch skips onboarding; a release build shows it on the first launch), `-beytGate likes|messages` opens
 /// the account gate over the first screen, `-beytSignedIn 1` is a fake sign-in whose server is answered on the
 /// phone (no network), `-beytAPI <url>` points the app at another server, and `-beytFresh 1` also signs out and

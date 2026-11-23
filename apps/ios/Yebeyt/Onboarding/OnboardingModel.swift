@@ -28,8 +28,9 @@ final class OnboardingModel {
     private(set) var gameWon = false
     @ObservationIgnored private let defaults: UserDefaults
 
-    init(start: OnboardingStep?, defaults: UserDefaults = .standard) {
+    init(start: OnboardingStep?, gameWon: Bool = false, defaults: UserDefaults = .standard) {
         self.step = start
+        self.gameWon = gameWon
         self.defaults = defaults
     }
 

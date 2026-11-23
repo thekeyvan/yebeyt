@@ -40,6 +40,7 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in if phase == .active { stats.refreshToday() } }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }
+        .accountPrompt(host: model.reader == nil)
         .fullScreenCover(item: $model.reader) { route in
             ReaderView(
                 route: route, close: { model.closeReader() },

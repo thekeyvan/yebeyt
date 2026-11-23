@@ -1,3 +1,4 @@
+import GoogleSignIn
 import SwiftUI
 
 @main
@@ -12,6 +13,7 @@ struct YebeytApp: App {
     @State private var textSettings = TextSettingsStore()
     @State private var deck: GameDeck
     @State private var gameStats: GameStats
+    @State private var accounts: AccountSetup
     #if DEBUG
     private let showsStickers: Bool
     #endif
@@ -51,11 +53,13 @@ struct YebeytApp: App {
         )
         model.autoplay = options.autoplay
         _model = State(initialValue: model)
-        _gameStats = State(initialValue: options.today.map { today in GameStats(now: { today.noon }) } ?? GameStats())
+        let stats = options.today.map { today in GameStats(now: { today.noon }) } ?? GameStats()
         #else
         _model = State(initialValue: AppModel())
-        _gameStats = State(initialValue: GameStats())
+        let stats = GameStats()
         #endif
+        _gameStats = State(initialValue: stats)
+        _accounts = State(initialValue: AccountSetup(stats: stats))
     }
 
     var body: some Scene {
@@ -71,11 +75,21 @@ struct YebeytApp: App {
                 .environment(textSettings)
                 .environment(deck)
                 .environment(gameStats)
+                .environment(accounts.session)
+                .environment(accounts.account)
+                .environment(accounts.pictures)
+                .environment(accounts.taste)
+                .environment(accounts.onboarding)
                 .environment(\.layoutDirection, .rightToLeft)
                 .environment(\.locale, Locale(identifier: "fa_IR"))
                 .preferredColorScheme(.light)
                 .font(.ui(16))
                 .tint(Tokens.Colors.lapis)
+                .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
+                .task {
+                    await accounts.session.restore()
+                    await accounts.pictures.refreshIfNeeded()
+                }
         }
     }
 
@@ -84,10 +98,19 @@ struct YebeytApp: App {
         if showsStickers {
             StickerSheet()
         } else {
-            RootView(model: model)
+            main
         }
         #else
-        RootView(model: model)
+        main
         #endif
+    }
+
+    /// Onboarding on the first launch, then the tabs.
+    @ViewBuilder private var main: some View {
+        if accounts.onboarding.isRunning {
+            OnboardingFlow()
+        } else {
+            RootView(model: model)
+        }
     }
 }

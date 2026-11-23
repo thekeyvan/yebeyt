@@ -35,6 +35,7 @@ struct PlayToggle: View {
 struct ReaderActionRow: View {
     @Environment(ReaderMarks.self) private var marks
     @Environment(TextSettingsStore.self) private var text
+    @Environment(AccountModel.self) private var account
     let model: ReaderModel
     let couplet: Int
 
@@ -44,14 +45,14 @@ struct ReaderActionRow: View {
             if let player = model.player, player.isAvailable { PlayToggle(player: player) }
             let liked = marks.contains(.liked, poemPath: model.path, couplet: couplet)
             button("پسند", on: liked) {
-                marks.toggle(.liked, poemPath: model.path, couplet: couplet)
+                account.require(.likes) { marks.toggle(.liked, poemPath: model.path, couplet: couplet) }
             } icon: {
                 LineIcon(shape: HeartIcon(), size: 21, lineWidth: 2, fill: liked ? Tokens.Colors.magenta : nil)
                     .foregroundStyle(Tokens.Colors.magenta)
             }
             let reposted = marks.contains(.reposted, poemPath: model.path, couplet: couplet)
             button("بازنشر", on: reposted) {
-                marks.toggle(.reposted, poemPath: model.path, couplet: couplet)
+                account.require(.likes) { marks.toggle(.reposted, poemPath: model.path, couplet: couplet) }
             } icon: {
                 LineIcon(shape: RepostIcon(), size: 21, lineWidth: 2.2, fill: nil)
                     .foregroundStyle(reposted ? Tokens.Colors.lapis : theme.foreground)
