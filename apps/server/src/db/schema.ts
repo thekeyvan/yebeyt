@@ -266,3 +266,127 @@ export const reactions = pgTable(
     index("reactions_user_created").on(t.userId, t.createdAt),
   ],
 );
+
+/** `blockerId` blocked `blockedId`: neither can follow, message or share a divan with the other, and they do not see each other's profile. */
+export const blocks = pgTable(
+  "blocks",
+  {
+    blockerId: userRef("blocker_id"),
+    blockedId: userRef("blocked_id"),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.blockerId, t.blockedId] }),
+    check("blocks_not_self", sql`${t.blockerId} <> ${t.blockedId}`),
+    index("blocks_blocker_created").on(t.blockerId, t.createdAt, t.blockedId),
+    index("blocks_blocked").on(t.blockedId),
+  ],
+);
+
+/** A one-to-one chat. `userLow` is the smaller id of the two, so a pair has one row. */
+export const conversations = pgTable(
+  "conversations",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userLow: userRef("user_low"),
+    userHigh: userRef("user_high"),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique("conversations_pair").on(t.userLow, t.userHigh), check("conversations_order", sql`${t.userLow} < ${t.userHigh}`), index("conversations_high").on(t.userHigh)],
+);
+
+export type MessagePayload = { event: string; [key: string]: unknown };
+
+/**
+ * A chat message. `senderId` is null for a system line (its `payload` says what happened, and `by` is the user it came from).
+ * A deleted message keeps its row (`deletedAt`) with the text, couplet and note cleared. `clientId` makes a send idempotent per sender.
+ */
+export const messages = pgTable(
+  "messages",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+    senderId: uuid("sender_id").references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["text", "couplet", "system", "game"] }).notNull(),
+    text: text("text"),
+    coupletKey: text("couplet_key"),
+    note: text("note"),
+    payload: jsonb("payload").$type<MessagePayload>(),
+    clientId: uuid("client_id"),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+    deletedAt: timestamptz("deleted_at"),
+  },
+  (t) => [
+    check("messages_text_length", sql`char_length(${t.text}) <= 1000`),
+    check("messages_note_length", sql`char_length(${t.note}) <= 200`),
+    unique("messages_sender_client").on(t.senderId, t.clientId),
+    index("messages_conversation_created").on(t.conversationId, t.createdAt.desc(), t.id.desc()),
+  ],
+);
+
+/** How far a user has read a conversation. */
+export const conversationReads = pgTable(
+  "conversation_reads",
+  {
+    conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+    userId: userRef("user_id"),
+    lastReadMessageId: uuid("last_read_message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
+    lastReadAt: timestamptz("last_read_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.conversationId, t.userId] })],
+);
+
+export const REPORT_REASONS = ["spam", "abuse", "other"] as const;
+
+/** A report of a person, or of one of their messages. It stays when the reporter's account is deleted. */
+export const reports = pgTable(
+  "reports",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    reporterId: uuid("reporter_id").references(() => users.id, { onDelete: "set null" }),
+    targetUserId: userRef("target_user_id"),
+    messageId: uuid("message_id").references(() => messages.id, { onDelete: "set null" }),
+    reason: text("reason", { enum: REPORT_REASONS }).notNull(),
+    note: text("note"),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [check("reports_note_length", sql`char_length(${t.note}) <= 500`), index("reports_created").on(t.createdAt.desc(), t.id.desc())],
+);
+
+/** A divan two friends keep together. `userLow` is the smaller id of the two. */
+export const sharedDivans = pgTable(
+  "shared_divans",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userLow: userRef("user_low"),
+    userHigh: userRef("user_high"),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique("shared_divans_pair").on(t.userLow, t.userHigh), check("shared_divans_order", sql`${t.userLow} < ${t.userHigh}`), index("shared_divans_high").on(t.userHigh)],
+);
+
+export const sharedDivanItems = pgTable(
+  "shared_divan_items",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    divanId: uuid("divan_id").notNull().references(() => sharedDivans.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    addedBy: userRef("added_by"),
+    note: text("note"),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique("shared_divan_items_key").on(t.divanId, t.key),
+    check("shared_divan_items_note_length", sql`char_length(${t.note}) <= 200`),
+    index("shared_divan_items_divan_created").on(t.divanId, t.createdAt.desc(), t.id.desc()),
+  ],
+);
+
+export const sharedDivanLikes = pgTable(
+  "shared_divan_likes",
+  {
+    itemId: uuid("item_id").notNull().references(() => sharedDivanItems.id, { onDelete: "cascade" }),
+    userId: userRef("user_id"),
+  },
+  (t) => [primaryKey({ columns: [t.itemId, t.userId] })],
+);

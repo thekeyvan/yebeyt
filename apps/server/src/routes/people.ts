@@ -7,6 +7,7 @@ import { leagueOf } from "../leagues.js";
 import { findByUsername, relationOf, shortPersonSchema } from "../people.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
+import { isBlocked, notBlockedWith } from "../social.js";
 import { weekPointsOf } from "../scores.js";
 import { usernameSchema } from "../schemas.js";
 import { normalizeUsername } from "../usernames.js";
@@ -45,7 +46,7 @@ export function peopleRoutes(deps: Deps) {
       path: "/v1/users/search",
       tags: ["friends"],
       summary: "Find people by the start of their username",
-      description: `Case-insensitive prefix match on the username, at least ${SEARCH_MIN} characters, up to ${SEARCH_MAX_RESULTS} results in alphabetical order, never including me. 60 searches a minute per user.`,
+      description: `Case-insensitive prefix match on the username, at least ${SEARCH_MIN} characters, up to ${SEARCH_MAX_RESULTS} results in alphabetical order, never including me or anyone who blocked me or whom I blocked. 60 searches a minute per user.`,
       security,
       request: { query: z.object({ q: z.string().max(100) }) },
       responses: {
@@ -69,7 +70,7 @@ export function peopleRoutes(deps: Deps) {
           followsYou: sql<boolean>`exists (select 1 from follows f where f.follower_id = ${users.id} and f.followee_id = ${userId})`,
         })
         .from(users)
-        .where(and(sql`${users.username} like ${`${likeEscape(q)}%`}`, ne(users.id, userId)))
+        .where(and(sql`${users.username} like ${`${likeEscape(q)}%`}`, ne(users.id, userId), notBlockedWith(userId, users.id)))
         .orderBy(asc(users.username))
         .limit(SEARCH_MAX_RESULTS);
       return c.json(
@@ -94,13 +95,13 @@ export function peopleRoutes(deps: Deps) {
         200: { description: "The profile.", content: { "application/json": { schema: profileSchema } } },
         400: errorResponse("Bad request."),
         401: errorResponse("Not signed in."),
-        404: errorResponse("No user with that username."),
+        404: errorResponse("No user with that username, or one of us blocked the other."),
       },
     }),
     async (c) => {
       const me = c.get("userId");
       const person = await findByUsername(db, c.req.valid("param").username);
-      if (!person) throw new ApiError(404, "not_found");
+      if (!person || (await isBlocked(db, me, person.id))) throw new ApiError(404, "not_found");
       const week = weekOf(deps.now());
       const [relation, [privacy], [count], league] = await Promise.all([
         relationOf(db, me, person.id),

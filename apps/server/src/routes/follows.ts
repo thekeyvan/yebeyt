@@ -7,6 +7,7 @@ import { ApiError, errorResponse } from "../errors.js";
 import { findByUsername, PAGE, parseTimeCursor, personSchema, relationOf, relationSchema, timeCursor, timeCursorSchema } from "../people.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
+import { isBlocked } from "../social.js";
 import { usernameSchema } from "../schemas.js";
 
 const security = [{ bearerAuth: [] }];
@@ -48,7 +49,7 @@ export function followRoutes(deps: Deps) {
       path: "/v1/follows/{username}",
       tags: ["friends"],
       summary: "Follow someone",
-      description: "Idempotent. You need a username of your own (403 username_required). Two people who follow each other are friends.",
+      description: "Idempotent. You need a username of your own (403 username_required). Two people who follow each other are friends. If either of you blocked the other, the person is not found (404).",
       security,
       request: { params },
       responses: { ...responses, 403: errorResponse("username_required: set a username first.") },
@@ -58,6 +59,7 @@ export function followRoutes(deps: Deps) {
       const other = await target(userId, c.req.valid("param").username);
       const [me] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId));
       if (!me?.username) throw new ApiError(403, "username_required");
+      if (await isBlocked(db, userId, other.id)) throw new ApiError(404, "not_found");
       await db.insert(follows).values({ followerId: userId, followeeId: other.id, createdAt: deps.now() }).onConflictDoNothing();
       return c.json(await relationOf(db, userId, other.id), 200);
     },

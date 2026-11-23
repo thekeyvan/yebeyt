@@ -36,3 +36,11 @@ export const requireAdmin = (deps: Deps) =>
     if (!token || !constantTimeEqual(token, deps.config.adminToken)) throw new ApiError(401, "unauthorized");
     await next();
   });
+
+/** Requires the signed-in user (after `requireUser`) to have a username. */
+export const requireUsername = (deps: Deps) =>
+  createMiddleware<AppEnv>(async (c, next) => {
+    const [user] = await deps.db.select({ username: users.username }).from(users).where(eq(users.id, c.get("userId")));
+    if (!user?.username) throw new ApiError(403, "username_required");
+    await next();
+  });

@@ -5,6 +5,7 @@ export const ERROR_CODES = [
   "bad_timestamp",
   "points_too_high",
   "username_required",
+  "messages_closed",
   "conflict",
   "already_uploaded",
   "divan_full",
