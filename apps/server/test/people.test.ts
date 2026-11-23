@@ -1,0 +1,163 @@
+import { randomUUID } from "node:crypto";
+import { beforeEach, describe, expect, it } from "vitest";
+import { makeHarness, type Harness } from "./helpers.js";
+
+let h: Harness;
+beforeEach(async () => {
+  h = await makeHarness();
+});
+
+const profile = (token: string, username: string) => h.request(`/v1/users/${username}`, { token });
+const search = (token: string, q: string) => h.request(`/v1/users/search?q=${encodeURIComponent(q)}`, { token });
+const score = (token: string, points: number) =>
+  h.request("/v1/scores", { method: "POST", token, json: { roundId: randomUUID(), game: "poet", points, playedAt: h.clock.time.toISOString() } });
+type User = { token: string; username: string };
+const befriend = async (a: User, b: User) => {
+  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
+  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+};
+
+describe("GET /v1/users/{username}", () => {
+  it("requires sign-in and answers 404 for an unknown name", async () => {
+    expect((await h.request("/v1/users/ali")).status).toBe(401);
+    const ali = await h.signUp("ali");
+    const res = await profile(ali.token, "nobody");
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not_found" });
+  });
+
+  it("gives the public profile, ignoring the case of the name", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara", { displayName: "سارا" });
+    const avatar = { face: "f1", eyes: "e1", hair: "h1", mouth: "m1", accessory: "a1", background: "b1" };
+    await h.request("/v1/me/avatar", { method: "PUT", token: sara.token, json: avatar });
+    const res = await profile(ali.token, "SARA");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      username: "sara", displayName: "سارا", avatar, friendsCount: 0, isFollowing: false, followsYou: false, isFriend: false, league: null, weekPoints: null,
+    });
+  });
+
+  it("counts friends (mutual follows only) and shows how we follow each other", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    const reza = await h.signUp("reza");
+    const nima = await h.signUp("nima");
+    await befriend(sara, reza);
+    await befriend(sara, nima);
+    await h.request("/v1/follows/sara", { method: "PUT", token: ali.token }); // one way
+    const seen = await (await profile(ali.token, "sara")).json();
+    expect(seen).toMatchObject({ friendsCount: 2, isFollowing: true, followsYou: false, isFriend: false });
+    await h.request("/v1/follows/ali", { method: "PUT", token: sara.token });
+    expect(await (await profile(ali.token, "sara")).json()).toMatchObject({ friendsCount: 3, isFriend: true, followsYou: true });
+    expect(await (await profile(sara.token, "ali")).json()).toMatchObject({ friendsCount: 1, isFollowing: true, followsYou: true });
+  });
+
+  it("shows the league tier once they have scored this week", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    await score(sara.token, 50);
+    expect((await (await profile(ali.token, "sara")).json()).league).toEqual({ tier: 0 });
+  });
+
+  it("gives the week's points to a friend, to yourself, and when they allow the global list; else null", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    await h.signUp("reza");
+    await score(sara.token, 70);
+    await score(ali.token, 30);
+    expect((await (await profile(ali.token, "sara")).json()).weekPoints).toBeNull();
+    expect((await (await profile(ali.token, "ali")).json()).weekPoints).toBe(30);
+    await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { inGlobalLeaderboard: true } });
+    expect((await (await profile(ali.token, "sara")).json()).weekPoints).toBe(70);
+    await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { inGlobalLeaderboard: false } });
+    expect((await (await profile(ali.token, "sara")).json()).weekPoints).toBeNull();
+    await befriend(ali, sara);
+    expect((await (await profile(ali.token, "sara")).json()).weekPoints).toBe(70);
+    expect((await (await profile(ali.token, "reza")).json()).weekPoints).toBeNull();
+  });
+
+  it("gives 0 points to someone who allows it but has not scored", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { inGlobalLeaderboard: true } });
+    expect((await (await profile(ali.token, "sara")).json()).weekPoints).toBe(0);
+  });
+});
+
+describe("GET /v1/users/search", () => {
+  it("requires sign-in", async () => {
+    expect((await h.request("/v1/users/search?q=al")).status).toBe(401);
+  });
+
+  it("matches the start of a username, ignoring case, in alphabetical order, without me", async () => {
+    const me = await h.signUp("alma");
+    for (const name of ["ali", "alireza", "bali", "al_x", "alborz"]) await h.signUp(name);
+    const res = await search(me.token, "AL");
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { items: { username: string }[] }).items.map((i) => i.username)).toEqual(["al_x", "alborz", "ali", "alireza"]);
+  });
+
+  it("is not a substring search, and matches _ and % as themselves", async () => {
+    const me = await h.signUp("zed");
+    await h.signUp("al_x");
+    await h.signUp("alex");
+    const names = async (q: string) => ((await (await search(me.token, q)).json()) as { items: { username: string }[] }).items.map((i) => i.username);
+    expect(await names("li")).toEqual([]);
+    expect(await names("al_")).toEqual(["al_x"]);
+    expect(await names("a%")).toEqual([]);
+    expect(await names("%%")).toEqual([]);
+  });
+
+  it("needs at least 2 characters, after trimming", async () => {
+    const me = await h.signUp("zed");
+    for (const q of ["", "a", " a ", "  "]) {
+      const res = await search(me.token, q);
+      expect(res.status, JSON.stringify(q)).toBe(400);
+      expect(await res.json()).toEqual({ error: "invalid_request" });
+    }
+    expect((await h.request("/v1/users/search", { token: me.token })).status).toBe(400);
+  });
+
+  it("returns at most 20, with the names, avatar and follow state", async () => {
+    const me = await h.signUp("zed");
+    for (let i = 0; i < 25; i++) await h.signUp(`pal${String(i).padStart(2, "0")}`);
+    const sara = await h.signUp("palsara", { displayName: "سارا" });
+    await befriend(me, sara);
+    await h.request("/v1/follows/pal00", { method: "PUT", token: me.token });
+    const { items } = (await (await search(me.token, "pal")).json()) as { items: Record<string, unknown>[] };
+    expect(items).toHaveLength(20);
+    expect(items[0]).toEqual({ username: "pal00", displayName: null, avatar: null, isFollowing: true, isFriend: false });
+    const found = ((await (await search(me.token, "palsa")).json()) as { items: unknown[] }).items;
+    expect(found).toEqual([{ username: "palsara", displayName: "سارا", avatar: null, isFollowing: true, isFriend: true }]);
+  });
+
+  it("does not take a profile for the search: a user named like it is unknown", async () => {
+    const me = await h.signUp("zed");
+    // "search" is reserved, so no account can ever have it.
+    const res = await h.request("/v1/me/username", { method: "PUT", token: me.token, json: { username: "search" } });
+    expect(res.status).toBe(400);
+  });
+
+  it("never logs the names looked up", async () => {
+    const me = await h.signUp("zed");
+    await h.signUp("secretname");
+    h.logs.length = 0;
+    await profile(me.token, "secretname");
+    await search(me.token, "secret");
+    await h.request("/v1/follows/secretname", { method: "PUT", token: me.token });
+    expect(h.logs.join("\n")).not.toContain("secret");
+    expect(h.logs.some((l) => l.startsWith("GET /v1/users/:username 200 "))).toBe(true);
+  });
+
+  it("limits searches to 60 a minute per user", async () => {
+    const me = await h.signUp("zed");
+    const other = await h.signUp("yan");
+    let last = 200;
+    for (let i = 0; i < 61; i++) last = (await search(me.token, "ab")).status;
+    expect(last).toBe(429);
+    expect((await search(other.token, "ab")).status).toBe(200);
+    h.clock.time = new Date(h.clock.time.getTime() + 61_000);
+    expect((await search((await h.signIn("g-zed")).accessToken, "ab")).status).toBe(200);
+  });
+});

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { previousWeek, tehranDate, weekEnd, weekOf, weekStart } from "../src/week.js";
+import { isRealDate, previousWeek, tehranDate, weekEnd, weekOf, weekStart } from "../src/week.js";
+
+describe("real dates", () => {
+  it("accepts calendar days only", () => {
+    expect(isRealDate("2026-02-28")).toBe(true);
+    expect(isRealDate("2028-02-29")).toBe(true);
+    for (const bad of ["2026-02-29", "2026-13-01", "2026-6-1", "tomorrow", "2026-06-01T00:00:00Z"]) expect(isRealDate(bad)).toBe(false);
+  });
+});
 
 describe("Tehran dates", () => {
   it("moves the day at 20:30 UTC (Tehran midnight, no daylight saving)", () => {

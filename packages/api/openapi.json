@@ -434,6 +434,92 @@
           "items"
         ]
       },
+      "Feed": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedItem"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `cursor` for the next page; null on the last page."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "FeedItem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "like",
+              "repost",
+              "daily"
+            ]
+          },
+          "user": {
+            "$ref": "#/components/schemas/PersonShort"
+          },
+          "key": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200,
+            "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+            "example": "/hafez/ghazal/sh3#0",
+            "description": "The couplet, for a like or a repost."
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-06-01",
+            "description": "The Tehran day, for a daily result."
+          },
+          "tries": {
+            "type": "integer",
+            "description": "Tries it took, for a daily result."
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "type",
+          "user",
+          "at"
+        ]
+      },
+      "PersonShort": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
+          }
+        },
+        "required": [
+          "username",
+          "displayName",
+          "avatar"
+        ]
+      },
       "Relationship": {
         "type": "object",
         "properties": {
@@ -501,6 +587,145 @@
           "avatar",
           "isFriend"
         ]
+      },
+      "UserSearch": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FoundPerson"
+            },
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "FoundPerson": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PersonShort"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "isFollowing": {
+                "type": "boolean"
+              },
+              "isFriend": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "isFollowing",
+              "isFriend"
+            ]
+          }
+        ]
+      },
+      "PublicProfile": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PersonShort"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "friendsCount": {
+                "type": "integer"
+              },
+              "isFollowing": {
+                "type": "boolean"
+              },
+              "followsYou": {
+                "type": "boolean"
+              },
+              "isFriend": {
+                "type": "boolean"
+              },
+              "league": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "tier": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4
+                  }
+                },
+                "required": [
+                  "tier"
+                ],
+                "description": "This week's tier; null before their first score of the week."
+              },
+              "weekPoints": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Only for a friend, for yourself, or someone who allows the global leaderboard; else null."
+              }
+            },
+            "required": [
+              "friendsCount",
+              "isFollowing",
+              "followsYou",
+              "isFriend",
+              "league",
+              "weekPoints"
+            ]
+          }
+        ]
+      },
+      "ReactionCounts": {
+        "type": "object",
+        "properties": {
+          "likes": {
+            "type": "integer"
+          },
+          "reposts": {
+            "type": "integer"
+          },
+          "likedByMe": {
+            "type": "boolean"
+          },
+          "repostedByMe": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "likes",
+          "reposts",
+          "likedByMe",
+          "repostedByMe"
+        ]
+      },
+      "ReactionRequest": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200,
+            "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+            "example": "/hafez/ghazal/sh3#0",
+            "description": "<poemPath>#<coupletIndex>"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "additionalProperties": false
+      },
+      "ReactionCountsByKey": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/ReactionCounts"
+        }
       },
       "ScoreResult": {
         "type": "object",
@@ -640,28 +865,6 @@
               "tries"
             ]
           }
-        ]
-      },
-      "PersonShort": {
-        "type": "object",
-        "properties": {
-          "username": {
-            "type": "string"
-          },
-          "displayName": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "avatar": {
-            "$ref": "#/components/schemas/Avatar"
-          }
-        },
-        "required": [
-          "username",
-          "displayName",
-          "avatar"
         ]
       },
       "Stats": {
@@ -2035,6 +2238,63 @@
         }
       }
     },
+    "/v1/feed": {
+      "get": {
+        "tags": [
+          "feed"
+        ],
+        "summary": "What my friends did: the home «دوستات» feed",
+        "description": "Newest first, 30 a page, from friends only (people who follow each other). Likes and reposts are always shown, since they are social by nature. A friend's solved daily puzzle is shown only when their `dailyVisibility` is `friends`. Taking back a like, or ending the friendship, removes the item.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 400
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Feed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A malformed cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/follows/{username}": {
       "put": {
         "tags": [
@@ -2351,6 +2611,360 @@
           },
           "400": {
             "description": "A malformed cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/search": {
+      "get": {
+        "tags": [
+          "friends"
+        ],
+        "summary": "Find people by the start of their username",
+        "description": "Case-insensitive prefix match on the username, at least 2 characters, up to 20 results in alphabetical order, never including me. 60 searches a minute per user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": true,
+            "name": "q",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The people found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSearch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: shorter than 2 characters after trimming.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many searches (60 a minute per user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/{username}": {
+      "get": {
+        "tags": [
+          "friends"
+        ],
+        "summary": "A person's public profile",
+        "description": "Name, avatar, how many friends they have, how we follow each other and their league tier this week. Their points this week are given only to a friend, to themselves and when they allow the global leaderboard.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "example": "hafez_fan"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user with that username.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reactions/{kind}": {
+      "put": {
+        "tags": [
+          "reactions"
+        ],
+        "summary": "Like or repost a couplet",
+        "description": "`kind` is `like` or `repost`. Idempotent. A reaction is social by nature: friends see it in their feed. Reposting a couplet is only this reaction.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "like",
+                "repost"
+              ]
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The couplet's counts after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionCounts"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a bad kind or key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (120 a minute per user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "reactions"
+        ],
+        "summary": "Take back a like or a repost",
+        "description": "Idempotent.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "like",
+                "repost"
+              ]
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The couplet's counts after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionCounts"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a bad kind or key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (120 a minute per user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reactions/counts": {
+      "get": {
+        "tags": [
+          "reactions"
+        ],
+        "summary": "Likes and reposts of up to 50 couplets",
+        "description": "Everyone's reactions are counted, not only friends'. Every asked key is in the answer, with zeros when nobody reacted.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 10050,
+              "description": "Up to 50 couplet keys, comma separated (the `#` in a key must be percent-encoded).",
+              "example": "/hafez/ghazal/sh3#0,/saadi/ghazal/sh1#4"
+            },
+            "required": true,
+            "description": "Up to 50 couplet keys, comma separated (the `#` in a key must be percent-encoded).",
+            "name": "keys",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Counts by key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionCountsByKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a bad key, or more than 50.",
             "content": {
               "application/json": {
                 "schema": {

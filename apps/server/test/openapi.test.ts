@@ -28,6 +28,7 @@ describe("OpenAPI document", () => {
       "/v1/auth/refresh",
       "/v1/daily",
       "/v1/daily/{date}/friends",
+      "/v1/feed",
       "/v1/feedback",
       "/v1/feedback/{id}/recording",
       "/v1/feedback/{id}/screenshot",
@@ -48,9 +49,13 @@ describe("OpenAPI document", () => {
       "/v1/me/username",
       "/v1/poets/pictures",
       "/v1/poets/{slug}/picture",
+      "/v1/reactions/counts",
+      "/v1/reactions/{kind}",
       "/v1/scores",
       "/v1/usernames/check",
       "/v1/usernames/suggestions",
+      "/v1/users/search",
+      "/v1/users/{username}",
     ]);
   });
 });
