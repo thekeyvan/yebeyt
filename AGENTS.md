@@ -11,9 +11,10 @@ Folders are added only when their first slice lands.
 | Path | What |
 |---|---|
 | `apps/ios/` | SwiftUI app (iOS 17+, Swift 6, XcodeGen `project.yml`, targets `Yebeyt`, `YebeytTests` (unit) and `YebeytUITests` (UI; `xcodebuild test` runs both), bundle id `com.yebeyt.app`) |
-| `apps/server/` | Backend at api.yebeyt.com: TypeScript, Hono, Postgres, Drizzle (migrations in `drizzle/`, applied on start), Zod/OpenAPI; Sign in with Apple and Google, usernames, guest-progress carry-over, poet pictures. WebSocket for live games comes in slice 7. Hosted on Railway (`Dockerfile`, `railway.json`; env vars and deploy in its `README.md`) |
+| `apps/server/` | Backend at api.yebeyt.com: TypeScript, Hono, Postgres, Drizzle (migrations in `drizzle/`, applied on start), Zod/OpenAPI; Sign in with Apple and Google, usernames, guest-progress carry-over, poet pictures. WebSocket for live games comes in slice 7. Hosted on Railway (`Dockerfile`; `main` deploys by itself; env vars and deploy in its `README.md`) |
 | `apps/web/` | (slice 9) Next.js: yebeyt.com, the link pages `/c` `/i` `/g`, apple-app-site-association; later the web app. Hosted on Railway |
 | `apps/admin/`, `apps/android/` | (later) Admin dashboard (Next.js), Android (Kotlin + Jetpack Compose) |
+| `.railway/` | `railway.ts`: Railway infrastructure as code for the project (services, Postgres, builds, health check, domain). `railway config plan` / `apply`; variables stay in Railway |
 | `packages/tokens/` | `tokens.json`: the one source of colours, fonts and sticker sizes. `tools/make_tokens.py` writes the platform files from it |
 | `packages/api/` | `openapi.json`: the OpenAPI contract, written from the server's routes by `api:generate` (never edit by hand); clients for each platform are generated from it |
 | `assets/fonts/` | Every font file and its licence (`licenses/`). Apps take the fonts they use from here |

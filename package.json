@@ -9,6 +9,7 @@
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
+    "railway": "^3.17.0",
     "turbo": "^2.11.13"
   }
 }

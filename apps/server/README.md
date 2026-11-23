@@ -76,9 +76,10 @@ The script takes `poet-<name>.png`, maps the name to the Ganjoor slug (`rumi`→
 
 The Dockerfile builds from the **repo root** (it needs the lockfile and the workspace files):
 
-1. Service settings: source = this repo, root directory = repo root, config file path = `/apps/server/railway.json` (it sets the builder to the Dockerfile at `apps/server/Dockerfile`, the start command and the `/health` check).
-2. Add a Postgres service and give the server `DATABASE_URL` as a reference variable; set the other variables from the table above.
-3. `railway up` from the repo root, or deploy from the connected branch.
-4. Point api.yebeyt.com at the service (custom domain).
+The Railway project (services, the Postgres, builds, health check, the custom domain) is described in `.railway/railway.ts` at the repo root. The `server` service is connected to this repo: every push to `main` that touches the server, `packages/` or the workspace files builds `apps/server/Dockerfile` and deploys it, with `/health` as the health check. Environment variables are not in the file (`variables: { managed: false }`); they live only in Railway.
+
+- Preview a change to the infrastructure: `railway config plan` (from the repo root, after `railway link`). Apply it: `railway config apply`.
+- A manual deploy of the working tree: `railway up --service server` from the repo root.
+- api.yebeyt.com is a custom domain on the service; Cloudflare holds the CNAME.
 
 Local image check, if Docker is available: `docker build -f apps/server/Dockerfile -t yebeyt-server .`
