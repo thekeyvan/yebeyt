@@ -10,7 +10,7 @@ Folders are added only when their first slice lands.
 
 | Path | What |
 |---|---|
-| `apps/ios/` | SwiftUI app (iOS 17+, Swift 6, XcodeGen `project.yml`, targets `Yebeyt` and `YebeytTests`, bundle id `com.yebeyt.app`) |
+| `apps/ios/` | SwiftUI app (iOS 17+, Swift 6, XcodeGen `project.yml`, targets `Yebeyt`, `YebeytTests` (unit) and `YebeytUITests` (UI; `xcodebuild test` runs both), bundle id `com.yebeyt.app`) |
 | `apps/server/` | (slice 4) Backend at api.yebeyt.com: TypeScript, Hono, Postgres, Drizzle, Zod/OpenAPI, WebSocket for live games. Hosted on Railway |
 | `apps/web/` | (slice 9) Next.js: yebeyt.com, the link pages `/c` `/i` `/g`, apple-app-site-association; later the web app. Hosted on Railway |
 | `apps/admin/`, `apps/android/` | (later) Admin dashboard (Next.js), Android (Kotlin + Jetpack Compose) |
