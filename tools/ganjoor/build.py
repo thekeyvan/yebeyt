@@ -29,7 +29,7 @@ import audio
 import games
 import library
 import sparse
-from couplets import clean, group_couplets, short_bio
+from couplets import group_couplets, short_bio, split_ai
 
 # The one place the data commit is pinned. The app reads it back from poets.json.
 SHA = "7d7beabc1edfbddbd51835e979b309d653d25e39"
@@ -47,7 +47,11 @@ BUNDLED = {"hafez": "غزلیات", "khayyam": "رباعیات", "babataher": "�
 def convert_poem(raw):
     poem = {"id": raw["Id"], "title": raw["Title"], "path": raw["FullUrl"]}
     if raw.get("PoemSummary"):
-        poem["summary"] = clean(raw["PoemSummary"])
+        summary, ai = split_ai(raw["PoemSummary"])
+        if summary:
+            poem["summary"] = summary
+            if ai:
+                poem["summaryAi"] = True
     if (raw.get("Metre") or {}).get("Rhythm"):
         poem["rhythm"] = raw["Metre"]["Rhythm"]
     poem["couplets"] = group_couplets(raw["Verses"])

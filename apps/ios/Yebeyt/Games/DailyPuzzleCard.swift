@@ -7,7 +7,6 @@ struct DailyPuzzleCard: View {
     let day: TehranDay
     let finished: Bool
     let open: () -> Void
-    @Environment(\.layoutDirection) private var direction
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -43,7 +42,7 @@ struct DailyPuzzleCard: View {
             .accessibilityIdentifier("dailySolved")
         } else {
             let words = puzzle.hemistich.split(whereSeparator: \.isWhitespace).map(String.init)
-            WrapLayout(spacing: 8, lineSpacing: 2, rightToLeft: direction == .rightToLeft) {
+            WrapLayout(spacing: 8, lineSpacing: 2) {
                 ForEach(Array(words.enumerated()), id: \.offset) { index, word in
                     if index == puzzle.wordIndex { boxes } else { Text(word).font(.poem(21)) }
                 }

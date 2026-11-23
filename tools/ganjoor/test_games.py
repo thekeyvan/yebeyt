@@ -58,10 +58,6 @@ class CleanMeaning(unittest.TestCase):
     def test_a_stray_leading_colon_is_dropped(self):
         self.assertEqual(games.clean_meaning(": من آمدم "), "من آمدم")
 
-    def test_the_ai_label_stays(self):
-        self.assertEqual(games.clean_meaning("هوش مصنوعی: آسمان"), "هوش مصنوعی: آسمان")
-
-
 class PoemPicks(unittest.TestCase):
     def test_keeps_the_first_few_eligible_couplets_with_their_index(self):
         couplets = [couplet(meaning=None), couplet(), couplet(), couplet(m2=""), couplet(), couplet()]
@@ -114,10 +110,19 @@ class Build(unittest.TestCase):
             self.make(root)
             curation = {"books": [{"path": "/p/book", "title": "کتابِ من", "poet": "p"}]}
             got = games.build_deck(root, {10: 2, 11: 7}, curation)
-        self.assertEqual([(e["poem"], e["index"], e["popularity"]) for e in got],
-                         [("/p/book/b", 0, 7), ("/p/book/b", 1, 7), ("/p/book/a", 0, 2)])
+        self.assertEqual([(e["poem"], e["index"]) for e in got], [("/p/book/b", 0), ("/p/book/b", 1), ("/p/book/a", 0)])
         self.assertEqual(got[1], {"poem": "/p/book/b", "index": 1, "m1": WORDS5, "m2": WORDS5, "meaning": "دوم",
-                                  "poet": "p", "book": "/p/book", "bookTitle": "کتابِ من", "popularity": 7})
+                                  "poet": "p", "bookTitle": "کتابِ من"})
+
+    def test_an_ai_meaning_loses_its_label_and_is_flagged(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            self.make(root)
+            self.write(root, "/p/book/a", 10, [v(1, "Right", WORDS5, 0, "هوش مصنوعی: آسمان"), v(2, "Left", WORDS5, 0)])
+            curation = {"books": [{"path": "/p/book", "title": "ک", "poet": "p"}]}
+            got = games.build_deck(root, {10: 2}, curation)
+        self.assertEqual(got[0]["meaning"], "آسمان")
+        self.assertIs(got[0]["ai"], True)
 
     def test_unrecited_poems_are_left_out(self):
         with tempfile.TemporaryDirectory() as folder:

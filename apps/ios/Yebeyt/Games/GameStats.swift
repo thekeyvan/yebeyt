@@ -52,6 +52,11 @@ final class GameStats {
         if current != today { today = current }
     }
 
+    /// How long until the next Tehran midnight, for a timer that turns the day while the app stays open.
+    var secondsUntilNextDay: TimeInterval {
+        max(0, TehranDay(number: today.number + 1).start.timeIntervalSince(now()))
+    }
+
     /// Keeps a day's puzzle. The moment it is first solved, its points are added and the day counts for the streak.
     func record(_ record: DailyRecord, on day: TehranDay) {
         let wasSolved = saved.daily[day.number]?.outcome == .solved

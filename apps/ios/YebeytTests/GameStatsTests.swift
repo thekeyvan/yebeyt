@@ -62,7 +62,8 @@ struct TehranDayTests {
 struct ScoringTests {
     @Test func tableFromTheDocs() {
         #expect(Scoring.dailyByTry == [100, 70, 40])
-        #expect(Scoring.hintCost == 20)
+        #expect(Scoring.dailyHintCost == 30)
+        #expect(Scoring.jigsawHintCost == 20)
         #expect(Scoring.jigsawWord == 20)
         #expect(Scoring.jigsawSecondLeft == 1)
     }
@@ -71,8 +72,9 @@ struct ScoringTests {
         #expect(Scoring.daily(solvedOnTry: 1, hints: 0) == 100)
         #expect(Scoring.daily(solvedOnTry: 2, hints: 0) == 70)
         #expect(Scoring.daily(solvedOnTry: 3, hints: 0) == 40)
-        #expect(Scoring.daily(solvedOnTry: 2, hints: 1) == 50)
-        #expect(Scoring.daily(solvedOnTry: 3, hints: 3) == 0)
+        #expect(Scoring.daily(solvedOnTry: 2, hints: 1) == 40)
+        #expect(Scoring.daily(solvedOnTry: 3, hints: 2) == 0)
+        #expect(Scoring.daily(solvedOnTry: 1, hints: 3) == 10)
         #expect(Scoring.daily(solvedOnTry: 4, hints: 0) == 0)
     }
 
@@ -135,6 +137,13 @@ struct GameStatsTests {
         clock = GameFixtures.tehran("2026-11-24T10:00:00Z")  // a whole day missed
         stats.refreshToday()
         #expect(stats.streak == 0)
+    }
+
+    @Test func theTimerToTheNextDayCountsToTehranMidnight() {
+        let stats = GameStats(defaults: GameFixtures.defaults(), now: { GameFixtures.tehran("2026-11-22T20:29:00Z") })
+        #expect(stats.secondsUntilNextDay == 60)
+        let noon = GameStats(defaults: GameFixtures.defaults(), now: { GameFixtures.tehran("2026-11-23T08:30:00Z") })  // noon in Tehran
+        #expect(noon.secondsUntilNextDay == 12 * 3600)
     }
 
     @Test func theDayTurnsAtTehranMidnight() {

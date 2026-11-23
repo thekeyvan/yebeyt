@@ -107,6 +107,30 @@ final class GamesUITests: XCTestCase {
         XCTAssertTrue(buttons(app, startingWith: "slot-", value: word).count >= 1, "the dragged sticker sits in the slot")
     }
 
+    /// Right-to-left: the first word is the rightmost of its row (a hemistich reads from the right).
+    @MainActor func testWordsFlowFromTheRightInTheDailyCardAndTheJigsawSlots() {
+        let app = launch(["-beytTab", "games"])
+        XCTAssertTrue(app.buttons["dailyOpen"].waitForExistence(timeout: 10))
+        let texts = app.otherElements["dailyCard"].staticTexts.allElementsBoundByIndex
+        let title = texts.firstIndex { $0.label == "کلمه‌ی گم‌شده" }
+        XCTAssertNotNil(title)
+        let words = texts.suffix(from: (title ?? 0) + 1)
+        XCTAssertGreaterThanOrEqual(words.count, 3)
+        for (earlier, later) in zip(words, words.dropFirst()) where abs(earlier.frame.midY - later.frame.midY) < 5 {
+            XCTAssertGreaterThan(earlier.frame.midX, later.frame.midX, "\(earlier.label) should be right of \(later.label)")
+        }
+        app.terminate()
+
+        let game = launch(["-beytRoute", "jigsaw"])
+        XCTAssertTrue(game.descendants(matching: .any)["jigsawCard"].waitForExistence(timeout: 10))
+        let first = game.buttons["slot-0"].frame, second = game.buttons["slot-1"].frame
+        if abs(first.midY - second.midY) < 5 {
+            XCTAssertGreaterThan(first.midX, second.midX, "slot 1 is to the left of slot 0")
+        } else {
+            XCTAssertLessThan(first.midY, second.midY, "slot 1 wraps below slot 0")
+        }
+    }
+
     @MainActor func testTheBulbFillsASlotAndCostsItsPoints() {
         let app = launch(["-beytRoute", "jigsaw"])
         XCTAssertTrue(app.buttons["jigsawHint"].waitForExistence(timeout: 10))

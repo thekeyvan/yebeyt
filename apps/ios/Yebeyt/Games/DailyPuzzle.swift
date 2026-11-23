@@ -26,12 +26,6 @@ struct DailyPuzzle: Equatable, Sendable {
     /// The keyboard: every letter of the word, distractors up to `keyCount`, in an order fixed for the day.
     let keys: [Character]
 
-    /// The words of the hemistich around the hidden one: `(before, after)`, as written.
-    var around: (before: String, after: String) {
-        let words = hemistich.split(whereSeparator: \.isWhitespace).map(String.init)
-        return (words[..<wordIndex].joined(separator: " "), words[(wordIndex + 1)...].joined(separator: " "))
-    }
-
     /// The hemistich the word is in.
     var hemistich: String { inSecondHemistich ? couplet.m2 : couplet.m1 }
 

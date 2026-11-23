@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// Items in rows that wrap, like a CSS flex-wrap: words of a hemistich, slots, stickers. Right-to-left puts the
-/// first item at the right edge. Rows are centred or start-aligned; the layout is as wide as its widest row.
+/// Items in rows that wrap, like a CSS flex-wrap: words of a hemistich, slots, stickers. It places items from
+/// the left; SwiftUI mirrors a custom layout in right-to-left, so the first item ends up at the right edge.
+/// Rows are centred or start-aligned; the layout is as wide as its widest row.
 struct WrapLayout: Layout {
     var spacing: CGFloat = 6
     var lineSpacing: CGFloat = 6
     var centered = false
-    var rightToLeft = true
 
     private struct Row {
         var items: [(index: Int, size: CGSize)] = []
@@ -38,12 +38,10 @@ struct WrapLayout: Layout {
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         var y = bounds.minY
         for row in rows(subviews, width: bounds.width) {
-            let start = centered ? bounds.midX - row.width / 2 : (rightToLeft ? bounds.maxX - row.width : bounds.minX)
-            var x = rightToLeft ? start + row.width : start
+            var x = centered ? bounds.midX - row.width / 2 : bounds.minX
             for item in row.items {
-                let origin = CGPoint(x: rightToLeft ? x - item.size.width : x, y: y + (row.height - item.size.height) / 2)
-                subviews[item.index].place(at: origin, proposal: ProposedViewSize(item.size))
-                x += rightToLeft ? -(item.size.width + spacing) : item.size.width + spacing
+                subviews[item.index].place(at: CGPoint(x: x, y: y + (row.height - item.size.height) / 2), proposal: ProposedViewSize(item.size))
+                x += item.size.width + spacing
             }
             y += row.height + lineSpacing
         }

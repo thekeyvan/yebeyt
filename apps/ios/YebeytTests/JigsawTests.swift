@@ -355,6 +355,17 @@ struct JigsawSessionTests {
         #expect(stats.points == 60 && stats.best(.jigsaw) == 60)
     }
 
+    @Test func theClockWaitsWhileTheAppIsNotInFront() {
+        let session = session(GameStats(defaults: GameFixtures.defaults()))
+        session.tick()
+        session.isPaused = true
+        for _ in 0..<30 { session.tick() }
+        #expect(session.round.timeLeft == 119)
+        session.isPaused = false
+        session.tick()
+        #expect(session.round.timeLeft == 118)
+    }
+
     @Test func theTimerReadsLikeTheBoard() {
         let session = session(GameStats(defaults: GameFixtures.defaults()))
         #expect(session.timeText == "۲:۰۰")

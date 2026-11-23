@@ -6,7 +6,6 @@ struct GamesView: View {
     @Environment(AppModel.self) private var app
     @Environment(GameDeck.self) private var deck
     @Environment(GameStats.self) private var stats
-    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ScrollView {
@@ -28,9 +27,6 @@ struct GamesView: View {
         .scrollIndicators(.hidden)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active { stats.refreshToday() }
-        }
     }
 
     private var header: some View {

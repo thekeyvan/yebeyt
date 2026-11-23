@@ -20,7 +20,6 @@ struct JigsawCard: View {
     let revealed: Bool
     let tapSlot: (Int) -> Void
     @Binding var slotFrames: [Int: CGRect]
-    @Environment(\.layoutDirection) private var direction
 
     var body: some View {
         VStack(spacing: 16) {
@@ -29,7 +28,7 @@ struct JigsawCard: View {
                 .foregroundStyle(Tokens.Colors.ink)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
-            WrapLayout(spacing: 6, lineSpacing: 6, centered: true, rightToLeft: direction == .rightToLeft) {
+            WrapLayout(spacing: 6, lineSpacing: 6, centered: true) {
                 ForEach(board.question.words.indices, id: \.self) { position in
                     slot(position)
                 }
@@ -93,13 +92,12 @@ struct JigsawStickerSheet: View {
     let extras: Int
     let select: (JigsawSticker) -> Void
     let drop: (JigsawSticker, CGPoint) -> Void
-    @Environment(\.layoutDirection) private var direction
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(extras > 0 ? "برگه‌ی برچسب‌ها · \(PersianDigits.string(extras)) تاش اضافه‌ست" : "برگه‌ی برچسب‌ها")
                 .font(.ui(13, weight: .medium)).foregroundStyle(Tokens.Colors.muted)
-            WrapLayout(spacing: 10, lineSpacing: 10, centered: true, rightToLeft: direction == .rightToLeft) {
+            WrapLayout(spacing: 10, lineSpacing: 10, centered: true) {
                 ForEach(stickers) { sticker in
                     LooseSticker(sticker: sticker, inHand: selected == sticker, select: select, drop: drop)
                 }

@@ -93,7 +93,7 @@ struct DailyGameTests {
         #expect(game.keyMarks["ب"] == nil)
     }
 
-    @Test func theBulbGivesTheFirstLetterNotFoundYetAndCosts20() {
+    @Test func theBulbGivesTheFirstLetterNotFoundYetAndCosts30() {
         var game = game()
         let canHint = game.canHint
         let gave = game.hint()
@@ -107,7 +107,7 @@ struct DailyGameTests {
         #expect(game.entry == ["م", nil, nil, nil], "the given letter can't be erased")
         for letter in "رام" { game.type(letter) }
         game.submit()
-        #expect(game.outcome == .solved && game.points == 70 - 20)
+        #expect(game.outcome == .solved && game.points == 70 - 30)
     }
 
     @Test func theBulbSkipsLettersAlreadyGreenAndRunsOut() {
@@ -132,6 +132,6 @@ struct DailyGameTests {
         for letter in "مام" { won.type(letter) }
         #expect(won.entry == ["م", "ر", "ا", "م"])
         won.submit()
-        #expect(won.record.outcome == .solved && won.record.points == 50)
+        #expect(won.record.outcome == .solved && won.record.points == 40)
     }
 }

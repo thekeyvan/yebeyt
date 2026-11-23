@@ -13,6 +13,8 @@ struct GameCouplet: Hashable, Sendable, Identifiable {
     /// The poet's short name.
     var poetName: String
     var bookTitle: String
+    /// The meaning was written by an AI (no marker is shown yet).
+    var meaningIsAI = false
 
     var id: String { "\(poem)#\(index)" }
 
@@ -31,6 +33,7 @@ final class GameDeck: Observable, Sendable {
         var m1: String
         var m2: String
         var meaning: String
+        var ai: Bool?
         var poet: String
         var bookTitle: String
     }
@@ -51,12 +54,8 @@ final class GameDeck: Observable, Sendable {
         couplets = entries.map {
             GameCouplet(
                 poem: $0.poem, index: $0.index, m1: $0.m1, m2: $0.m2, meaning: $0.meaning, poetSlug: $0.poet,
-                poetName: poetNames[$0.poet] ?? "", bookTitle: $0.bookTitle
+                poetName: poetNames[$0.poet] ?? "", bookTitle: $0.bookTitle, meaningIsAI: $0.ai == true
             )
         }
-    }
-
-    func couplet(poem: String, index: Int) -> GameCouplet? {
-        couplets.first { $0.poem == poem && $0.index == index }
     }
 }

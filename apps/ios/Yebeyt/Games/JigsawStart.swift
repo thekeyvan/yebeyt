@@ -15,7 +15,7 @@ extension JigsawStart {
         let all = poem.couplets.enumerated().map { index, couplet in
             GameCouplet(
                 poem: poem.path, index: index, m1: couplet.m1, m2: couplet.m2, meaning: couplet.meaning,
-                poetSlug: poetSlug, poetName: poetName, bookTitle: bookTitle
+                poetSlug: poetSlug, poetName: poetName, bookTitle: bookTitle, meaningIsAI: couplet.ai == true
             )
         }
         switch self {

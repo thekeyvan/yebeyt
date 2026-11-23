@@ -25,6 +25,31 @@ struct CoupletGroupingTests {
         #expect(couplets[1].meaning == nil)
     }
 
+    @Test func theAILabelIsStrippedAndFlagged() {
+        let couplets = Couplet.grouping([
+            verse(1, "Right", "الف", 0, meaning: "هوش مصنوعی: آسمان\r\nپر است."), verse(2, "Left", "ب", 0),
+            verse(3, "Right", "پ", 1, meaning: "معنی"), verse(4, "Left", "ت", 1),
+            verse(5, "Right", "ج", 2, meaning: "هوش مصنوعی:  "), verse(6, "Left", "چ", 2),
+        ])
+        #expect(couplets[0].meaning == "آسمان\nپر است." && couplets[0].ai == true)
+        #expect(couplets[1].meaning == "معنی" && couplets[1].ai == nil)
+        #expect(couplets[2].meaning == nil && couplets[2].ai == nil)
+    }
+
+    @Test func aBundledCoupletDecodesItsAIFlag() throws {
+        let json = #"{"m1":"الف","m2":"ب","meaning":"آسمان","ai":true}"#
+        let couplet = try JSONDecoder().decode(Couplet.self, from: Data(json.utf8))
+        #expect(couplet.ai == true)
+        let plain = try JSONDecoder().decode(Couplet.self, from: Data(#"{"m1":"الف","m2":"ب"}"#.utf8))
+        #expect(plain.ai == nil)
+    }
+
+    @Test func aPoemSummaryLosesTheLabelToo() throws {
+        let json = #"{"Id":1,"Title":"غزل","FullUrl":"/x/y","PoemSummary":"هوش مصنوعی: خلاصه","Verses":[]}"#
+        let poem = try JSONDecoder().decode(RawPoem.self, from: Data(json.utf8)).poem()
+        #expect(poem.summary == "خلاصه" && poem.summaryAi == true)
+    }
+
     @Test func paragraphsAndSingleLinesGoInTheFirstSlot() {
         let couplets = Couplet.grouping([
             verse(1, "Paragraph", "نثر", 0), verse(2, "Single", "آزاد", 1),
@@ -68,7 +93,7 @@ struct RawDecodingTests {
         let bundled = try #require(try BundledPoetry.book(id: 24, in: Fixtures.appBundle).poems.first { $0.path == "/hafez/ghazal/sh3" })
         #expect(poem == bundled)
         #expect(poem.couplets.count == 9)
-        #expect(poem.summary?.hasPrefix("هوش مصنوعی") == true)
+        #expect(poem.summary?.hasPrefix("هوش مصنوعی") == false && poem.summaryAi == true)
         #expect(poem.rhythm?.hasSuffix("(هزج مثمن سالم)") == true)
     }
 

@@ -9,6 +9,8 @@ final class JigsawSession {
     /// The sheet with the full couplet is on screen.
     var sheetShown: Bool { round.sheetOpen }
     private(set) var finished = false
+    /// The app is not in front (another app, the lock screen, a share sheet): the clock waits.
+    var isPaused = false
     private let stats: GameStats
     @ObservationIgnored private var generator: SeededGenerator
 
@@ -24,6 +26,7 @@ final class JigsawSession {
     }
 
     func tick() {
+        guard !isPaused else { return }
         let wasOver = round.isOver
         round.tick()
         if !wasOver, round.isOver { finish() }

@@ -37,9 +37,11 @@ struct RawPoem: Decodable, Sendable {
     }
 
     func poem() -> Poem {
-        Poem(
+        let note = summary?.aiNote
+        let hasSummary = note?.text.isEmpty == false
+        return Poem(
             id: id, title: title, path: path,
-            summary: summary.flatMap { $0.isEmpty ? nil : $0.withoutCarriageReturns },
+            summary: hasSummary ? note?.text : nil, summaryAi: hasSummary && note?.ai == true ? true : nil,
             rhythm: metre?.rhythm.flatMap { $0.isEmpty ? nil : $0 },
             couplets: Couplet.grouping(verses)
         )
@@ -103,8 +105,12 @@ extension Couplet {
                 couplets[couplets.count - 1].m1 = text
                 hasFirst = true
             }
-            if let meaning = verse.coupletSummary, !meaning.isEmpty, couplets[couplets.count - 1].meaning == nil {
-                couplets[couplets.count - 1].meaning = meaning.withoutCarriageReturns
+            if couplets[couplets.count - 1].meaning == nil, let note = verse.coupletSummary, !note.isEmpty {
+                let (text, ai) = note.aiNote
+                if !text.isEmpty {
+                    couplets[couplets.count - 1].meaning = text
+                    couplets[couplets.count - 1].ai = ai ? true : nil
+                }
             }
         }
         return couplets
@@ -113,4 +119,13 @@ extension Couplet {
 
 private extension String {
     var withoutCarriageReturns: String { replacingOccurrences(of: "\r", with: "") }
+
+    /// A Ganjoor note without carriage returns and without the «هوش مصنوعی:» label, and whether it had the label
+    /// (mirrors `split_ai` in tools/ganjoor/couplets.py).
+    var aiNote: (text: String, ai: Bool) {
+        let note = withoutCarriageReturns
+        let label = "هوش مصنوعی:"
+        guard note.hasPrefix(label) else { return (note, false) }
+        return (String(note.dropFirst(label.count)).trimmingCharacters(in: .whitespacesAndNewlines), true)
+    }
 }

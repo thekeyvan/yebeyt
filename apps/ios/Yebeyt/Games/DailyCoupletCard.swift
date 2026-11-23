@@ -5,7 +5,6 @@ struct DailyCoupletCard: View {
     let puzzle: DailyPuzzle
     /// Shows the word instead of the blank.
     let revealed: Bool
-    @Environment(\.layoutDirection) private var direction
 
     var body: some View {
         VStack(spacing: 6) {
@@ -30,7 +29,7 @@ struct DailyCoupletCard: View {
     @ViewBuilder private func line(_ text: String, blank: Bool) -> some View {
         if blank {
             let words = text.split(whereSeparator: \.isWhitespace).map(String.init)
-            WrapLayout(spacing: 6, lineSpacing: 0, rightToLeft: direction == .rightToLeft) {
+            WrapLayout(spacing: 6, lineSpacing: 0) {
                 ForEach(Array(words.enumerated()), id: \.offset) { index, word in
                     if index == puzzle.wordIndex {
                         hidden(word)

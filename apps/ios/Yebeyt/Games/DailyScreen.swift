@@ -79,7 +79,7 @@ struct DailyScreen: View {
                 .buttonStyle(GameBigButtonStyle(height: 58, border: 4, fontSize: 22, shadow: ShadowToken(y: 6, blur: 16, opacity: 0.3)))
                 .disabled(!session.game.canSubmit)
                 .accessibilityIdentifier("submit")
-            GameRoundButton(label: "یه حرف، ۲۰ امتیاز", fill: Tokens.Colors.amber, bordered: true) { session.hint() } content: {
+            GameRoundButton(label: "یه حرف، \(PersianDigits.string(Scoring.dailyHintCost)) امتیاز", fill: Tokens.Colors.amber, bordered: true) { session.hint() } content: {
                 BulbIcon(caption: "یه حرف")
             }
             .disabled(!session.game.canHint)

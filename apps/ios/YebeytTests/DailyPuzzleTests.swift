@@ -16,11 +16,11 @@ struct GameDeckTests {
         #expect(deck.couplets.reduce(into: [String: Int]()) { $0[$1.poetSlug, default: 0] += 1 }.values.max()! <= 200)
     }
 
-    @Test func aCoupletIsFoundByPoemAndIndex() throws {
+    @Test func noMeaningKeepsTheAILabelButTheFlagIsDecoded() throws {
         let deck = try GameDeck(bundle: Fixtures.appBundle, poetNames: [:])
-        let first = try #require(deck.couplets.first)
-        #expect(deck.couplet(poem: first.poem, index: first.index) == first)
-        #expect(deck.couplet(poem: "/nobody/nothing", index: 0) == nil)
+        #expect(deck.couplets.allSatisfy { !($0.meaning ?? "").contains("هوش مصنوعی") })
+        #expect(deck.couplets.contains { $0.meaningIsAI })
+        #expect(deck.couplets.contains { !$0.meaningIsAI })
     }
 
     @Test func aBundleWithoutTheDeckThrows() {
@@ -55,11 +55,11 @@ struct DailyPuzzleTests {
         }
     }
 
-    @Test func theWordIsHiddenWhereItIsAndTheRestAroundIt() throws {
+    @Test func theWordIsOneOfTheWordsOfItsHemistichAtItsIndex() throws {
         let couplet = GameFixtures.couplet(1, m2: "کنار آب رکن آباد و گلگشت مصلا را")
         let puzzle = try #require(DailyPuzzle.pick(day: TehranDay(number: 5), from: GameDeck(couplets: [couplet])))
-        let around = puzzle.around
-        #expect([around.before, puzzle.word, around.after].filter { !$0.isEmpty }.joined(separator: " ") == couplet.m2)
+        let words = couplet.m2.split(whereSeparator: \.isWhitespace).map(String.init)
+        #expect(words[puzzle.wordIndex] == puzzle.word)
         #expect(puzzle.couplet == couplet)
     }
 

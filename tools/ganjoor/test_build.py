@@ -64,8 +64,26 @@ class GroupCouplets(unittest.TestCase):
         got = build.group_couplets([verse(2, "Left", "ب", 0), verse(1, "Right", "الف", 0)])
         self.assertEqual(got, [{"m1": "الف", "m2": "ب"}])
 
+    def test_the_ai_label_is_stripped_and_flagged(self):
+        got = build.group_couplets([
+            verse(1, "Right", "الف", 0, "هوش مصنوعی: آسمان\nپر است."), verse(2, "Left", "ب", 0),
+            verse(3, "Right", "پ", 1, "معنی"), verse(4, "Left", "ت", 1),
+        ])
+        self.assertEqual(got[0], {"m1": "الف", "m2": "ب", "meaning": "آسمان\nپر است.", "ai": True})
+        self.assertEqual(got[1], {"m1": "پ", "m2": "ت", "meaning": "معنی"})
+
+    def test_a_note_that_is_only_the_label_has_no_meaning(self):
+        got = build.group_couplets([verse(1, "Right", "الف", 0, "هوش مصنوعی:  "), verse(2, "Left", "ب", 0)])
+        self.assertEqual(got, [{"m1": "الف", "m2": "ب"}])
+
 
 class Selection(unittest.TestCase):
+    def test_a_poem_summary_loses_the_ai_label_too(self):
+        raw = {"Id": 1, "Title": "غزل", "FullUrl": "/x/y", "PoemSummary": "هوش مصنوعی: خلاصه", "Verses": []}
+        self.assertEqual(build.convert_poem(raw)["summary"], "خلاصه")
+        self.assertIs(build.convert_poem(raw)["summaryAi"], True)
+        raw["PoemSummary"] = "خلاصه"
+        self.assertNotIn("summaryAi", build.convert_poem(raw))
     cats = [
         {"Id": 1, "Title": "غزلیات", "FullUrl": "/x/ghazal"},
         {"Id": 2, "Title": "رباعیات", "FullUrl": "/x/robaee"},

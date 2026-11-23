@@ -36,6 +36,12 @@ struct TehranDay: Hashable, Comparable, Codable, Sendable {
 
     var previous: TehranDay { TehranDay(number: number - 1) }
 
+    /// The moment this day began, at midnight in Tehran.
+    var start: Date {
+        let midnightUTC = Date(timeIntervalSince1970: TimeInterval(number * Self.secondsPerDay))
+        return midnightUTC.addingTimeInterval(-TimeInterval(Self.zone.secondsFromGMT(for: midnightUTC)))
+    }
+
     /// «2026-11-23», the form `-beytToday` takes.
     var key: String {
         let parts = Self.utc.dateComponents([.year, .month, .day], from: Date(timeIntervalSince1970: TimeInterval(number * Self.secondsPerDay)))

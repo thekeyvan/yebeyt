@@ -5,7 +5,7 @@ import Testing
 struct JigsawStartTests {
     private let poem = Poem(
         id: 1, title: "غزل ۳", path: "/hafez/ghazal/sh3", summary: nil, rhythm: nil,
-        couplets: (0..<4).map { Couplet(m1: "بنی آدم اعضای یکدیگرند", m2: "که در آفرینش ز یک گوهرند \($0)", meaning: $0 == 2 ? "معنی" : nil) }
+        couplets: (0..<4).map { Couplet(m1: "بنی آدم اعضای یکدیگرند", m2: "که در آفرینش ز یک گوهرند \($0)", meaning: $0 == 2 ? "معنی" : nil, ai: $0 == 2 ? true : nil) }
     )
 
     private func opening(_ start: JigsawStart) -> [GameCouplet] {
@@ -15,7 +15,7 @@ struct JigsawStartTests {
     @Test func aCoupletOpensWithOnlyThatCouplet() {
         let couplets = opening(.couplet(poem: poem.path, index: 2))
         #expect(couplets.map(\.index) == [2])
-        #expect(couplets[0].id == "/hafez/ghazal/sh3#2" && couplets[0].meaning == "معنی")
+        #expect(couplets[0].id == "/hafez/ghazal/sh3#2" && couplets[0].meaning == "معنی" && couplets[0].meaningIsAI)
         #expect(couplets[0].source == "حافظ · دیوان حافظ")
     }
 

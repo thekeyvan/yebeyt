@@ -3,6 +3,8 @@ import UIKit
 
 struct RootView: View {
     @Bindable var model: AppModel
+    @Environment(GameStats.self) private var stats
+    @Environment(\.scenePhase) private var scenePhase
     @State private var keyboardUp = false
 
     var body: some View {
@@ -29,6 +31,15 @@ struct RootView: View {
         .ignoresSafeArea(.container, edges: .bottom)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardUp = true }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardUp = false }
+        // The Tehran day turns for the games while the app is open, when it comes back, or when the clock is changed.
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(stats.secondsUntilNextDay + 1))
+                stats.refreshToday()
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { stats.refreshToday() } }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }
         .fullScreenCover(item: $model.reader) { route in
             ReaderView(
                 route: route, close: { model.closeReader() },

@@ -9,6 +9,7 @@ struct JigsawScreen: View {
     @Environment(Library.self) private var library
     @Environment(GameDeck.self) private var deck
     @Environment(GameStats.self) private var stats
+    @Environment(\.scenePhase) private var scenePhase
     @State private var session: JigsawSession?
     @State private var slotFrames: [Int: CGRect] = [:]
 
@@ -25,6 +26,7 @@ struct JigsawScreen: View {
         .coordinateSpace(name: JigsawSpace.name)
         .dottedPaper()
         .task { await begin() }
+        .onChange(of: scenePhase) { _, phase in session?.isPaused = phase != .active }
     }
 
     /// Builds the round; the couplets of a poem of the reader come first. A poem that can't be loaded just
@@ -152,8 +154,8 @@ struct JigsawScreen: View {
     private func bottomBar(_ session: JigsawSession) -> some View {
         let board = session.round.board
         return HStack(spacing: 12) {
-            GameRoundButton(label: "راهنما، ۲۰ امتیاز", fill: Tokens.Colors.amber, bordered: true) { session.edit { $0.hint() } } content: {
-                BulbIcon(caption: "−\(PersianDigits.string(Scoring.hintCost))")
+            GameRoundButton(label: "راهنما، \(PersianDigits.string(Scoring.jigsawHintCost)) امتیاز", fill: Tokens.Colors.amber, bordered: true) { session.edit { $0.hint() } } content: {
+                BulbIcon(caption: "−\(PersianDigits.string(Scoring.jigsawHintCost))")
             }
             .disabled(!board.canHint)
             .accessibilityIdentifier("jigsawHint")

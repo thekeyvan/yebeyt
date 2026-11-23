@@ -73,16 +73,15 @@ struct BulbIcon: View {
 /// The amber score sticker: «+۳۶۰».
 struct ScoreSticker: View {
     let points: Int
-    var large = true
 
     var body: some View {
         Text("+\(PersianDigits.string(points))")
-            .font(large ? .title(22) : .ui(15, weight: .bold))
+            .font(.title(22))
             .foregroundStyle(Tokens.Colors.ink)
-            .padding(.horizontal, large ? 13 : 12)
-            .padding(.top, large ? 6 : 0)
+            .padding(.horizontal, 13)
+            .padding(.top, 6)
             .padding(.vertical, 3)
-            .sticker(fill: Tokens.Colors.amber, radius: Tokens.Sticker.Radius.pill, border: large ? 4 : 3, shadow: large ? ShadowToken(y: 3, blur: 8, opacity: 0.22) : Tokens.Sticker.Shadow.badge)
+            .sticker(fill: Tokens.Colors.amber, radius: Tokens.Sticker.Radius.pill, border: 4, shadow: ShadowToken(y: 3, blur: 8, opacity: 0.22))
             .contentTransition(.numericText())
     }
 }

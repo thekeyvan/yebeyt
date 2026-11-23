@@ -93,6 +93,8 @@ struct Poem: Codable, Hashable, Sendable, Identifiable {
     var title: String
     var path: String
     var summary: String?
+    /// True when `summary` was written by an AI (Ganjoor's «هوش مصنوعی:» label, stripped from the text).
+    var summaryAi: Bool?
     var rhythm: String?
     var couplets: [Couplet]
 }
@@ -103,10 +105,13 @@ struct Couplet: Codable, Hashable, Sendable {
     var m2: String
     /// What the couplet means, when Ganjoor has a note for it.
     var meaning: String?
+    /// True when the meaning was written by an AI (Ganjoor's «هوش مصنوعی:» label, stripped from the text).
+    var ai: Bool?
 
-    init(m1: String, m2: String, meaning: String? = nil) {
+    init(m1: String, m2: String, meaning: String? = nil, ai: Bool? = nil) {
         self.m1 = m1
         self.m2 = m2
         self.meaning = meaning
+        self.ai = ai
     }
 }

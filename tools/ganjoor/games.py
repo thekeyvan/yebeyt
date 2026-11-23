@@ -62,7 +62,7 @@ def recited_poems(poets, recitations, curation):
 
 
 def build_deck(poets, recitations, curation, per_poet=PER_POET, total=TOTAL):
-    """The deck, a list of {poem, index, m1, m2, meaning, poet, book, bookTitle, popularity}."""
+    """The deck, a list of {poem, index, m1, m2, meaning, ai?, poet, bookTitle}, most recited first."""
     entries = []
     for poet, poems in recited_poems(poets, recitations, curation).items():
         taken = 0
@@ -71,10 +71,13 @@ def build_deck(poets, recitations, curation, per_poet=PER_POET, total=TOTAL):
                 break
             raw = json.loads((poets / f"{path.lstrip('/')}.json").read_text(encoding="utf-8"))
             for index, c in poem_picks(group_couplets(raw["Verses"])):
-                entries.append({
+                entry = {
                     "poem": path, "index": index, "m1": c["m1"].strip(), "m2": c["m2"].strip(),
-                    "meaning": clean_meaning(c["meaning"]), "poet": poet, "book": book["path"],
-                    "bookTitle": book["title"], "popularity": count,
-                })
+                    "meaning": clean_meaning(c["meaning"]), "poet": poet, "bookTitle": book["title"], "popularity": count,
+                }
+                if c.get("ai"):
+                    entry["ai"] = True
+                entries.append(entry)
                 taken += 1
-    return rank(entries, per_poet, total)
+    # The popularity only orders the deck; the app doesn't read it.
+    return [{k: v for k, v in e.items() if k != "popularity"} for e in rank(entries, per_poet, total)]
