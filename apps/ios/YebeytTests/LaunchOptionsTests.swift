@@ -2,7 +2,71 @@ import Foundation
 import Testing
 @testable import Yebeyt
 
+struct JigsawStartTests {
+    private let poem = Poem(
+        id: 1, title: "غزل ۳", path: "/hafez/ghazal/sh3", summary: nil, rhythm: nil,
+        couplets: (0..<4).map { Couplet(m1: "بنی آدم اعضای یکدیگرند", m2: "که در آفرینش ز یک گوهرند \($0)", meaning: $0 == 2 ? "معنی" : nil) }
+    )
+
+    private func opening(_ start: JigsawStart) -> [GameCouplet] {
+        start.opening(from: poem, poetSlug: "hafez", poetName: "حافظ", bookTitle: "دیوان حافظ")
+    }
+
+    @Test func aCoupletOpensWithOnlyThatCouplet() {
+        let couplets = opening(.couplet(poem: poem.path, index: 2))
+        #expect(couplets.map(\.index) == [2])
+        #expect(couplets[0].id == "/hafez/ghazal/sh3#2" && couplets[0].meaning == "معنی")
+        #expect(couplets[0].source == "حافظ · دیوان حافظ")
+    }
+
+    @Test func aPoemOpensWithAllItsCoupletsInOrder() {
+        #expect(opening(.poem(poem.path)).map(\.index) == [0, 1, 2, 3])
+    }
+
+    @Test func theDeckOpensWithNothingAndABadIndexWithNothing() {
+        #expect(opening(.deck).isEmpty)
+        #expect(opening(.couplet(poem: poem.path, index: 9)).isEmpty)
+    }
+}
+
 struct LaunchOptionsTests {
+    @Test func readsGameRoutes() {
+        for (text, route) in [("games-catalog", LaunchOptions.Route.gamesCatalog), ("daily", .daily), ("jigsaw", .jigsaw),
+                              ("jigsaw-result", .jigsawResult), ("round-end", .roundEnd)] {
+            #expect(LaunchOptions(["beytRoute": text]).route == route)
+        }
+    }
+
+    @Test func gameRoutesOpenTheGameOrTheCatalogOnTheGamesTab() {
+        #expect(LaunchOptions(["beytRoute": "daily"]).game == .daily)
+        #expect(LaunchOptions(["beytRoute": "jigsaw"]).game == .jigsaw(.deck))
+        #expect(LaunchOptions(["beytRoute": "jigsaw-result"]).game == .jigsaw(.deck))
+        #expect(LaunchOptions(["beytRoute": "round-end"]).game == .jigsaw(.deck))
+        #expect(LaunchOptions(["beytRoute": "games-catalog"]).game == nil)
+        #expect(LaunchOptions(["beytRoute": "games-catalog"]).gamesPath == [.gamesCatalog])
+        #expect(LaunchOptions(["beytRoute": "daily"]).gamesPath.isEmpty)
+        #expect(LaunchOptions(["beytRoute": "poem:/hafez/ghazal/sh3"]).game == nil)
+    }
+
+    @Test func theResultAndEndRoutesPlayByThemselves() {
+        #expect(LaunchOptions(["beytRoute": "jigsaw-result"]).autoplay == .sheet(4))
+        #expect(LaunchOptions(["beytRoute": "round-end"]).autoplay == .end)
+        #expect(LaunchOptions(["beytRoute": "jigsaw", "beytPlay": "3"]).autoplay == .held(3))
+        #expect(LaunchOptions(["beytRoute": "daily", "beytPlay": "1"]).autoplay == .tries(1))
+        #expect(LaunchOptions(["beytRoute": "daily"]).autoplay == .none)
+        #expect(LaunchOptions(["beytRoute": "daily", "beytPlay": "many"]).autoplay == .none)
+    }
+
+    @Test func todayCanBeFixed() {
+        #expect(LaunchOptions(["beytToday": "2026-11-23"]).today?.key == "2026-11-23")
+        #expect(LaunchOptions(["beytToday": "soon"]).today == nil)
+        #expect(LaunchOptions([:]).today == nil)
+    }
+
+    @MainActor @Test func freshForgetsTheGameStatsToo() {
+        #expect(LaunchOptions.savedStateKeys.contains(GameStats.defaultsKey))
+    }
+
     @Test func readsValidValues() {
         let options = LaunchOptions(["beytTab": "games", "beytUnread": "3", "beytRoute": "stickers"])
         #expect(options.tab == .games)

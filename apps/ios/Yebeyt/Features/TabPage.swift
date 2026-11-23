@@ -14,7 +14,13 @@ struct TabPage: View {
                     .swipeBack()
                     .navigationDestination(for: Destination.self) { DestinationView(destination: $0).swipeBack() }
             }
-        case .games, .messages, .me:
+        case .games:
+            NavigationStack(path: $model.gamesPath) {
+                GamesView()
+                    .swipeBack()
+                    .navigationDestination(for: Destination.self) { DestinationView(destination: $0).swipeBack() }
+            }
+        case .messages, .me:
             NavigationStack { PlaceholderPage(tab: model.selectedTab).swipeBack() }
         }
     }

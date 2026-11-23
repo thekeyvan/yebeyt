@@ -4,10 +4,12 @@ import Foundation
 /// Debug launch arguments, for opening a screen straight away (simulator screenshots):
 /// `-beytTab home|explore|games|messages|me`, `-beytUnread <n>`, `-beytRoute stickers|poem:<path>`, and the
 /// library routes `-beytRoute library|book:<path>|section:<path>|poet:<slug>|search:<query>|mood:<key>|poets`
-/// (they open the کاوش tab with those screens pushed).
+/// (they open the کاوش tab with those screens pushed). The game routes `-beytRoute games-catalog|daily|jigsaw|jigsaw-result|round-end`
+/// open the بازی tab with the catalog, or a game in front; `-beytPlay <n>` plays a little first (daily: n tries; جورچین:
+/// n couplets, then a sticker in hand) and `-beytToday <yyyy-mm-dd>` fixes the Tehran day.
 /// With `poem:` the reader opens, and `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`,
 /// `-beytMeaning 1` and `-beytHold <n>` set its state. `-beytFresh 1` first forgets what the phone has kept
-/// (reading progress, marks, follows, rejected couplets). Values that don't parse are ignored.
+/// (reading progress, marks, follows, rejected couplets, game stats). Values that don't parse are ignored.
 struct LaunchOptions {
     enum Route: Equatable {
         case stickers
@@ -19,6 +21,11 @@ struct LaunchOptions {
         case search(String)
         case mood(String)
         case poets
+        case gamesCatalog
+        case daily
+        case jigsaw
+        case jigsawResult
+        case roundEnd
 
         init?(_ text: String) {
             let (name, value) = text.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
@@ -27,6 +34,11 @@ struct LaunchOptions {
             case ("stickers", nil): self = .stickers
             case ("library", nil): self = .library
             case ("poets", nil): self = .poets
+            case ("games-catalog", nil): self = .gamesCatalog
+            case ("daily", nil): self = .daily
+            case ("jigsaw", nil): self = .jigsaw
+            case ("jigsaw-result", nil): self = .jigsawResult
+            case ("round-end", nil): self = .roundEnd
             case ("poem", let path?) where Self.isPath(path): self = .poem(path)
             case ("book", let path?) where Self.isPath(path): self = .book(path)
             case ("section", let path?) where Self.isPath(path): self = .section(path)
@@ -38,6 +50,14 @@ struct LaunchOptions {
         }
 
         private static func isPath(_ text: String) -> Bool { text.hasPrefix("/") && text.count > 1 }
+
+        /// The route opens something on the بازی tab.
+        var isGames: Bool {
+            switch self {
+            case .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd: true
+            default: false
+            }
+        }
     }
 
     private(set) var tab: Tab?
@@ -48,6 +68,9 @@ struct LaunchOptions {
     private let sheet: String?
     private let meaning: String?
     private let hold: Int?
+    private let play: Int?
+    /// `-beytToday <yyyy-mm-dd>`: the Tehran day the games use instead of the real one.
+    private(set) var today: TehranDay?
     /// `-beytFresh 1`: forget what the phone has kept (progress, marks, follows, rejects) before launching.
     private(set) var fresh: Bool
 
@@ -64,10 +87,14 @@ struct LaunchOptions {
         sheet = values["beytSheet"] as? String
         meaning = (values["beytMeaning"] as? String) ?? (values["beytMeaning"] as? Int).map(String.init)
         hold = number("beytHold")
+        play = number("beytPlay")
+        today = (values["beytToday"] as? String).flatMap { TehranDay(key: $0) }
         fresh = number("beytFresh") == 1
     }
 
-    @MainActor static let savedStateKeys = [ReaderMarks.defaultsKey, ReadingProgress.defaultsKey, Follows.defaultsKey, HomeModel.defaultsKey]
+    @MainActor static let savedStateKeys = [
+        ReaderMarks.defaultsKey, ReadingProgress.defaultsKey, Follows.defaultsKey, HomeModel.defaultsKey, GameStats.defaultsKey,
+    ]
 
     @MainActor static func resetSavedState(in defaults: UserDefaults = .standard) {
         savedStateKeys.forEach(defaults.removeObject(forKey:))
@@ -84,7 +111,30 @@ struct LaunchOptions {
         case .mood(let key): return library.moods.contains { $0.key == key } ? [.mood(key)] : []
         case .book(let path): return library.book(path: path).map { [.library, .book($0.id)] } ?? []
         case .section(let path): return library.section(path: path).map { [.library, .book($0.book.id), .section(book: $0.book.id, section: $0.section.id)] } ?? []
-        case .stickers, .poem, nil: return []
+        case .stickers, .poem, .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, nil: return []
+        }
+    }
+
+    /// The screens a games route pushes on the بازی tab.
+    var gamesPath: [Destination] { route == .gamesCatalog ? [.gamesCatalog] : [] }
+
+    /// The game a games route opens.
+    var game: GameRoute? {
+        switch route {
+        case .daily: .daily
+        case .jigsaw, .jigsawResult, .roundEnd: .jigsaw(.deck)
+        default: nil
+        }
+    }
+
+    /// What the game plays by itself before it is shown.
+    var autoplay: GameAutoplay {
+        switch route {
+        case .jigsawResult: .sheet(4)
+        case .roundEnd: .end
+        case .daily: play.map(GameAutoplay.tries) ?? .none
+        case .jigsaw: play.map(GameAutoplay.held) ?? .none
+        default: .none
         }
     }
 

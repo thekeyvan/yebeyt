@@ -24,17 +24,31 @@ final class AppModel {
     var reader: ReaderRoute?
     /// The screens pushed on the کاوش tab: the library, a book, a poet, search.
     var explorePath: [Destination]
+    /// The screens pushed on the بازی tab: the catalog.
+    var gamesPath: [Destination]
+    /// The game open over the tabs, nil when none is.
+    var game: GameRoute?
+    #if DEBUG
+    /// What a debug launch plays by itself before the game is shown (`-beytPlay`).
+    var autoplay = GameAutoplay.none
+    #endif
 
-    init(tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil, explorePath: [Destination] = []) {
+    init(
+        tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil, explorePath: [Destination] = [],
+        gamesPath: [Destination] = [], game: GameRoute? = nil
+    ) {
         selectedTab = tab
         self.unreadCount = unreadCount
         self.reader = reader
         self.explorePath = explorePath
+        self.gamesPath = gamesPath
+        self.game = game
     }
 
     /// Tapping the tab you are on goes back to its first screen.
     func select(_ tab: Tab) {
         if tab == selectedTab, tab == .explore { explorePath = [] }
+        if tab == selectedTab, tab == .games { gamesPath = [] }
         selectedTab = tab
     }
 
@@ -53,10 +67,24 @@ final class AppModel {
         explorePath = [.poet(slug)]
     }
 
-    /// «بازی با این بیت»: for now it only leaves the reader for the games tab (slice 3 starts a game with the couplet).
-    func playWithCouplet() {
+    func play(_ route: GameRoute) {
+        game = route
+    }
+
+    func closeGame() {
+        game = nil
+    }
+
+    /// «بازی با این بیت»: leaves the reader and starts جورچین with that couplet.
+    func playWithCouplet(poem: String, index: Int) {
         reader = nil
-        selectedTab = .games
+        game = .jigsaw(.couplet(poem: poem, index: index))
+    }
+
+    /// «بازی با این غزل»: leaves the reader and starts جورچین with the couplets of that poem.
+    func playWithPoem(_ path: String) {
+        reader = nil
+        game = .jigsaw(.poem(path))
     }
 
     /// The text in the «پیام‌ها» badge; nil (badge hidden) when nothing is unread.

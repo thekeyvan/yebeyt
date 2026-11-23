@@ -6,7 +6,7 @@ struct ReaderHeader: View {
     let model: ReaderModel
     let theme: ReaderTheme
     let close: () -> Void
-    let playWithCouplet: () -> Void
+    let playWithPoem: () -> Void
     let openPoet: (() -> Void)?
 
     private var isLoaded: Bool { model.phase == .loaded }
@@ -32,7 +32,7 @@ struct ReaderHeader: View {
                         .accessibilityAddTraits(openPoet == nil ? [] : .isButton)
                 }
                 .frame(maxWidth: .infinity)
-                circle(label: "بازی با این غزل", action: playWithCouplet) {
+                circle(label: "بازی با این غزل", action: playWithPoem) {
                     LineIcon(shape: GamesIcon(), size: 20, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.lapis)
                 }
                 .disabled(!isLoaded)

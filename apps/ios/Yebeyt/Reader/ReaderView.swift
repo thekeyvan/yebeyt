@@ -9,12 +9,17 @@ struct ReaderView: View {
     @Environment(Library.self) private var library
     @State private var model: ReaderModel
     let close: () -> Void
-    let playWithCouplet: () -> Void
+    let playWithPoem: () -> Void
+    let playWithCouplet: (Int) -> Void
     let openPoet: (String) -> Void
 
-    init(route: ReaderRoute, close: @escaping () -> Void, playWithCouplet: @escaping () -> Void, openPoet: @escaping (String) -> Void) {
+    init(
+        route: ReaderRoute, close: @escaping () -> Void, playWithPoem: @escaping () -> Void,
+        playWithCouplet: @escaping (Int) -> Void, openPoet: @escaping (String) -> Void
+    ) {
         _model = State(initialValue: ReaderModel(route: route))
         self.close = close
+        self.playWithPoem = playWithPoem
         self.playWithCouplet = playWithCouplet
         self.openPoet = openPoet
     }
@@ -62,7 +67,7 @@ struct ReaderView: View {
 
     private func page(_ theme: ReaderTheme) -> some View {
         VStack(spacing: 8) {
-            ReaderHeader(model: model, theme: theme, close: close, playWithCouplet: playWithCouplet, openPoet: poetAction)
+            ReaderHeader(model: model, theme: theme, close: close, playWithPoem: playWithPoem, openPoet: poetAction)
             switch model.phase {
             case .loading:
                 Spacer()

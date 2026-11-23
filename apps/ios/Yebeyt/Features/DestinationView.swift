@@ -23,6 +23,8 @@ struct DestinationView: View {
             if let mood = library.moods.first(where: { $0.key == key }) { MoodScreen(mood: mood) }
         case .allPoets:
             AllPoetsScreen()
+        case .gamesCatalog:
+            GamesCatalogScreen()
         }
     }
 }

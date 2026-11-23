@@ -31,11 +31,32 @@ struct AppModelTests {
         #expect(model.reader == nil)
     }
 
-    @Test func playingWithACoupletClosesTheReaderAndShowsTheGamesTab() {
+    @Test func playingWithACoupletClosesTheReaderAndStartsJigsawWithIt() {
         let model = AppModel(reader: ReaderRoute(path: "/hafez/ghazal/sh3"))
-        model.playWithCouplet()
+        model.playWithCouplet(poem: "/hafez/ghazal/sh3", index: 2)
         #expect(model.reader == nil)
-        #expect(model.selectedTab == .games)
+        #expect(model.game == .jigsaw(.couplet(poem: "/hafez/ghazal/sh3", index: 2)))
+    }
+
+    @Test func playingWithAPoemStartsJigsawWithItsCouplets() {
+        let model = AppModel(reader: ReaderRoute(path: "/hafez/ghazal/sh3"))
+        model.playWithPoem("/hafez/ghazal/sh3")
+        #expect(model.reader == nil)
+        #expect(model.game == .jigsaw(.poem("/hafez/ghazal/sh3")))
+    }
+
+    @Test func aGameOpensOverTheTabsAndCloses() {
+        let model = AppModel(tab: .games)
+        model.play(.daily)
+        #expect(model.game == .daily && model.selectedTab == .games)
+        model.closeGame()
+        #expect(model.game == nil)
+    }
+
+    @Test func tappingTheGamesTabAgainGoesBackFromTheCatalog() {
+        let model = AppModel(tab: .games, gamesPath: [.gamesCatalog])
+        model.select(.games)
+        #expect(model.gamesPath.isEmpty)
     }
 
     @Test func thePoetButtonOfTheReaderClosesItAndOpensThePoetInTheExploreTab() {

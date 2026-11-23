@@ -13,4 +13,6 @@ enum Destination: Hashable, Sendable {
     /// A mood's couplets, by key.
     case mood(String)
     case allPoets
+    /// «همه‌ی بازی‌ها», pushed on the بازی tab.
+    case gamesCatalog
 }

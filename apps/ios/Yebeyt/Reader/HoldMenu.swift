@@ -8,7 +8,7 @@ struct HoldMenu: View {
     let model: ReaderModel
     let couplet: Int
     let dismiss: () -> Void
-    let playWithCouplet: () -> Void
+    let playWithCouplet: (Int) -> Void
 
     /// The board puts the lifted couplet 258pt below the top of the screen (844pt tall).
     private static let boardTop: CGFloat = 258
@@ -133,7 +133,7 @@ struct HoldMenu: View {
             }
             row("بیت به بیت، از همین بیت", CoupletFocusIcon()) { withAnimation(.snappy) { model.openCouplet(couplet) } }
             rule
-            row("بازی با این بیت", GamesIcon(), action: playWithCouplet)
+            row("بازی با این بیت", GamesIcon()) { playWithCouplet(couplet) }
             rule
             row("کپی متن", CopyIcon()) {
                 UIPasteboard.general.string = model.copyText(of: couplet)

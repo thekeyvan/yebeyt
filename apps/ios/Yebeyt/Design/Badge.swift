@@ -60,12 +60,13 @@ struct WordSticker: View {
 
     let word: String
     let status: Status
+    var size: CGFloat = 21
 
     var body: some View {
         let loose = status == .onSheet
         let held = status == .held
         Text(word)
-            .font(.poem(21))
+            .font(.poem(size))
             .fixedSize()
             .foregroundStyle(textColor)
             .padding(EdgeInsets(top: 0, leading: loose ? 14 : 12, bottom: loose ? 4 : 2, trailing: loose ? 14 : 12))
