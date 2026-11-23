@@ -235,14 +235,11 @@ struct QuizScreen: View {
             .buttonStyle(GameBigButtonStyle(height: 58, border: 4, fontSize: 22))
             .disabled(round.selected == nil || round.sheetOpen)
             .accessibilityIdentifier("quizConfirm")
-            if listen {
-                GameRoundButton(label: "از اول", action: { replay(session) }) {
-                    LineIcon(shape: SVGShape(d: Self.skipIcon), size: 22, lineWidth: 2.4, fill: nil).foregroundStyle(Tokens.Colors.ink)
-                }
-                .disabled(round.replaysLeft == 0 || round.sheetOpen)
-                .accessibilityIdentifier("listenFromStart")
-            } else if round.kind != .book {
-                GameRoundButton(label: "رد کن", action: { session.skip() }) {
+            if round.kind != .book {
+                GameRoundButton(label: "رد کن", action: {
+                    audio.stop()
+                    session.skip()
+                }) {
                     LineIcon(shape: SVGShape(d: Self.skipIcon), size: 22, lineWidth: 2.4, fill: nil).foregroundStyle(Tokens.Colors.ink)
                 }
                 .disabled(!round.canSkip)
@@ -265,7 +262,7 @@ struct QuizScreen: View {
         .padding(.bottom, 26)
     }
 
-    /// The bar and arrow of the board's «رد کن» and «از اول».
+    /// The bar and arrow of the board's «رد کن».
     private static let skipIcon = "M18 6l-8 6 8 6zM6 6v12"
 
     // MARK: The clip of گوش کن

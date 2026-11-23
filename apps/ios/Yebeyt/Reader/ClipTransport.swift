@@ -14,6 +14,12 @@ enum ClipStart {
         guard await transport.seek(to: start), stillWanted() else { return }
         transport.play()
     }
+
+    /// Whether the clip should start playing once its seek is done: the same player and start, and still «playing» (a
+    /// pause, a stop or a new start while it loaded wins; the seek is still done, so a resume plays from the clip's start).
+    static func shouldPlay(generation: Int, started: Int, samePlayer: Bool, state: RecitationPlayer.State) -> Bool {
+        generation == started && samePlayer && state == .playing
+    }
 }
 
 /// The real thing: an AVPlayer, seeking with no tolerance.

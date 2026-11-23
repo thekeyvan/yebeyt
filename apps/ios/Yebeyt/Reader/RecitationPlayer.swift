@@ -188,7 +188,8 @@ final class RecitationPlayer {
         guard let clip, let player else { return }
         Task { @MainActor in
             await ClipStart.run(AVClipTransport(player: player), at: clip.start, stillWanted: { [weak self] in
-                self?.generation == started && self?.player === player
+                guard let self else { return false }
+                return ClipStart.shouldPlay(generation: self.generation, started: started, samePlayer: self.player === player, state: self.state)
             })
         }
     }

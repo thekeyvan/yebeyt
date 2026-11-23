@@ -16,6 +16,7 @@ struct AnswerSheet: View {
     let next: () -> Void
     @State private var share: ReaderModel.Share?
     @State private var aiToastShown = false
+    @State private var aiToastTask: Task<Void, Never>?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -73,12 +74,13 @@ struct AnswerSheet: View {
         }
     }
 
-    /// The sparkle was tapped: say where the meaning comes from, for a moment.
+    /// The sparkle was tapped: say where the meaning comes from, for a moment (a second tap starts the moment again).
     private func explainAI() {
         withAnimation(.snappy) { aiToastShown = true }
-        Task {
+        aiToastTask?.cancel()
+        aiToastTask = Task {
             try? await Task.sleep(for: .seconds(2.5))
-            withAnimation(.snappy) { aiToastShown = false }
+            if !Task.isCancelled { withAnimation(.snappy) { aiToastShown = false } }
         }
     }
 

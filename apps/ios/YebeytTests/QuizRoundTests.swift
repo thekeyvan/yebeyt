@@ -216,9 +216,9 @@ struct QuizRoundTests {
         #expect(round.results == [nil, nil], "nothing after the end")
     }
 
-    @Test func skipIsOnlyForPoetAndSecondHemistichAndNotWhileTheSheetIsOpen() {
-        #expect(round(.poet).canSkip && round(.misra, options: 3).canSkip)
-        #expect(!round(.book, options: 3).canSkip && !round(.listen, count: 5, options: 3).canSkip)
+    @Test func skipIsForEveryQuizButTheBookGameAndNotWhileTheSheetIsOpen() {
+        #expect(round(.poet).canSkip && round(.misra, options: 3).canSkip && round(.listen, count: 5, options: 3).canSkip)
+        #expect(!round(.book, options: 3).canSkip)
         var open = round(.poet)
         answer(&open)
         #expect(!open.canSkip)

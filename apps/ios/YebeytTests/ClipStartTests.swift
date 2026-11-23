@@ -46,6 +46,26 @@ struct ClipStartTests {
 
     @MainActor final class Flag {
         var wanted = true
+        var paused = false
+    }
+
+    @Test func aPauseWhileTheClipLoadsWinsButTheSeekIsStillDone() async {
+        #expect(ClipStart.shouldPlay(generation: 4, started: 4, samePlayer: true, state: .playing))
+        #expect(!ClipStart.shouldPlay(generation: 4, started: 4, samePlayer: true, state: .paused))
+        #expect(!ClipStart.shouldPlay(generation: 4, started: 4, samePlayer: true, state: .idle))
+        #expect(!ClipStart.shouldPlay(generation: 5, started: 4, samePlayer: true, state: .playing))
+        #expect(!ClipStart.shouldPlay(generation: 4, started: 4, samePlayer: false, state: .playing))
+
+        let transport = FakeTransport()
+        let flag = Flag()
+        let task = Task {
+            await ClipStart.run(transport, at: 3, stillWanted: { ClipStart.shouldPlay(generation: 1, started: 1, samePlayer: true, state: flag.paused ? .paused : .playing) })
+        }
+        await settle()
+        flag.paused = true
+        transport.finishSeek(true)
+        await task.value
+        #expect(transport.events == ["seek 3.0"])
     }
 
     @Test func aPlayerThatWasStoppedMeanwhilePlaysNothing() async {

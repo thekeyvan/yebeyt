@@ -98,6 +98,8 @@ final class SoloGamesUITests: XCTestCase {
         XCTAssertFalse(element(app, "timer").exists, "گوش کن has no clock")
         XCTAssertFalse(element(app, "quizCouplet").exists, "the text is hidden")
         XCTAssertTrue(app.buttons["listenReplay"].label.contains("۱"))
+        XCTAssertFalse(app.buttons["listenFromStart"].exists, "replay is «دوباره بشنو» only")
+        XCTAssertTrue(app.buttons["quizSkip"].isEnabled, "«رد کن» is in that slot, as on the board")
         XCTAssertEqual(options(app).count, 3)
         XCTAssertTrue(app.buttons["listenWord"].isEnabled)
         app.buttons["listenWord"].tap()
@@ -108,6 +110,9 @@ final class SoloGamesUITests: XCTestCase {
         app.buttons["quizNext"].tap()
         expectProgress(app, contains: "۲")
         XCTAssertTrue(app.buttons["listenWord"].isEnabled, "the next question has its own word")
+        app.buttons["quizSkip"].tap()
+        expectProgress(app, contains: "۳")
+        XCTAssertFalse(app.staticTexts["verdict"].exists, "a skipped question has no sheet")
     }
 
     private func persian(_ number: Int) -> String {

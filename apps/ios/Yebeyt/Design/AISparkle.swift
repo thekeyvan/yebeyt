@@ -24,11 +24,12 @@ struct AISparkleButton: View {
         Button(action: action) {
             LineIcon(shape: SparkleShape(), size: 16, lineWidth: 1.6, fill: Tokens.Colors.lapis)
                 .foregroundStyle(Tokens.Colors.lapis)
-                .frame(width: 32, height: 32)
+                .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.vertical, -8)
+        .padding(.vertical, -14)
+        .padding(.horizontal, -14)
         .accessibilityLabel(AIMeaning.label)
         .accessibilityIdentifier("aiSparkle")
     }

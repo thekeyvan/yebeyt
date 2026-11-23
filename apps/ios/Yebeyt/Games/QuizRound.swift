@@ -92,8 +92,8 @@ struct QuizRound: Equatable, Sendable {
 
     var canShowWord: Bool { kind == .listen && !wordShown && inPlay }
 
-    /// «رد کن» is on حدس شاعر and مصراع دوم.
-    var canSkip: Bool { (kind == .poet || kind == .misra) && inPlay }
+    /// «رد کن» is on حدس شاعر, مصراع دوم and گوش کن.
+    var canSkip: Bool { kind != .book && inPlay }
 
     mutating func tick() {
         guard inPlay else { return }
