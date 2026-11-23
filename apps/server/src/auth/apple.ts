@@ -1,0 +1,77 @@
+import { importPKCS8, SignJWT } from "jose";
+import type { Deps } from "../deps.js";
+import { ApiError } from "../errors.js";
+import { decryptSecret, encryptSecret } from "../crypto.js";
+
+const APPLE = "https://appleid.apple.com";
+
+type AppleDeps = Pick<Deps, "config" | "fetch" | "now" | "log">;
+
+/** Apple wants a short-lived JWT signed with our .p8 key as the client secret. `clientId` is the bundle id. */
+async function clientSecret(deps: AppleDeps, clientId: string): Promise<string> {
+  const { config } = deps;
+  const iat = Math.floor(deps.now().getTime() / 1000);
+  return new SignJWT({})
+    .setProtectedHeader({ alg: "ES256", kid: config.appleKeyId })
+    .setIssuer(config.appleTeamId)
+    .setSubject(clientId)
+    .setAudience(APPLE)
+    .setIssuedAt(iat)
+    .setExpirationTime(iat + 300)
+    .sign(await importPKCS8(config.applePrivateKey, "ES256"));
+}
+
+const form = (fields: Record<string, string>) =>
+  ({
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(fields),
+  }) satisfies RequestInit;
+
+/**
+ * Trades the sign-in authorization code for Apple's refresh token and returns it sealed for storage.
+ * Failure is not fatal for signing in; it only means we cannot revoke the Apple token later.
+ */
+export async function exchangeAppleCode(deps: AppleDeps, code: string, clientId: string): Promise<string | null> {
+  try {
+    const res = await deps.fetch(
+      `${APPLE}/auth/token`,
+      form({ client_id: clientId, client_secret: await clientSecret(deps, clientId), code, grant_type: "authorization_code" }),
+    );
+    if (!res.ok) {
+      deps.log(`apple code exchange failed status=${res.status}`);
+      return null;
+    }
+    const body = (await res.json()) as { refresh_token?: unknown };
+    if (typeof body.refresh_token !== "string") return null;
+    return encryptSecret(JSON.stringify({ t: body.refresh_token, c: clientId }), deps.config.jwtSecret);
+  } catch {
+    deps.log("apple code exchange failed");
+    return null;
+  }
+}
+
+/**
+ * Revokes the stored Apple refresh token (App Store rule for account deletion).
+ * A 4xx from Apple means the token is already invalid, which is what we want. Network errors and 5xx
+ * throw `apple_revoke_failed` so the account is kept and the user can try again.
+ */
+export async function revokeAppleToken(deps: AppleDeps, sealed: string): Promise<void> {
+  const opened = decryptSecret(sealed, deps.config.jwtSecret);
+  if (opened === null) {
+    deps.log("apple token unreadable, skipping revoke");
+    return;
+  }
+  const { t, c } = JSON.parse(opened) as { t: string; c: string };
+  let status: number;
+  try {
+    const res = await deps.fetch(
+      `${APPLE}/auth/revoke`,
+      form({ client_id: c, client_secret: await clientSecret(deps, c), token: t, token_type_hint: "refresh_token" }),
+    );
+    status = res.status;
+  } catch {
+    throw new ApiError(502, "apple_revoke_failed");
+  }
+  if (status >= 500) throw new ApiError(502, "apple_revoke_failed");
+}
