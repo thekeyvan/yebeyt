@@ -6,18 +6,25 @@
     python3 tools/ganjoor/build.py --sha <commit>   use another ganjoor-data commit
 
 Downloads are cached in tools/ganjoor/.cache (gitignored), so reruns need no network.
-Output: poets.json (every poet, with their books) and book-<id>.json for the bundled books.
-Years are lunar Hijri, as in Ganjoor.
+Output: poets.json (every poet, with their books), book-<id>.json for the bundled books,
+library.json (the curated library, see library.py) and index-<catId>.json, one list of poems
+(first line, couplet count, rhyme letters, recitations) per curated book. The poems of the
+curated books come from a sparse git checkout in .cache/repo, recitation counts (popularity)
+from api.ganjoor.net, cached per category in .cache/audio: a rebuild with a fresh cache sees
+newer counts. Years are lunar Hijri, as in Ganjoor.
 """
 import argparse
 import json
-import re
 import sys
 import time
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+import library
+import sparse
+from couplets import clean, group_couplets, short_bio
 
 # The one place the data commit is pinned. The app reads it back from poets.json.
 SHA = "7d7beabc1edfbddbd51835e979b309d653d25e39"
@@ -30,35 +37,6 @@ DATA_DIR = HERE.parent.parent / "apps/ios/Yebeyt/Resources/Data"
 # Books bundled with their full text: poet slug -> book title.
 # Golestan mixes prose and verse and Molavi is too big, so the app fetches them on demand.
 BUNDLED = {"hafez": "غزلیات", "khayyam": "رباعیات", "babataher": "دوبیتی‌ها"}
-
-# Verses on the second line of a couplet. Right, CenteredVerse1, Single and Paragraph
-# (GanjoorService's VersePosition) all go in the first. Comment verses are editor notes, not
-# poem lines (and have no CoupletIndex), so they are dropped.
-SECOND_HALF = {"Left", "CenteredVerse2"}
-NOT_POETRY = {"Comment"}
-
-
-def clean(text):
-    return text.replace("\r", "")
-
-
-def group_couplets(verses):
-    """Verses -> [{m1, m2, meaning?}], grouped by CoupletIndex, in verse order."""
-    couplets, index, filled = [], None, set()
-    for v in sorted(verses, key=lambda v: v["VOrder"]):
-        if v["Position"] in NOT_POETRY:
-            continue
-        slot = "m2" if v["Position"] in SECOND_HALF else "m1"
-        if not couplets or v.get("CoupletIndex") != index or slot in filled:
-            couplets.append({"m1": "", "m2": ""})
-            index, filled = v.get("CoupletIndex"), set()
-        couplet = couplets[-1]
-        couplet[slot] = clean(v["Text"])
-        filled.add(slot)
-        if v.get("CoupletSummary") and "meaning" not in couplet:
-            couplet["meaning"] = clean(v["CoupletSummary"])
-    return couplets
-
 
 def convert_poem(raw):
     poem = {"id": raw["Id"], "title": raw["Title"], "path": raw["FullUrl"]}
@@ -85,11 +63,6 @@ def book_refs(child_cats, bundled_ids):
             ref["bundled"] = True
         refs.append(ref)
     return refs
-
-
-def short_bio(description):
-    sentences = re.split(r"(?<=[.!؟?])\s+", description.strip())
-    return " ".join(sentences[:2])
 
 
 def download(url, attempts=4):
@@ -171,6 +144,10 @@ def build_files(sha):
         if bundled:
             book = build_book(fetch, bundled, poet["id"])
             files[f"book-{book['id']}.json"] = dump(book)
+    curation = json.loads((HERE / "curation.json").read_text(encoding="utf-8"))
+    poets_dir = sparse.checkout(CACHE / "repo", sha, [b["path"] for b in curation["books"]])
+    for name, value in library.build_files(poets_dir, CACHE / "audio", curation, manifest).items():
+        files[name] = dump(value)
     return files
 
 

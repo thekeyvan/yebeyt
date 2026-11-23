@@ -18,7 +18,7 @@ Folders are added only when their first slice lands.
 | `packages/api/` | (slice 4) The OpenAPI contract; clients for each platform are generated from it |
 | `assets/fonts/` | Every font file and its licence (`licenses/`). Apps take the fonts they use from here |
 | `design/canvas/` | The design: one HTML file per screen in `project/`, the scripts that make them, and their `README.md` |
-| `tools/` | Scripts: tokens (`make_tokens.py`), agent roles, the placeholder app icon (`make_icon.swift`), and `ganjoor/build.py`, the poetry pipeline: it reads github.com/ganjoor/ganjoor-data at one pinned commit and writes `apps/ios/Yebeyt/Resources/Data/` (`poets.json` and the bundled `book-<id>.json` files; download cache in `tools/ganjoor/.cache`, gitignored) |
+| `tools/` | Scripts: tokens (`make_tokens.py`), agent roles, the placeholder app icon (`make_icon.swift`), and `ganjoor/build.py`, the poetry pipeline: it reads github.com/ganjoor/ganjoor-data at one pinned commit and `ganjoor/curation.json`, and writes `apps/ios/Yebeyt/Resources/Data/` (`poets.json`, the bundled `book-<id>.json` files, `library.json` and one `index-<catId>.json` per library book; download cache in `tools/ganjoor/.cache`, gitignored) |
 
 JavaScript and TypeScript packages will share one pnpm workspace with Turborepo, added with the first such package.
 
@@ -31,7 +31,7 @@ JavaScript and TypeScript packages will share one pnpm workspace with Turborepo,
   ```
   Use any simulator from `xcrun simctl list devices available`.
 - Tokens: after editing `packages/tokens/tokens.json`, run `python3 tools/make_tokens.py`; `python3 tools/make_tokens.py --check` fails when a generated file is out of date. Never edit generated token files by hand.
-- Poetry data: `python3 tools/ganjoor/build.py` rebuilds `apps/ios/Yebeyt/Resources/Data` from ganjoor-data (pinned commit in `build.py`, `--sha` overrides; downloads are cached in `tools/ganjoor/.cache`). `python3 tools/ganjoor/build.py --check` fails when the committed files are out of date, and `python3 -m unittest tools/ganjoor/test_build.py` runs the pipeline's tests. Never edit the generated data by hand.
+- Poetry data: `python3 tools/ganjoor/build.py` rebuilds `apps/ios/Yebeyt/Resources/Data` from ganjoor-data (pinned commit in `build.py`, `--sha` overrides; downloads are cached in `tools/ganjoor/.cache`). `python3 tools/ganjoor/build.py --check` fails when the committed files are out of date, and `python3 -m unittest tools/ganjoor/test_build.py tools/ganjoor/test_library.py` runs the pipeline's tests. Recitation counts (the popularity in the indexes) come from api.ganjoor.net and are cached in `tools/ganjoor/.cache/audio`: after deleting that cache a rebuild sees newer counts, so `--check` only matches with the cache the data was built with. Never edit the generated data by hand.
 - Server (from slice 4): its own tests run with the server's test command, documented in `apps/server/`.
 - Design canvas: see `design/canvas/README.md`. Edit the `gen_*.py` scripts, never the boards by hand.
 - Debug launch arguments open a screen directly, which helps for simulator screenshots: `-beytTab home|explore|games|messages|me`, `-beytUnread <n>` (unread badge), `-beytRoute stickers` (the sticker sheet), `-beytRoute poem:<path>` (the reader, e.g. `poem:/hafez/ghazal/sh3`) with `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`, `-beytMeaning 1`, `-beytHold <n>`. Each slice adds its own and lists them here.
