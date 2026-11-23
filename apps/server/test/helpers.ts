@@ -60,7 +60,7 @@ export function testDb(): Promise<Db> {
 }
 
 export async function resetDb(db: Db) {
-  await db.execute(sql`truncate users, poet_pictures cascade`);
+  await db.execute(sql`truncate users, poet_pictures, feedback cascade`);
 }
 
 export type Harness = Awaited<ReturnType<typeof makeHarness>>;

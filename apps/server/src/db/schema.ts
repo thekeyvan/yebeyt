@@ -103,3 +103,45 @@ export const privacySettings = pgTable("privacy_settings", {
   gameInvitesFrom: text("game_invites_from", { enum: ["all", "friends"] }).notNull(),
   allowReposts: boolean("allow_reposts").notNull(),
 });
+
+export type FeedbackGame = { name?: string; how: string; players: "solo" | "friends" | "both" };
+
+/**
+ * A feedback report. `userId` is null for guests and after the account is deleted (the text stays as anonymous feedback).
+ * Only the sha256 of the upload token is stored. No IP, location or device identifier is ever stored.
+ */
+export const feedback = pgTable(
+  "feedback",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    type: text("type", { enum: ["bug", "annoyed", "idea", "game", "liked"] }).notNull(),
+    text: text("text"),
+    frequency: text("frequency", { enum: ["always", "sometimes", "once"] }),
+    game: jsonb("game").$type<FeedbackGame>(),
+    screen: text("screen"),
+    technical: jsonb("technical").$type<Record<string, unknown>>(),
+    appVersion: text("app_version").notNull(),
+    deviceModel: text("device_model").notNull(),
+    osVersion: text("os_version").notNull(),
+    uploadTokenHash: text("upload_token_hash").notNull(),
+    uploadExpiresAt: timestamptz("upload_expires_at").notNull(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("feedback_created").on(t.createdAt, t.id)],
+);
+
+/** A screenshot or screen recording of a report; at most one of each kind. */
+export const feedbackAttachments = pgTable(
+  "feedback_attachments",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    feedbackId: uuid("feedback_id").notNull().references(() => feedback.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["screenshot", "recording"] }).notNull(),
+    contentType: text("content_type").notNull(),
+    bytes: bytea("bytes").notNull(),
+    size: integer("size").notNull(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique("feedback_attachments_kind").on(t.feedbackId, t.kind)],
+);
