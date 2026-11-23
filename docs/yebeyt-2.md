@@ -95,3 +95,17 @@ After these: the web app, the admin dashboard and Android, each designed first.
 - In chat, a system line when a friend adds to a shared divan, and «به دیوان مشترک» in the long-press menu (proposed).
 - The full fal (فال حافظ) flow is not designed yet.
 - A full end-of-round screen per game (for now `ChallengeSend` covers it).
+
+## Decisions the lead made while the owner was away (please check)
+
+The owner asked the lead to keep going alone. These were not settled on a board or with the owner; change any of them.
+
+- **Poetry data:** built from `ganjoor-data` pinned to one commit (`tools/ganjoor/build.py`). Hafez's ghazals, Khayyam's quatrains and Baba Taher's dobeytis are bundled (about 3 MB); every other book loads from Ganjoor's repository on first use and stays on the phone. Editor notes (`Comment` verses) are not shown.
+- **Reader counts:** «۲ از ۹» instead of the board's «۲/۹» (the no-slash rule).
+- **Before the server exists:** پسند and بازنشر are kept on the phone without counts; نگه دار keeps the couplet in the divan on the phone; بفرست opens the iOS share sheet with the couplet and yebeyt.com. With the server (slices 4 and 7), پسند/بازنشر ask for an account when used and show counts.
+- **Game buttons in the reader** (header and «بازی با این بیت») switch to the بازی tab until slice 3 starts a game with that couplet.
+- **Whole-poem bar:** بفرست and نگه دار act on the couplet nearest the top of the screen.
+- **«بیشتر بخون»** in the meaning card expands the card when the meaning is longer than three lines. Word glosses (dotted words) wait for a data source.
+- **Text sheet:** the weight switch only works for Parastoo (the only font with a bold file). Defaults are the board's selected options.
+- **Copy not on any board:** «شعر باز نشد» with «دوباره» when a poem fails to load; «خوانش باز نشد» when a recitation fails.
+- **Railway:** the project is renamed `yebeyt`. The old `api` service keeps running on api.yebeyt.com until slice 4 replaces it.
