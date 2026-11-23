@@ -45,6 +45,7 @@ describe("poet pictures", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("image/jpeg");
     expect(res.headers.get("cache-control")).toBe("public, max-age=86400");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
     const etag = res.headers.get("etag")!;
     expect(etag).toBe(`"${sha(bytes)}"`);
     expect(new Uint8Array(await res.arrayBuffer())).toEqual(bytes);
@@ -53,6 +54,7 @@ describe("poet pictures", () => {
       const cached = await h.request("/v1/poets/hafez/picture", { headers: { "if-none-match": header } });
       expect(cached.status).toBe(304);
       expect(cached.headers.get("etag")).toBe(etag);
+      expect(cached.headers.get("x-content-type-options")).toBe("nosniff");
       expect(await cached.text()).toBe("");
     }
     const stale = await h.request("/v1/poets/hafez/picture", { headers: { "if-none-match": '"old"' } });
@@ -90,10 +92,14 @@ describe("poet pictures", () => {
     expect(await (await h.request("/v1/poets/pictures")).json()).toEqual([]);
   });
 
+  it("accepts an upload larger than the 64 KB JSON limit", async () => {
+    expect((await upload("hafez", new Uint8Array(200 * 1024).fill(7))).status).toBe(200);
+  });
+
   it("rejects wrong types, sizes, slugs and missing dimensions", async () => {
     expect((await upload("hafez", image(1), { type: "text/plain" })).status).toBe(415);
     expect((await upload("hafez", new Uint8Array(0))).status).toBe(400);
-    const tooBig = await upload("hafez", new Uint8Array(2 * 1024 * 1024 + 1));
+    const tooBig = await upload("hafez", new Uint8Array(15 * 1024 * 1024 + 1));
     expect(tooBig.status).toBe(413);
     expect(await tooBig.json()).toEqual({ error: "payload_too_large" });
     expect((await upload("Bad Slug", image(1))).status).toBe(400);

@@ -1,5 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, lte, or } from "drizzle-orm";
 import { revokeAppleToken } from "../auth/apple.js";
 import { isUniqueViolation } from "../db/index.js";
 import { identities, users } from "../db/schema.js";
@@ -82,15 +82,25 @@ export function meRoutes(deps: Deps) {
 
       const [user] = await db.select().from(users).where(eq(users.id, userId));
       if (user!.username === username) return c.json((await getUserView(db, userId))!, 200);
-      if (user!.username !== null && user!.usernameChangedAt) {
-        const allowedAt = new Date(user!.usernameChangedAt.getTime() + USERNAME_CHANGE_DAYS * DAY_MS);
-        if (deps.now() < allowedAt) throw new ApiError(409, "username_change_too_soon", { allowedAt: allowedAt.toISOString() });
-      }
+
+      // The 30-day rule lives in the UPDATE itself, so two parallel changes cannot both pass it.
+      const now = deps.now();
+      const eligibleSince = new Date(now.getTime() - USERNAME_CHANGE_DAYS * DAY_MS);
+      let changed;
       try {
-        await db.update(users).set({ username, usernameChangedAt: deps.now() }).where(eq(users.id, userId));
+        changed = await db
+          .update(users)
+          .set({ username, usernameChangedAt: now })
+          .where(and(eq(users.id, userId), or(isNull(users.username), isNull(users.usernameChangedAt), lte(users.usernameChangedAt, eligibleSince))))
+          .returning({ id: users.id });
       } catch (e) {
         if (isUniqueViolation(e)) throw new ApiError(409, "username_taken");
         throw e;
+      }
+      if (changed.length === 0) {
+        const [current] = await db.select({ changedAt: users.usernameChangedAt }).from(users).where(eq(users.id, userId));
+        const allowedAt = new Date(current!.changedAt!.getTime() + USERNAME_CHANGE_DAYS * DAY_MS);
+        throw new ApiError(409, "username_change_too_soon", { allowedAt: allowedAt.toISOString() });
       }
       return c.json((await getUserView(db, userId))!, 200);
     },

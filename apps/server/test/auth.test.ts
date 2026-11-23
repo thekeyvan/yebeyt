@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { decryptSecret } from "../src/crypto.js";
 import { identities, sessions, users } from "../src/db/schema.js";
-import { BUNDLE_ID, makeHarness, nonceHash, type Harness } from "./helpers.js";
+import { BUNDLE_ID, makeHarness, NONCE, nonceHash, type Harness } from "./helpers.js";
 
 let h: Harness;
 beforeEach(async () => {
@@ -56,16 +56,22 @@ describe("POST /v1/auth/apple", () => {
     expect((await ok.json()).user.providers).toEqual(["apple"]);
     const bad = await post("/v1/auth/apple", { identityToken: token, nonce: "wrong" });
     expect(bad.status).toBe(401);
+    const missing = await post("/v1/auth/apple", { identityToken: token });
+    expect(missing.status).toBe(400);
+    expect(await missing.json()).toEqual({ error: "invalid_request" });
+    const unbound = await post("/v1/auth/apple", { identityToken: await h.appleToken("apple-2", { nonce: undefined }), nonce: "n1" });
+    expect(unbound.status).toBe(401);
     expect(h.fetchMock).not.toHaveBeenCalled();
   });
 
   it("keeps Apple's refresh token, sealed, when an authorization code is given", async () => {
     h.fetchMock.mockResolvedValueOnce(Response.json({ refresh_token: "apple-refresh-1", access_token: "x" }));
-    const res = await post("/v1/auth/apple", { identityToken: await h.appleToken("apple-1"), authorizationCode: "code-1" });
+    const res = await post("/v1/auth/apple", { identityToken: await h.appleToken("apple-1"), nonce: NONCE, authorizationCode: "code-1" });
     expect(res.status).toBe(200);
 
     const [url, init] = h.fetchMock.mock.calls[0]!;
     expect(url).toBe("https://appleid.apple.com/auth/token");
+    expect(init!.signal).toBeInstanceOf(AbortSignal);
     const form = init!.body as URLSearchParams;
     expect(form.get("grant_type")).toBe("authorization_code");
     expect(form.get("code")).toBe("code-1");
@@ -81,7 +87,7 @@ describe("POST /v1/auth/apple", () => {
 
   it("still signs in when Apple's code exchange fails", async () => {
     h.fetchMock.mockResolvedValueOnce(new Response("{}", { status: 400 }));
-    const res = await post("/v1/auth/apple", { identityToken: await h.appleToken("apple-1"), authorizationCode: "bad" });
+    const res = await post("/v1/auth/apple", { identityToken: await h.appleToken("apple-1"), nonce: NONCE, authorizationCode: "bad" });
     expect(res.status).toBe(200);
     const [identity] = await h.db.select().from(identities);
     expect(identity!.appleRefreshToken).toBeNull();
@@ -111,6 +117,7 @@ describe("refresh and logout", () => {
   it("revokes the whole family when a used token is shown again", async () => {
     const s = await h.signIn();
     const next = await (await post("/v1/auth/refresh", { refreshToken: s.refreshToken })).json();
+    h.clock.time = new Date(h.clock.time.getTime() + 11_000); // past the 10 s grace for retries
     const replay = await post("/v1/auth/refresh", { refreshToken: s.refreshToken });
     expect(replay.status).toBe(401);
     expect(await replay.json()).toEqual({ error: "invalid_token" });
@@ -122,8 +129,32 @@ describe("refresh and logout", () => {
     const phone = await h.signIn("g-1");
     const other = await h.signIn("g-1");
     await post("/v1/auth/refresh", { refreshToken: phone.refreshToken });
+    h.clock.time = new Date(h.clock.time.getTime() + 11_000);
     await post("/v1/auth/refresh", { refreshToken: phone.refreshToken }); // replay
     expect((await post("/v1/auth/refresh", { refreshToken: other.refreshToken })).status).toBe(200);
+  });
+
+  it("lets exactly one of two parallel refreshes win, and the winner's new token works", async () => {
+    const s = await h.signIn();
+    const [a, b] = await Promise.all([
+      post("/v1/auth/refresh", { refreshToken: s.refreshToken }),
+      post("/v1/auth/refresh", { refreshToken: s.refreshToken }),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 401]);
+    const winner = await (a.status === 200 ? a : b).json();
+    expect((await post("/v1/auth/refresh", { refreshToken: winner.refreshToken })).status).toBe(200);
+    expect(await h.db.select().from(sessions)).toHaveLength(3);
+  });
+
+  it("refuses a token used moments ago without revoking the family, but revokes once the grace has passed", async () => {
+    const s = await h.signIn();
+    const next = await (await post("/v1/auth/refresh", { refreshToken: s.refreshToken })).json();
+    expect((await post("/v1/auth/refresh", { refreshToken: s.refreshToken })).status).toBe(401); // a retry
+    const still = await post("/v1/auth/refresh", { refreshToken: next.refreshToken });
+    expect(still.status).toBe(200);
+    h.clock.time = new Date(h.clock.time.getTime() + 11_000);
+    expect((await post("/v1/auth/refresh", { refreshToken: s.refreshToken })).status).toBe(401); // a replay
+    expect((await post("/v1/auth/refresh", { refreshToken: (await still.json()).refreshToken })).status).toBe(401);
   });
 
   it("rejects unknown and expired refresh tokens", async () => {
@@ -163,7 +194,7 @@ describe("refresh and logout", () => {
 describe("DELETE /v1/me", () => {
   const signInApple = async (sub = "apple-1") => {
     h.fetchMock.mockResolvedValueOnce(Response.json({ refresh_token: "apple-refresh-1" }));
-    const res = await post("/v1/auth/apple", { identityToken: await h.appleToken(sub), authorizationCode: "c" });
+    const res = await post("/v1/auth/apple", { identityToken: await h.appleToken(sub), nonce: NONCE, authorizationCode: "c" });
     h.fetchMock.mockClear();
     return res.json() as Promise<Awaited<ReturnType<Harness["signIn"]>>>;
   };
@@ -178,6 +209,7 @@ describe("DELETE /v1/me", () => {
 
     const [url, init] = h.fetchMock.mock.calls[0]!;
     expect(url).toBe("https://appleid.apple.com/auth/revoke");
+    expect(init!.signal).toBeInstanceOf(AbortSignal);
     const form = init!.body as URLSearchParams;
     expect(form.get("token")).toBe("apple-refresh-1");
     expect(form.get("token_type_hint")).toBe("refresh_token");
@@ -209,9 +241,17 @@ describe("DELETE /v1/me", () => {
     expect((await h.request("/v1/me", { method: "DELETE", token: s.accessToken })).status).toBe(204);
   });
 
-  it("deletes anyway when Apple says the token is already invalid", async () => {
+  it("keeps the account on any non-2xx from Apple and logs the status and error code only", async () => {
     const s = await signInApple();
-    h.fetchMock.mockResolvedValueOnce(new Response("{}", { status: 400 }));
-    expect((await h.request("/v1/me", { method: "DELETE", token: s.accessToken })).status).toBe(204);
+    for (const status of [400, 500]) {
+      h.fetchMock.mockResolvedValueOnce(Response.json({ error: "invalid_grant", error_description: "secret detail" }, { status }));
+      const res = await h.request("/v1/me", { method: "DELETE", token: s.accessToken });
+      expect(res.status).toBe(502);
+      expect(await res.json()).toEqual({ error: "apple_revoke_failed" });
+    }
+    expect(h.logs).toContain("apple revoke failed status=400 error=invalid_grant");
+    expect(h.logs.join("\n")).not.toContain("secret detail");
+    expect(h.logs.join("\n")).not.toContain("apple-refresh-1");
+    expect(await h.db.select().from(users)).toHaveLength(1);
   });
 });

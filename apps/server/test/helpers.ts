@@ -13,6 +13,7 @@ import * as schema from "../src/db/schema.js";
 import type { Deps } from "../src/deps.js";
 
 export const BUNDLE_ID = "com.yebeyt.app";
+export const NONCE = "test-nonce";
 export const GOOGLE_CLIENT = "web-client.apps.googleusercontent.com";
 
 /** A signing key and the JWKS that publishes it, standing in for Apple's or Google's. */
@@ -85,7 +86,7 @@ export async function makeHarness() {
 
   const nowSec = () => Math.floor(clock.time.getTime() / 1000);
   const appleToken = (sub: string, extra: JWTPayload = {}, opts: Partial<{ iss: string; aud: string; exp: number }> = {}) =>
-    apple.sign({ sub, ...extra }, { iss: "https://appleid.apple.com", aud: BUNDLE_ID, iat: nowSec(), exp: nowSec() + 600, ...opts });
+    apple.sign({ sub, nonce: nonceHash(NONCE), ...extra }, { iss: "https://appleid.apple.com", aud: BUNDLE_ID, iat: nowSec(), exp: nowSec() + 600, ...opts });
   const googleToken = (sub: string, opts: Partial<{ iss: string; aud: string; exp: number }> = {}) =>
     google.sign({ sub }, { iss: "https://accounts.google.com", aud: GOOGLE_CLIENT, iat: nowSec(), exp: nowSec() + 600, ...opts });
 

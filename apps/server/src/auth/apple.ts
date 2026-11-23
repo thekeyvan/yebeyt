@@ -4,6 +4,7 @@ import { ApiError } from "../errors.js";
 import { decryptSecret, encryptSecret } from "../crypto.js";
 
 const APPLE = "https://appleid.apple.com";
+const APPLE_TIMEOUT_MS = 10_000;
 
 type AppleDeps = Pick<Deps, "config" | "fetch" | "now" | "log">;
 
@@ -26,6 +27,7 @@ const form = (fields: Record<string, string>) =>
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams(fields),
+    signal: AbortSignal.timeout(APPLE_TIMEOUT_MS),
   }) satisfies RequestInit;
 
 /**
@@ -52,9 +54,10 @@ export async function exchangeAppleCode(deps: AppleDeps, code: string, clientId:
 }
 
 /**
- * Revokes the stored Apple refresh token (App Store rule for account deletion).
- * A 4xx from Apple means the token is already invalid, which is what we want. Network errors and 5xx
- * throw `apple_revoke_failed` so the account is kept and the user can try again.
+ * Revokes the stored Apple refresh token (App Store rule for account deletion). Only a 2xx counts as
+ * revoked. Anything else (an Apple error, a 5xx, a timeout, no network) throws `apple_revoke_failed`
+ * so the account is kept and the user can try again. The log gets the status and Apple's `error`
+ * code, never a token.
  */
 export async function revokeAppleToken(deps: AppleDeps, sealed: string): Promise<void> {
   const opened = decryptSecret(sealed, deps.config.jwtSecret);
@@ -63,15 +66,18 @@ export async function revokeAppleToken(deps: AppleDeps, sealed: string): Promise
     return;
   }
   const { t, c } = JSON.parse(opened) as { t: string; c: string };
-  let status: number;
+  let res: Response;
   try {
-    const res = await deps.fetch(
+    res = await deps.fetch(
       `${APPLE}/auth/revoke`,
       form({ client_id: c, client_secret: await clientSecret(deps, c), token: t, token_type_hint: "refresh_token" }),
     );
-    status = res.status;
   } catch {
+    deps.log("apple revoke failed: no answer");
     throw new ApiError(502, "apple_revoke_failed");
   }
-  if (status >= 500) throw new ApiError(502, "apple_revoke_failed");
+  if (res.ok) return;
+  const code = await res.json().then((b) => (typeof (b as { error?: unknown })?.error === "string" ? (b as { error: string }).error : "unknown"), () => "unknown");
+  deps.log(`apple revoke failed status=${res.status} error=${code.slice(0, 40)}`);
+  throw new ApiError(502, "apple_revoke_failed");
 }

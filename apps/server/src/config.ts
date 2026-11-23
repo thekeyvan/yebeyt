@@ -1,3 +1,4 @@
+import { importPKCS8 } from "jose";
 import { z } from "zod";
 
 export class ConfigError extends Error {}
@@ -34,14 +35,19 @@ export type Config = {
   port: number;
 };
 
-/** Reads and checks the environment. The error names the variables, never their values. */
-export function loadConfig(env: Record<string, string | undefined>): Config {
+/** Reads and checks the environment, including that the Apple key really is an ES256 key. The error names the variables, never their values. */
+export async function loadConfig(env: Record<string, string | undefined>): Promise<Config> {
   const parsed = schema.safeParse(env);
   if (!parsed.success) {
     const lines = parsed.error.issues.map((i) => `  ${String(i.path[0])}: ${i.message}`);
     throw new ConfigError(`Invalid configuration:\n${lines.join("\n")}`);
   }
   const e = parsed.data;
+  try {
+    await importPKCS8(e.APPLE_PRIVATE_KEY, "ES256");
+  } catch {
+    throw new ConfigError("Invalid configuration:\n  APPLE_PRIVATE_KEY: must be a PKCS#8 PEM of an ES256 (P-256) key, the contents of the .p8 file");
+  }
   return {
     databaseUrl: e.DATABASE_URL,
     jwtSecret: e.JWT_SECRET,

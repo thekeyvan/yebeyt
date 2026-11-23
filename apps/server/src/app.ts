@@ -1,3 +1,4 @@
+import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import { routePath } from "hono/route";
 import type { Deps } from "./deps.js";
@@ -20,6 +21,10 @@ export function createApp(deps: Deps) {
     await next();
     deps.log(`${c.req.method} ${routePath(c)} ${c.res.status} ${Math.round(performance.now() - start)}ms`);
   });
+
+  // Every JSON body is tiny. Only the admin picture upload (limited in routes/pictures.ts) may be larger.
+  const smallBodies = bodyLimit({ maxSize: 64 * 1024, onError: (c) => c.json({ error: "payload_too_large" as const }, 413) });
+  app.use("*", (c, next) => (c.req.path.startsWith("/v1/admin/") ? next() : smallBodies(c, next)));
 
   app.onError((err, c) => {
     if (err instanceof ApiError) return c.json({ error: err.code, ...err.extra }, err.status);

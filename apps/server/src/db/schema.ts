@@ -26,7 +26,7 @@ export const users = pgTable("users", {
   createdAt: timestamptz("created_at").notNull().defaultNow(),
 });
 
-/** One sign-in method of a user. `appleRefreshToken` is stored encrypted (see src/auth/secrets.ts). */
+/** One sign-in method of a user. `appleRefreshToken` is stored encrypted (see src/crypto.ts). */
 export const identities = pgTable(
   "identities",
   {

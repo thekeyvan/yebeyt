@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "db:generate": "drizzle-kit generate",
     "api:generate": "tsx scripts/openapi.ts",
     "api:check": "tsx scripts/openapi.ts --check",

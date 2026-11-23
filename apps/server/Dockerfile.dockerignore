@@ -10,3 +10,5 @@ design
 assets
 tools
 docs
+**/.env*
+**/*.p8

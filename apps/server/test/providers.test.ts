@@ -22,13 +22,13 @@ beforeAll(async () => {
 const appleDeps = () => ({ now: () => now, appleKeys: apple.keys, config });
 const googleDeps = () => ({ now: () => now, googleKeys: google.keys, config });
 const signApple = (claims = {}, o: Partial<{ iss: string; aud: string; exp: number }> = {}) =>
-  apple.sign({ sub: "001.abc", ...claims }, { iss: APPLE, aud: BUNDLE_ID, iat: sec, exp: sec + 600, ...o });
+  apple.sign({ sub: "001.abc", nonce: nonceHash("n"), ...claims }, { iss: APPLE, aud: BUNDLE_ID, iat: sec, exp: sec + 600, ...o });
 const signGoogle = (o: Partial<{ iss: string; aud: string; exp: number }> = {}) =>
   google.sign({ sub: "1234567890" }, { iss: "https://accounts.google.com", aud: GOOGLE_CLIENT, iat: sec, exp: sec + 600, ...o });
 
 describe("Apple identity token", () => {
   it("accepts a good token", async () => {
-    expect(await verifyAppleIdentityToken(await signApple(), undefined, appleDeps())).toEqual({
+    expect(await verifyAppleIdentityToken(await signApple({ nonce: nonceHash("n") }), "n", appleDeps())).toEqual({
       subject: "001.abc",
       audience: BUNDLE_ID,
     });
@@ -43,16 +43,16 @@ describe("Apple identity token", () => {
       "not-a-jwt",
     ];
     for (const token of bad) {
-      await expect(verifyAppleIdentityToken(token, undefined, appleDeps())).rejects.toMatchObject({ code: "invalid_token", status: 401 });
+      await expect(verifyAppleIdentityToken(token, "n", appleDeps())).rejects.toMatchObject({ code: "invalid_token", status: 401 });
     }
   });
 
-  it("checks the nonce only when one is given", async () => {
+  it("always checks the nonce: the token must carry sha256 of the raw nonce", async () => {
     const token = await signApple({ nonce: nonceHash("raw-nonce") });
     await expect(verifyAppleIdentityToken(token, "raw-nonce", appleDeps())).resolves.toBeTruthy();
     await expect(verifyAppleIdentityToken(token, "other-nonce", appleDeps())).rejects.toMatchObject({ code: "invalid_token" });
     await expect(verifyAppleIdentityToken(await signApple(), "raw-nonce", appleDeps())).rejects.toMatchObject({ code: "invalid_token" });
-    await expect(verifyAppleIdentityToken(token, undefined, appleDeps())).resolves.toBeTruthy();
+    await expect(verifyAppleIdentityToken(token, "", appleDeps())).rejects.toMatchObject({ code: "invalid_token" });
   });
 });
 

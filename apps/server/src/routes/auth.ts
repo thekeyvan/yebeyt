@@ -18,7 +18,7 @@ const appleBody = z
   .object({
     identityToken: z.string().min(1).max(8192),
     authorizationCode: z.string().min(1).max(2048).optional(),
-    nonce: z.string().min(1).max(512).optional().openapi({ description: "The raw nonce; its sha256 was sent to Apple." }),
+    nonce: z.string().min(1).max(512).openapi({ description: "The raw nonce; its sha256 was sent to Apple. Required: the identity token must carry its sha256." }),
     fullName: z
       .object({ givenName: z.string().nullish(), familyName: z.string().nullish() })
       .nullish()

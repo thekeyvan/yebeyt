@@ -8,7 +8,7 @@ import { ApiError, errorResponse } from "../errors.js";
 import { requireAdmin } from "../middleware.js";
 import { newRouter } from "../router.js";
 
-const MAX_BYTES = 2 * 1024 * 1024;
+const MAX_BYTES = 15 * 1024 * 1024;
 const CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const slugSchema = z.string().regex(/^[a-z0-9_-]{1,40}$/).openapi({ example: "hafez" });
 const binary = z.string().openapi({ format: "binary" });
@@ -69,7 +69,7 @@ export function pictureRoutes(deps: Deps) {
     async (c) => {
       const [row] = await db.select().from(poetPictures).where(eq(poetPictures.slug, c.req.valid("param").slug));
       if (!row) throw new ApiError(404, "not_found");
-      const headers = { etag: etagOf(row.sha256), "cache-control": "public, max-age=86400" };
+      const headers = { etag: etagOf(row.sha256), "cache-control": "public, max-age=86400", "x-content-type-options": "nosniff" };
       if (matchesEtag(c.req.header("if-none-match"), headers.etag)) return c.body(null, 304, headers) as never;
       return c.body(row.bytes as unknown as ArrayBuffer, 200, { ...headers, "content-type": row.contentType }) as never;
     },
@@ -100,7 +100,7 @@ export function pictureRoutes(deps: Deps) {
         200: { description: "Stored.", content: { "application/json": { schema: z.object({ slug: slugSchema, version: z.string() }).openapi("PoetPictureStored") } } },
         400: errorResponse("Bad request."),
         401: errorResponse("Wrong or missing admin token."),
-        413: errorResponse("Larger than 2 MB."),
+        413: errorResponse("Larger than 15 MB."),
         415: errorResponse("Not a JPEG, PNG or WebP."),
       },
     }),

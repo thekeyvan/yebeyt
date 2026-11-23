@@ -103,6 +103,17 @@ describe("username endpoints", () => {
     expect((await later.json()).username).toBe("second_name");
   });
 
+  it("lets only one of two parallel changes through the 30-day rule", async () => {
+    const s = await h.signIn();
+    await set(s.accessToken, "first_name");
+    h.clock.time = new Date(h.clock.time.getTime() + 31 * 24 * 3600 * 1000);
+    const token = (await h.signIn()).accessToken;
+    const [a, b] = await Promise.all([set(token, "name_one"), set(token, "name_two")]);
+    expect([a.status, b.status].sort()).toEqual([200, 409]);
+    const loser = await (a.status === 409 ? a : b).json();
+    expect(loser.error).toBe("username_change_too_soon");
+  });
+
   it("treats setting the same name again as a no-op", async () => {
     const s = await h.signIn();
     await set(s.accessToken, "same_name");

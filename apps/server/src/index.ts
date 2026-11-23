@@ -6,7 +6,7 @@ import { connectAndMigrate } from "./db/connect.js";
 import type { Deps } from "./deps.js";
 
 async function main() {
-  const config = loadConfig(process.env);
+  const config = await loadConfig(process.env);
   const { db, close } = await connectAndMigrate(config.databaseUrl);
   const deps: Deps = {
     config,

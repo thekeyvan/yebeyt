@@ -69,6 +69,17 @@ describe("logging and errors", () => {
     expect(h.logs.some((l) => /^GET \/v1\/poets\/:slug\/picture 404 /.test(l))).toBe(true);
   });
 
+  it("refuses request bodies over 64 KB with 413 payload_too_large", async () => {
+    const big = { idToken: "x".repeat(70 * 1024) };
+    for (const path of ["/v1/auth/google", "/v1/auth/refresh"]) {
+      const res = await h.request(path, { method: "POST", json: big });
+      expect(res.status).toBe(413);
+      expect(await res.json()).toEqual({ error: "payload_too_large" });
+    }
+    const small = await h.request("/v1/auth/google", { method: "POST", json: { idToken: "x".repeat(60 * 1024) } });
+    expect(small.status).toBe(400); // passes the size limit, fails validation (max 8192)
+  });
+
   it("answers unknown routes with a JSON 404 and failures without details", async () => {
     const res = await h.request("/nope");
     expect(res.status).toBe(404);

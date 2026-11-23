@@ -32,14 +32,14 @@ async function verify(
   }
 }
 
-/** Apple puts sha256(nonce) in the token's `nonce` claim. */
+/** Apple puts sha256(nonce) in the token's `nonce` claim; the app sends the raw nonce and we always compare. */
 export async function verifyAppleIdentityToken(
   token: string,
-  nonce: string | undefined,
+  nonce: string,
   deps: Pick<Deps, "now" | "appleKeys" | "config">,
 ): Promise<VerifiedIdentity> {
   const { payload, identity } = await verify(token, deps, deps.appleKeys, APPLE_ISSUER, deps.config.appleBundleIds);
-  if (nonce !== undefined && payload.nonce !== sha256Hex(nonce)) throw new ApiError(401, "invalid_token");
+  if (payload.nonce !== sha256Hex(nonce)) throw new ApiError(401, "invalid_token");
   return identity;
 }
 
