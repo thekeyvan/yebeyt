@@ -39,6 +39,13 @@ These can't be tested in the simulator here:
 
 ## 6. Questions (the lead decided something for now; change anything)
 
+1. **Levels:** نوآموز 0 · بیت‌خوان 500 · غزل‌باز 2000 · سخن‌دان 5000 · استاد سخن 12000 points. Names and thresholds OK?
+2. **Badges:** ۷ روز, اولین مشاعره, حافظ‌شناس (50 right answers on Hafez), ۱۰۰ بیت (100 couplets read). More badges, other rules?
+3. **Avatar parts:** the board draws one face and six accessories. For now: skin, hair and background are colour choices; eyes and mouth have three simple variants. Do you want to design more parts (or have them drawn)?
+4. **Settings screen** (the gear on Profile) has no board. It holds the account (name, username, sign out, delete account), text, privacy, about. Is a quick board worth making, or is a plain list fine?
+5. **Delete account copy:** «حسابت و همه‌ی چیزهایی که جمع کردی پاک می‌شه. مطمئنی؟» — «پاک کن» / «نه».
+6. **Invite texts:** the board has the رفیقانه text; the lead writes شاعرانه and کوتاه. Please read them in the app.
+7. **Divan «موضوع»:** grouped by the mood words (عشق, دلتنگی, امید, بهار, جوونی, دوستی, else بقیه). Other topics?
 11. **Friends = mutual follows.** Following is one-way; two people following each other are friends. OK, or should friend requests need acceptance?
 12. **League tiers** reuse the level names (نوآموز … استاد سخن), weekly from Saturday, groups of 30, top 5 up, bottom 5 down. OK?
 13. **Notifications:** «تا فردا» games and messages need push notifications. That needs an APNs key (Apple Developer → Keys → a key with Apple Push Notifications). Please create one and put it in Railway as `APNS_KEY` (with its key id as `APNS_KEY_ID`), or tell the lead to do without push for now.
