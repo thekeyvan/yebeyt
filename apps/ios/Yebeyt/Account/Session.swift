@@ -9,9 +9,6 @@ final class Session {
     /// never shown the account gate.
     private(set) var isSignedIn: Bool
     private(set) var user: APIUser?
-    /// The refresh token is in the Keychain. False when the last write failed: the person stays signed in for this
-    /// run only, on a token kept in memory.
-    private(set) var isPersisted = true
     let api: API
     @ObservationIgnored private let store: KeychainStore
     @ObservationIgnored private var accessToken: String?
@@ -37,8 +34,7 @@ final class Session {
     /// Takes a new sign-in: both tokens and the user.
     func apply(_ session: APISession) {
         accessToken = session.accessToken
-        isPersisted = store.write(session.refreshToken)
-        unstoredRefreshToken = isPersisted ? nil : session.refreshToken
+        unstoredRefreshToken = store.write(session.refreshToken) ? nil : session.refreshToken  // a failed write is logged
         user = session.user
         isSignedIn = true
     }
@@ -123,7 +119,6 @@ final class Session {
     private func clear() {
         store.delete()
         unstoredRefreshToken = nil
-        isPersisted = true
         accessToken = nil
         user = nil
         isSignedIn = false

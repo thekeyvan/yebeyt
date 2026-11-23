@@ -40,6 +40,7 @@ final class AccountModel {
     @ObservationIgnored private let credentials: CredentialSource
     @ObservationIgnored private let stats: GameStats
     @ObservationIgnored private var pending: (@MainActor () -> Void)?
+    @ObservationIgnored private var isLookingUp = false
 
     init(session: Session, stats: GameStats, credentials: CredentialSource = SystemCredentialSource()) {
         self.session = session
@@ -64,8 +65,12 @@ final class AccountModel {
         guard needed else { return action() }
         if isSignedIn, session.user == nil {
             // Signed in, but the user is not loaded yet (a launch that has not finished restoring): load it first.
+            // Taps while that is going on are ignored: only the first waiting action is kept.
+            guard !isLookingUp else { return }
+            isLookingUp = true
             Task {
                 await session.restore()
+                isLookingUp = false
                 decide(feature, action)
             }
         } else {

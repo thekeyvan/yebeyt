@@ -188,13 +188,12 @@ struct SessionTests {
         #expect(keychain.load() == .value("r0"))
     }
 
-    @Test func aTokenThatCouldNotBeStoredIsKeptInMemoryAndTheSessionIsNotClaimedAsStored() async throws {
+    @Test func aTokenThatCouldNotBeStoredIsKeptInMemoryForThisRun() async throws {
         let failing = KeychainStore(service: "com.yebeyt.tests.\(UUID().uuidString)", addItem: { _ in errSecInteractionNotAllowed })
         let stub = StubServer { _ in .json(200, StubJSON.session(access: "a2", refresh: "r2")) }
         let session = Session(api: stub.api, store: failing)
         session.apply(try JSONDecoder().decode(APISession.self, from: Data(StubJSON.session(access: "a1", refresh: "r1").utf8)))
         #expect(session.isSignedIn)  // signed in for this run
-        #expect(!session.isPersisted)
         #expect(failing.read() == nil)
         try await session.refresh()  // uses the token it holds, not the Keychain's
         #expect(stub.requests(to: "/v1/auth/refresh").first?.json["refreshToken"] as? String == "r1")

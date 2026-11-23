@@ -313,4 +313,17 @@ struct AccountModelTests {
         for _ in 0..<50 where ranAgain == 0 { try? await Task.sleep(for: .milliseconds(20)) }
         #expect(ranAgain == 1 && g.account.prompt == nil)
     }
+
+    @Test func twoQuickTapsWhileTheUserLoadsToggleOnce() async {
+        let f = fixture(credentials: .google(), signedIn: true)
+        defer { f.keychain.delete() }
+        f.stub.respond { _ in .json(200, StubJSON.session(access: "a1", refresh: "r1", username: "ali")) }
+        f.stub.delay = 0.1
+        var ran = 0
+        f.account.require(.likes) { ran += 1 }
+        f.account.require(.likes) { ran += 1 }
+        try? await Task.sleep(for: .milliseconds(500))
+        #expect(ran == 1)
+        #expect(f.stub.requests(to: "/v1/auth/refresh").count == 1)  // one lookup
+    }
 }
