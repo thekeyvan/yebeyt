@@ -3,7 +3,6 @@ categories, poem counts, recitation counts and first lines. Pure functions, test
 import json
 from concurrent.futures import ThreadPoolExecutor
 
-import audio
 from couplets import group_couplets, short_bio
 
 # First word of a section's title -> what one poem of it is called.
@@ -72,17 +71,14 @@ def main_unit(node):
     return max(children, key=lambda c: c["count"])["unit"] if children else node["unit"]
 
 
-def recitations_of(cache_dir, cats):
-    """{poem id: recitations} over (category id, refs) pairs, one query per category."""
-    with ThreadPoolExecutor(6) as pool:
-        parts = list(pool.map(lambda pair: audio.category_counts(cache_dir, pair[0]), cats))
-    return {poem: n for part in parts for poem, n in part.items()}
+def poem_categories(poets, curation):
+    """The ids of every category of the curated books that holds poems."""
+    return {cat_id for entry in curation["books"] for cat_id, _ in walk(poets, entry["path"])[1]}
 
 
-def build_book(poets, cache_dir, entry, poet):
+def build_book(poets, recitations, entry, poet):
     """(library.json book entry, index file content) for one curated book."""
     node, cats = walk(poets, entry["path"])
-    recitations = recitations_of(cache_dir, cats)
 
     def row(pair):
         cat_id, ref = pair
@@ -115,7 +111,7 @@ def merge_poet(curated, ganjoor_id, description):
     return poet
 
 
-def build_files(poets, cache_dir, curation, manifest):
+def build_files(poets, recitations, curation, manifest):
     """File name -> JSON value: library.json and index-<catId>.json for every curated book."""
     ids = {e["FullUrl"].lstrip("/"): e["Id"] for e in manifest["Poets"]}
     merged = {}
@@ -125,7 +121,7 @@ def build_files(poets, cache_dir, curation, manifest):
         merged[slug] = merge_poet(curated, ids[slug], about.get("Description") or "")
     books, files = [], {}
     for entry in curation["books"]:
-        book, index = build_book(poets, cache_dir, entry, merged[entry["poet"]])
+        book, index = build_book(poets, recitations, entry, merged[entry["poet"]])
         books.append(book)
         files[f"index-{book['id']}.json"] = index
     files["library.json"] = {

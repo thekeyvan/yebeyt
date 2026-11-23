@@ -4,14 +4,16 @@
     python3 tools/ganjoor/build.py                  write apps/ios/Yebeyt/Resources/Data
     python3 tools/ganjoor/build.py --check          fail if the committed files differ
     python3 tools/ganjoor/build.py --sha <commit>   use another ganjoor-data commit
+    python3 tools/ganjoor/build.py --refresh-recitations
+                                                    query api.ganjoor.net, rewrite recitations.json, then build
 
 Downloads are cached in tools/ganjoor/.cache (gitignored), so reruns need no network.
 Output: poets.json (every poet, with their books), book-<id>.json for the bundled books,
 library.json (the curated library, see library.py) and index-<catId>.json, one list of poems
 (first line, couplet count, rhyme letters, recitations) per curated book. The poems of the
-curated books come from a sparse git checkout in .cache/repo, recitation counts (popularity)
-from api.ganjoor.net, cached per category in .cache/audio: a rebuild with a fresh cache sees
-newer counts. Years are lunar Hijri, as in Ganjoor.
+curated books come from a sparse git checkout in .cache/repo. Popularity (recitations per poem) comes
+from the committed snapshot recitations.json, so a normal build and --check never touch api.ganjoor.net;
+only --refresh-recitations does, and it is the only way the counts change. Years are lunar Hijri, as in Ganjoor.
 """
 import argparse
 import json
@@ -22,6 +24,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import audio
 import library
 import sparse
 from couplets import clean, group_couplets, short_bio
@@ -33,6 +36,7 @@ RAW = "https://raw.githubusercontent.com/ganjoor/ganjoor-data/{sha}/{path}"
 HERE = Path(__file__).resolve().parent
 CACHE = HERE / ".cache"
 DATA_DIR = HERE.parent.parent / "apps/ios/Yebeyt/Resources/Data"
+RECITATIONS = HERE / "recitations.json"
 
 # Books bundled with their full text: poet slug -> book title.
 # Golestan mixes prose and verse and Molavi is too big, so the app fetches them on demand.
@@ -130,7 +134,19 @@ def dump(value):
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n"
 
 
-def build_files(sha):
+def recitation_counts(poets_dir, curation, refresh, snapshot=RECITATIONS, cache=CACHE / "audio"):
+    """{poem id: recitations}. Read from the committed snapshot; only `refresh` asks Ganjoor's API
+    (every category of the curated books) and rewrites the snapshot."""
+    if refresh:
+        counts = audio.fetch_all(cache, library.poem_categories(poets_dir, curation))
+        snapshot.write_text(audio.dump_snapshot(counts))
+        return counts
+    if not snapshot.exists():
+        sys.exit(f"{snapshot.name} is missing. Run python3 tools/ganjoor/build.py --refresh-recitations")
+    return audio.load_snapshot(snapshot.read_text())
+
+
+def build_files(sha, refresh=False):
     """File name -> content for everything the app bundles."""
     fetch = make_fetcher(sha)
     manifest = fetch("manifest.json")
@@ -146,7 +162,8 @@ def build_files(sha):
             files[f"book-{book['id']}.json"] = dump(book)
     curation = json.loads((HERE / "curation.json").read_text(encoding="utf-8"))
     poets_dir = sparse.checkout(CACHE / "repo", sha, [b["path"] for b in curation["books"]])
-    for name, value in library.build_files(poets_dir, CACHE / "audio", curation, manifest).items():
+    recitations = recitation_counts(poets_dir, curation, refresh)
+    for name, value in library.build_files(poets_dir, recitations, curation, manifest).items():
         files[name] = dump(value)
     return files
 
@@ -161,9 +178,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--check", action="store_true", help="fail if the committed files differ")
     parser.add_argument("--sha", default=SHA, help="ganjoor-data commit (default: the pinned one)")
+    parser.add_argument("--refresh-recitations", action="store_true",
+                        help="query api.ganjoor.net and rewrite recitations.json (the only call to it)")
     args = parser.parse_args()
+    if args.check and args.refresh_recitations:
+        parser.error("--check never rewrites recitations.json")
 
-    files = build_files(args.sha)
+    files = build_files(args.sha, args.refresh_recitations)
     if args.check:
         stale = differing(files)
         if stale:

@@ -7,6 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import audio
+import build
 import library
 import sparse
 
@@ -79,6 +80,54 @@ class Recitations(unittest.TestCase):
             self.assertEqual(audio.category_counts(Path(folder), 24), {2130: 4})
 
 
+class Snapshot(unittest.TestCase):
+    """recitations.json: the only input for popularity; only the refresh path asks the API."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.folder = Path(self.dir.name)
+        self.snapshot = self.folder / "recitations.json"
+        self.calls = []
+
+        def fake_counts(cache, cat):
+            self.calls.append(cat)
+            return {30 + cat: cat, 10 + cat: 1}
+
+        self.real = audio.category_counts
+        audio.category_counts = fake_counts
+
+    def tearDown(self):
+        audio.category_counts = self.real
+        self.dir.cleanup()
+
+    def test_dump_is_sorted_by_numeric_poem_id_and_round_trips(self):
+        text = audio.dump_snapshot({100: 2, 9: 5, 20: 1})
+        self.assertEqual(text, '{"9":5,"20":1,"100":2}\n')
+        self.assertEqual(audio.load_snapshot(text), {9: 5, 20: 1, 100: 2})
+
+    def test_a_normal_build_reads_the_snapshot_and_never_calls_the_api(self):
+        self.snapshot.write_text('{"7":3}\n')
+        got = build.recitation_counts(self.folder, {"books": []}, False, self.snapshot, self.folder)
+        self.assertEqual(got, {7: 3})
+        self.assertEqual(self.calls, [])
+
+    def test_a_missing_snapshot_stops_the_build(self):
+        with self.assertRaises(SystemExit):
+            build.recitation_counts(self.folder, {"books": []}, False, self.snapshot, self.folder)
+        self.assertEqual(self.calls, [])
+
+    def test_refresh_queries_every_category_and_rewrites_the_snapshot_sorted(self):
+        cat = self.folder / "b"
+        cat.mkdir()
+        (cat / "_cat.json").write_text(json.dumps({
+            "Id": 1, "Title": "کتاب", "ChildCats": [], "Poems": [{"Id": 5, "Title": "x", "FullUrl": "/b/p"}]}))
+        self.snapshot.write_text('{"1":1}\n')
+        got = build.recitation_counts(self.folder, {"books": [{"path": "/b"}]}, True, self.snapshot, self.folder)
+        self.assertEqual(self.calls, [1])
+        self.assertEqual(got, {31: 1, 11: 1})
+        self.assertEqual(self.snapshot.read_text(), '{"11":1,"31":1}\n')
+
+
 class Tree(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()
@@ -116,16 +165,13 @@ class Tree(unittest.TestCase):
         for pid, url in [(10, "/b/p0"), (11, "/b/g/sh1"), (12, "/b/g/sh2"), (13, "/b/r/sh1")]:
             file = self.poets / f"{url.lstrip('/')}.json"
             file.write_text(json.dumps(raw_poem(pid, url, [v(1, "Right", f"م{pid}", 0)])))
-        cache = self.poets / "audio-cache"
-        cache.mkdir()
-        for cat_id, counts in {1: {}, 2: {"12": 5}, 3: {}}.items():
-            (cache / f"{cat_id}.json").write_text(json.dumps(counts))
+        recitations = {12: 5}
         entry = {"path": "/b", "title": "دیوان", "poet": "p", "type": "divan", "color": "lapis", "blurb": "ب"}
-        book, index = library.build_book(self.poets, cache, entry, {"century": "قرن هشتم"})
+        book, index = library.build_book(self.poets, recitations, entry, {"century": "قرن هشتم"})
         self.assertEqual((book["id"], book["count"], book["recited"], book["unit"], book["century"]),
                          (1, 4, True, "غزل", "قرن هشتم"))
         self.assertEqual(book["poems"], [{"id": 10, "title": "x", "path": "/b/p0"}])
-        no_century, _ = library.build_book(self.poets, cache, entry, {})
+        no_century, _ = library.build_book(self.poets, recitations, entry, {})
         self.assertNotIn("century", no_century)
         self.assertEqual(index["id"], 1)
         self.assertEqual([r[0] for r in index["poems"]], [10, 11, 12, 13])

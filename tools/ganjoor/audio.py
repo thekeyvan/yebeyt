@@ -2,7 +2,9 @@
 
 /api/audio/published?catId=<id> lists only the recitations of poems directly in that category
 (sub-categories are not included), so every category that holds poems is queried on its own.
-Results are cached per category in tools/ganjoor/.cache/audio, so reruns need no network.
+Only `build.py --refresh-recitations` calls the API: it writes the sorted snapshot recitations.json, which
+every normal build and `--check` read instead. Download results are cached per category in
+tools/ganjoor/.cache/audio so an interrupted refresh can resume.
 """
 import json
 import sys
@@ -10,6 +12,7 @@ import time
 import urllib.error
 import urllib.request
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 
 API = "https://api.ganjoor.net/api/audio/published?catId={cat}&PageNumber={page}&PageSize=100"
 
@@ -48,3 +51,20 @@ def category_counts(cache_dir, cat):
     part.write_text(json.dumps(counts))
     part.replace(file)
     return counts
+
+
+def fetch_all(cache_dir, cat_ids):
+    """{poemId: recitations} over every category in `cat_ids` (one query per category)."""
+    with ThreadPoolExecutor(6) as pool:
+        parts = list(pool.map(lambda cat: category_counts(cache_dir, cat), sorted(cat_ids)))
+    return {poem: n for part in parts for poem, n in part.items()}
+
+
+def dump_snapshot(counts):
+    """recitations.json text: poem ids in numeric order, so a refresh diffs cleanly."""
+    ordered = {str(poem): counts[poem] for poem in sorted(counts)}
+    return json.dumps(ordered, separators=(",", ":")) + "\n"
+
+
+def load_snapshot(text):
+    return {int(poem): n for poem, n in json.loads(text).items()}
