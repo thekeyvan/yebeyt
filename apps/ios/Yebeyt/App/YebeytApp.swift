@@ -3,11 +3,17 @@ import SwiftUI
 @main
 struct YebeytApp: App {
     @State private var model: AppModel
+    @State private var poetry: PoetryStore
     #if DEBUG
     private let route: LaunchOptions.Route?
     #endif
 
     init() {
+        do {
+            _poetry = State(initialValue: try PoetryStore())
+        } catch {
+            fatalError("The bundled poetry data is unreadable: \(error)")  // a packaging bug, not a runtime condition
+        }
         #if DEBUG
         let options = LaunchOptions.fromProcess
         route = options.route
@@ -20,6 +26,7 @@ struct YebeytApp: App {
     var body: some Scene {
         WindowGroup {
             content
+                .environment(poetry)
                 .environment(\.layoutDirection, .rightToLeft)
                 .environment(\.locale, Locale(identifier: "fa_IR"))
                 .preferredColorScheme(.light)

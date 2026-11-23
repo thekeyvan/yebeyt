@@ -1,0 +1,26 @@
+{
+ "Id": 25,
+ "PoetId": 2,
+ "Title": "قطعات",
+ "FullUrl": "/hafez/ghete",
+ "TableOfContentsStyle": "AlphabeticWithFirstCouplet",
+ "ChildCats": [
+  {
+   "Id": 9999,
+   "Title": "زیربخش آزمایشی",
+   "FullUrl": "/hafez/ghete/zir"
+  }
+ ],
+ "Poems": [
+  {
+   "Id": 2093,
+   "Title": "قطعه شمارهٔ ۱",
+   "FullUrl": "/hafez/ghete/sh1"
+  },
+  {
+   "Id": 2094,
+   "Title": "قطعه شمارهٔ ۲",
+   "FullUrl": "/hafez/ghete/sh2"
+  }
+ ]
+}
