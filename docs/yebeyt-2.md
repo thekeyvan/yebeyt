@@ -131,4 +131,9 @@ The owner asked the lead to keep going alone. These were not settled on a board 
 - **AI-written meanings:** Ganjoor marks many meanings «هوش مصنوعی:». The pipeline strips that label from the text everywhere and keeps an `ai` flag; the owner chose (23 Nov) a small sparkle next to the meaning's heading («معنی» in the reader, «یعنی چی؟» on the after-answer sheet) only on AI-written meanings; tapping it says «این معنی با کمک هوش مصنوعی نوشته شده».
 - **Find friends (OnbFriends):** «از دفترچه‌ی تلفن» can't work, because accounts are Apple or Google only and hold no phone numbers. For now the screen shows only the invite link; finding friends by username comes in slice 7. Decide whether contacts matching should exist at all.
 - **Account gate copy:** «برای پسند و بازنشر یه حساب لازمه» and «برای پیام دادن به دوستات یه حساب لازمه», following the board's «برای مشاعره با دوستات یه حساب لازمه».
+- **Friends and leagues, decisions for slice 7** (questions in `owner-todo.md`):
+  - You follow people («دنبال کن» / «دنبالش می‌کنی»); two people who follow each other are friends («دوستا», «۱۲ دوست»). People are found by username search and by the invite link.
+  - Scores are reported by the phone after each round (each with a round id so a retry doesn't count twice) and capped per game on the server; the daily puzzle result is reported too (for «۳ تا از دوستات حلش کردن» and the streak).
+  - Weekly leagues, Saturday to Friday by Tehran time, in groups of up to 30. Tiers use the level names: نوآموز, بیت‌خوان, غزل‌باز, سخن‌دان, استاد سخن. The top 5 move up and the bottom 5 move down at the week's end. Everyone starts in نوآموز. «همه» on the leaderboard is the global weekly list of people who allow it (`inGlobalLeaderboard`).
+  - پسند and بازنشر are stored on the server for signed-in users; friends see them in their home feed («دوستات»), subject to the privacy settings.
 
