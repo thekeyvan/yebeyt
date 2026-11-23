@@ -46,6 +46,9 @@ These can't be tested in the simulator here:
 5. **Delete account copy:** «حسابت و همه‌ی چیزهایی که جمع کردی پاک می‌شه. مطمئنی؟» — «پاک کن» / «نه».
 6. **Invite texts:** the board has the رفیقانه text; the lead writes شاعرانه and کوتاه. Please read them in the app.
 7. **Divan «موضوع»:** grouped by the mood words (عشق, دلتنگی, امید, بهار, جوونی, دوستی, else بقیه). Other topics?
+8. **Feedback storage:** screenshots and recordings are kept in Postgres for now (screenshot ≤3 MB, recording ≤25 MB). If many arrive, move them to a Railway bucket. OK?
+9. **Feedback after deleting an account:** the text stays, without the user (anonymous). Or should it be deleted too?
+10. **Reading feedback:** there is no admin screen yet; feedback is read through the admin API (`GET /v1/admin/feedback` with `ADMIN_TOKEN`). Should a simple page come before the admin dashboard?
 11. **Friends = mutual follows.** Following is one-way; two people following each other are friends. OK, or should friend requests need acceptance?
 12. **League tiers** reuse the level names (نوآموز … استاد سخن), weekly from Saturday, groups of 30, top 5 up, bottom 5 down. OK?
 13. **Notifications:** «تا فردا» games and messages need push notifications. That needs an APNs key (Apple Developer → Keys → a key with Apple Push Notifications). Please create one and put it in Railway as `APNS_KEY` (with its key id as `APNS_KEY_ID`), or tell the lead to do without push for now.
