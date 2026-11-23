@@ -44,7 +44,6 @@ struct TabBar: View {
                 if tab == .games { gamesButton(on: on).offset(y: -RaisedGamesButton.rise) }
             }
             .background { if tab != .games { Color.clear.contentShape(Rectangle()) } }
-            
         }
         .buttonStyle(.plain)
         .accessibilityLabel(tab.title)

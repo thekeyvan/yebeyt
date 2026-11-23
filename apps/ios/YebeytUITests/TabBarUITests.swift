@@ -1,21 +1,29 @@
 import XCTest
 
 final class TabBarUITests: XCTestCase {
-    /// The raised «بازی» circle sticks out 18pt above the bar; a tap on its top must select the tab,
-    /// and a tap on the empty corner beside it must not.
+    /// The raised «بازی» circle (56pt) sticks out 18pt above the bar. A tap near its top must select the
+    /// tab; taps clearly outside it (above it, or in the empty space beside it) must not. iOS adds about
+    /// 14pt of touch slop around a button, so the negative points are further out than that.
     @MainActor func testRaisedGamesButtonIsTappableAboveTheBar() {
         let app = XCUIApplication()
         app.launch()
+        let bar = app.otherElements["تب‌ها"]  // its frame includes the circle, so minY is the circle's top
+        XCTAssertTrue(bar.waitForExistence(timeout: 5))
         let games = app.buttons["بازی"]
-        XCTAssertTrue(games.waitForExistence(timeout: 5))
-        XCTAssertFalse(games.isSelected)
-
+        let home = app.buttons["خونه"]
         let screen = app.coordinate(withNormalizedOffset: .zero)
-        let barTop = app.frame.maxY - 18 - 70
-        let aboveBar = barTop - 12  // 6pt below the circle top edge (circle top = bar top - 18)
-        screen.withOffset(CGVector(dx: app.frame.midX - 36, dy: aboveBar)).tap()
-        XCTAssertFalse(games.isSelected, "the empty corner beside the circle selected the tab")
-        screen.withOffset(CGVector(dx: app.frame.midX, dy: aboveBar)).tap()
-        XCTAssertTrue(games.isSelected, "a tap on the top of the raised circle did not select the tab")
+        let circleTop = bar.frame.minY
+        let circleMidX = games.frame.midX
+
+        func tap(dx: CGFloat, dy: CGFloat) -> Bool {
+            home.tap()  // start from another tab: «بازی» stays selected once tapped
+            screen.withOffset(CGVector(dx: circleMidX + dx, dy: circleTop + dy)).tap()
+            return games.isSelected
+        }
+
+        XCTAssertTrue(tap(dx: 0, dy: 6), "a tap 6pt below the top of the raised circle did not select the tab")
+        XCTAssertFalse(tap(dx: 0, dy: -20), "a tap above the circle selected the tab")
+        XCTAssertFalse(tap(dx: -36, dy: 6), "a tap beside the circle selected the tab")
+        XCTAssertFalse(tap(dx: 36, dy: 6), "a tap beside the circle selected the tab")
     }
 }
