@@ -34,7 +34,7 @@ JavaScript and TypeScript packages will share one pnpm workspace with Turborepo,
 - Poetry data: `python3 tools/ganjoor/build.py` rebuilds `apps/ios/Yebeyt/Resources/Data` from ganjoor-data (pinned commit in `build.py`, `--sha` overrides; downloads are cached in `tools/ganjoor/.cache`). `python3 tools/ganjoor/build.py --check` fails when the committed files are out of date, and `python3 -m unittest tools/ganjoor/test_build.py` runs the pipeline's tests. Never edit the generated data by hand.
 - Server (from slice 4): its own tests run with the server's test command, documented in `apps/server/`.
 - Design canvas: see `design/canvas/README.md`. Edit the `gen_*.py` scripts, never the boards by hand.
-- Debug launch arguments open a screen directly, which helps for simulator screenshots: `-beytTab home|explore|games|messages|me`, `-beytUnread <n>` (unread badge), `-beytRoute stickers` (the sticker sheet). Each slice adds its own and lists them here.
+- Debug launch arguments open a screen directly, which helps for simulator screenshots: `-beytTab home|explore|games|messages|me`, `-beytUnread <n>` (unread badge), `-beytRoute stickers` (the sticker sheet), `-beytRoute poem:<path>` (the reader, e.g. `poem:/hafez/ghazal/sh3`) with `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`, `-beytMeaning 1`, `-beytHold <n>`. Each slice adds its own and lists them here.
 
 ## Rules
 

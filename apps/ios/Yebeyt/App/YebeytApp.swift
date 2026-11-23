@@ -4,8 +4,10 @@ import SwiftUI
 struct YebeytApp: App {
     @State private var model: AppModel
     @State private var poetry: PoetryStore
+    @State private var marks = ReaderMarks()
+    @State private var textSettings = TextSettingsStore()
     #if DEBUG
-    private let route: LaunchOptions.Route?
+    private let showsStickers: Bool
     #endif
 
     init() {
@@ -16,8 +18,8 @@ struct YebeytApp: App {
         }
         #if DEBUG
         let options = LaunchOptions.fromProcess
-        route = options.route
-        _model = State(initialValue: AppModel(tab: options.tab ?? .home, unreadCount: options.unread ?? 0))
+        showsStickers = options.route == .stickers
+        _model = State(initialValue: AppModel(tab: options.tab ?? .home, unreadCount: options.unread ?? 0, reader: options.reader))
         #else
         _model = State(initialValue: AppModel())
         #endif
@@ -27,6 +29,8 @@ struct YebeytApp: App {
         WindowGroup {
             content
                 .environment(poetry)
+                .environment(marks)
+                .environment(textSettings)
                 .environment(\.layoutDirection, .rightToLeft)
                 .environment(\.locale, Locale(identifier: "fa_IR"))
                 .preferredColorScheme(.light)
@@ -37,7 +41,7 @@ struct YebeytApp: App {
 
     @ViewBuilder private var content: some View {
         #if DEBUG
-        if route == .stickers {
+        if showsStickers {
             StickerSheet()
         } else {
             RootView(model: model)

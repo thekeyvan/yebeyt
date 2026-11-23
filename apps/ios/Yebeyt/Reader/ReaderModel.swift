@@ -1,0 +1,150 @@
+import Foundation
+import Observation
+
+/// The state of one open poem in the reader: loading, the mode, the current couplet, the meaning card,
+/// the sheets and the recitation. The views only draw it and call its methods.
+@MainActor @Observable
+final class ReaderModel {
+    enum Phase { case loading, failed, loaded }
+
+    struct Content {
+        var poem: Poem
+        var poet: String
+        var book: String?
+        var title: String { ReaderText.shortTitle(poem.title) }
+        var subtitle: String { ReaderText.subtitle(poet: poet, book: book) }
+    }
+
+    /// What the iOS share sheet shows.
+    struct Share: Identifiable {
+        let id = UUID()
+        let text: String
+    }
+
+    let route: ReaderRoute
+    private(set) var phase = Phase.loading
+    private(set) var content: Content?
+    private(set) var player: RecitationPlayer?
+    private(set) var toast: String?
+
+    private(set) var mode: ReaderMode
+    private(set) var index: Int
+    /// The couplet at the top of the whole-poem list, which بفرست and نگه دار act on in that mode.
+    var topIndex = 0
+    var meaningOpen = false
+    var meaningExpanded = false
+    var textSheetOpen: Bool
+    var holdIndex: Int?
+    var share: Share?
+
+    @ObservationIgnored private var toastTask: Task<Void, Never>?
+
+    init(route: ReaderRoute) {
+        self.route = route
+        mode = route.mode
+        index = route.couplet
+        textSheetOpen = route.textSheet
+    }
+
+    var couplets: [Couplet] { content?.poem.couplets ?? [] }
+    var path: String { route.path }
+
+    /// The couplet the actions act on: the one on the page, or the one at the top of the list.
+    var actionIndex: Int { mode == .couplet ? index : topIndex }
+
+    func load(using store: PoetryStore) async {
+        phase = .loading
+        do {
+            let poem = try await store.poem(path: route.path)
+            let poet = store.poets.first { route.path.hasPrefix("/\($0.slug)/") }
+            let bookPath = route.path.split(separator: "/", omittingEmptySubsequences: false).dropLast().joined(separator: "/")
+            var book = poet?.books.first { $0.path == bookPath }?.title
+            if book == nil { book = try? await store.book(path: bookPath).title }
+            let content = Content(poem: poem, poet: poet?.nickname ?? "", book: book)
+            self.content = content
+            index = CoupletPaging.clamp(route.couplet, count: poem.couplets.count)
+            topIndex = index
+            meaningOpen = route.meaning && couplets.indices.contains(index) && couplets[index].meaning != nil
+            holdIndex = route.hold.flatMap { couplets.indices.contains($0) ? $0 : nil }
+            let player = RecitationPlayer(
+                couplets: poem.couplets, title: content.title, artist: content.poet,
+                fetchRecitations: { [poemId = poem.id] in try await store.recitations(poemId: poemId) },
+                onFailure: { [weak self] in self?.showToast("خوانش باز نشد") }
+            )
+            self.player = player
+            phase = .loaded
+            await player.prefetch()
+        } catch {
+            phase = .failed
+        }
+    }
+
+    /// The mode toggle: each mode starts where the other one was.
+    func setMode(_ new: ReaderMode) {
+        guard new != mode else { return }
+        if new == .scroll { topIndex = index } else { index = CoupletPaging.clamp(topIndex, count: couplets.count) }
+        closeMeaning()
+        mode = new
+    }
+
+    // MARK: Couplet mode
+
+    /// Moves to a couplet; the meaning card closes, as it belongs to the couplet it was opened on.
+    func go(to newIndex: Int) {
+        let clamped = CoupletPaging.clamp(newIndex, count: couplets.count)
+        guard clamped != index else { return }
+        index = clamped
+        closeMeaning()
+    }
+
+    /// Couplet mode at a couplet, from the whole-poem list or the lifted couplet's menu.
+    func openCouplet(_ target: Int, withMeaning: Bool = false) {
+        mode = .couplet
+        holdIndex = nil
+        index = CoupletPaging.clamp(target, count: couplets.count)
+        meaningExpanded = false
+        meaningOpen = withMeaning && hasMeaning(index)
+    }
+
+    func hasMeaning(_ couplet: Int) -> Bool {
+        couplets.indices.contains(couplet) && couplets[couplet].meaning != nil
+    }
+
+    func openMeaning() {
+        meaningOpen = hasMeaning(index)
+    }
+
+    func closeMeaning() {
+        meaningOpen = false
+        meaningExpanded = false
+    }
+
+    // MARK: Actions
+
+    func shareCouplet(_ couplet: Int) {
+        guard let content, content.poem.couplets.indices.contains(couplet) else { return }
+        share = Share(text: ReaderText.shareText(content.poem.couplets[couplet], poet: content.poet, title: content.title))
+    }
+
+    func copyText(of couplet: Int) -> String? {
+        guard let content, content.poem.couplets.indices.contains(couplet) else { return nil }
+        return ReaderText.copyText(content.poem.couplets[couplet], poet: content.poet)
+    }
+
+    func caption(for couplet: Int) -> String {
+        ReaderText.caption(poet: content?.poet ?? "", title: content?.title ?? "", index: couplet)
+    }
+
+    func showToast(_ text: String) {
+        toast = text
+        toastTask?.cancel()
+        toastTask = Task {
+            try? await Task.sleep(for: .seconds(2.5))
+            if !Task.isCancelled { toast = nil }
+        }
+    }
+
+    func close() {
+        player?.stop()
+    }
+}

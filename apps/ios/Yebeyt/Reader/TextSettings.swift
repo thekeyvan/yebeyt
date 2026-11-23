@@ -89,6 +89,16 @@ enum ReaderTheme: String, CaseIterable, Codable, Sendable {
         self == .dark ? Self.boardPaper : Tokens.Colors.ink
     }
 
+    /// Quieter text: the subtitle, the progress count.
+    var secondary: Color {
+        isDark ? Self.boardPaper.opacity(0.65) : Tokens.Colors.muted
+    }
+
+    /// The part of the progress rail that is not read yet.
+    var track: Color {
+        isDark ? Self.boardPaper.opacity(0.2) : Tokens.Colors.ring
+    }
+
     var isDark: Bool { self == .dark }
 
     /// The reader boards' paper (#F7F5F0), a little lighter than the dotted sheet's.

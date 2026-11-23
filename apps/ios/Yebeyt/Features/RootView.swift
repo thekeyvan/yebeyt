@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RootView: View {
-    let model: AppModel
+    @Bindable var model: AppModel
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -13,5 +13,8 @@ struct RootView: View {
         }
         // The bar sits 18pt above the screen edge, as on the board; the pages reserve its height.
         .ignoresSafeArea(.container, edges: .bottom)
+        .fullScreenCover(item: $model.reader) { route in
+            ReaderView(route: route, close: { model.closeReader() }, playWithCouplet: { model.playWithCouplet() })
+        }
     }
 }
