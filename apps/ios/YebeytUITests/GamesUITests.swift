@@ -18,7 +18,7 @@ final class GamesUITests: XCTestCase {
         XCTAssertTrue(app.buttons["dailyOpen"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.buttons["dailyOpen"].label, "بزن بریم")
         XCTAssertTrue(app.buttons["game-jigsaw"].isEnabled)
-        XCTAssertFalse(app.buttons["game-poet"].isEnabled, "games that are not built yet open nothing")
+        XCTAssertTrue(app.buttons["game-poet"].isEnabled, "the other solo games open too")
         app.buttons["allGames"].tap()
         XCTAssertTrue(app.buttons["catalog-daily"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'catalog-'")).count, 9)

@@ -4,9 +4,11 @@ import Foundation
 /// Debug launch arguments, for opening a screen straight away (simulator screenshots):
 /// `-beytTab home|explore|games|messages|me`, `-beytUnread <n>`, `-beytRoute stickers|poem:<path>`, and the
 /// library routes `-beytRoute library|book:<path>|section:<path>|poet:<slug>|search:<query>|mood:<key>|poets`
-/// (they open the کاوش tab with those screens pushed). The game routes `-beytRoute games-catalog|daily|jigsaw|jigsaw-result|round-end`
+/// (they open the کاوش tab with those screens pushed). The game routes `-beytRoute games-catalog|daily|jigsaw|jigsaw-result|round-end|poet-game|second|book-game|match|listen`
 /// open the بازی tab with the catalog, or a game in front; `-beytPlay <n>` plays a little first (daily: n tries; جورچین:
-/// n couplets, then a sticker in hand) and `-beytToday <yyyy-mm-dd>` fixes the Tehran day.
+/// n couplets, then a sticker in hand; the quiz games: n answered, then an option chosen, and with `-beytSheet answer`
+/// the last answer's sheet left open; معنی‌یاب: n pairs) and `-beytToday <yyyy-mm-dd>` fixes the Tehran day.
+/// `-beytStub 1` makes گوش کن use canned recitations (no network, no sound).
 /// With `poem:` the reader opens, and `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`,
 /// `-beytMeaning 1` and `-beytHold <n>` set its state. `-beytFresh 1` first forgets what the phone has kept
 /// (reading progress, marks, follows, rejected couplets, game stats). Values that don't parse are ignored.
@@ -26,6 +28,11 @@ struct LaunchOptions {
         case jigsaw
         case jigsawResult
         case roundEnd
+        case poetGame
+        case second
+        case bookGame
+        case match
+        case listen
 
         init?(_ text: String) {
             let (name, value) = text.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
@@ -39,6 +46,11 @@ struct LaunchOptions {
             case ("jigsaw", nil): self = .jigsaw
             case ("jigsaw-result", nil): self = .jigsawResult
             case ("round-end", nil): self = .roundEnd
+            case ("poet-game", nil): self = .poetGame
+            case ("second", nil): self = .second
+            case ("book-game", nil): self = .bookGame
+            case ("match", nil): self = .match
+            case ("listen", nil): self = .listen
             case ("poem", let path?) where Self.isPath(path): self = .poem(path)
             case ("book", let path?) where Self.isPath(path): self = .book(path)
             case ("section", let path?) where Self.isPath(path): self = .section(path)
@@ -54,7 +66,7 @@ struct LaunchOptions {
         /// The route opens something on the بازی tab.
         var isGames: Bool {
             switch self {
-            case .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd: true
+            case .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen: true
             default: false
             }
         }
@@ -69,6 +81,8 @@ struct LaunchOptions {
     private let meaning: String?
     private let hold: Int?
     private let play: Int?
+    /// `-beytStub 1`: گوش کن plays canned recitations instead of asking Ganjoor.
+    private let stub: Bool
     /// `-beytToday <yyyy-mm-dd>`: the Tehran day the games use instead of the real one.
     private(set) var today: TehranDay?
     /// `-beytFresh 1`: forget what the phone has kept (progress, marks, follows, rejects) before launching.
@@ -88,6 +102,7 @@ struct LaunchOptions {
         meaning = (values["beytMeaning"] as? String) ?? (values["beytMeaning"] as? Int).map(String.init)
         hold = number("beytHold")
         play = number("beytPlay")
+        stub = number("beytStub") == 1
         today = (values["beytToday"] as? String).flatMap { TehranDay(key: $0) }
         fresh = number("beytFresh") == 1
     }
@@ -111,7 +126,7 @@ struct LaunchOptions {
         case .mood(let key): return library.moods.contains { $0.key == key } ? [.mood(key)] : []
         case .book(let path): return library.book(path: path).map { [.library, .book($0.id)] } ?? []
         case .section(let path): return library.section(path: path).map { [.library, .book($0.book.id), .section(book: $0.book.id, section: $0.section.id)] } ?? []
-        case .stickers, .poem, .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, nil: return []
+        case .stickers, .poem, .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen, nil: return []
         }
     }
 
@@ -123,6 +138,11 @@ struct LaunchOptions {
         switch route {
         case .daily: .daily
         case .jigsaw, .jigsawResult, .roundEnd: .jigsaw(.deck)
+        case .poetGame: .quiz(.poet)
+        case .second: .quiz(.misra(poet: nil))
+        case .bookGame: .quiz(.book)
+        case .match: .match
+        case .listen: .quiz(.listen)
         default: nil
         }
     }
@@ -134,6 +154,8 @@ struct LaunchOptions {
         case .roundEnd: .end
         case .daily: play.map(GameAutoplay.tries) ?? .none
         case .jigsaw: play.map(GameAutoplay.held) ?? .none
+        case .poetGame, .second, .bookGame, .listen: .quiz(answered: play ?? 0, sheet: sheet == "answer", stubbed: stub)
+        case .match: .match(pairs: play ?? 0)
         default: .none
         }
     }

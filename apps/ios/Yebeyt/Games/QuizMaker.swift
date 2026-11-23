@@ -74,6 +74,13 @@ enum QuizMaker {
     }
 }
 
+extension GameDeck {
+    /// A round of مصراع دوم of one poet needs the poet's couplet and two others to choose from.
+    func hasRound(of poet: String) -> Bool {
+        couplets.lazy.filter { $0.poetSlug == poet }.prefix(3).count == 3
+    }
+}
+
 extension QuizRound {
     static let questionCount = 10
 

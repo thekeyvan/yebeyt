@@ -57,6 +57,22 @@ struct LaunchOptionsTests {
         #expect(LaunchOptions(["beytRoute": "daily", "beytPlay": "many"]).autoplay == .none)
     }
 
+    @Test func theOtherSoloGamesHaveRoutesToo() {
+        for (text, route, game) in [
+            ("poet-game", LaunchOptions.Route.poetGame, GameRoute.quiz(.poet)), ("second", .second, .quiz(.misra(poet: nil))),
+            ("book-game", .bookGame, .quiz(.book)), ("match", .match, .match), ("listen", .listen, .quiz(.listen)),
+        ] {
+            let options = LaunchOptions(["beytRoute": text])
+            #expect(options.route == route && options.game == game && options.route?.isGames == true)
+        }
+        #expect(LaunchOptions(["beytRoute": "poet-game", "beytPlay": "4"]).autoplay == .quiz(answered: 4, sheet: false, stubbed: false))
+        #expect(LaunchOptions(["beytRoute": "second", "beytPlay": "2", "beytSheet": "answer"]).autoplay == .quiz(answered: 2, sheet: true, stubbed: false))
+        #expect(LaunchOptions(["beytRoute": "listen", "beytStub": "1"]).autoplay == .quiz(answered: 0, sheet: false, stubbed: true))
+        #expect(LaunchOptions(["beytRoute": "listen", "beytStub": "1"]).autoplay.stubsRecitations)
+        #expect(LaunchOptions(["beytRoute": "match", "beytPlay": "3"]).autoplay == .match(pairs: 3))
+        #expect(LaunchOptions(["beytRoute": "match"]).autoplay == .match(pairs: 0))
+    }
+
     @Test func todayCanBeFixed() {
         #expect(LaunchOptions(["beytToday": "2026-11-23"]).today?.key == "2026-11-23")
         #expect(LaunchOptions(["beytToday": "soon"]).today == nil)

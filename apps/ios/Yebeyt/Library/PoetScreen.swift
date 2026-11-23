@@ -5,6 +5,7 @@ struct PoetScreen: View {
     @Environment(AppModel.self) private var app
     @Environment(Library.self) private var library
     @Environment(Follows.self) private var follows
+    @Environment(GameDeck.self) private var deck
     let poet: LibraryPoet
     @State private var bioOpen = false
     @State private var top: TopPoems?
@@ -21,7 +22,7 @@ struct PoetScreen: View {
                 topRow
                 hero
                 chips
-                gameCard
+                if deck.hasRound(of: poet.slug) { gameCard }
                 if let top, !top.poems.isEmpty { topCard(top) }
             }
             .padding(.horizontal, 18)
@@ -167,9 +168,9 @@ struct PoetScreen: View {
 
     // MARK: The game card
 
-    /// «بازی با بیت‌های حافظ»; it opens the بازی tab until the games exist (slice 3).
+    /// «بازی با بیت‌های حافظ»: مصراع دوم with that poet's couplets only. It shows for the poets the game deck has.
     private var gameCard: some View {
-        Button { app.select(.games) } label: {
+        Button { app.play(.quiz(.misra(poet: poet.slug))) } label: {
             HStack(spacing: 12) {
                 LineIcon(shape: GamesIcon(), size: 22, lineWidth: 2.2, fill: nil)
                     .foregroundStyle(Tokens.Colors.white)

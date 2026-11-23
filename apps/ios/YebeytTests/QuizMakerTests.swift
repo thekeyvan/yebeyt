@@ -263,6 +263,11 @@ struct QuizRoundMakingTests {
         #expect(QuizRound.book(deck: GameDeck(couplets: Array(couplets.suffix(8))), books: books, generator: &generator) == nil)
     }
 
+    @Test func aPoetPageOffersARoundOnlyWhenTheDeckHasAtLeastThreeCouplets() {
+        let deck = GameDeck(couplets: QuizFixtures.couplets(poet: "hafez", count: 3) + QuizFixtures.couplets(poet: "saadi", count: 2))
+        #expect(deck.hasRound(of: "hafez") && !deck.hasRound(of: "saadi") && !deck.hasRound(of: "nobody"))
+    }
+
     @Test func eachGameHasItsClock() throws {
         #expect(QuizRound(kind: .poet, questions: [QuizFixtures.question()])?.clock == .perQuestion(12))
         #expect(QuizRound(kind: .book, questions: [QuizFixtures.question(.book)])?.clock == .perQuestion(12))
@@ -270,5 +275,39 @@ struct QuizRoundMakingTests {
         let listenClock = QuizRound(kind: .listen, questions: [QuizFixtures.question(.listen)])?.clock
         #expect(listenClock == QuizRound.Clock.none)
         #expect(QuizRound(kind: .poet, questions: []) == nil)
+    }
+}
+
+@MainActor
+struct BundledQuizDataTests {
+    private func load() throws -> (GameDeck, Library) {
+        let library = try Library(bundle: Fixtures.appBundle)
+        let names = Dictionary(library.poets.map { ($0.slug, $0.name) }, uniquingKeysWith: { first, _ in first })
+        return (try GameDeck(bundle: Fixtures.appBundle, poetNames: names), library)
+    }
+
+    @Test func theBundledDeckMakesARoundOfEveryQuizGame() throws {
+        let (deck, library) = try load()
+        var generator = SeededGenerator(seed: 1)
+        #expect(QuizRound.poet(deck: deck, poets: library.poets, generator: &generator)?.questions.count == 10)
+        #expect(QuizRound.second(deck: deck, only: nil, generator: &generator)?.questions.count == 10)
+        #expect(QuizRound.book(deck: deck, books: library.books, generator: &generator)?.questions.count == 10)
+    }
+
+    @Test func everyPoetOfTheDeckGetsAShortOrFullRoundOfItsOwn() throws {
+        let (deck, _) = try load()
+        var generator = SeededGenerator(seed: 2)
+        for slug in Set(deck.couplets.map(\.poetSlug)) where deck.hasRound(of: slug) {
+            let round = try #require(QuizRound.second(deck: deck, only: slug, generator: &generator), "\(slug)")
+            #expect(round.questions.allSatisfy { $0.couplet.poetSlug == slug })
+        }
+    }
+
+    @Test func everyDeckCoupletKnowsItsBookInTheLibrary() throws {
+        let (deck, library) = try load()
+        for couplet in deck.couplets {
+            let book = try #require(library.book(path: couplet.bookPath), "\(couplet.poem) → \(couplet.bookPath)")
+            #expect(book.title == couplet.bookTitle)
+        }
     }
 }

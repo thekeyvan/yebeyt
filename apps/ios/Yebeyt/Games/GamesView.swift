@@ -62,12 +62,12 @@ struct GamesView: View {
     }
 
     private func start(_ kind: GameKind) {
-        if kind == .jigsaw { app.play(.jigsaw(.deck)) }
+        if let route = kind.route { app.play(route) }
     }
 }
 
-/// A game on the tab: its colour, name and a few words, with its sticker at the corner. Games that are not built yet
-/// are dimmed and open nothing.
+/// A game on the tab: its colour, name and a few words, with its sticker at the corner. The games with friends are
+/// dimmed and open nothing.
 struct GameCard: View {
     let kind: GameKind
     let open: () -> Void

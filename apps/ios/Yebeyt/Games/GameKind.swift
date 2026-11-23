@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The nine games. Only the built ones open; the rest sit dimmed in the catalog until their slice.
+/// The nine games. The ones with friends are dimmed in the catalog until their slice.
 enum GameKind: String, CaseIterable, Sendable {
     case daily, jigsaw, poet, misra, book, match, listen, mosh, duel
 
@@ -62,7 +62,21 @@ enum GameKind: String, CaseIterable, Sendable {
     /// The games with a card on the games tab, in the order of the board.
     static let tabCards: [GameKind] = [.jigsaw, .poet, .misra, .book]
 
-    var isBuilt: Bool { self == .daily || self == .jigsaw }
+    /// What opens for the game; nil for the games with friends, which wait for their slice (the card is dimmed).
+    var route: GameRoute? {
+        switch self {
+        case .daily: .daily
+        case .jigsaw: .jigsaw(.deck)
+        case .poet: .quiz(.poet)
+        case .misra: .quiz(.misra(poet: nil))
+        case .book: .quiz(.book)
+        case .match: .match
+        case .listen: .quiz(.listen)
+        case .mosh, .duel: nil
+        }
+    }
+
+    var isBuilt: Bool { route != nil }
 
     /// The sticker's background: one colour, or two split on the diagonal (games with friends).
     var background: (Color, Color?) {

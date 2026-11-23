@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// GamesCatalog: the nine games with their icons and what they are. Only the built games open; the others are dimmed.
+/// GamesCatalog: the nine games with their icons and what they are. The games with friends are dimmed.
 struct GamesCatalogScreen: View {
     @Environment(AppModel.self) private var app
 
@@ -52,10 +52,6 @@ struct GamesCatalogScreen: View {
     }
 
     private func open(_ kind: GameKind) {
-        switch kind {
-        case .daily: app.play(.daily)
-        case .jigsaw: app.play(.jigsaw(.deck))
-        default: break
-        }
+        if let route = kind.route { app.play(route) }
     }
 }
