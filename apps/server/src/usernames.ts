@@ -10,7 +10,7 @@ export const USERNAME_CHANGE_DAYS = 30;
 const RESERVED = new Set([
   "yebeyt", "admin", "administrator", "support", "hello", "help", "api", "www", "root", "system",
   "moderator", "staff", "team", "official", "contact", "info", "security", "privacy", "terms",
-  "null", "undefined", "me", "app", "ios", "android",
+  "null", "undefined", "me", "app", "ios", "android", "search",
 ]);
 
 /** The stored form: lower-case. Names are compared case-insensitively. */

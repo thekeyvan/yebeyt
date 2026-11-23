@@ -173,6 +173,9 @@
             "enum": [
               "invalid_request",
               "bad_timestamp",
+              "points_too_high",
+              "username_required",
+              "conflict",
               "already_uploaded",
               "divan_full",
               "invalid_token",
@@ -429,6 +432,420 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "Relationship": {
+        "type": "object",
+        "properties": {
+          "isFollowing": {
+            "type": "boolean"
+          },
+          "followsYou": {
+            "type": "boolean"
+          },
+          "isFriend": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "isFollowing",
+          "followsYou",
+          "isFriend"
+        ]
+      },
+      "PeoplePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `cursor` for the next page; null on the last page."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "Person": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
+          },
+          "isFriend": {
+            "type": "boolean",
+            "description": "You follow each other."
+          }
+        },
+        "required": [
+          "username",
+          "displayName",
+          "avatar",
+          "isFriend"
+        ]
+      },
+      "ScoreResult": {
+        "type": "object",
+        "properties": {
+          "week": {
+            "type": "string",
+            "example": "2026-W23"
+          },
+          "weekPoints": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "week",
+          "weekPoints"
+        ]
+      },
+      "ScoreRequest": {
+        "type": "object",
+        "properties": {
+          "roundId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Made by the phone for each round; sending it again does not count twice."
+          },
+          "game": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "jigsaw",
+              "poet",
+              "second",
+              "book",
+              "match",
+              "listen",
+              "onboarding"
+            ]
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "playedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "roundId",
+          "game",
+          "points",
+          "playedAt"
+        ],
+        "additionalProperties": false
+      },
+      "DailyResult": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-06-01",
+            "description": "A Tehran calendar day, yyyy-mm-dd."
+          },
+          "solved": {
+            "type": "boolean"
+          },
+          "tries": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "solved",
+          "tries"
+        ]
+      },
+      "DailyRequest": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-06-01",
+            "description": "A Tehran calendar day, yyyy-mm-dd."
+          },
+          "solved": {
+            "type": "boolean"
+          },
+          "tries": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "date",
+          "solved",
+          "tries"
+        ],
+        "additionalProperties": false
+      },
+      "DailyFriends": {
+        "type": "object",
+        "properties": {
+          "solvedCount": {
+            "type": "integer"
+          },
+          "friends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyFriend"
+            }
+          }
+        },
+        "required": [
+          "solvedCount",
+          "friends"
+        ]
+      },
+      "DailyFriend": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PersonShort"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "solved": {
+                "type": "boolean"
+              },
+              "tries": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "solved",
+              "tries"
+            ]
+          }
+        ]
+      },
+      "PersonShort": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
+          }
+        },
+        "required": [
+          "username",
+          "displayName",
+          "avatar"
+        ]
+      },
+      "Stats": {
+        "type": "object",
+        "properties": {
+          "totalPoints": {
+            "type": "integer"
+          },
+          "weekPoints": {
+            "type": "integer"
+          },
+          "streakDays": {
+            "type": "integer"
+          },
+          "league": {
+            "type": "object",
+            "properties": {
+              "tier": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              }
+            },
+            "required": [
+              "tier"
+            ],
+            "description": "This week's tier; before the first score of the week, the tier the user will start in."
+          }
+        },
+        "required": [
+          "totalPoints",
+          "weekPoints",
+          "streakDays",
+          "league"
+        ]
+      },
+      "LeagueStandings": {
+        "type": "object",
+        "properties": {
+          "week": {
+            "type": "string",
+            "example": "2026-W23",
+            "description": "The Tehran week, Saturday to Friday."
+          },
+          "tier": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4,
+            "description": "0 نوآموز, 1 بیت‌خوان, 2 غزل‌باز, 3 سخن‌دان, 4 استاد سخن."
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the week ends (Friday midnight in Tehran)."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaderboardRow"
+            },
+            "description": "My league group, best first. Empty until my first score of the week."
+          },
+          "promoteCount": {
+            "type": "number",
+            "enum": [
+              5
+            ]
+          },
+          "demoteCount": {
+            "type": "number",
+            "enum": [
+              5
+            ]
+          }
+        },
+        "required": [
+          "week",
+          "tier",
+          "endsAt",
+          "rows",
+          "promoteCount",
+          "demoteCount"
+        ]
+      },
+      "LeaderboardRow": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null for someone who has not chosen a username yet."
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
+          },
+          "points": {
+            "type": "integer"
+          },
+          "isMe": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rank",
+          "username",
+          "displayName",
+          "avatar",
+          "points",
+          "isMe"
+        ]
+      },
+      "FriendsStandings": {
+        "type": "object",
+        "properties": {
+          "week": {
+            "type": "string",
+            "example": "2026-W23",
+            "description": "The Tehran week, Saturday to Friday."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaderboardRow"
+            }
+          }
+        },
+        "required": [
+          "week",
+          "rows"
+        ]
+      },
+      "GlobalStandings": {
+        "type": "object",
+        "properties": {
+          "week": {
+            "type": "string",
+            "example": "2026-W23",
+            "description": "The Tehran week, Saturday to Friday."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaderboardRow"
+            }
+          },
+          "me": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeaderboardRow"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "My own rank, even when I am not on the list (my `inGlobalLeaderboard` is off). Null before my first score of the week."
+              }
+            ]
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `cursor` for the next page; null on the last page."
+          }
+        },
+        "required": [
+          "week",
+          "rows",
+          "me",
+          "nextCursor"
         ]
       },
       "PrivacySettings": {
@@ -1607,6 +2024,709 @@
           },
           "413": {
             "description": "payload_too_large (body over 1 MB), or divan_full (the user would have more than 20 000 items).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/follows/{username}": {
+      "put": {
+        "tags": [
+          "friends"
+        ],
+        "summary": "Follow someone",
+        "description": "Idempotent. You need a username of your own (403 username_required). Two people who follow each other are friends.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "example": "hafez_fan"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How we follow each other now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Relationship"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: that is yourself.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required: set a username first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user with that username.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (120 a minute per user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "friends"
+        ],
+        "summary": "Stop following someone",
+        "description": "Idempotent.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "example": "hafez_fan"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How we follow each other now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Relationship"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: that is yourself.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user with that username.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (120 a minute per user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/following": {
+      "get": {
+        "tags": [
+          "friends"
+        ],
+        "summary": "People I follow, newest first, 50 a page",
+        "description": "`isFriend` is true when they follow me back.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of people.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeoplePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A malformed cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/followers": {
+      "get": {
+        "tags": [
+          "friends"
+        ],
+        "summary": "People who follow me, newest first, 50 a page",
+        "description": "`isFriend` is true when I follow them back. People with no username yet are left out.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of people.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeoplePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A malformed cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/friends": {
+      "get": {
+        "tags": [
+          "friends"
+        ],
+        "summary": "My friends (we follow each other), 50 a page",
+        "description": "Ordered by when I followed them, newest first. `isFriend` is always true.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of people.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeoplePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A malformed cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scores": {
+      "post": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "Report a finished round",
+        "description": "Idempotent on `roundId` (the same user sending it again gets the stored result and nothing is added; another user's round id is 409 `conflict`). `points` over the game's cap is 400 `points_too_high` (daily 100, jigsaw 320, poet, second and book 440, match 50, listen 100, onboarding 50). `playedAt` must be within the last 48 hours and at most 5 minutes ahead (400 `bad_timestamp`). The round counts for the Tehran week the server receives it in, and the first score of a week puts the user in a league group.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The week and the user's points this week.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request, points_too_high or bad_timestamp.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict: the round id belongs to another user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (120 a minute per user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/daily": {
+      "post": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "Report the daily puzzle's result",
+        "description": "One result per Tehran day, kept first-write-wins: sending the day again changes nothing and answers the stored result. `date` may be from 48 hours ago (by Tehran date) up to today (400 `bad_timestamp`). `tries` is 1 to 3, also when not solved. The points go in `/v1/scores`.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DailyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request or bad_timestamp.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (120 a minute per user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/daily/{date}/friends": {
+      "get": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "How my friends did in a day's puzzle",
+        "description": "Friends (people who follow each other) who reported that day, solved first, then by fewer tries, up to 100. A friend whose `dailyVisibility` is `me` is left out, and not counted. `solvedCount` is how many of the listed friends solved it.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "2026-06-01",
+              "description": "A Tehran calendar day, yyyy-mm-dd."
+            },
+            "required": true,
+            "description": "A Tehran calendar day, yyyy-mm-dd.",
+            "name": "date",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The friends' results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyFriends"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/stats": {
+      "get": {
+        "tags": [
+          "scores"
+        ],
+        "summary": "My points, streak and league",
+        "description": "`totalPoints` and `weekPoints` come from the reported rounds. `streakDays` counts the days in a row the daily puzzle was solved (reported results, Tehran dates), ending today or yesterday; it stays until the day after the missed one ends.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stats.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/leaderboard/league": {
+      "get": {
+        "tags": [
+          "leaderboard"
+        ],
+        "summary": "My league this week",
+        "description": "Groups of up to 30 people of one tier. The first score of a week puts me in a group of the tier I earned last week (tier 0 to begin with). At the week's end the top 5 move up a tier and the bottom 5 down (ties go to the earlier last score). Before my first score of the week `rows` is empty and `tier` is the one I will start in.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The standings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeagueStandings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/leaderboard/friends": {
+      "get": {
+        "tags": [
+          "leaderboard"
+        ],
+        "summary": "This week's points: me and my friends",
+        "description": "Friends are people who follow each other. Friends with no score are listed with 0. Best first, then by username; up to 100.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The standings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendsStandings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/leaderboard/global": {
+      "get": {
+        "tags": [
+          "leaderboard"
+        ],
+        "summary": "This week's points: everyone who allows it",
+        "description": "People with `inGlobalLeaderboard` on (and a username) who scored this week, best first (ties by user id), 50 a page. `me` is my own rank among them, also when I am hidden; null before my first score of the week.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the standings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GlobalStandings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A malformed cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
             "content": {
               "application/json": {
                 "schema": {

@@ -61,7 +61,7 @@ export function testDb(): Promise<Db> {
 }
 
 export async function resetDb(db: Db) {
-  await db.execute(sql`truncate users, poet_pictures, feedback cascade`);
+  await db.execute(sql`truncate users, poet_pictures, feedback, league_groups, league_closures cascade`);
 }
 
 export type Harness = Awaited<ReturnType<typeof makeHarness>>;
@@ -113,7 +113,16 @@ export async function makeHarness(uploadBudgets?: UploadBudgets) {
     };
   };
 
-  return { app, db, deps, clock, logs, fetchMock, appleToken, googleToken, request, signIn };
+  /** Signs in as a new user (named `sub`) and gives them the username `sub`. */
+  const signUp = async (sub: string, extra: { displayName?: string } = {}) => {
+    const session = await signIn(`g-${sub}`);
+    const res = await request("/v1/me/username", { method: "PUT", token: session.accessToken, json: { username: sub } });
+    if (res.status !== 200) throw new Error(`username failed: ${res.status}`);
+    if (extra.displayName) await request("/v1/me/profile", { method: "PUT", token: session.accessToken, json: { displayName: extra.displayName } });
+    return { token: session.accessToken, id: session.user.id, username: sub };
+  };
+
+  return { app, db, deps, clock, logs, fetchMock, appleToken, googleToken, request, signIn, signUp };
 }
 
 const HEADERS = {
