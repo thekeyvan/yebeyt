@@ -25,6 +25,20 @@ struct DestinationView: View {
             AllPoetsScreen()
         case .gamesCatalog:
             GamesCatalogScreen()
+        case .divan:
+            DivanScreen()
+        case .privacy:
+            PrivacyScreen()
+        case .avatar:
+            AvatarScreen()
+        case .invite:
+            InviteScreen()
+        case .settings:
+            SettingsScreen()
+        case .badges:
+            BadgesScreen()
+        case .licenses:
+            LicensesScreen()
         }
     }
 }

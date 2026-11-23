@@ -3,13 +3,15 @@ import Observation
 
 /// What needs an account: the first use of it shows the account gate.
 enum AccountFeature: String, Sendable {
-    case likes, messages
+    case likes, messages, invite, profile
 
     /// Fits «برای … یه حساب لازمه».
     var title: String {
         switch self {
         case .likes: "پسند و بازنشر"
         case .messages: "پیام دادن به دوستات"
+        case .invite: "دعوت دوستات"
+        case .profile: "همگام کردن دیوان و امتیازهات"
         }
     }
 }

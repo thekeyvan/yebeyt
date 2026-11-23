@@ -14,6 +14,10 @@ struct YebeytApp: App {
     @State private var deck: GameDeck
     @State private var gameStats: GameStats
     @State private var accounts: AccountSetup
+    @State private var achievements: Achievements
+    @State private var avatar: AvatarStore
+    @State private var privacy: PrivacyStore
+    @State private var divanSync: DivanSync
     #if DEBUG
     private let showsStickers: Bool
     #endif
@@ -25,7 +29,8 @@ struct YebeytApp: App {
         #endif
         _progress = State(initialValue: ReadingProgress())
         _follows = State(initialValue: Follows())
-        _marks = State(initialValue: ReaderMarks())
+        let marks = ReaderMarks()
+        _marks = State(initialValue: marks)
         do {
             _poetry = State(initialValue: try PoetryStore())
         } catch {
@@ -48,8 +53,9 @@ struct YebeytApp: App {
         showsStickers = options.route == .stickers
         let screens = options.destinations(in: library)
         let model = AppModel(
-            tab: options.tab ?? (options.route.map(\.isGames) == true ? .games : screens.isEmpty ? .home : .explore),
-            unreadCount: options.unread ?? 0, reader: options.reader, explorePath: screens, gamesPath: options.gamesPath, game: options.game
+            tab: options.tab ?? (options.route?.isMe == true ? .me : options.route.map(\.isGames) == true ? .games : screens.isEmpty ? .home : .explore),
+            unreadCount: options.unread ?? 0, reader: options.reader, explorePath: screens, gamesPath: options.gamesPath,
+            mePath: options.mePath, game: options.game
         )
         model.autoplay = options.autoplay
         _model = State(initialValue: model)
@@ -59,7 +65,17 @@ struct YebeytApp: App {
         let stats = GameStats()
         #endif
         _gameStats = State(initialValue: stats)
-        _accounts = State(initialValue: AccountSetup(stats: stats))
+        let accounts = AccountSetup(stats: stats)
+        _accounts = State(initialValue: accounts)
+        let achievements = Achievements()
+        _achievements = State(initialValue: achievements)
+        stats.rightAnswerHandler = { game, slug in achievements.recordRight(game: game, poetSlug: slug) }
+        _avatar = State(initialValue: AvatarStore(session: accounts.session))
+        _privacy = State(initialValue: PrivacyStore(session: accounts.session))
+        _divanSync = State(initialValue: DivanSync(marks: marks, session: accounts.session))
+        #if DEBUG
+        if options.seedDivan { marks.seedDivan() }
+        #endif
     }
 
     var body: some Scene {
@@ -75,6 +91,10 @@ struct YebeytApp: App {
                 .environment(textSettings)
                 .environment(deck)
                 .environment(gameStats)
+                .environment(achievements)
+                .environment(avatar)
+                .environment(privacy)
+                .environment(divanSync)
                 .environment(accounts.session)
                 .environment(accounts.account)
                 .environment(accounts.pictures)

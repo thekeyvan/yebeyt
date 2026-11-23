@@ -43,8 +43,15 @@ struct AccountGateSheet: View {
                 .shadow(color: Tokens.Colors.ink.opacity(0.2), radius: 3, x: 0, y: 2)
                 .frame(width: 54, height: 54)
                 .accessibilityHidden(true)
-        case .messages:
+        case .messages, .invite:
             GameIcon(kind: .mosh, size: 54)
+        case .profile:
+            Circle().fill(Tokens.Colors.lapis)
+                .overlay { AvatarView(parts: .standard).padding(5) }
+                .overlay(Circle().strokeBorder(Tokens.Colors.white, lineWidth: 4))
+                .shadow(color: Tokens.Colors.ink.opacity(0.2), radius: 3, x: 0, y: 2)
+                .frame(width: 54, height: 54)
+                .accessibilityHidden(true)
         }
     }
 }

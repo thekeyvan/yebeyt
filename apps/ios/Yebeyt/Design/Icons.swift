@@ -75,20 +75,6 @@ struct MessagesIcon: Shape {
     }
 }
 
-/// من: a head and shoulders (until avatars exist)
-struct PersonIcon: Shape {
-    var layoutDirectionBehavior: LayoutDirectionBehavior { .fixed }
-
-    func path(in rect: CGRect) -> Path {
-        let b = Box(rect)
-        var p = Path()
-        p.addEllipse(in: b.circle(12, 8, radius: 3.8))
-        p.move(to: b.point(4.5, 20.5))
-        p.addCurve(to: b.point(19.5, 20.5), control1: b.point(4.5, 13), control2: b.point(19.5, 13))
-        return p
-    }
-}
-
 /// The streak flame (filled).
 struct FlameShape: Shape {
     var layoutDirectionBehavior: LayoutDirectionBehavior { .fixed }

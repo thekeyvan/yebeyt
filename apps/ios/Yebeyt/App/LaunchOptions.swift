@@ -10,7 +10,8 @@ import Foundation
 /// the last answer's sheet left open; معنی‌یاب: n pairs) and `-beytToday <yyyy-mm-dd>` fixes the Tehran day.
 /// `-beytStub 1` makes گوش کن use canned recitations (no network, no sound).
 /// With `poem:` the reader opens, and `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`,
-/// `-beytMeaning 1` and `-beytHold <n>` set its state. `-beytFresh 1` first forgets what the phone has kept
+/// `-beytMeaning 1` and `-beytHold <n>` set its state. The من routes `-beytRoute me|divan|privacy|avatar|invite|settings|badges`
+/// open the من tab, with that screen pushed (`me` is the profile), and `-beytSeedDivan 1` first keeps some sample couplets. `-beytFresh 1` first forgets what the phone has kept
 /// (reading progress, marks, follows, rejected couplets, game stats). Values that don't parse are ignored.
 struct LaunchOptions {
     enum Route: Equatable {
@@ -33,6 +34,13 @@ struct LaunchOptions {
         case bookGame
         case match
         case listen
+        case me
+        case divan
+        case privacy
+        case avatar
+        case invite
+        case settings
+        case badges
 
         init?(_ text: String) {
             let (name, value) = text.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
@@ -51,6 +59,13 @@ struct LaunchOptions {
             case ("book-game", nil): self = .bookGame
             case ("match", nil): self = .match
             case ("listen", nil): self = .listen
+            case ("me", nil): self = .me
+            case ("divan", nil): self = .divan
+            case ("privacy", nil): self = .privacy
+            case ("avatar", nil): self = .avatar
+            case ("invite", nil): self = .invite
+            case ("settings", nil): self = .settings
+            case ("badges", nil): self = .badges
             case ("poem", let path?) where Self.isPath(path): self = .poem(path)
             case ("book", let path?) where Self.isPath(path): self = .book(path)
             case ("section", let path?) where Self.isPath(path): self = .section(path)
@@ -62,6 +77,14 @@ struct LaunchOptions {
         }
 
         private static func isPath(_ text: String) -> Bool { text.hasPrefix("/") && text.count > 1 }
+
+        /// The route opens something on the من tab.
+        var isMe: Bool {
+            switch self {
+            case .me, .divan, .privacy, .avatar, .invite, .settings, .badges: true
+            default: false
+            }
+        }
 
         /// The route opens something on the بازی tab.
         var isGames: Bool {
@@ -87,6 +110,8 @@ struct LaunchOptions {
     private(set) var today: TehranDay?
     /// `-beytFresh 1`: forget what the phone has kept (progress, marks, follows, rejects) before launching.
     private(set) var fresh: Bool
+    /// `-beytSeedDivan 1`: keep sample couplets first, for screenshots of the divan and the profile.
+    private(set) var seedDivan: Bool
 
     init(_ values: [String: Any]) {
         func number(_ key: String) -> Int? {
@@ -105,10 +130,12 @@ struct LaunchOptions {
         stub = number("beytStub") == 1
         today = (values["beytToday"] as? String).flatMap { TehranDay(key: $0) }
         fresh = number("beytFresh") == 1
+        seedDivan = number("beytSeedDivan") == 1
     }
 
     @MainActor static let savedStateKeys = [
-        ReaderMarks.defaultsKey, ReadingProgress.defaultsKey, Follows.defaultsKey, HomeModel.defaultsKey, GameStats.defaultsKey,
+        ReaderMarks.defaultsKey, ReaderMarks.divanKey, ReadingProgress.defaultsKey, Follows.defaultsKey, HomeModel.defaultsKey, GameStats.defaultsKey,
+        PrivacyStore.defaultsKey, AvatarStore.defaultsKey, Achievements.defaultsKey,
     ]
 
     @MainActor static func resetSavedState(in defaults: UserDefaults = .standard) {
@@ -127,6 +154,20 @@ struct LaunchOptions {
         case .book(let path): return library.book(path: path).map { [.library, .book($0.id)] } ?? []
         case .section(let path): return library.section(path: path).map { [.library, .book($0.book.id), .section(book: $0.book.id, section: $0.section.id)] } ?? []
         case .stickers, .poem, .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen, nil: return []
+        case .me, .divan, .privacy, .avatar, .invite, .settings, .badges: return []
+        }
+    }
+
+    /// The screen a من route pushes on the من tab.
+    var mePath: [Destination] {
+        switch route {
+        case .divan: [.divan]
+        case .privacy: [.privacy]
+        case .avatar: [.avatar]
+        case .invite: [.invite]
+        case .settings: [.settings]
+        case .badges: [.badges]
+        default: []
         }
     }
 

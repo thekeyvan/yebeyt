@@ -26,6 +26,12 @@ final class AppModel {
     var explorePath: [Destination]
     /// The screens pushed on the بازی tab: the catalog.
     var gamesPath: [Destination]
+    /// The screens pushed on the من tab: the divan, privacy, the avatar, the invite, settings, badges.
+    var mePath: [Destination]
+    /// The couplet lifted by a long press outside the reader (the divan), shown over the tabs; nil when none is.
+    var hold: HeldCouplet?
+    /// What the iOS share sheet shows over the tabs, nil when it is closed.
+    var share: ReaderModel.Share?
     /// The game open over the tabs, nil when none is.
     var game: GameRoute?
     #if DEBUG
@@ -35,13 +41,14 @@ final class AppModel {
 
     init(
         tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil, explorePath: [Destination] = [],
-        gamesPath: [Destination] = [], game: GameRoute? = nil
+        gamesPath: [Destination] = [], mePath: [Destination] = [], game: GameRoute? = nil
     ) {
         selectedTab = tab
         self.unreadCount = unreadCount
         self.reader = reader
         self.explorePath = explorePath
         self.gamesPath = gamesPath
+        self.mePath = mePath
         self.game = game
     }
 
@@ -49,11 +56,19 @@ final class AppModel {
     func select(_ tab: Tab) {
         if tab == selectedTab, tab == .explore { explorePath = [] }
         if tab == selectedTab, tab == .games { gamesPath = [] }
+        if tab == selectedTab, tab == .me { mePath = [] }
         selectedTab = tab
     }
 
     func openReader(_ route: ReaderRoute) {
+        hold = nil
         reader = route
+    }
+
+    /// The screens drawn without the tab bar, as on their boards: the privacy, avatar and invite screens.
+    var showsTabBar: Bool {
+        guard selectedTab == .me, let top = mePath.last else { return true }
+        return ![.privacy, .avatar, .invite].contains(top)
     }
 
     func closeReader() {

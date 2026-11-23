@@ -48,8 +48,8 @@ struct AccountLaunchOptions {
     }
 }
 
-/// The server as `-beytSignedIn` sees it: every name is free, three names are suggested, saves succeed, and no
-/// poet has a picture.
+/// The server as `-beytSignedIn` sees it: every name is free, three names are suggested, saves succeed, the divan
+/// is empty, the privacy settings are the defaults, deleting the account works, and no poet has a picture.
 final class DebugBackend: URLProtocol, @unchecked Sendable {
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -62,6 +62,10 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
         case (_, "/v1/usernames/suggestions"): (200, #"{"suggestions":["niloofar.sh","niloo_ghazal","niloofar1403"]}"#)
         case ("PUT", "/v1/me/username"), ("PUT", "/v1/me/profile"): (200, Self.userJSON)
         case ("PUT", "/v1/me/progress"): (200, #"{"points":0,"streakDays":0,"streakLastDate":null,"bestByGame":{}}"#)
+        case (_, "/v1/me/divan"): (200, #"{"items":[]}"#)
+        case (_, "/v1/me/privacy"): (200, Self.privacyJSON)
+        case ("PUT", "/v1/me/avatar"): (200, Self.userJSON)
+        case ("DELETE", "/v1/me"): (204, "")
         case (_, "/v1/poets/pictures"): (200, "[]")
         default: (404, #"{"error":"not_found"}"#)
         }
@@ -70,6 +74,8 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
         client?.urlProtocol(self, didLoad: Data(body.utf8))
         client?.urlProtocolDidFinishLoading(self)
     }
+
+    private static let privacyJSON = #"{"keptVisibility":"friends","dailyVisibility":"friends","showOnline":true,"inGlobalLeaderboard":false,"messagesFrom":"friends","gameInvitesFrom":"all","allowReposts":true}"#
 
     private static let userJSON = #"{"id":"00000000-0000-0000-0000-000000000001","username":"niloofar","displayName":null,"usernameChangedAt":null,"createdAt":"2026-11-23T08:00:00.000Z","providers":["apple"]}"#
 }

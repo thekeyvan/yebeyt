@@ -3,6 +3,7 @@ import SwiftUI
 /// The tab bar: the exact spec is `nav()` in design/canvas/gen_explore.py.
 struct TabBar: View {
     @Environment(AccountModel.self) private var account
+    @Environment(AvatarStore.self) private var avatar
     let model: AppModel
 
     /// Bottom gap 18 + bar height 70: what pages must keep clear.
@@ -52,7 +53,7 @@ struct TabBar: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(tab.title)
-        .accessibilityValue(tab == .messages ? (model.unreadAccessibilityLabel ?? "") : "")
+        .accessibilityValue(tab == .messages ? (model.unreadAccessibilityLabel ?? "") : tab == .me ? avatar.parts.spoken : "")
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
@@ -97,7 +98,7 @@ struct TabBar: View {
         let ringWidth: CGFloat = on ? 2.5 : 1.5
         return Circle()
             .fill(Tokens.Colors.white)
-            .overlay(LineIcon(shape: PersonIcon(), size: 20, lineWidth: 2, fill: nil))
+            .overlay(AvatarView(parts: avatar.parts).padding(2))
             .overlay(Circle().strokeBorder(Tokens.Colors.white, lineWidth: 2))
             .overlay(Circle().stroke(on ? Tokens.Colors.lapis : Tokens.Colors.ring, lineWidth: ringWidth).padding(-ringWidth / 2))
             .frame(width: 30, height: 30)
