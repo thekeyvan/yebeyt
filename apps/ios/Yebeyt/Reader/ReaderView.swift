@@ -21,7 +21,7 @@ struct ReaderView: View {
             theme.background.ignoresSafeArea()
             page(theme)
                 .blur(radius: model.holdIndex == nil ? 0 : 3)
-                .accessibilityHidden(model.holdIndex != nil)
+                .accessibilityHidden(model.holdIndex != nil || model.textSheetOpen)
             if model.phase == .loaded, model.mode == .couplet { rail(theme) }
             if model.textSheetOpen { textSheet }
             if let held = model.holdIndex, model.couplets.indices.contains(held) {
@@ -96,6 +96,7 @@ struct ReaderView: View {
             TextSheet { model.textSheetOpen = false }
                 .transition(.move(edge: .bottom))
         }
+        .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
         .accessibilityAction(.escape) { model.textSheetOpen = false }
     }

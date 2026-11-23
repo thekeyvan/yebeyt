@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Testing
 @testable import Yebeyt
 
@@ -82,5 +83,27 @@ struct RecitationPlayerTests {
         try await Task.sleep(for: .milliseconds(100))
         #expect(player.state == .idle)
         #expect(failures.count == 0)
+    }
+
+    /// A load that was cancelled but finishes late (its request doesn't notice the cancel) must not touch the player.
+    @Test func aStaleLoadDoesNothingWhenANewOneHasStarted() async throws {
+        let calls = OSAllocatedUnfairLock(initialState: 0)
+        let player = makePlayer {
+            let call = calls.withLock { $0 += 1; return $0 }
+            if call == 1 {
+                await Task { try? await Task.sleep(for: .milliseconds(300)) }.value  // not cancelled with its parent
+                return []  // would hide the button if it counted
+            }
+            throw URLError(.notConnectedToInternet)
+        }
+        player.toggle()  // load 1
+        player.toggle()  // cancel it
+        player.toggle()  // load 2, which fails
+        try await settle(player) { failures.count > 0 }
+        try await Task.sleep(for: .milliseconds(500))  // load 1 finishes now
+        #expect(calls.withLock { $0 } == 2)
+        #expect(failures.count == 1)
+        #expect(player.isAvailable)
+        #expect(player.state == .idle)
     }
 }

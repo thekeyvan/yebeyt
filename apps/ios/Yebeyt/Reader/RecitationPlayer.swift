@@ -31,6 +31,11 @@ final class RecitationPlayer {
     @ObservationIgnored private var controlObserver: NSKeyValueObservation?
     @ObservationIgnored private var endObserver: (any NSObjectProtocol)?
     @ObservationIgnored private var startTask: Task<Void, Never>?
+    /// Counts starts and cancels, so a load that was cancelled and finishes late can tell it is stale and does nothing.
+    @ObservationIgnored private var generation = 0
+
+    /// Activating and deactivating the audio session can block, and must keep their order: one serial queue for both.
+    private static let sessionQueue = DispatchQueue(label: "com.yebeyt.audio-session")
 
     init(
         couplets: [Couplet], title: String, artist: String,
@@ -65,24 +70,27 @@ final class RecitationPlayer {
             state = .playing
             publishNowPlaying()
         case .loading:
+            generation += 1
             startTask?.cancel()
             state = .idle
         case .idle:
+            generation += 1
             state = .loading  // at once, so a second tap before the task runs cancels instead of starting another
-            startTask = Task { await start() }
+            let current = generation
+            startTask = Task { await start(current) }
         }
     }
 
     /// Stops and lets go of the audio (the reader closed).
     func stop() {
+        generation += 1
         startTask?.cancel()
         teardown()
         state = .idle
         activeCouplet = nil
     }
 
-    private func start() async {
-        state = .loading
+    private func start(_ current: Int) async {
         do {
             let list: [Recitation]
             if let recitations {
@@ -90,6 +98,7 @@ final class RecitationPlayer {
             } else {
                 list = try await fetchRecitations()
                 try Task.checkCancellation()
+                guard current == generation else { return }
                 recitations = list
             }
             guard let recitation = list.first else {
@@ -102,18 +111,25 @@ final class RecitationPlayer {
                 timing = try? await RecitationTiming(xml: fetchTiming(xml))
             }
             try Task.checkCancellation()
+            guard current == generation else { return }
             begin(recitation.mp3Url)
-        } catch where Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled {
-            // Stopped while loading: nothing went wrong, so no «خوانش باز نشد».
-            if state == .loading { state = .idle }
         } catch {
-            fail()
+            // Stopped while loading, or a newer start took over: nothing went wrong, so no «خوانش باز نشد».
+            guard current == generation else { return }
+            if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled {
+                state = .idle
+            } else {
+                fail()
+            }
         }
     }
 
     private func begin(_ url: URL) {
-        try? AVAudioSession.sharedInstance().setCategory(.playback)
-        try? AVAudioSession.sharedInstance().setActive(true)
+        teardown()  // never two players at once
+        Self.sessionQueue.sync {
+            try? AVAudioSession.sharedInstance().setCategory(.playback)
+            try? AVAudioSession.sharedInstance().setActive(true)
+        }
         let item = AVPlayerItem(url: url)
         let player = AVPlayer(playerItem: item)
         self.player = player
@@ -177,9 +193,13 @@ final class RecitationPlayer {
         endObserver = nil
         statusObserver = nil
         controlObserver = nil
-        player?.pause()
-        player = nil
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        if player != nil {
+            player?.pause()
+            player = nil
+            Self.sessionQueue.async {
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            }
+        }
         let commands = MPRemoteCommandCenter.shared()
         commands.playCommand.removeTarget(nil)
         commands.pauseCommand.removeTarget(nil)
