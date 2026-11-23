@@ -25,8 +25,11 @@ The files were converted from WOFF2 to TTF without other changes.
   [ganjoor-data](https://github.com/ganjoor/ganjoor-data)).
   The classical poems themselves are in the public domain. Ganjoor has not published a license
   for the meanings and summaries, so they are **not** covered by this repository's MIT license.
-- `tools/source` holds a Ganjoor-derived subset used by the current data scripts in `tools/`; the
-  reading slice replaces it with a pipeline straight from Ganjoor's repositories.
+- `tools/ganjoor/build.py` reads [github.com/ganjoor/ganjoor-data](https://github.com/ganjoor/ganjoor-data)
+  at one pinned commit and writes the data bundled in the app (`apps/ios/Yebeyt/Resources/Data`):
+  the poets and a few complete books so they work offline. The app fetches other poems from the
+  same pinned commit and caches them on the phone.
+- Recitations are not stored here: the app asks Ganjoor's API for the list and plays the audio from Ganjoor's servers.
 - No recitation audio and no Ganjoor user data (comments, accounts) is stored in this repository.
 
 Thank you to Ganjoor and its contributors for making this poetry open and readable.

@@ -18,7 +18,7 @@ Folders are added only when their first slice lands.
 | `packages/api/` | (slice 4) The OpenAPI contract; clients for each platform are generated from it |
 | `assets/fonts/` | Every font file and its licence (`licenses/`). Apps take the fonts they use from here |
 | `design/canvas/` | The design: one HTML file per screen in `project/`, the scripts that make them, and their `README.md` |
-| `tools/` | Scripts: tokens (`make_tokens.py`), agent roles, the placeholder app icon (`make_icon.swift`). `build_data.py`, `build_icons.py` and `source/` are from 1.0 and are replaced in slice 1 by the pipeline from Ganjoor |
+| `tools/` | Scripts: tokens (`make_tokens.py`), agent roles, the placeholder app icon (`make_icon.swift`), and `ganjoor/build.py`, the poetry pipeline: it reads github.com/ganjoor/ganjoor-data at one pinned commit and writes `apps/ios/Yebeyt/Resources/Data/` (`poets.json` and the bundled `book-<id>.json` files; download cache in `tools/ganjoor/.cache`, gitignored) |
 
 JavaScript and TypeScript packages will share one pnpm workspace with Turborepo, added with the first such package.
 
