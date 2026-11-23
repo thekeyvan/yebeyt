@@ -19,3 +19,7 @@ xcuserdata/
 
 # Image-generation logs
 design/**/*.log
+
+# Downloads cached by tools/ganjoor/build.py
+tools/ganjoor/.cache/
+__pycache__/
