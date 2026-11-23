@@ -109,3 +109,11 @@ The owner asked the lead to keep going alone. These were not settled on a board 
 - **Text sheet:** the weight switch only works for Parastoo (the only font with a bold file). Defaults are the board's selected options.
 - **Copy not on any board:** «شعر باز نشد» with «دوباره» when a poem fails to load; «خوانش باز نشد» when a recitation fails.
 - **Railway:** the project is renamed `yebeyt`. The old `api` service keeps running on api.yebeyt.com until slice 4 replaces it.
+- **Library content:** `tools/ganjoor/curation.json` holds the poets (short name, tag, city, century, colour, a short bio in everyday Persian), the books (Ganjoor path, everyday title, type for the Library chips, cover colour, one-line blurb) and the six moods. It was written by an agent from Ganjoor's own descriptions; please read it through. Nima, Forough, Sohrab, Akhavan, Shamlou, Simin Behbahani and Qeysar Aminpour are not in Ganjoor's data (still under copyright), so the Explore poet row uses classical poets after Hafez, Saadi and Molavi; «معاصر» books come from Bahar, Iraj, Parvin, Shahriar, Rahi and others. 99 books from 48 poets for now.
+- **Popularity («پرخواننده»):** until our server counts reads, a poem's popularity is the number of recitations Ganjoor has for it (`/api/audio/published`, counted by the pipeline).
+- **Home and Explore before friends exist:** the friends sections («دوستات» on home, «پرطرفدارها» on Explore) stay hidden until slice 7.
+- **Mood chips** open a list of couplets from the bundled books that contain the mood's words; tapping one opens the reader there. **Search** results (no board yet) are grouped as poets, books and couplets, in the same row styles as the Library.
+- **فال حافظ** (no flow designed yet): «باز کن» opens a random Hafez ghazal in the whole-poem view.
+- **دنبال کن** on a poet and the bookmark on a book are kept on the phone.
+- **Poet pictures** are the default sticker circles until slice 4.
+
