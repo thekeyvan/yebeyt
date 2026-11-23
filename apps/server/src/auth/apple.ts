@@ -55,7 +55,8 @@ export async function exchangeAppleCode(deps: AppleDeps, code: string, clientId:
 
 /**
  * Revokes the stored Apple refresh token (App Store rule for account deletion). Only a 2xx counts as
- * revoked. Anything else (an Apple error, a 5xx, a timeout, no network) throws `apple_revoke_failed`
+ * revoked, plus 400 `invalid_grant` (the token is already invalid, e.g. the user revoked the app in
+ * their Apple settings, so there is nothing left to revoke). Anything else (an Apple error, a 5xx, a timeout, no network) throws `apple_revoke_failed`
  * so the account is kept and the user can try again. The log gets the status and Apple's `error`
  * code, never a token.
  */
@@ -78,6 +79,7 @@ export async function revokeAppleToken(deps: AppleDeps, sealed: string): Promise
   }
   if (res.ok) return;
   const code = await res.json().then((b) => (typeof (b as { error?: unknown })?.error === "string" ? (b as { error: string }).error : "unknown"), () => "unknown");
+  if (res.status === 400 && code === "invalid_grant") return;
   deps.log(`apple revoke failed status=${res.status} error=${code.slice(0, 40)}`);
   throw new ApiError(502, "apple_revoke_failed");
 }

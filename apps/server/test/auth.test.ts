@@ -241,15 +241,22 @@ describe("DELETE /v1/me", () => {
     expect((await h.request("/v1/me", { method: "DELETE", token: s.accessToken })).status).toBe(204);
   });
 
-  it("keeps the account on any non-2xx from Apple and logs the status and error code only", async () => {
+  it("deletes when Apple answers 400 invalid_grant: the token was already revoked", async () => {
     const s = await signInApple();
-    for (const status of [400, 500]) {
-      h.fetchMock.mockResolvedValueOnce(Response.json({ error: "invalid_grant", error_description: "secret detail" }, { status }));
+    h.fetchMock.mockResolvedValueOnce(Response.json({ error: "invalid_grant" }, { status: 400 }));
+    expect((await h.request("/v1/me", { method: "DELETE", token: s.accessToken })).status).toBe(204);
+    expect(await h.db.select().from(users)).toHaveLength(0);
+  });
+
+  it("keeps the account on any other non-2xx from Apple and logs the status and error code only", async () => {
+    const s = await signInApple();
+    for (const [status, error] of [[400, "invalid_client"], [500, "invalid_grant"]] as const) {
+      h.fetchMock.mockResolvedValueOnce(Response.json({ error, error_description: "secret detail" }, { status }));
       const res = await h.request("/v1/me", { method: "DELETE", token: s.accessToken });
       expect(res.status).toBe(502);
       expect(await res.json()).toEqual({ error: "apple_revoke_failed" });
     }
-    expect(h.logs).toContain("apple revoke failed status=400 error=invalid_grant");
+    expect(h.logs).toContain("apple revoke failed status=400 error=invalid_client");
     expect(h.logs.join("\n")).not.toContain("secret detail");
     expect(h.logs.join("\n")).not.toContain("apple-refresh-1");
     expect(await h.db.select().from(users)).toHaveLength(1);
