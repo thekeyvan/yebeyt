@@ -23,6 +23,12 @@ export const requireUser = (deps: Deps) =>
     await next();
   });
 
+/** Like `requireUser`, but a request with no Authorization header goes on as a guest. A token that is sent must be valid. */
+export const optionalUser = (deps: Deps) => {
+  const required = requireUser(deps);
+  return createMiddleware<AppEnv>((c, next) => (c.req.header("authorization") ? required(c, next) : next()));
+};
+
 /** Requires `Authorization: Bearer <ADMIN_TOKEN>`. */
 export const requireAdmin = (deps: Deps) =>
   createMiddleware(async (c, next) => {

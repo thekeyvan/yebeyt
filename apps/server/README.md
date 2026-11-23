@@ -53,9 +53,17 @@ Without a local Postgres, PGlite can stand in as a server: `npm i @electric-sql/
 
 ## Endpoints
 
-`/health`, `/v1/auth/{apple,google,refresh,logout}`, `/v1/me` (GET, DELETE), `/v1/me/profile`, `/v1/me/username`, `/v1/me/avatar`, `/v1/me/progress`, `/v1/me/divan` (merge-sync of kept couplets), `/v1/me/privacy`, `/v1/usernames/{check,suggestions}`, `/v1/poets/pictures`, `/v1/poets/{slug}/picture`, `/v1/admin/poets/{slug}/picture`. Details, bodies and error codes are in `packages/api/openapi.json`. Errors are `{ "error": "<code>" }` (e.g. `username_taken`, `username_change_too_soon` with `allowedAt`); the apps turn codes into Persian copy.
+`/health`, `/v1/auth/{apple,google,refresh,logout}`, `/v1/me` (GET, DELETE), `/v1/me/profile`, `/v1/me/username`, `/v1/me/avatar`, `/v1/me/progress`, `/v1/me/divan` (merge-sync of kept couplets), `/v1/me/privacy`, `/v1/usernames/{check,suggestions}`, `/v1/poets/pictures`, `/v1/poets/{slug}/picture`, `/v1/admin/poets/{slug}/picture`, `/v1/feedback` (+ `/{id}/screenshot`, `/{id}/recording`), `/v1/admin/feedback` (+ `/{id}/screenshot`, `/{id}/recording`). Details, bodies and error codes are in `packages/api/openapi.json`. Errors are `{ "error": "<code>" }` (e.g. `username_taken`, `username_change_too_soon` with `allowedAt`); the apps turn codes into Persian copy.
 
 Sessions: access token = JWT, 15 minutes; refresh token = random 32 bytes, stored as a sha256, 60 days, single use (rotated on every refresh). Showing a used refresh token again revokes that whole sign-in, unless it was used less than 10 seconds ago (a client retrying or racing itself): then that call is just refused (401) and the sign-in stays. Apple sign-in requires the raw `nonce` (the identity token must carry its sha256). JSON bodies are limited to 64 KB; the divan sync to 1 MB (2000 items); the admin picture upload to 15 MB. A user can keep at most 20 000 divan rows (kept or removed); past that a PUT that adds new keys gets 413 `divan_full` (a soft limit: two parallel requests can go slightly over).
+
+## Feedback
+
+`POST /v1/feedback` takes a report of one of five types (`bug`, `annoyed`, `idea`, `game`, `liked`); sign-in is optional (a token that is sent must be valid, else 401). The fields allowed per type are in the contract (e.g. `technical` only on bug, `screen` only on bug and annoyed, a `game` idea only on game); the body is limited to 32 KB and unknown keys, also inside `technical`, are refused. App version, phone model and OS version are required on every type. The server stores the text and these fields, the user id when signed in, and nothing about the connection: no IP, location or device id (logs hold only method, route, status, ms). The answer carries an `uploadToken` (random 32 bytes, only its sha256 is stored) valid 15 minutes for `PUT /v1/feedback/{id}/screenshot` (JPEG or PNG, 3 MB; bug, annoyed, idea) and `/recording` (MP4, 25 MB; bug), sent as `X-Upload-Token`. One file per kind (a second gets 409 `already_uploaded`). Files are stored in Postgres (`feedback_attachments`, bytea) for now; moving them to object storage is later work.
+
+Rate limits, in memory (they restart with the server): 10 reports an hour per signed-in user; all guests together share 120 an hour (429 `rate_limited`).
+
+`GET /v1/admin/feedback?type=&before=` (admin token) lists newest first, 50 a page, with the username when there is one and each attachment's kind and size; `nextBefore` is the cursor for the next page. `GET /v1/admin/feedback/{id}/screenshot|recording` downloads the file as an attachment. Deleting an account keeps its reports as anonymous feedback (`user_id` becomes null); the attachments stay too.
 
 ## The contract
 
