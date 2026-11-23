@@ -108,7 +108,7 @@ export async function makeHarness() {
     return (await res.json()) as {
       accessToken: string;
       refreshToken: string;
-      user: { id: string; username: string | null; usernameChangedAt: string | null; createdAt: string; providers: string[] };
+      user: { id: string; username: string | null; displayName: string | null; usernameChangedAt: string | null; createdAt: string; providers: string[] };
     };
   };
 

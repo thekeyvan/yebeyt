@@ -5,6 +5,7 @@ import { isUniqueViolation } from "../db/index.js";
 import { identities, users } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
+import { displayNameSchema, normalizeDisplayName } from "../profile.js";
 import { newRouter } from "../router.js";
 import { userSchema, usernameSchema } from "../schemas.js";
 import { normalizeUsername, USERNAME_CHANGE_DAYS, usernameProblem } from "../usernames.js";
@@ -55,6 +56,28 @@ export function meRoutes(deps: Deps) {
       for (const { token } of apple) if (token) await revokeAppleToken(deps, token);
       await db.delete(users).where(eq(users.id, userId)); // sessions, identities and progress go with it
       return c.body(null, 204);
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "put",
+      path: "/v1/me/profile",
+      tags: ["me"],
+      summary: "Set the display name",
+      description: "The name the person shows to friends (from Apple or Google, or typed). Stored only as a display name.",
+      security,
+      request: { body: { required: true, content: { "application/json": { schema: z.object({ displayName: displayNameSchema }).openapi("SetProfileRequest") } } } },
+      responses: {
+        200: { description: "The user with the new display name.", content: { "application/json": { schema: userSchema } } },
+        400: errorResponse("invalid_request: empty, longer than 30 characters, or with control characters."),
+        401: errorResponse("Not signed in."),
+      },
+    }),
+    async (c) => {
+      const userId = c.get("userId");
+      await db.update(users).set({ displayName: normalizeDisplayName(c.req.valid("json").displayName) }).where(eq(users.id, userId));
+      return c.json((await getUserView(db, userId))!, 200);
     },
   );
 

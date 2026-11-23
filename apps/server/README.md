@@ -2,7 +2,7 @@
 
 The backend at **api.yebeyt.com** (Railway): Hono, Postgres with Drizzle, Zod. The HTTP contract is `packages/api/openapi.json`, written from the code (see "The contract").
 
-Sign-in is Apple or Google only. The server keeps the provider's account id and nothing else about the person: no email, no name, no IP. Logs are one line per request (method, route pattern, status, ms).
+Sign-in is Apple or Google only. The server keeps the provider's account id, the username and an optional display name (the name the person chose to show; it is never read from the provider's token), and nothing else about the person: no email, no IP. Logs are one line per request (method, route pattern, status, ms).
 
 ## Commands
 
@@ -53,7 +53,7 @@ Without a local Postgres, PGlite can stand in as a server: `npm i @electric-sql/
 
 ## Endpoints
 
-`/health`, `/v1/auth/{apple,google,refresh,logout}`, `/v1/me` (GET, DELETE), `/v1/me/username`, `/v1/me/progress`, `/v1/usernames/{check,suggestions}`, `/v1/poets/pictures`, `/v1/poets/{slug}/picture`, `/v1/admin/poets/{slug}/picture`. Details, bodies and error codes are in `packages/api/openapi.json`. Errors are `{ "error": "<code>" }` (e.g. `username_taken`, `username_change_too_soon` with `allowedAt`); the apps turn codes into Persian copy.
+`/health`, `/v1/auth/{apple,google,refresh,logout}`, `/v1/me` (GET, DELETE), `/v1/me/profile`, `/v1/me/username`, `/v1/me/progress`, `/v1/usernames/{check,suggestions}`, `/v1/poets/pictures`, `/v1/poets/{slug}/picture`, `/v1/admin/poets/{slug}/picture`. Details, bodies and error codes are in `packages/api/openapi.json`. Errors are `{ "error": "<code>" }` (e.g. `username_taken`, `username_change_too_soon` with `allowedAt`); the apps turn codes into Persian copy.
 
 Sessions: access token = JWT, 15 minutes; refresh token = random 32 bytes, stored as a sha256, 60 days, single use (rotated on every refresh). Showing a used refresh token again revokes that whole sign-in, unless it was used less than 10 seconds ago (a client retrying or racing itself): then that call is just refused (401) and the sign-in stays. Apple sign-in requires the raw `nonce` (the identity token must carry its sha256). JSON bodies are limited to 64 KB; the admin picture upload to 15 MB.
 

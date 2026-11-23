@@ -24,6 +24,7 @@ describe("OpenAPI document", () => {
       "/v1/auth/logout",
       "/v1/auth/refresh",
       "/v1/me",
+      "/v1/me/profile",
       "/v1/me/progress",
       "/v1/me/username",
       "/v1/poets/pictures",

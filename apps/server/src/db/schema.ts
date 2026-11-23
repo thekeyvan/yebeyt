@@ -23,6 +23,7 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").unique(),
   usernameChangedAt: timestamptz("username_changed_at"),
+  displayName: text("display_name"),
   createdAt: timestamptz("created_at").notNull().defaultNow(),
 });
 

@@ -4,6 +4,7 @@ export const userSchema = z
   .object({
     id: z.uuid(),
     username: z.string().nullable(),
+    displayName: z.string().nullable(),
     usernameChangedAt: z.iso.datetime().nullable(),
     createdAt: z.iso.datetime(),
     providers: z.array(z.enum(["apple", "google"])),
