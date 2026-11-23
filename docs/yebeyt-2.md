@@ -136,4 +136,7 @@ The owner asked the lead to keep going alone. These were not settled on a board 
   - Scores are reported by the phone after each round (each with a round id so a retry doesn't count twice) and capped per game on the server; the daily puzzle result is reported too (for «۳ تا از دوستات حلش کردن» and the streak).
   - Weekly leagues, Saturday to Friday by Tehran time, in groups of up to 30. Tiers use the level names: نوآموز, بیت‌خوان, غزل‌باز, سخن‌دان, استاد سخن. The top 5 move up and the bottom 5 move down at the week's end. Everyone starts in نوآموز. «همه» on the leaderboard is the global weekly list of people who allow it (`inGlobalLeaderboard`).
   - پسند and بازنشر are stored on the server for signed-in users; friends see them in their home feed («دوستات»), subject to the privacy settings.
+  - On the league board, people in your group who aren't your friends and who keep out of the global list show as «یه نفر» with their points, without name or face.
+  - A friend's likes and reposts appear in your feed only when their «بیت‌هایی که نگه می‌دارم» setting is «دوستا»; their solved daily appears when «نتیجه‌ی معمای روز» is «دوستا».
+  - The daily puzzle scores once per Tehran day and the onboarding game once per account; a profile shows the league and the week's points only to friends, or to anyone when the person allows the global list.
 
