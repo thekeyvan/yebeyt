@@ -17,6 +17,7 @@ only --refresh-recitations does, and it is the only way the counts change. Years
 """
 import argparse
 import json
+import shutil
 import sys
 import time
 import urllib.error
@@ -138,6 +139,7 @@ def recitation_counts(poets_dir, curation, refresh, snapshot=RECITATIONS, cache=
     """{poem id: recitations}. Read from the committed snapshot; only `refresh` asks Ganjoor's API
     (every category of the curated books) and rewrites the snapshot."""
     if refresh:
+        shutil.rmtree(cache, ignore_errors=True)  # a refresh asks the API for everything, never reuses old downloads
         counts = audio.fetch_all(cache, library.poem_categories(poets_dir, curation))
         snapshot.write_text(audio.dump_snapshot(counts))
         return counts

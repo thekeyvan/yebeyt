@@ -122,7 +122,11 @@ class Snapshot(unittest.TestCase):
         (cat / "_cat.json").write_text(json.dumps({
             "Id": 1, "Title": "کتاب", "ChildCats": [], "Poems": [{"Id": 5, "Title": "x", "FullUrl": "/b/p"}]}))
         self.snapshot.write_text('{"1":1}\n')
-        got = build.recitation_counts(self.folder, {"books": [{"path": "/b"}]}, True, self.snapshot, self.folder)
+        cache = self.folder / "audio"
+        cache.mkdir()
+        (cache / "1.json").write_text('{"5": 99}')  # a download from an earlier run
+        got = build.recitation_counts(self.folder, {"books": [{"path": "/b"}]}, True, self.snapshot, cache)
+        self.assertFalse((cache / "1.json").exists(), "the refresh reused the old download cache")
         self.assertEqual(self.calls, [1])
         self.assertEqual(got, {31: 1, 11: 1})
         self.assertEqual(self.snapshot.read_text(), '{"11":1,"31":1}\n')

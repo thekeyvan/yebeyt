@@ -123,6 +123,19 @@ final class LibraryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["readerTitle"].waitForExistence(timeout: 10))
     }
 
+    @MainActor func testLongPoetNamesStayOnOneLineOnThePoetCard() {
+        for (slug, name) in [("naserkhosro", "ناصرخسرو"), ("bahar", "ملک‌الشعرا بهار"), ("hafez", "حافظ")] {
+            let app = launch(["-beytRoute", "poet:\(slug)"])
+            let title = app.staticTexts["poetName"]
+            XCTAssertTrue(title.waitForExistence(timeout: 10), slug)
+            XCTAssertEqual(title.label, name)
+            // one line of Lalezar at 64 is about 100pt of line box, two would be twice that
+            XCTAssertLessThan(title.frame.height, 130, "\(name) wrapped")
+            XCTAssertLessThanOrEqual(title.frame.maxX, app.windows.firstMatch.frame.maxX)
+            app.terminate()
+        }
+    }
+
     @MainActor func testTheReadersPoetButtonOpensThePoetPageInExplore() {
         let app = launch(["-beytRoute", "poem:/hafez/ghazal/sh3"])
         let subtitle = element(app, "readerSubtitle")

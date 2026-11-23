@@ -4,7 +4,7 @@
 (sub-categories are not included), so every category that holds poems is queried on its own.
 Only `build.py --refresh-recitations` calls the API: it writes the sorted snapshot recitations.json, which
 every normal build and `--check` read instead. Download results are cached per category in
-tools/ganjoor/.cache/audio so an interrupted refresh can resume.
+tools/ganjoor/.cache/audio during a run; a refresh clears that folder first, so it never reuses old downloads.
 """
 import json
 import sys

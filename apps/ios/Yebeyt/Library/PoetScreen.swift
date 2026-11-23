@@ -66,13 +66,15 @@ struct PoetScreen: View {
         return VStack(alignment: .leading, spacing: 6) {
             Text(poet.name)
                 .font(.title(64))
-                .lineSpacing(-Self.lalezarSpare)
+                .lineLimit(1)
+                .minimumScaleFactor(0.4)  // short names stay at 64, long ones shrink to one line
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.vertical, -Self.lalezarSpare / 2)  // the board's line-height 1: Lalezar's own line box is taller
                 .padding(.top, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)  // a shrunk long name keeps the card's height
                 .padding(.trailing, 110)  // keeps clear of the circle, which sits at the left
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("poetName")
             if let place = poet.place {
                 Text(place).font(.ui(14)).foregroundStyle(on.opacity(0.8))
             }
