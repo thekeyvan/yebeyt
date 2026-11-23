@@ -15,40 +15,32 @@ struct RoundSummary {
     let rows: [Row]
 }
 
-private func clockText(_ seconds: Int) -> String {
-    "\(PersianDigits.string(seconds / 60)):\(PersianDigits.string(seconds % 60 / 10))\(PersianDigits.string(seconds % 10))"
-}
-
-private func countText(_ count: Int, unit: String, poet: String?) -> String {
-    "\(PersianDigits.string(count)) \(unit)" + (poet.map { " \($0)" } ?? "")
+private func countText(_ couplets: [GameCouplet], unit: String) -> String {
+    "\(PersianDigits.string(couplets.count)) \(unit)" + (GameCouplet.singlePoet(of: couplets).map { " \($0)" } ?? "")
 }
 
 extension JigsawRound {
     var summary: RoundSummary {
         RoundSummary(
             points: totalPoints, right: rightCount, total: questions.count,
-            subtitle: ["جورچین بیت", countText(questions.count, unit: "بیت", poet: singlePoet), clockText(elapsed)].joined(separator: " · "),
+            subtitle: ["جورچین بیت", countText(questions.map(\.couplet), unit: "بیت"), PersianDigits.clock(elapsed)].joined(separator: " · "),
             rows: questions.enumerated().map { RoundSummary.Row(couplet: $1.couplet, result: $0 < answers.count ? answers[$0].result.isRight : nil) }
         )
     }
 }
 
 extension QuizRound {
-    /// The poet's name when every couplet is by the same poet.
-    var singlePoet: String? {
-        Set(questions.map(\.couplet.poetSlug)).count == 1 ? questions[0].couplet.poetName : nil
-    }
-
     var summary: RoundSummary {
-        var parts = [kind.name, countText(questions.count, unit: "سؤال", poet: singlePoet)]
+        var parts = [kind.name, countText(questions.map(\.couplet), unit: "سؤال")]
         switch clock {
-        case .perQuestion: parts.append(clockText(answers.reduce(0) { $0 + $1.seconds }))
-        case .round(let total): parts.append(clockText(total - roundLeft))
+        case .perQuestion: parts.append(PersianDigits.clock(answers.reduce(0) { $0 + $1.seconds }))
+        case .round(let total): parts.append(PersianDigits.clock(total - roundLeft))
         case .none: break
         }
+        let results = results
         return RoundSummary(
             points: points, right: rightCount, total: questions.count, subtitle: parts.joined(separator: " · "),
-            rows: questions.enumerated().map { RoundSummary.Row(couplet: $1.couplet, result: $0 < answers.count ? answers[$0].right : nil) }
+            rows: questions.enumerated().map { RoundSummary.Row(couplet: $1.couplet, result: $0 < results.count ? results[$0] : nil) }
         )
     }
 }

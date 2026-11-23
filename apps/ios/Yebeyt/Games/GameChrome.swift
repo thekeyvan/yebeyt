@@ -89,6 +89,24 @@ struct TimerCapsule: View {
     }
 }
 
+/// What a game shows while it gets ready (a round that waits for Ganjoor or the bundled poems): the close button and a spinner.
+struct GameLoadingView: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        VStack {
+            HStack {
+                GameCloseButton { app.closeGame() }
+                Spacer()
+            }
+            .padding(.horizontal, 18).padding(.top, 8)
+            Spacer()
+            ProgressView().tint(Tokens.Colors.lapis)
+            Spacer()
+        }
+    }
+}
+
 /// The amber score sticker: «+۳۶۰».
 struct ScoreSticker: View {
     let points: Int

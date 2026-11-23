@@ -1,6 +1,6 @@
 """The word glossary (glossary.json): the hard words of couplets with their meanings. It feeds معنی‌یاب and, later,
 the dotted words of the reader. `tools/ganjoor/glossary.json` is the written source; the build checks every word is
-really in its couplet of a bundled book and copies it to the app. Pure rules, tested in test_glossary.py.
+really in its couplet of a bundled book and copies it to the app. Pure rules, tested in test_games.py.
 
 An entry is {path, couplet, words: [{text, m, gloss}]}: `couplet` is 0-based as in the reader, `m` is the hemistich
 (1 or 2) and `text` is one or more whole words of it, matched after the same normalisation the app uses."""

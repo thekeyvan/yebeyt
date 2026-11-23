@@ -12,8 +12,6 @@ struct ListenClip: Equatable, Sendable {
     let audio: URL
     let start: Double
     let end: Double
-
-    var range: ClosedRange<Double> { start...end }
 }
 
 /// One question of حدس شاعر, مصراع دوم, از کدوم کتاب؟ or گوش کن: a couplet, the options (shuffled) and which is right.

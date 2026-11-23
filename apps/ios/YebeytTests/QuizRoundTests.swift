@@ -193,6 +193,64 @@ struct QuizRoundTests {
         answer(&round, right: false); round.next()
         #expect(round.results == [true, false])
     }
+
+    @Test func skippingEarnsNothingAnswersNothingAndMovesOn() {
+        var round = round(count: 3)
+        round.tick(); round.select(1)
+        #expect(round.canSkip)
+        round.skip()
+        #expect(round.points == 0 && round.answers.isEmpty && round.lastAnswer == nil)
+        #expect(!round.sheetOpen && round.index == 1 && round.selected == nil && round.secondsOnCurrent == 0 && !round.isFinished)
+        #expect(round.results == [nil])
+        answer(&round); round.next()
+        #expect(round.results == [nil, true] && round.rightCount == 1 && round.answers.count == 1)
+    }
+
+    @Test func skippingTheLastQuestionEndsTheRound() {
+        var round = round(count: 2)
+        round.skip()
+        round.skip()
+        #expect(round.isFinished && round.isOver && !round.sheetOpen && round.index == 1)
+        #expect(!round.canSkip)
+        round.skip()
+        #expect(round.results == [nil, nil], "nothing after the end")
+    }
+
+    @Test func skipIsOnlyForPoetAndSecondHemistichAndNotWhileTheSheetIsOpen() {
+        #expect(round(.poet).canSkip && round(.misra, options: 3).canSkip)
+        #expect(!round(.book, options: 3).canSkip && !round(.listen, count: 5, options: 3).canSkip)
+        var open = round(.poet)
+        answer(&open)
+        #expect(!open.canSkip)
+        open.skip()
+        #expect(open.index == 0 && open.sheetOpen)
+    }
+
+    @Test func skippingKeepsTheRoundClockOfSecondHemistichRunning() {
+        var round = round(.misra, options: 3)
+        for _ in 0..<7 { round.tick() }
+        round.skip()
+        #expect(round.timeLeft == 113 && round.secondsOnCurrent == 0)
+    }
+
+    @Test func aSkippedQuestionIsNotInTheSummaryAsAnAnswer() {
+        var round = round(count: 3)
+        round.skip()
+        answer(&round); round.next()
+        answer(&round, right: false)
+        let summary = round.summary
+        #expect(summary.rows.map(\.result) == [nil, true, false] as [Bool?])
+        #expect(summary.right == 1 && summary.total == 3)
+    }
+
+    @Test func theBookGameHasNoFiftyFifty() {
+        var book = round(.book, options: 3)
+        var generator = SeededGenerator(seed: 1)
+        #expect(!book.canFifty)
+        book.fifty(using: &generator)
+        #expect(book.removed.isEmpty && book.hints == 0)
+        #expect(round(.poet).canFifty && round(.misra, options: 3).canFifty)
+    }
 }
 
 @MainActor
@@ -250,6 +308,20 @@ struct QuizSessionTests {
         let (session, stats) = session()
         for _ in 0..<12 { session.tick() }
         #expect(session.round.sheetOpen && stats.points == 0 && !session.finished)
+    }
+
+    @Test func skippingTheLastQuestionEndsTheSessionAndKeepsTheBest() {
+        let (session, stats) = session(count: 2)
+        answer(session)
+        session.next()
+        session.skip()
+        #expect(session.finished && stats.best(.poet) == session.round.points && stats.points == session.round.points)
+    }
+
+    @Test func skippingInTheMiddleOnlyMovesOn() {
+        let (session, stats) = session(count: 3)
+        session.skip()
+        #expect(!session.finished && session.round.index == 1 && stats.points == 0)
     }
 
     @Test func fiftyFiftyAndTheWordHintGoThroughTheSession() {

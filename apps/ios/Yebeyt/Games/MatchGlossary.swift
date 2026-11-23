@@ -25,10 +25,6 @@ struct Glossary: Sendable {
 
     let entries: [GlossaryEntry]
 
-    init(entries: [GlossaryEntry]) {
-        self.entries = entries
-    }
-
     /// Reads glossary.json from the bundle; throws if it is missing or unreadable.
     init(bundle: Bundle = .main) throws {
         guard let url = bundle.url(forResource: "glossary", withExtension: "json") else {

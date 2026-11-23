@@ -25,6 +25,24 @@ struct GameCouplet: Hashable, Sendable, Identifiable {
     var source: String { bookTitle.isEmpty ? poetName : "\(poetName) · \(bookTitle)" }
 
     var share: String { ReaderText.shareText(Couplet(m1: m1, m2: m2), poet: poetName, title: bookTitle) }
+
+    /// The AI sparkle shows by the meaning's heading: only when there is a meaning and it was written by an AI.
+    var showsAIMark: Bool { meaning != nil && meaningIsAI }
+
+    /// The poet's name when every couplet is by the same poet («۱۰ بیت سعدی»).
+    static func singlePoet(of couplets: [GameCouplet]) -> String? {
+        Set(couplets.map(\.poetSlug)).count == 1 ? couplets[0].poetName : nil
+    }
+}
+
+extension GameCouplet {
+    /// Couplet `index` of a poem, as a game uses it. (An extension, so the memberwise initialiser stays.)
+    init(poem path: String, index: Int, couplet: Couplet, poetSlug: String, poetName: String, bookTitle: String, bookPath: String = "") {
+        self.init(
+            poem: path, index: index, m1: couplet.m1, m2: couplet.m2, meaning: couplet.meaning, poetSlug: poetSlug, poetName: poetName,
+            bookTitle: bookTitle, bookPath: bookPath, meaningIsAI: couplet.ai == true
+        )
+    }
 }
 
 /// The well-known couplets the games draw from: `games.json`, written by `tools/ganjoor/build.py`. It never changes,

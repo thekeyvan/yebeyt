@@ -3,6 +3,10 @@ import SwiftUI
 /// «معنی»: the couplet's meaning on a white card. Longer than three lines, it shows «بیشتر بخون» which opens the rest in place.
 struct MeaningCard: View {
     let text: String
+    /// An AI wrote the meaning: a sparkle shows by the heading.
+    var ai = false
+    /// The sparkle was tapped.
+    var explainAI: () -> Void = {}
     @Binding var expanded: Bool
     let close: () -> Void
 
@@ -13,8 +17,9 @@ struct MeaningCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
+            HStack(spacing: 2) {
                 Text("معنی").font(.title(20)).foregroundStyle(Tokens.Colors.ink)
+                if ai { AISparkleButton(action: explainAI) }
                 Spacer()
                 Button(action: close) {
                     LineIcon(shape: CloseIcon(), size: 14, lineWidth: 3, fill: nil)

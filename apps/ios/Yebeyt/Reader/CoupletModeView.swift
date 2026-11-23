@@ -62,7 +62,11 @@ private struct CoupletPage: View {
                     .contentShape(Rectangle())
                     .onLongPressGesture(minimumDuration: 0.5) { model.holdIndex = index }
                 if showsMeaning, let meaning = couplet.meaning {
-                    MeaningCard(text: meaning, expanded: Binding(get: { model.meaningExpanded }, set: { model.meaningExpanded = $0 }), close: { withAnimation(.snappy) { model.closeMeaning() } })
+                    MeaningCard(
+                        text: meaning, ai: couplet.showsAIMark, explainAI: { model.showToast(AIMeaning.toast) },
+                        expanded: Binding(get: { model.meaningExpanded }, set: { model.meaningExpanded = $0 }),
+                        close: { withAnimation(.snappy) { model.closeMeaning() } }
+                    )
                 }
                 ReaderActionRow(model: model, couplet: index)
                 if !showsMeaning, couplet.meaning != nil { meaningChip }

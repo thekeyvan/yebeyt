@@ -23,7 +23,7 @@ struct MatchScreen: View {
                     play(session)
                 }
             } else {
-                loading
+                GameLoadingView()
             }
         }
         .task { await begin() }
@@ -43,12 +43,11 @@ struct MatchScreen: View {
         let candidates = Array(generator.shuffled(glossary.entries).prefix(MatchRound.questionCount * 2))
         for entry in candidates {
             guard let poem = try? await poetry.poem(path: entry.path), poem.couplets.indices.contains(entry.couplet) else { continue }
-            let couplet = poem.couplets[entry.couplet]
             let slug = entry.path.split(separator: "/").first.map(String.init) ?? ""
+            let book = library.book(containing: entry.path)
             couplets[entry.id] = GameCouplet(
-                poem: entry.path, index: entry.couplet, m1: couplet.m1, m2: couplet.m2, meaning: couplet.meaning, poetSlug: slug,
-                poetName: library.poet(slug: slug)?.name ?? "", bookTitle: library.book(containing: entry.path)?.title ?? "",
-                bookPath: library.book(containing: entry.path)?.path ?? "", meaningIsAI: couplet.ai == true
+                poem: entry.path, index: entry.couplet, couplet: poem.couplets[entry.couplet], poetSlug: slug,
+                poetName: library.poet(slug: slug)?.name ?? "", bookTitle: book?.title ?? "", bookPath: book?.path ?? ""
             )
         }
         guard let round = MatchRound.make(entries: candidates, couplet: { couplets[$0.id] }, generator: &generator) else {
@@ -63,19 +62,6 @@ struct MatchScreen: View {
         sheetShown = session.round.sheetOpen
     }
 
-    private var loading: some View {
-        VStack {
-            HStack {
-                GameCloseButton { app.closeGame() }
-                Spacer()
-            }
-            .padding(.horizontal, 18).padding(.top, 8)
-            Spacer()
-            ProgressView().tint(Tokens.Colors.lapis)
-            Spacer()
-        }
-    }
-
     // MARK: Screen
 
     private func play(_ session: MatchSession) -> some View {
@@ -85,7 +71,10 @@ struct MatchScreen: View {
                 VStack(spacing: 14) {
                     HStack(spacing: 12) {
                         GameCloseButton { app.closeGame() }
-                        ProgressDots(total: round.questions.count, results: round.results, sheetOpen: round.sheetOpen, noun: "بیت")
+                        ProgressDots(
+                            total: round.current.words.count, results: Array(repeating: true, count: round.matched.count),
+                            sheetOpen: round.sheetOpen, noun: "جفت"
+                        )
                     }
                     titleRow(round)
                     MatchCoupletCard(question: round.current)

@@ -63,6 +63,16 @@ final class SoloGamesUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["verdict"].waitForExistence(timeout: 5))
     }
 
+    @MainActor func testSkipPassesAQuestionWithoutASheetOrPoints() {
+        let app = launch(["-beytRoute", "poet-game"])
+        XCTAssertTrue(app.buttons["quizSkip"].waitForExistence(timeout: 10))
+        app.buttons["quizSkip"].tap()
+        expectProgress(app, contains: "۲")
+        XCTAssertFalse(app.staticTexts["verdict"].exists, "a skipped question has no sheet")
+        XCTAssertEqual(element(app, "score").label, "+۰")
+        XCTAssertTrue(app.buttons["quizSkip"].isEnabled && app.buttons["quizConfirm"].exists)
+    }
+
     @MainActor func testSecondHemistichHasThreeOptionsAndARoundClock() {
         let app = launch(["-beytRoute", "second"])
         XCTAssertTrue(element(app, "quizCouplet").waitForExistence(timeout: 10))
@@ -77,6 +87,8 @@ final class SoloGamesUITests: XCTestCase {
         XCTAssertTrue(element(app, "quizCouplet").waitForExistence(timeout: 10))
         let books = options(app).count
         XCTAssertTrue(books == 2 || books == 3, "\(books) books")
+        XCTAssertFalse(app.buttons["fifty"].exists, "the book game has no ۵۰:۵۰")
+        XCTAssertFalse(app.buttons["quizSkip"].exists, "and no skip")
         answerOneQuestion(app)
     }
 
@@ -109,6 +121,8 @@ final class SoloGamesUITests: XCTestCase {
         XCTAssertFalse(element(app, "timer").exists, "معنی‌یاب has no clock")
         let words = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'word-'")).count
         XCTAssertGreaterThanOrEqual(words, 2)
+        let dots = element(app, "progress").label
+        XCTAssertTrue(dots.contains("جفت") && dots.contains(persian(words)), "one dot for each pair: \(dots)")
 
         app.buttons["meaning-0"].tap()  // no word in hand
         app.buttons["word-0"].tap()
@@ -116,6 +130,7 @@ final class SoloGamesUITests: XCTestCase {
         XCTAssertEqual(element(app, "score").label, "+۰")
         app.buttons["meaning-0"].tap()
         XCTAssertEqual(element(app, "score").label, "+۱۰")
+        XCTAssertTrue(element(app, "progress").label.contains("۲"), "the second pair is next")
 
         for id in 1..<words {
             app.buttons["word-\(id)"].tap()
@@ -123,8 +138,10 @@ final class SoloGamesUITests: XCTestCase {
         }
         XCTAssertTrue(app.staticTexts["verdict"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["+" + persian(words * 10)].exists, "the sheet says how many points the couplet gave")
+        expectation(for: NSPredicate(format: "isHittable == true"), evaluatedWith: app.buttons["matchNext"])
+        waitForExpectations(timeout: 5)  // the sheet slides in
         app.buttons["matchNext"].tap()
-        expectProgress(app, contains: "۲")
+        expectProgress(app, contains: "۱")  // the first pair of the next couplet
     }
 
     @MainActor func testTheTabsFourCardsAndTheCatalogOpenTheirGames() {

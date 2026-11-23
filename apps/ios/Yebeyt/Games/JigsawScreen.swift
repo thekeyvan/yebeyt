@@ -168,18 +168,18 @@ struct JigsawScreen: View {
 /// The dots of a round, one for each question: right ones green, wrong ones red, the one in play lapis with a halo.
 struct ProgressDots: View {
     let total: Int
-    /// One for each question answered so far.
-    let results: [Bool]
+    /// One for each question passed: right, wrong, or nil for a skipped one (a grey dot).
+    let results: [Bool?]
     /// The sheet of the last answer is open, so no dot is «in play».
     let sheetOpen: Bool
-    /// «بیت ۴ از ۱۰», «سؤال ۴ از ۱۰».
+    /// «بیت ۴ از ۱۰», «سؤال ۴ از ۱۰», «جفت ۳ از ۵».
     let noun: String
 
     init(round: JigsawRound) {
-        self.init(total: round.questions.count, results: round.answers.map(\.result.isRight), sheetOpen: round.sheetOpen)
+        self.init(total: round.questions.count, results: round.answers.map { $0.result.isRight }, sheetOpen: round.sheetOpen)
     }
 
-    init(total: Int, results: [Bool], sheetOpen: Bool, noun: String = "بیت") {
+    init(total: Int, results: [Bool?], sheetOpen: Bool, noun: String = "بیت") {
         self.total = total
         self.results = results
         self.sheetOpen = sheetOpen
@@ -202,7 +202,8 @@ struct ProgressDots: View {
 
     @ViewBuilder private func dot(_ index: Int) -> some View {
         if index < results.count {
-            Circle().fill(results[index] ? Tokens.Colors.green : Tokens.Colors.fire).frame(width: 14, height: 14)
+            let color = results[index].map { $0 ? Tokens.Colors.green : Tokens.Colors.fire } ?? Tokens.Colors.trackLight
+            Circle().fill(color).frame(width: 14, height: 14)
         } else if index == results.count, !sheetOpen {
             Circle().fill(Tokens.Colors.lapis).frame(width: 18, height: 18)
                 .background(Circle().fill(Color(hex: 0xD6D8FF)).frame(width: 24, height: 24))

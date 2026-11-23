@@ -9,6 +9,11 @@ enum PersianDigits {
         String(String(number).map { digits[$0] ?? $0 })
     }
 
+    /// 72 → «۱:۱۲» (minutes and two-digit seconds), the clock of the games.
+    static func clock(_ seconds: Int) -> String {
+        "\(string(seconds / 60)):\(string(seconds % 60 / 10))\(string(seconds % 10))"
+    }
+
     /// 2480 → «۲٬۴۸۰».
     static func grouped(_ number: Int) -> String {
         let plain = Array(String(number))

@@ -13,10 +13,7 @@ extension JigsawStart {
     /// The couplets of `poem` the round starts with: the one asked for, or the playable ones in order.
     func opening(from poem: Poem, poetSlug: String, poetName: String, bookTitle: String) -> [GameCouplet] {
         let all = poem.couplets.enumerated().map { index, couplet in
-            GameCouplet(
-                poem: poem.path, index: index, m1: couplet.m1, m2: couplet.m2, meaning: couplet.meaning,
-                poetSlug: poetSlug, poetName: poetName, bookTitle: bookTitle, meaningIsAI: couplet.ai == true
-            )
+            GameCouplet(poem: poem.path, index: index, couplet: couplet, poetSlug: poetSlug, poetName: poetName, bookTitle: bookTitle)
         }
         switch self {
         case .deck: return []
@@ -42,8 +39,5 @@ extension JigsawRound {
     }
 
     /// «۱۰ بیت سعدی»: the poet's name when every couplet is by the same poet.
-    var singlePoet: String? {
-        let poets = Set(questions.map(\.couplet.poetSlug))
-        return poets.count == 1 ? questions[0].couplet.poetName : nil
-    }
+    var singlePoet: String? { GameCouplet.singlePoet(of: questions.map(\.couplet)) }
 }

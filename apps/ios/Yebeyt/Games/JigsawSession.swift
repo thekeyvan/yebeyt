@@ -20,10 +20,7 @@ final class JigsawSession {
         generator = SeededGenerator(seed: seed)
     }
 
-    var timeText: String {
-        let left = round.timeLeft
-        return "\(PersianDigits.string(left / 60)):\(PersianDigits.string(left % 60 / 10))\(PersianDigits.string(left % 10))"
-    }
+    var timeText: String { PersianDigits.clock(round.timeLeft) }
 
     func tick() {
         guard !isPaused else { return }

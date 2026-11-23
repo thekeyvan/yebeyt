@@ -12,9 +12,8 @@ struct QuizScreen: View {
     @Environment(GameStats.self) private var stats
     @Environment(\.scenePhase) private var scenePhase
     @State private var session: QuizSession?
-    @State private var player: RecitationPlayer?
+    @State private var audio = ListenAudio()
     @State private var toast: String?
-    @State private var clipProgress = 0.0
 
     private var kind: GameKind { start.kind }
 
@@ -35,14 +34,14 @@ struct QuizScreen: View {
                     play(session)
                 }
             } else {
-                loading
+                GameLoadingView()
             }
         }
         .overlay(alignment: .bottom) { toastView }
         .animation(.snappy, value: toast)
         .task { await begin() }
         .onChange(of: scenePhase) { _, phase in session?.isPaused = phase != .active }
-        .onDisappear { player?.stop() }
+        .onDisappear { audio.stop() }
     }
 
     // MARK: Starting
@@ -68,6 +67,7 @@ struct QuizScreen: View {
         session.autoplay(app.autoplay)
         #endif
         self.session = session
+        audio.onFailure = { Task { await recitationsFailed() } }
         if kind == .listen { startClip(session) }
         await runClock(session)
     }
@@ -84,19 +84,6 @@ struct QuizScreen: View {
         toast = "خوانش باز نشد"
         try? await Task.sleep(for: .seconds(1.6))
         app.closeGame()
-    }
-
-    private var loading: some View {
-        VStack {
-            HStack {
-                GameCloseButton { app.closeGame() }
-                Spacer()
-            }
-            .padding(.horizontal, 18).padding(.top, 8)
-            Spacer()
-            ProgressView().tint(Tokens.Colors.lapis)
-            Spacer()
-        }
     }
 
     @ViewBuilder private var toastView: some View {
@@ -202,10 +189,9 @@ struct QuizScreen: View {
                 QuizCoupletCard(couplet: question.couplet)
             } else {
                 ListenCard(
-                    playing: player?.isPlaying == true, progress: clipProgress, replaysLeft: round.replaysLeft,
+                    playing: audio.isPlaying, progress: audio.progress, replaysLeft: round.replaysLeft,
                     playOrPause: { playOrPause(session) }, replay: { replay(session) }
                 )
-                .task(id: player?.isPlaying == true) { await followClip(question) }
             }
             hemistichOptions(session)
         default:
@@ -244,69 +230,61 @@ struct QuizScreen: View {
         return HStack(spacing: 10) {
             Button("همینه!") {
                 session.confirm()
-                player?.stop()
+                audio.stop()
             }
             .buttonStyle(GameBigButtonStyle(height: 58, border: 4, fontSize: 22))
             .disabled(round.selected == nil || round.sheetOpen)
             .accessibilityIdentifier("quizConfirm")
             if listen {
                 GameRoundButton(label: "از اول", action: { replay(session) }) {
-                    LineIcon(shape: SVGShape(d: "M18 6l-8 6 8 6zM6 6v12"), size: 22, lineWidth: 2.4, fill: nil).foregroundStyle(Tokens.Colors.ink)
+                    LineIcon(shape: SVGShape(d: Self.skipIcon), size: 22, lineWidth: 2.4, fill: nil).foregroundStyle(Tokens.Colors.ink)
                 }
                 .disabled(round.replaysLeft == 0 || round.sheetOpen)
                 .accessibilityIdentifier("listenFromStart")
+            } else if round.kind != .book {
+                GameRoundButton(label: "رد کن", action: { session.skip() }) {
+                    LineIcon(shape: SVGShape(d: Self.skipIcon), size: 22, lineWidth: 2.4, fill: nil).foregroundStyle(Tokens.Colors.ink)
+                }
+                .disabled(!round.canSkip)
+                .accessibilityIdentifier("quizSkip")
             }
-            GameRoundButton(
-                label: listen ? "یه کلمه، \(PersianDigits.string(Scoring.quizHintCost)) امتیاز" : "راهنما، ۵۰:۵۰، \(PersianDigits.string(Scoring.quizHintCost)) امتیاز",
-                fill: Tokens.Colors.amber, bordered: true,
-                action: { if listen { session.showWord() } else { session.fifty() } }
-            ) {
-                BulbIcon(caption: listen ? "یه کلمه" : "۵۰:۵۰")
+            if round.kind != .book {
+                GameRoundButton(
+                    label: listen ? "یه کلمه، \(PersianDigits.string(Scoring.quizHintCost)) امتیاز" : "راهنما، ۵۰:۵۰، \(PersianDigits.string(Scoring.quizHintCost)) امتیاز",
+                    fill: Tokens.Colors.amber, bordered: true,
+                    action: { if listen { session.showWord() } else { session.fifty() } }
+                ) {
+                    BulbIcon(caption: listen ? "یه کلمه" : "۵۰:۵۰")
+                }
+                .disabled(listen ? !round.canShowWord : !round.canFifty)
+                .accessibilityIdentifier(listen ? "listenWord" : "fifty")
             }
-            .disabled(listen ? !round.canShowWord : !round.canFifty)
-            .accessibilityIdentifier(listen ? "listenWord" : "fifty")
         }
         .padding(.horizontal, 18)
         .padding(.top, 8)
         .padding(.bottom, 26)
     }
 
+    /// The bar and arrow of the board's «رد کن» and «از اول».
+    private static let skipIcon = "M18 6l-8 6 8 6zM6 6v12"
+
     // MARK: The clip of گوش کن
 
-    /// A player for the question's clip, started at once.
+    /// The question's clip, played at once.
     private func startClip(_ session: QuizSession) {
-        player?.stop()
-        player = nil
-        clipProgress = 0
-        guard let clip = session.round.current.clip, !session.round.sheetOpen else { return }
+        guard !session.round.sheetOpen else { return audio.start(nil) }
         #if DEBUG
-        if app.autoplay.stubsRecitations { return }  // canned recitations have no audio
+        if app.autoplay.stubsRecitations { return audio.start(nil) }  // canned recitations have no audio
         #endif
-        let player = RecitationPlayer(clip: clip, title: GameKind.listen.name, onFailure: { Task { await recitationsFailed() } })
-        self.player = player
-        player.toggle()
+        audio.start(session.round.current.clip)
     }
 
     private func playOrPause(_ session: QuizSession) {
-        guard let player else { return }
-        if player.state == .idle { replay(session) } else { player.toggle() }
+        if audio.isIdle { replay(session) } else { audio.toggle() }
     }
 
     /// «دوباره بشنو»: the first hemistich again from its start, once for each question.
     private func replay(_ session: QuizSession) {
-        guard session.useReplay(), let player else { return }
-        player.stop()
-        clipProgress = 0
-        player.toggle()
-    }
-
-    /// The waveform fills as the clip plays.
-    private func followClip(_ question: QuizQuestion) async {
-        guard let clip = question.clip, player?.isPlaying == true else { return }
-        let length = max(clip.end - clip.start, 0.1)
-        while !Task.isCancelled, clipProgress < 1 {
-            try? await Task.sleep(for: .milliseconds(100))
-            clipProgress = min(1, clipProgress + 0.1 / length)
-        }
+        if session.useReplay() { audio.restart() }
     }
 }

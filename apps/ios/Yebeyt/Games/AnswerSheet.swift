@@ -15,6 +15,7 @@ struct AnswerSheet: View {
     let buttonIdentifier: String
     let next: () -> Void
     @State private var share: ReaderModel.Share?
+    @State private var aiToastShown = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -38,6 +39,9 @@ struct AnswerSheet: View {
                 .accessibilityIdentifier(buttonIdentifier)
         }
         .padding(EdgeInsets(top: 12, leading: 20, bottom: 30, trailing: 20))
+        .overlay(alignment: .top) {
+            if aiToastShown { AIToast().offset(y: -52).transition(.opacity) }
+        }
         .frame(maxWidth: .infinity)
         .background {
             UnevenRoundedRectangle(topLeadingRadius: 30, topTrailingRadius: 30)
@@ -69,9 +73,21 @@ struct AnswerSheet: View {
         }
     }
 
+    /// The sparkle was tapped: say where the meaning comes from, for a moment.
+    private func explainAI() {
+        withAnimation(.snappy) { aiToastShown = true }
+        Task {
+            try? await Task.sleep(for: .seconds(2.5))
+            withAnimation(.snappy) { aiToastShown = false }
+        }
+    }
+
     private func meaningCard(_ meaning: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("یعنی چی؟").font(.ui(12, weight: .bold)).foregroundStyle(Tokens.Colors.lapis)
+            HStack(spacing: 2) {
+                Text("یعنی چی؟").font(.ui(12, weight: .bold)).foregroundStyle(Tokens.Colors.lapis)
+                if couplet.showsAIMark { AISparkleButton(action: explainAI) }
+            }
             Text(meaning).font(.ui(15)).lineSpacing(5).foregroundStyle(Tokens.Colors.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Text(couplet.source).font(.ui(13)).foregroundStyle(Tokens.Colors.muted)

@@ -13,6 +13,8 @@ final class RecitationPlayer {
     /// False once Ganjoor is known to have no recitation of the poem: the play buttons are hidden.
     private(set) var isAvailable = true
     private(set) var activeCouplet: Int?
+    /// A game clip: where the audio is, in seconds from the start of the recitation.
+    private(set) var position = 0.0
 
     var isPlaying: Bool { state == .playing || state == .loading }
 
@@ -29,7 +31,6 @@ final class RecitationPlayer {
     @ObservationIgnored private var timing: RecitationTiming?
     @ObservationIgnored private var player: AVPlayer?
     @ObservationIgnored private var timeObserver: Any?
-    @ObservationIgnored private var boundaryObserver: Any?
     @ObservationIgnored private var statusObserver: NSKeyValueObservation?
     @ObservationIgnored private var controlObserver: NSKeyValueObservation?
     @ObservationIgnored private var endObserver: (any NSObjectProtocol)?
@@ -145,12 +146,25 @@ final class RecitationPlayer {
             try? AVAudioSession.sharedInstance().setCategory(.playback)
             try? AVAudioSession.sharedInstance().setActive(true)
         }
-        let item = AVPlayerItem(url: url)
+        let item: AVPlayerItem
+        if let clip {
+            // Precise timing, so the seek lands on the clip's start; the item ends at the clip's end, exactly, and
+            // the end notification below finishes the clip.
+            item = AVPlayerItem(asset: AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]))
+            item.forwardPlaybackEndTime = CMTime(seconds: clip.end, preferredTimescale: 600)
+            position = clip.start
+        } else {
+            item = AVPlayerItem(url: url)
+        }
         let player = AVPlayer(playerItem: item)
         self.player = player
+        let current = generation
         statusObserver = item.observe(\.status) { [weak self] item, _ in
-            guard item.status == .failed else { return }
-            Task { @MainActor in self?.fail() }
+            switch item.status {
+            case .failed: Task { @MainActor in self?.fail() }
+            case .readyToPlay: Task { @MainActor in self?.startClipPlayback(generation: current) }
+            default: break
+            }
         }
         endObserver = NotificationCenter.default.addObserver(forName: AVPlayerItem.didPlayToEndTimeNotification, object: item, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.finish() }
@@ -159,21 +173,24 @@ final class RecitationPlayer {
         controlObserver = player.observe(\.timeControlStatus) { [weak self] _, _ in
             Task { @MainActor in self?.timeControlChanged() }
         }
-        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] time in
+        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: clip == nil ? 0.25 : 0.1, preferredTimescale: 600), queue: .main) { [weak self] time in
             MainActor.assumeIsolated { self?.tick(time.seconds) }
         }
-        if let clip {
-            // A boundary is exact; the 0.25 s tick above could let a bit of the second hemistich through.
-            let end = NSValue(time: CMTime(seconds: clip.end, preferredTimescale: 600))
-            boundaryObserver = player.addBoundaryTimeObserver(forTimes: [end], queue: .main) { [weak self] in
-                MainActor.assumeIsolated { self?.finish() }
-            }
-            player.seek(to: CMTime(seconds: clip.start, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
-        }
-        player.play()
+        // A clip waits for the item to be ready, seeks, and plays only when the seek is done (see `startClipPlayback`).
+        if clip == nil { player.play() }
         state = .playing
         registerRemoteCommands()
         publishNowPlaying()
+    }
+
+    /// The item of a clip is ready: seek to the clip's start, then play.
+    private func startClipPlayback(generation started: Int) {
+        guard let clip, let player else { return }
+        Task { @MainActor in
+            await ClipStart.run(AVClipTransport(player: player), at: clip.start, stillWanted: { [weak self] in
+                self?.generation == started && self?.player === player
+            })
+        }
     }
 
     private func timeControlChanged() {
@@ -191,12 +208,15 @@ final class RecitationPlayer {
     }
 
     private func tick(_ seconds: Double) {
-        guard seconds.isFinite, let timing else { return }
+        guard seconds.isFinite else { return }
+        if clip != nil { position = seconds }
+        guard let timing else { return }
         let couplet = timing.couplet(at: seconds, in: couplets)
         if couplet != activeCouplet { activeCouplet = couplet }
     }
 
     private func finish() {
+        if let clip { position = clip.end }
         teardown()
         state = .idle
         activeCouplet = nil
@@ -211,10 +231,8 @@ final class RecitationPlayer {
 
     private func teardown() {
         if let timeObserver { player?.removeTimeObserver(timeObserver) }
-        if let boundaryObserver { player?.removeTimeObserver(boundaryObserver) }
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         timeObserver = nil
-        boundaryObserver = nil
         endObserver = nil
         statusObserver = nil
         controlObserver = nil

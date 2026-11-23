@@ -29,9 +29,13 @@ struct QuizRound: Equatable, Sendable {
     private(set) var removed: Set<Int> = []
     private(set) var wordShown = false
     private(set) var replaysLeft = 1
-    private(set) var answers: [Answer] = []
+    /// One for each question passed: its answer, or nil when it was skipped.
+    private var slots: [Answer?] = []
     private(set) var roundLeft: Int
     private(set) var secondsOnCurrent = 0
+
+    /// The answers given (skipped questions have none).
+    var answers: [Answer] { slots.compactMap { $0 } }
 
     init?(kind: GameKind, questions: [QuizQuestion]) {
         guard !questions.isEmpty else { return nil }
@@ -48,11 +52,11 @@ struct QuizRound: Equatable, Sendable {
     var current: QuizQuestion { questions[index] }
 
     /// The answer whose sheet is open: the question is answered but the player has not moved on.
-    var sheetOpen: Bool { answers.count > index }
+    var sheetOpen: Bool { slots.count > index && slots[index] != nil }
 
-    var lastAnswer: Answer? { sheetOpen ? answers[index] : nil }
+    var lastAnswer: Answer? { sheetOpen ? slots[index] : nil }
 
-    var isFinished: Bool { answers.count == questions.count }
+    var isFinished: Bool { slots.count == questions.count }
 
     /// Every question is answered, or the round's time is up.
     var isOver: Bool { isFinished || (isRoundClock && roundLeft == 0) }
@@ -75,17 +79,21 @@ struct QuizRound: Equatable, Sendable {
 
     var rightCount: Int { answers.filter(\.right).count }
 
-    /// One dot each: right or wrong.
-    var results: [Bool] { answers.map(\.right) }
+    /// One dot each: right, wrong, or nil for a question that was skipped.
+    var results: [Bool?] { slots.map { $0?.right } }
 
     /// The hints used on the question in play, each costing 20.
     var hints: Int { (removed.isEmpty ? 0 : 1) + (wordShown ? 1 : 0) }
 
     private var inPlay: Bool { !isOver && !sheetOpen }
 
-    var canFifty: Bool { kind != .listen && removed.isEmpty && inPlay }
+    /// ۵۰:۵۰ is on حدس شاعر and مصراع دوم.
+    var canFifty: Bool { (kind == .poet || kind == .misra) && removed.isEmpty && inPlay }
 
     var canShowWord: Bool { kind == .listen && !wordShown && inPlay }
+
+    /// «رد کن» is on حدس شاعر and مصراع دوم.
+    var canSkip: Bool { (kind == .poet || kind == .misra) && inPlay }
 
     mutating func tick() {
         guard inPlay else { return }
@@ -97,7 +105,7 @@ struct QuizRound: Equatable, Sendable {
             secondsOnCurrent += 1
         case .perQuestion(let limit):
             secondsOnCurrent += 1
-            if secondsOnCurrent >= limit { answers.append(Answer(chosen: nil, right: false, points: 0, seconds: limit)) }
+            if secondsOnCurrent >= limit { slots.append(Answer(chosen: nil, right: false, points: 0, seconds: limit)) }
         }
     }
 
@@ -114,8 +122,15 @@ struct QuizRound: Equatable, Sendable {
         let right = selected == current.correct
         let points = right ? Scoring.quiz(secondsLeft: secondsLeftForBonus, hints: hints) : 0
         let answer = Answer(chosen: selected, right: right, points: points, seconds: clock == .none ? 0 : secondsOnCurrent)
-        answers.append(answer)
+        slots.append(answer)
         return answer
+    }
+
+    /// «رد کن»: no points, no answer and no sheet; the next question starts, or the round ends after the last one.
+    mutating func skip() {
+        guard canSkip else { return }
+        slots.append(nil)
+        startNext()
     }
 
     private var secondsLeftForBonus: Int {
@@ -145,6 +160,11 @@ struct QuizRound: Equatable, Sendable {
     /// «سؤال بعدی»: the next question. After the last one the round is finished.
     mutating func next() {
         guard sheetOpen, !isFinished else { return }
+        startNext()
+    }
+
+    private mutating func startNext() {
+        guard !isFinished else { return }
         index += 1
         selected = nil
         removed = []

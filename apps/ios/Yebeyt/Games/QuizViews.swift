@@ -65,11 +65,10 @@ struct QuizCoupletCard: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Text(TextNormalizer.plain(couplet.m1)).font(.poem(20)).lineSpacing(10).multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            hemistich(couplet.m1).frame(maxWidth: .infinity, alignment: .leading)
             Group {
                 if secondShown {
-                    Text(TextNormalizer.plain(couplet.m2)).font(.poem(20)).lineSpacing(10).multilineTextAlignment(.leading)
+                    hemistich(couplet.m2)
                 } else {
                     RoundedRectangle(cornerRadius: 10).strokeBorder(Color(hex: 0xC9C5D3), style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
                         .frame(width: 150, height: 30)
@@ -96,6 +95,13 @@ struct QuizCoupletCard: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("quizCouplet")
+    }
+
+    /// A hemistich set the way the reader sets its lines (the boards' 20pt, line height 1.9), wrapping when it is long.
+    private func hemistich(_ text: String) -> some View {
+        Text(TextNormalizer.plain(text)).multilineTextAlignment(.leading)
+            .poemLine(TextSettings(), size: 20, factor: 1.9)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 

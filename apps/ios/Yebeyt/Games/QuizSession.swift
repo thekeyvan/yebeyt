@@ -19,9 +19,7 @@ final class QuizSession {
     }
 
     /// «۰:۱۲»; nil in games without a clock.
-    var timeText: String? {
-        round.timeLeft.map { "\(PersianDigits.string($0 / 60)):\(PersianDigits.string($0 % 60 / 10))\(PersianDigits.string($0 % 10))" }
-    }
+    var timeText: String? { round.timeLeft.map(PersianDigits.clock) }
 
     func tick() {
         guard !isPaused else { return }
@@ -36,6 +34,12 @@ final class QuizSession {
     func fifty() { round.fifty(using: &generator) }
 
     func showWord() { round.showWord() }
+
+    /// «رد کن»
+    func skip() {
+        round.skip()
+        if round.isFinished { finish() }
+    }
 
     func useReplay() -> Bool { round.useReplay() }
 

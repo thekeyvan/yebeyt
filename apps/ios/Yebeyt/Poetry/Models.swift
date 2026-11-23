@@ -108,6 +108,9 @@ struct Couplet: Codable, Hashable, Sendable {
     /// True when the meaning was written by an AI (Ganjoor's «هوش مصنوعی:» label, stripped from the text).
     var ai: Bool?
 
+    /// The AI sparkle shows by the meaning's heading: only when there is a meaning and it was written by an AI.
+    var showsAIMark: Bool { meaning != nil && ai == true }
+
     init(m1: String, m2: String, meaning: String? = nil, ai: Bool? = nil) {
         self.m1 = m1
         self.m2 = m2
