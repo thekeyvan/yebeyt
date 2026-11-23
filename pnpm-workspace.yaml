@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+minimumReleaseAgeExclude:
+  - "@electric-sql/pglite@0.6.0"
+  - hono@4.13.21
+allowBuilds:
+  esbuild: true
+  sharp: true

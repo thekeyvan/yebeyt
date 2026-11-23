@@ -1,0 +1,14 @@
+{
+  "name": "yebeyt",
+  "private": true,
+  "packageManager": "pnpm@12.8.1",
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.13"
+  }
+}

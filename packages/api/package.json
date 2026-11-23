@@ -1,0 +1,7 @@
+{
+  "name": "@yebeyt/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The yebeyt HTTP contract (openapi.json), written by apps/server. Clients are generated from it.",
+  "files": ["openapi.json"]
+}
