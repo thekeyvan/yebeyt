@@ -2,23 +2,41 @@
 import Foundation
 
 /// Debug launch arguments, for opening a screen straight away (simulator screenshots):
-/// `-beytTab home|explore|games|messages|me`, `-beytUnread <n>`, `-beytRoute stickers|poem:<path>`.
+/// `-beytTab home|explore|games|messages|me`, `-beytUnread <n>`, `-beytRoute stickers|poem:<path>`, and the
+/// library routes `-beytRoute library|book:<path>|section:<path>|poet:<slug>|search:<query>|mood:<key>|poets`
+/// (they open the کاوش tab with those screens pushed).
 /// With `poem:` the reader opens, and `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`,
 /// `-beytMeaning 1` and `-beytHold <n>` set its state. Values that don't parse are ignored.
 struct LaunchOptions {
     enum Route: Equatable {
         case stickers
         case poem(String)
+        case library
+        case book(String)
+        case section(String)
+        case poet(String)
+        case search(String)
+        case mood(String)
+        case poets
 
         init?(_ text: String) {
-            if text == "stickers" {
-                self = .stickers
-            } else if text.hasPrefix("poem:"), case let path = String(text.dropFirst(5)), path.hasPrefix("/"), path.count > 1 {
-                self = .poem(path)
-            } else {
-                return nil
+            let (name, value) = text.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+                .map(String.init).fixedPair
+            switch (name, value) {
+            case ("stickers", nil): self = .stickers
+            case ("library", nil): self = .library
+            case ("poets", nil): self = .poets
+            case ("poem", let path?) where Self.isPath(path): self = .poem(path)
+            case ("book", let path?) where Self.isPath(path): self = .book(path)
+            case ("section", let path?) where Self.isPath(path): self = .section(path)
+            case ("poet", let slug?) where !slug.isEmpty: self = .poet(slug)
+            case ("search", let query?) where !query.isEmpty: self = .search(query)
+            case ("mood", let key?) where !key.isEmpty: self = .mood(key)
+            default: return nil
             }
         }
+
+        private static func isPath(_ text: String) -> Bool { text.hasPrefix("/") && text.count > 1 }
     }
 
     private(set) var tab: Tab?
@@ -45,6 +63,21 @@ struct LaunchOptions {
         hold = number("beytHold")
     }
 
+    /// The screens a library route pushes on the کاوش tab, from the library's books (a route to something
+    /// that doesn't exist pushes nothing). A book or section goes through the Library, as when tapped.
+    @MainActor func destinations(in library: Library) -> [Destination] {
+        switch route {
+        case .library: return [.library]
+        case .poets: return [.allPoets]
+        case .poet(let slug): return library.poet(slug: slug) == nil ? [] : [.poet(slug)]
+        case .search(let query): return [.search(query)]
+        case .mood(let key): return library.moods.contains { $0.key == key } ? [.mood(key)] : []
+        case .book(let path): return library.book(path: path).map { [.library, .book($0.id)] } ?? []
+        case .section(let path): return library.section(path: path).map { [.library, .book($0.book.id), .section(book: $0.book.id, section: $0.section.id)] } ?? []
+        case .stickers, .poem, nil: return []
+        }
+    }
+
     /// The reader to open at launch, when the route is a poem.
     var reader: ReaderRoute? {
         guard case .poem(let path) = route else { return nil }
@@ -53,6 +86,13 @@ struct LaunchOptions {
 
     static var fromProcess: LaunchOptions {
         LaunchOptions(UserDefaults.standard.dictionaryRepresentation())
+    }
+}
+
+private extension Array where Element == String {
+    /// The name before the first colon, and the text after it (nil when there is no colon).
+    var fixedPair: (String, String?) {
+        (first ?? "", count > 1 ? self[1] : nil)
     }
 }
 #endif

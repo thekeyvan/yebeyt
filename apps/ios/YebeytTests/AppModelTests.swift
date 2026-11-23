@@ -38,6 +38,27 @@ struct AppModelTests {
         #expect(model.selectedTab == .games)
     }
 
+    @Test func thePoetButtonOfTheReaderClosesItAndOpensThePoetInTheExploreTab() {
+        let model = AppModel(tab: .home, reader: ReaderRoute(path: "/hafez/ghazal/sh3"), explorePath: [.library, .book(9)])
+        model.openPoet(slug: "hafez")
+        #expect(model.reader == nil)
+        #expect(model.selectedTab == .explore)
+        #expect(model.explorePath == [.poet("hafez")])
+    }
+
+    @Test func tappingTheExploreTabAgainGoesBackToItsFirstScreen() {
+        let model = AppModel(tab: .explore, explorePath: [.library, .book(9)])
+        model.select(.explore)
+        #expect(model.explorePath.isEmpty)
+    }
+
+    @Test func switchingTabsKeepsTheScreensPushedOnExplore() {
+        let model = AppModel(tab: .explore, explorePath: [.library])
+        model.select(.home)
+        model.select(.explore)
+        #expect(model.explorePath == [.library])
+    }
+
     @Test func unreadBadgeIsHiddenAtZero() {
         let model = AppModel()
         #expect(model.unreadBadgeText == nil)

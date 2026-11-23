@@ -60,4 +60,38 @@ struct LaunchOptionsTests {
         let reader = LaunchOptions(["beytRoute": "poem:/a/b/c", "beytCouplet": "-1", "beytMode": "list", "beytSheet": "x", "beytMeaning": "0", "beytHold": "many"]).reader
         #expect(reader == ReaderRoute(path: "/a/b/c"))
     }
+
+    @Test func readsTheLibraryRoutes() {
+        func route(_ text: String) -> LaunchOptions.Route? { LaunchOptions(["beytRoute": text]).route }
+        #expect(route("library") == .library)
+        #expect(route("poets") == .poets)
+        #expect(route("book:/hafez") == .book("/hafez"))
+        #expect(route("section:/hafez/ghazal") == .section("/hafez/ghazal"))
+        #expect(route("poet:hafez") == .poet("hafez"))
+        #expect(route("search:عشق") == .search("عشق"))
+        #expect(route("search:a:b") == .search("a:b"))
+        #expect(route("mood:love") == .mood("love"))
+    }
+
+    @Test func badLibraryRoutesAreIgnored() {
+        for text in ["book:", "book:hafez", "section:", "poet:", "search:", "mood:", "library:x", "poets:1", "shelf"] {
+            #expect(LaunchOptions(["beytRoute": text]).route == nil, "\(text)")
+        }
+    }
+
+    @MainActor @Test func libraryRoutesPushTheirScreensOnExplore() throws {
+        let library = try Library(bundle: Fixtures.appBundle)
+        func screens(_ text: String) -> [Destination] { LaunchOptions(["beytRoute": text]).destinations(in: library) }
+        let hafez = try #require(library.book(path: "/hafez"))
+        #expect(screens("library") == [.library])
+        #expect(screens("poets") == [.allPoets])
+        #expect(screens("poet:hafez") == [.poet("hafez")])
+        #expect(screens("book:/hafez") == [.library, .book(hafez.id)])
+        #expect(screens("section:/hafez/ghazal") == [.library, .book(hafez.id), .section(book: hafez.id, section: 24)])
+        #expect(screens("search:عشق") == [.search("عشق")])
+        #expect(screens("mood:love") == [.mood("love")])
+        #expect(screens("poet:nobody").isEmpty && screens("book:/nobody").isEmpty && screens("mood:nope").isEmpty)
+        #expect(LaunchOptions(["beytRoute": "stickers"]).destinations(in: library).isEmpty)
+        #expect(LaunchOptions([:]).destinations(in: library).isEmpty)
+    }
 }

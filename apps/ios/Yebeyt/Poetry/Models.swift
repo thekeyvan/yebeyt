@@ -70,6 +70,12 @@ struct PoemRef: Codable, Hashable, Sendable, Identifiable {
     var path: String
 }
 
+/// A poem of a bundled book with its poet's slug.
+struct BundledPoem: Sendable {
+    var slug: String
+    var poem: Poem
+}
+
 /// A bundled book file: the book with the full text of every poem.
 struct BundledBook: Decodable, Sendable {
     var book: Book

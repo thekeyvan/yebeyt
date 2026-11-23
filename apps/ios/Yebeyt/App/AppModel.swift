@@ -22,14 +22,19 @@ final class AppModel {
     var unreadCount: Int
     /// The poem on screen in the full-screen reader, nil when it is closed.
     var reader: ReaderRoute?
+    /// The screens pushed on the کاوش tab: the library, a book, a poet, search.
+    var explorePath: [Destination]
 
-    init(tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil) {
+    init(tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil, explorePath: [Destination] = []) {
         selectedTab = tab
         self.unreadCount = unreadCount
         self.reader = reader
+        self.explorePath = explorePath
     }
 
+    /// Tapping the tab you are on goes back to its first screen.
     func select(_ tab: Tab) {
+        if tab == selectedTab, tab == .explore { explorePath = [] }
         selectedTab = tab
     }
 
@@ -39,6 +44,13 @@ final class AppModel {
 
     func closeReader() {
         reader = nil
+    }
+
+    /// The reader's poet button: leaves the reader and opens the poet's page in the کاوش tab.
+    func openPoet(slug: String) {
+        reader = nil
+        selectedTab = .explore
+        explorePath = [.poet(slug)]
     }
 
     /// «بازی با این بیت»: for now it only leaves the reader for the games tab (slice 3 starts a game with the couplet).

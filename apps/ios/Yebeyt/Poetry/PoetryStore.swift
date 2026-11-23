@@ -64,6 +64,27 @@ final class PoetryStore {
         return list.sorted { $0.audioOrder < $1.audioOrder }
     }
 
+    /// True when the poem's text is bundled in the app (it loads without the network).
+    func isBundled(poemPath: String) -> Bool {
+        bundledPaths.contains { poemPath.hasPrefix($0 + "/") }
+    }
+
+    /// The Ganjoor paths of the bundled books.
+    var bundledPaths: [String] {
+        booksById.values.filter(\.isBundled).map(\.path)
+    }
+
+    /// Every poem of the bundled books, with its poet's slug.
+    func bundledPoems() async throws -> [BundledPoem] {
+        var result: [BundledPoem] = []
+        for ref in booksById.values.filter(\.isBundled).sorted(by: { $0.id < $1.id }) {
+            for poem in try await bundledBook(id: ref.id).poems {
+                result.append(BundledPoem(slug: poem.path.split(separator: "/").first.map(String.init) ?? "", poem: poem))
+            }
+        }
+        return result
+    }
+
     private func bundledBook(id: Int) async throws -> BundledBook {
         if let book = bundledBooks[id] { return book }
         let bundle = bundle
