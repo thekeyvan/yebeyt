@@ -20,14 +20,13 @@ The files were converted from WOFF2 to TTF without other changes.
 ## Poetry, meanings and recitations
 
 - Poem texts, line-by-line meanings, poem summaries and poet biographies come from
-  [Ganjoor](https://ganjoor.net), through its public data export
-  [github.com/ganjoor/ganjoor-data](https://github.com/ganjoor/ganjoor-data).
-  The classical poems themselves are in the public domain. Many meanings and summaries were written
-  with AI help (the app marks them with a sparkle icon). `ganjoor-data` has not published a license
+  [Ganjoor](https://ganjoor.net), through its public repositories
+  ([github.com/ganjoor](https://github.com/ganjoor), mainly
+  [ganjoor-data](https://github.com/ganjoor/ganjoor-data)).
+  The classical poems themselves are in the public domain. Ganjoor has not published a license
   for the meanings and summaries, so they are **not** covered by this repository's MIT license.
-  The data is built from Ganjoor's public repositories (github.com/ganjoor) by the scripts in `tools/`.
-- Recitations (audio and timing) are streamed at runtime from `api.ganjoor.net`; no audio is stored
-  in this repository.
-- No Ganjoor user data (comments, accounts) is included.
+- `tools/source` holds a Ganjoor-derived subset used by the current data scripts in `tools/`; the
+  reading slice replaces it with a pipeline straight from Ganjoor's repositories.
+- No recitation audio and no Ganjoor user data (comments, accounts) is stored in this repository.
 
 Thank you to Ganjoor and its contributors for making this poetry open and readable.

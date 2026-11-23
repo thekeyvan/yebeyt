@@ -18,7 +18,7 @@ Folders are added only when their first slice lands.
 | `packages/api/` | (slice 4) The OpenAPI contract; clients for each platform are generated from it |
 | `assets/fonts/` | Every font file and its licence (`licenses/`). Apps take the fonts they use from here |
 | `design/canvas/` | The design: one HTML file per screen in `project/`, the scripts that make them, and their `README.md` |
-| `tools/` | Scripts: tokens, agent roles, poetry data from Ganjoor, icons and app icon |
+| `tools/` | Scripts: tokens (`make_tokens.py`), agent roles, the placeholder app icon (`make_icon.swift`). `build_data.py`, `build_icons.py` and `source/` are from 1.0 and are replaced in slice 1 by the pipeline from Ganjoor |
 
 JavaScript and TypeScript packages will share one pnpm workspace with Turborepo, added with the first such package.
 
