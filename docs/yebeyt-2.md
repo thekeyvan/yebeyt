@@ -32,8 +32,9 @@ The full rules are on the `StickerSystem` board. In short:
 - Colours: lapis `#2F35F5` (main), fire `#FF4D24` (streak, competition), amber `#FFB703` (points), green `#6CCB3A` (correct), magenta `#FF3D8B` (friends, poets), ink `#14112B` (text), paper `#F1EFEA` with dots `#D9D5CE` (background), white `#FFFFFF`.
 - Stickers have a white border (3–5 pt) and a soft shadow (about `0 3 10` at 18% ink). No ink outlines.
 - Cards, buttons, badges and text are always straight. Only decorative stickers tilt 5–12°, two or three per screen at most. One peeled corner per screen at most, on a big card. A sticker you are holding is bigger, tilted, with a longer shadow.
-- Dotted paper background, like a sticker sheet. The home tab (آروم) has a plain background.
+- Dotted paper background, like a sticker sheet, on every tab including home (the owner chose this over the plain home background on the `Calm` board).
 - Fonts: titles **Lalezar**, interface **Vazirmatn**, poems **Parastoo Bold** (the default poem font). The text sheet also offers regular Parastoo. All four live in `assets/fonts/` with their OFL licences.
+- App icon: for now the two-sticker mark from `StickerSystem` (drawn by `tools/make_icon.swift`).
 - Tab bar: the `nav()` function in `design/canvas/gen_explore.py` is its exact spec (white card, raised round «بازی» in the middle, avatar on «من», unread badge on «پیام‌ها»). Until avatars exist (slice 5) «من» shows our own line icon in the same ring.
 - Icons are our own (the app's line icons and the game icons in `design/canvas/gameicons.py`: round stickers, white border, one colour per game). No SF Symbols in the visible design.
 - Tabs: خونه · کاوش · بازی · پیام‌ها · من.
