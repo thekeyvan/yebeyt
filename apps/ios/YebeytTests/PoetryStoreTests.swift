@@ -119,6 +119,12 @@ struct PoetryStoreTests {
         #expect(try await makeStore().poem(path: "/hafez/ghete/sh1").id == 2093)
     }
 
+    @Test func aPathThatEscapesTheCacheFolderIsRefusedWithoutTheNetwork() async throws {
+        StubURLProtocol.reset()
+        await #expect(throws: PoetryError.notFound("/hafez/../../x")) { try await makeStore().poem(path: "/hafez/../../x") }
+        #expect(StubURLProtocol.requests.isEmpty)
+    }
+
     @Test func anUnknownBookIdIsAnError() async throws {
         await #expect(throws: PoetryError.self) { try await makeStore().book(id: 123_456_789) }
     }

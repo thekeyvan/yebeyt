@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Yebeyt
 
-private func verse(_ order: Int, _ position: String, _ text: String, _ couplet: Int, meaning: String? = nil) -> RawVerse {
+private func verse(_ order: Int, _ position: String, _ text: String, _ couplet: Int?, meaning: String? = nil) -> RawVerse {
     RawVerse(vOrder: order, position: position, text: text, coupletIndex: couplet, coupletSummary: meaning)
 }
 
@@ -27,13 +27,22 @@ struct CoupletGroupingTests {
 
     @Test func paragraphsAndSingleLinesGoInTheFirstSlot() {
         let couplets = Couplet.grouping([
-            verse(1, "Paragraph", "نثر", 0), verse(2, "Single", "آزاد", 1), verse(3, "Comment", "توضیح", 2),
-            verse(4, "Right", "الف", 3), verse(5, "Left", "ب", 3),
+            verse(1, "Paragraph", "نثر", 0), verse(2, "Single", "آزاد", 1),
+            verse(3, "Right", "الف", 2), verse(4, "Left", "ب", 2),
         ])
-        #expect(couplets == [
-            Couplet(m1: "نثر", m2: ""), Couplet(m1: "آزاد", m2: ""), Couplet(m1: "توضیح", m2: ""),
-            Couplet(m1: "الف", m2: "ب"),
-        ])
+        #expect(couplets == [Couplet(m1: "نثر", m2: ""), Couplet(m1: "آزاد", m2: ""), Couplet(m1: "الف", m2: "ب")])
+    }
+
+    @Test func aCommentWithoutAnIndexDecodesAndIsNotACouplet() throws {
+        let json = """
+        {"Id": 1, "Title": "رامشگر", "FullUrl": "/emad/no/sh1", "Verses": [
+          {"VOrder": 1, "Position": "Comment", "Text": "(از چاتلان قوش)"},
+          {"VOrder": 2, "Position": "Single", "Text": "الف", "CoupletIndex": 0},
+          {"VOrder": 3, "Position": "Single", "Text": "ب", "CoupletIndex": 1}
+        ]}
+        """
+        let poem = try JSONDecoder().decode(RawPoem.self, from: Data(json.utf8)).poem()
+        #expect(poem.couplets == [Couplet(m1: "الف", m2: ""), Couplet(m1: "ب", m2: "")])
     }
 
     @Test func centeredVersesPairUp() {
@@ -69,8 +78,10 @@ struct RawDecodingTests {
         #expect(book.id == 25)
         #expect(book.poetId == 2)
         #expect(book.toc == "AlphabeticWithFirstCouplet")
-        #expect(book.poems.map(\.id) == [2093, 2094])
-        #expect(book.poems.allSatisfy { $0.couplets.isEmpty })
+        #expect(book.poems == [
+            PoemRef(id: 2093, title: "قطعه شمارهٔ ۱", path: "/hafez/ghete/sh1"),
+            PoemRef(id: 2094, title: "قطعه شمارهٔ ۲", path: "/hafez/ghete/sh2"),
+        ])
         #expect(book.children == [BookRef(id: 9999, title: "زیربخش آزمایشی", path: "/hafez/ghete/zir")])
     }
 }

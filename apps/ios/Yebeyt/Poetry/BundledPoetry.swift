@@ -27,8 +27,8 @@ enum BundledPoetry {
         try decode(PoetsFile.self, resource: "poets", in: bundle)
     }
 
-    static func book(id: Int, in bundle: Bundle = .main) throws -> Book {
-        try decode(Book.self, resource: "book-\(id)", in: bundle)
+    static func book(id: Int, in bundle: Bundle = .main) throws -> BundledBook {
+        try decode(BundledBook.self, resource: "book-\(id)", in: bundle)
     }
 
     private static func decode<T: Decodable>(_ type: T.Type, resource: String, in bundle: Bundle) throws -> T {

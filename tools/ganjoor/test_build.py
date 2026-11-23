@@ -14,6 +14,11 @@ def verse(order, position, text, couplet, summary=None):
     return v
 
 
+def note(order, text):
+    """A Comment verse: an editor's note, which Ganjoor gives no CoupletIndex."""
+    return {"VOrder": order, "Position": "Comment", "Text": text}
+
+
 class GroupCouplets(unittest.TestCase):
     def test_ghazal_pairs_right_and_left(self):
         got = build.group_couplets([
@@ -38,6 +43,12 @@ class GroupCouplets(unittest.TestCase):
         self.assertEqual(got, [
             {"m1": "نثر", "m2": ""}, {"m1": "آزاد", "m2": ""}, {"m1": "الف", "m2": "ب"},
         ])
+
+    def test_comment_verses_without_an_index_are_dropped(self):
+        got = build.group_couplets([
+            note(1, "(از چاتلان قوش)"), verse(2, "Single", "الف", 0), verse(3, "Single", "ب", 1),
+        ])
+        self.assertEqual(got, [{"m1": "الف", "m2": ""}, {"m1": "ب", "m2": ""}])
 
     def test_centered_verses_pair_up(self):
         got = build.group_couplets([

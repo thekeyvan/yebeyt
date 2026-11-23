@@ -21,7 +21,7 @@ final class PoetryStore {
     @ObservationIgnored private let session: URLSession
     @ObservationIgnored private let cache: PoetryCache
     @ObservationIgnored private let booksById: [Int: BookRef]
-    @ObservationIgnored private var bundledBooks: [Int: Book] = [:]
+    @ObservationIgnored private var bundledBooks: [Int: BundledBook] = [:]
 
     /// Loads poets.json from the bundle; throws if it is missing or unreadable.
     init(bundle: Bundle = .main, session: URLSession = .shared, cacheDirectory: URL = PoetryStore.defaultCacheDirectory) throws {
@@ -43,7 +43,7 @@ final class PoetryStore {
     /// Any book by Ganjoor path, such as `/hafez/ghazal` or a sub-book from `Book.children`.
     func book(path: String) async throws -> Book {
         if let ref = booksById.values.first(where: { $0.isBundled && $0.path == path }) {
-            return try await bundledBook(id: ref.id)
+            return try await bundledBook(id: ref.id).book
         }
         return try await cachedOrFetched(path: path, key: "poets\(path)/_cat.json") { (raw: RawCategory) in raw.book() }
     }
@@ -64,7 +64,7 @@ final class PoetryStore {
         return list.sorted { $0.audioOrder < $1.audioOrder }
     }
 
-    private func bundledBook(id: Int) async throws -> Book {
+    private func bundledBook(id: Int) async throws -> BundledBook {
         if let book = bundledBooks[id] { return book }
         let bundle = bundle
         let book = try await Task.detached { try BundledPoetry.book(id: id, in: bundle) }.value

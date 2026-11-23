@@ -32,13 +32,14 @@ struct Book: Codable, Hashable, Sendable, Identifiable {
     var poetId: Int?
     /// Ganjoor's table-of-contents style, e.g. `AlphabeticWithFirstVerse`.
     var toc: String
-    /// The poems in order. For a book fetched from the network only the id, title and path are
-    /// filled in (`couplets` is empty): open a poem with `PoetryStore.poem(path:)`.
-    var poems: [Poem]
+    /// The poems in order. Open one with `PoetryStore.poem(path:)`.
+    var poems: [PoemRef]
     /// Sub-books. Bundled books have none.
     var children: [BookRef]
 
-    init(id: Int, title: String, path: String, poetId: Int?, toc: String, poems: [Poem], children: [BookRef] = []) {
+    enum CodingKeys: String, CodingKey { case id, title, path, poetId, toc, poems, children }
+
+    init(id: Int, title: String, path: String, poetId: Int?, toc: String, poems: [PoemRef], children: [BookRef] = []) {
         self.id = id
         self.title = title
         self.path = path
@@ -56,9 +57,28 @@ struct Book: Codable, Hashable, Sendable, Identifiable {
             path: try values.decode(String.self, forKey: .path),
             poetId: try values.decodeIfPresent(Int.self, forKey: .poetId),
             toc: try values.decode(String.self, forKey: .toc),
-            poems: try values.decode([Poem].self, forKey: .poems),
+            poems: try values.decode([PoemRef].self, forKey: .poems),
             children: try values.decodeIfPresent([BookRef].self, forKey: .children) ?? []
         )
+    }
+}
+
+/// A poem as listed in a book.
+struct PoemRef: Codable, Hashable, Sendable, Identifiable {
+    var id: Int
+    var title: String
+    var path: String
+}
+
+/// A bundled book file: the book with the full text of every poem.
+struct BundledBook: Decodable, Sendable {
+    var book: Book
+    var poems: [Poem]
+
+    init(from decoder: any Decoder) throws {
+        // The poems array holds full poems; `Book` reads just their id, title and path.
+        book = try Book(from: decoder)
+        poems = try decoder.container(keyedBy: Book.CodingKeys.self).decode([Poem].self, forKey: .poems)
     }
 }
 

@@ -8,7 +8,8 @@ struct RawVerse: Decodable, Sendable {
     /// GanjoorService's `VersePosition`: Right, Left, CenteredVerse1, CenteredVerse2, Single, Comment, Paragraph.
     var position: String
     var text: String
-    var coupletIndex: Int
+    /// Comment verses (editor notes) have none.
+    var coupletIndex: Int?
     var coupletSummary: String?
 
     enum CodingKeys: String, CodingKey {
@@ -67,11 +68,11 @@ struct RawCategory: Decodable, Sendable {
         case toc = "TableOfContentsStyle", childCats = "ChildCats", poems = "Poems"
     }
 
-    /// A book with its poem list only; each poem's text comes from `RawPoem`.
+    /// A book with its poem list; each poem's text comes from `RawPoem`.
     func book() -> Book {
         Book(
             id: id, title: title, path: path, poetId: poetId, toc: toc,
-            poems: poems.map { Poem(id: $0.id, title: $0.title, path: $0.path, summary: nil, rhythm: nil, couplets: []) },
+            poems: poems.map { PoemRef(id: $0.id, title: $0.title, path: $0.path) },
             children: childCats.map { BookRef(id: $0.id, title: $0.title, path: $0.path) }
         )
     }
@@ -80,14 +81,15 @@ struct RawCategory: Decodable, Sendable {
 extension Couplet {
     /// Verses -> couplets, grouped by `coupletIndex`, in verse order. Left and CenteredVerse2 are
     /// the second hemistich; every other position (Right, Single, Paragraph, ...) goes in the first.
+    /// Comment verses are editor notes, not poem lines, and are dropped.
     /// A verse that would fill an occupied slot starts a new couplet.
     static func grouping(_ verses: [RawVerse]) -> [Couplet] {
         var couplets: [Couplet] = []
         var index: Int?
         var hasFirst = false, hasSecond = false
-        for verse in verses.sorted(by: { $0.vOrder < $1.vOrder }) {
+        for verse in verses.sorted(by: { $0.vOrder < $1.vOrder }) where verse.position != "Comment" {
             let isSecond = verse.position == "Left" || verse.position == "CenteredVerse2"
-            if verse.coupletIndex != index || (isSecond ? hasSecond : hasFirst) {
+            if couplets.isEmpty || verse.coupletIndex != index || (isSecond ? hasSecond : hasFirst) {
                 couplets.append(Couplet(m1: "", m2: ""))
                 index = verse.coupletIndex
                 hasFirst = false
