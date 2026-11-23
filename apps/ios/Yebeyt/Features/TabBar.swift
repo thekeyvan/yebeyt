@@ -125,7 +125,7 @@ private enum RaisedGamesButton {
 }
 
 /// A line icon in a 24-unit box drawn at `size`; the stroke width is in box units, as in the SVG.
-private struct LineIcon<S: Shape>: View {
+struct LineIcon<S: Shape>: View {
     let shape: S
     let size: CGFloat
     let lineWidth: CGFloat

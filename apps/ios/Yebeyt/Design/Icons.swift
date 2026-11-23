@@ -3,27 +3,6 @@ import SwiftUI
 /// Our own icons, drawn in a 24×24 box (hand-translated from the SVG paths in design/canvas/gen_explore.py).
 /// A shape scales that box to its frame. They are never mirrored in right-to-left (`.fixed`): the paper plane,
 /// the magnifier and the flame keep their direction.
-private struct Box {
-    let scale: CGFloat
-    let origin: CGPoint
-
-    init(_ rect: CGRect) {
-        scale = min(rect.width, rect.height) / 24
-        origin = CGPoint(x: rect.midX - 12 * scale, y: rect.midY - 12 * scale)
-    }
-
-    func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-        CGPoint(x: origin.x + x * scale, y: origin.y + y * scale)
-    }
-
-    func rect(_ x: CGFloat, _ y: CGFloat, _ width: CGFloat, _ height: CGFloat) -> CGRect {
-        CGRect(origin: point(x, y), size: CGSize(width: width * scale, height: height * scale))
-    }
-
-    func circle(_ x: CGFloat, _ y: CGFloat, radius: CGFloat) -> CGRect {
-        rect(x - radius, y - radius, radius * 2, radius * 2)
-    }
-}
 
 /// خونه
 struct HomeIcon: Shape {
