@@ -101,7 +101,8 @@ describe("admin feedback", () => {
     expect((await list("?type=nope")).status).toBe(400);
     expect((await list("?before=garbage")).status).toBe(400);
     const at = "2026-06-01T12:00:00.000Z";
-    for (const bad of [`${at}_${"-".repeat(36)}`, `${at}_${"a".repeat(36)}`, `${at}_`, `${at}_not-a-uuid`, `2026-13-45T12:00:00.000Z_11111111-1111-4111-8111-111111111111`, `yesterday_11111111-1111-4111-8111-111111111111`]) {
+    const uuid = "11111111-1111-4111-8111-111111111111";
+    for (const bad of [`${at}_${uuid}_extra`, `${at}_${uuid}_${uuid}`, `2026-02-30T12:00:00.000Z_${uuid}`, `2026-02-29T12:00:00.000Z_${uuid}`, `2026-06-01T12:00:00Z_${uuid}`, `${at}_${"-".repeat(36)}`, `${at}_${"a".repeat(36)}`, `${at}_`, `${at}_not-a-uuid`, `2026-13-45T12:00:00.000Z_11111111-1111-4111-8111-111111111111`, `yesterday_11111111-1111-4111-8111-111111111111`]) {
       expect((await list(`?before=${encodeURIComponent(bad)}`)).status, bad).toBe(400);
     }
     expect((await list(`?before=${at}_11111111-1111-4111-8111-111111111111`)).status).toBe(200);

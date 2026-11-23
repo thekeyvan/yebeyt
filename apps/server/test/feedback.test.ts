@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sha256Hex } from "../src/crypto.js";
 import { feedback, feedbackAttachments } from "../src/db/schema.js";
 import { fakeFile, makeHarness, type Harness } from "./helpers.js";
@@ -367,6 +367,24 @@ describe("attachment budgets", () => {
     expect((await put(own.id, "recording", fakeFile("mp4", 10), "video/mp4", own.uploadToken)).status).toBe(204);
   });
 
+  it("spends nothing on refused uploads", async () => {
+    const user = await h.signIn();
+    const { id, uploadToken } = await created(BODIES.bug, user.accessToken);
+    const file = fakeFile("mp4", 100 * KB);
+    expect((await put(id, "recording", file, "video/mp4", uploadToken)).status).toBe(204);
+    for (let i = 0; i < 10; i++) expect((await put(id, "recording", file, "video/mp4", uploadToken)).status).toBe(409);
+    for (let i = 0; i < 10; i++) expect((await put(id, "screenshot", fakeFile("html", 100 * KB), "image/png", uploadToken)).status).toBe(415);
+    expect((await put(id, "screenshot", fakeFile("png", 4 * KB * 1024), "image/png", uploadToken)).status).toBe(413);
+    // 100 KB are spent; three more fit in the 400 KB budget, the fourth does not
+    await h.db.delete(feedbackAttachments);
+    const more: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      more.push((await put(id, "recording", file, "video/mp4", uploadToken)).status);
+      await h.db.delete(feedbackAttachments);
+    }
+    expect(more).toEqual([204, 204, 204, 429]);
+  });
+
   it("starts a new hour after the window", async () => {
     const user = await h.signIn();
     const { statuses } = await sendMany(user.accessToken, 5);
@@ -400,6 +418,38 @@ describe("concurrent uploads", () => {
     const r = await created();
     for (let i = 0; i < 5; i++) expect((await put(r.id, "screenshot", fakeFile("html", 10), "image/png", r.uploadToken)).status).toBe(415);
     expect((await put(r.id, "screenshot", fakeFile("png", 10), "image/png", r.uploadToken)).status).toBe(204);
+  });
+});
+
+describe("slow uploads", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("cuts off a body that takes over 60 seconds with 408 and frees the slot", async () => {
+    const reports = await Promise.all([1, 2, 3].map(() => created()));
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const stalled = reports.map((r) =>
+      h.app.request(`/v1/feedback/${r.id}/screenshot`, {
+        method: "PUT",
+        headers: { "content-type": "image/png", "x-upload-token": r.uploadToken },
+        // one chunk, then nothing and never closed
+        body: new ReadableStream({ start: (controller) => controller.enqueue(fakeFile("png", 100)) }),
+        duplex: "half",
+      } as RequestInit),
+    );
+    let done = false;
+    const all = Promise.all(stalled).then((r) => ((done = true), r));
+    // Let the database answer in real time, and move the fake clock on until the handlers have given up.
+    while (!done) {
+      await new Promise((resolve) => setImmediate(resolve));
+      await vi.advanceTimersByTimeAsync(10_000);
+    }
+    const results = await all;
+    expect(results.map((r) => r.status)).toEqual([408, 408, 408]);
+    expect(await results[0]!.json()).toEqual({ error: "upload_timeout" });
+    vi.useRealTimers();
+    expect(await h.db.select().from(feedbackAttachments)).toHaveLength(0);
+    const next = await created();
+    expect((await put(next.id, "screenshot", fakeFile("png", 10), "image/png", next.uploadToken)).status).toBe(204);
   });
 });
 

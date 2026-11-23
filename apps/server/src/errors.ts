@@ -20,6 +20,7 @@ export const ERROR_CODES = [
   "payload_too_large",
   "unsupported_media_type",
   "busy",
+  "upload_timeout",
   "internal_error",
   "unavailable",
 ] as const;
@@ -36,7 +37,7 @@ export const errorSchema = z
 /** Thrown by handlers; the app turns it into `{ error: code }` with the status. */
 export class ApiError extends Error {
   constructor(
-    readonly status: 400 | 401 | 403 | 404 | 409 | 413 | 415 | 429 | 500 | 502 | 503,
+    readonly status: 400 | 401 | 403 | 404 | 408 | 409 | 413 | 415 | 429 | 500 | 502 | 503,
     readonly code: ErrorCode,
     readonly extra: { allowedAt?: string } = {},
   ) {

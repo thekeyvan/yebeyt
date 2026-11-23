@@ -35,14 +35,15 @@ const listSchema = z
   .openapi("AdminFeedbackList");
 
 /** The cursor is the last row's "<createdAt>_<id>", so reports sent in the same millisecond are never skipped. */
-const splitCursor = (cursor: string) => {
-  const [at = "", id = ""] = cursor.split("_");
-  return { at: new Date(at), isoOk: /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(at), id };
+const parseCursor = (cursor: string): { at: Date; id: string } | null => {
+  const parts = cursor.split("_");
+  if (parts.length !== 2) return null;
+  const at = new Date(parts[0]!);
+  // Re-printing the date must give the same text, which refuses dates that do not exist (30 February).
+  if (Number.isNaN(at.getTime()) || at.toISOString() !== parts[0]) return null;
+  return z.uuid().safeParse(parts[1]).success ? { at, id: parts[1]! } : null;
 };
-const cursorSchema = z.string().refine((v) => {
-  const { at, isoOk, id } = splitCursor(v);
-  return isoOk && !Number.isNaN(at.getTime()) && z.uuid().safeParse(id).success;
-});
+const cursorSchema = z.string().refine((v) => parseCursor(v) !== null);
 
 export function feedbackAdminRoutes(deps: Deps) {
   const app = newRouter();
@@ -73,7 +74,7 @@ export function feedbackAdminRoutes(deps: Deps) {
       const { type, before } = c.req.valid("query");
       const conditions: (SQL | undefined)[] = [type ? eq(feedback.type, type) : undefined];
       if (before) {
-        const { at, id } = splitCursor(before);
+        const { at, id } = parseCursor(before)!;
         conditions.push(or(lt(feedback.createdAt, at), and(eq(feedback.createdAt, at), lt(feedback.id, id))));
       }
       const rows = await db

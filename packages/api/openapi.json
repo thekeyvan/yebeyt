@@ -190,6 +190,7 @@
               "payload_too_large",
               "unsupported_media_type",
               "busy",
+              "upload_timeout",
               "internal_error",
               "unavailable"
             ]
@@ -2122,7 +2123,7 @@
           "feedback"
         ],
         "summary": "Attach a screenshot to a report",
-        "description": "For reports of type bug, annoyed, idea; image/jpeg or image/png, at most 3 MB, and the first bytes must match the declared type; one per report, within 15 minutes of sending it. Hourly budget: 200 MB per signed-in user, 500 MB for all guests' reports together. At most 3 uploads are handled at once.",
+        "description": "For reports of type bug, annoyed, idea; image/jpeg or image/png, at most 3 MB, and the first bytes must match the declared type; one per report, within 15 minutes of sending it. Hourly budget: 200 MB per signed-in user, 500 MB for all guests' reports together; refused uploads cost nothing. At most 3 uploads are handled at once, and the file must arrive within 60 seconds.",
         "parameters": [
           {
             "schema": {
@@ -2195,6 +2196,16 @@
               }
             }
           },
+          "408": {
+            "description": "upload_timeout: the file took longer than the time allowed to arrive.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "already_uploaded: this report already has a screenshot.",
             "content": {
@@ -2254,7 +2265,7 @@
           "feedback"
         ],
         "summary": "Attach a recording to a report",
-        "description": "For reports of type bug; video/mp4, at most 25 MB, and the first bytes must match the declared type; one per report, within 15 minutes of sending it. Hourly budget: 200 MB per signed-in user, 500 MB for all guests' reports together. At most 3 uploads are handled at once.",
+        "description": "For reports of type bug; video/mp4, at most 25 MB, and the first bytes must match the declared type; one per report, within 15 minutes of sending it. Hourly budget: 200 MB per signed-in user, 500 MB for all guests' reports together; refused uploads cost nothing. At most 3 uploads are handled at once, and the file must arrive within 60 seconds.",
         "parameters": [
           {
             "schema": {
@@ -2313,6 +2324,16 @@
           },
           "404": {
             "description": "No such report.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "upload_timeout: the file took longer than the time allowed to arrive.",
             "content": {
               "application/json": {
                 "schema": {
