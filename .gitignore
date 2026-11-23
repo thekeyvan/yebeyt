@@ -6,7 +6,7 @@ DerivedData/
 *.xcodeproj/
 
 # Personal signing settings
-Config/Local.xcconfig
+apps/ios/Config/Local.xcconfig
 
 xcuserdata/
 *.xcuserstate

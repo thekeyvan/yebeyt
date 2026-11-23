@@ -1,7 +1,7 @@
 import sys, re, os, subprocess
 S, out = sys.argv[1], sys.argv[2]  # S: folder that holds project/, out: where previews and PNGs go
 HERE = os.path.dirname(os.path.abspath(__file__))
-F = os.path.join(HERE, "..", "..", "Yebeyt", "Resources", "Fonts") + "/"
+F = os.path.join(HERE, "..", "..", "assets", "fonts") + "/"
 D = os.path.join(HERE, "fonts") + "/"
 BLOB = {"9fe3b1905f2e20db67b7d7711a8c69d0": F+"Parastoo.ttf", "68a06d356b96bd36f8f9011a12ab1244": F+"Gandom.ttf",
         "b64bda18f46572bff3417fa47d760023": F+"Sahel.ttf", "657f6f793803047173f39b46bb9f84cc": F+"Shabnam.ttf",

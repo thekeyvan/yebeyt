@@ -3,15 +3,17 @@
 The MIT license in [`LICENSE`](LICENSE) covers the code in this repository. It does **not** cover
 the fonts or the poetry data listed below; those keep their own terms.
 
-## Fonts (`Yebeyt/Resources/Fonts`)
+## Fonts (`assets/fonts`)
 
-All fonts are under the SIL Open Font License 1.1. Full license texts are in [`LICENSES/fonts`](LICENSES/fonts).
+All fonts are under the SIL Open Font License 1.1. Full license texts are in [`assets/fonts/licenses`](assets/fonts/licenses).
 The files were converted from WOFF2 to TTF without other changes.
 
 | Font | Copyright | License |
 |---|---|---|
 | Parastoo, Gandom, Sahel, Shabnam (WOL builds) | Saber Rastikerdar ([github.com/rastikerdar](https://github.com/rastikerdar)) | OFL 1.1. Gandom, Shabnam and Parastoo derive from DejaVu / Bitstream Vera, see `DejaVu-Bitstream-Vera.txt` |
 | Vazirmatn | The Vazirmatn Project Authors | OFL 1.1 |
+| Lalezar | Borna Izadpanah ([github.com/BornaIz/Lalezar](https://github.com/BornaIz/Lalezar)) | OFL 1.1 (`Lalezar-OFL.txt`) |
+| Parastoo Bold | Saber Rastikerdar ([github.com/rastikerdar/parastoo-font](https://github.com/rastikerdar/parastoo-font)) | OFL 1.1 (same text as Parastoo, `Parastoo-OFL.txt`) |
 | Markazi Text | The Markazi Text Project Authors | OFL 1.1 |
 | Noto Naskh Arabic, Noto Nastaliq Urdu | The Noto Project Authors | OFL 1.1 |
 
@@ -23,7 +25,7 @@ The files were converted from WOFF2 to TTF without other changes.
   The classical poems themselves are in the public domain. Many meanings and summaries were written
   with AI help (the app marks them with a sparkle icon). `ganjoor-data` has not published a license
   for the meanings and summaries, so they are **not** covered by this repository's MIT license.
-  The bundled subset lives in `Yebeyt/Resources/Data` and `tools/source`.
+  The data is built from Ganjoor's public repositories (github.com/ganjoor) by the scripts in `tools/`.
 - Recitations (audio and timing) are streamed at runtime from `api.ganjoor.net`; no audio is stored
   in this repository.
 - No Ganjoor user data (comments, accounts) is included.

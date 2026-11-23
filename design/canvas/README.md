@@ -5,7 +5,7 @@ https://claude.ai/artifact/JiaDy1vekUMDw6QxCTJNoH, private).
 
 - `project/` is the canvas itself: `canvas.json` (pages, board positions, titles) and one `*.dc.html` per board.
 - The `gen_*.py` scripts write those boards. Every board on the canvas comes from them; edit a script, never the board by hand, or the next run overwrites it.
-- `fonts/` holds the fonts the canvas loads from its own asset store (Lalezar, Vazirmatn, Parastoo Bold), so the canvas works without Google Fonts. All are OFL. Parastoo Bold is from github.com/rastikerdar/parastoo-font; its licence is next to it. The iOS app will need `Parastoo-Bold.ttf` added to `Yebeyt/Resources/Fonts/`.
+- `fonts/` holds the fonts the canvas loads from its own asset store (Lalezar, Vazirmatn, Parastoo Bold), so the canvas works without Google Fonts. All are OFL. Parastoo Bold is from github.com/rastikerdar/parastoo-font; its licence is next to it. The same files are also in `assets/fonts/`, which the iOS app uses.
 
 ## Build order
 
@@ -38,7 +38,7 @@ for g in gen_names gen_shared gen_library gen_games gen_invite gen_play gen_icon
 
 ## Previewing a board without the canvas
 
-`shoot.py` renders boards to PNG with headless Chrome, mapping the canvas's `/_blob/...` font URLs to the files in `fonts/` and `Yebeyt/Resources/Fonts/`:
+`shoot.py` renders boards to PNG with headless Chrome, mapping the canvas's `/_blob/...` font URLs to the files in `fonts/` and `assets/fonts/`:
 
 ```bash
 python3 -I shoot.py design /tmp/shots Calm.dc.html Poem.dc.html
