@@ -9,8 +9,8 @@
 
 Downloads are cached in tools/ganjoor/.cache (gitignored), so reruns need no network.
 Output: poets.json (every poet, with their books), book-<id>.json for the bundled books,
-library.json (the curated library, see library.py) and index-<catId>.json, one list of poems
-(first line, couplet count, rhyme letters, recitations) per curated book. The poems of the
+library.json (the curated library, see library.py), index-<catId>.json, one list of poems
+(first line, couplet count, rhyme letters, recitations) per curated book, and games.json (the game deck, see games.py). The poems of the
 curated books come from a sparse git checkout in .cache/repo. Popularity (recitations per poem) comes
 from the committed snapshot recitations.json, so a normal build and --check never touch api.ganjoor.net;
 only --refresh-recitations does, and it is the only way the counts change. Years are lunar Hijri, as in Ganjoor.
@@ -26,6 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import audio
+import games
 import library
 import sparse
 from couplets import clean, group_couplets, short_bio
@@ -167,6 +168,7 @@ def build_files(sha, refresh=False):
     recitations = recitation_counts(poets_dir, curation, refresh)
     for name, value in library.build_files(poets_dir, recitations, curation, manifest).items():
         files[name] = dump(value)
+    files["games.json"] = dump(games.build_deck(poets_dir, recitations, curation))
     return files
 
 
