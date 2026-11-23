@@ -77,6 +77,9 @@
               "null"
             ]
           },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
+          },
           "usernameChangedAt": {
             "type": [
               "string",
@@ -103,10 +106,64 @@
           "id",
           "username",
           "displayName",
+          "avatar",
           "usernameChangedAt",
           "createdAt",
           "providers"
         ]
+      },
+      "Avatar": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "face": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "eyes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "hair": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "mouth": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "accessory": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "background": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z0-9-]+$"
+          }
+        },
+        "required": [
+          "face",
+          "eyes",
+          "hair",
+          "mouth",
+          "accessory",
+          "background"
+        ],
+        "additionalProperties": false
       },
       "Error": {
         "type": "object",
@@ -115,6 +172,7 @@
             "type": "string",
             "enum": [
               "invalid_request",
+              "bad_timestamp",
               "invalid_token",
               "unauthorized",
               "forbidden",
@@ -279,6 +337,189 @@
           "streakLastDate",
           "bestByGame"
         ]
+      },
+      "Divan": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DivanItem"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "DivanItem": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 200,
+            "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+            "example": "/hafez/ghazal/sh3#0",
+            "description": "<poemPath>#<coupletIndex>"
+          },
+          "keptAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "removedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "key",
+          "keptAt",
+          "removedAt"
+        ]
+      },
+      "DivanSyncRequest": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 200,
+                  "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+                  "example": "/hafez/ghazal/sh3#0",
+                  "description": "<poemPath>#<coupletIndex>"
+                },
+                "keptAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "removedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "key"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 2000
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PrivacySettings": {
+        "type": "object",
+        "properties": {
+          "keptVisibility": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "me"
+            ]
+          },
+          "dailyVisibility": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "me"
+            ]
+          },
+          "showOnline": {
+            "type": "boolean"
+          },
+          "inGlobalLeaderboard": {
+            "type": "boolean"
+          },
+          "messagesFrom": {
+            "type": "string",
+            "enum": [
+              "all",
+              "friends"
+            ]
+          },
+          "gameInvitesFrom": {
+            "type": "string",
+            "enum": [
+              "all",
+              "friends"
+            ]
+          },
+          "allowReposts": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "keptVisibility",
+          "dailyVisibility",
+          "showOnline",
+          "inGlobalLeaderboard",
+          "messagesFrom",
+          "gameInvitesFrom",
+          "allowReposts"
+        ]
+      },
+      "PrivacyPatch": {
+        "type": "object",
+        "properties": {
+          "keptVisibility": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "me"
+            ]
+          },
+          "dailyVisibility": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "me"
+            ]
+          },
+          "showOnline": {
+            "type": "boolean"
+          },
+          "inGlobalLeaderboard": {
+            "type": "boolean"
+          },
+          "messagesFrom": {
+            "type": "string",
+            "enum": [
+              "all",
+              "friends"
+            ]
+          },
+          "gameInvitesFrom": {
+            "type": "string",
+            "enum": [
+              "all",
+              "friends"
+            ]
+          },
+          "allowReposts": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
       },
       "UsernameCheck": {
         "type": "object",
@@ -717,6 +958,62 @@
         }
       }
     },
+    "/v1/me/avatar": {
+      "put": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Set the avatar",
+        "description": "Six parts, each an id from the app's catalogue (the server checks only their shape). Replaces the whole avatar.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Avatar"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The user with the new avatar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a part is missing, empty, longer than 32 characters or not lowercase letters, digits and dashes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me/username": {
       "put": {
         "tags": [
@@ -845,6 +1142,195 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Progress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/divan": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "The divan: kept and removed couplets",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every item stored for the user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Divan"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Merge the phone's divan into the stored one",
+        "description": "Up to 2000 items. Per key the later keptAt and the later removedAt win, so a couplet is kept when keptAt is after removedAt. Repeating a request changes nothing. A timestamp more than 5 minutes ahead of the server's clock is refused (bad_timestamp). Answers the full merged state.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DivanSyncRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Every item stored for the user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Divan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request, or bad_timestamp for a time too far ahead.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is over 1 MB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/privacy": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Who may see and reach me",
+        "description": "The stored settings, or the defaults when none were stored.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacySettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Change some privacy settings",
+        "description": "Only the fields sent change; the rest keep their value (or the default).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivacyPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacySettings"
                 }
               }
             }
