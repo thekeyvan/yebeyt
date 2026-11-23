@@ -187,4 +187,28 @@ struct SessionTests {
         #expect(keychain.write("r0"))
         #expect(keychain.load() == .value("r0"))
     }
+
+    @Test func aTokenThatCouldNotBeStoredIsKeptInMemoryAndTheSessionIsNotClaimedAsStored() async throws {
+        let failing = KeychainStore(service: "com.yebeyt.tests.\(UUID().uuidString)", addItem: { _ in errSecInteractionNotAllowed })
+        let stub = StubServer { _ in .json(200, StubJSON.session(access: "a2", refresh: "r2")) }
+        let session = Session(api: stub.api, store: failing)
+        session.apply(try JSONDecoder().decode(APISession.self, from: Data(StubJSON.session(access: "a1", refresh: "r1").utf8)))
+        #expect(session.isSignedIn)  // signed in for this run
+        #expect(!session.isPersisted)
+        #expect(failing.read() == nil)
+        try await session.refresh()  // uses the token it holds, not the Keychain's
+        #expect(stub.requests(to: "/v1/auth/refresh").first?.json["refreshToken"] as? String == "r1")
+    }
+
+    @Test func writingReplacesTheTokenInPlaceAndKeepsTheOldOneWhenTheNewOneCannotBeAdded() {
+        let service = "com.yebeyt.tests.\(UUID().uuidString)"
+        let keychain = KeychainStore(service: service)
+        defer { keychain.delete() }
+        #expect(keychain.write("old"))
+        #expect(keychain.write("new"))
+        #expect(keychain.read() == "new")
+        let failingAdd = KeychainStore(service: service, addItem: { _ in errSecInteractionNotAllowed })
+        #expect(failingAdd.write("newer"))  // an existing item is updated, no add is needed
+        #expect(keychain.read() == "newer")
+    }
 }

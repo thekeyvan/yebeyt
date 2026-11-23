@@ -23,14 +23,21 @@ struct KeychainStore: Sendable {
 
     typealias CopyMatching = @Sendable (CFDictionary, UnsafeMutablePointer<CFTypeRef?>?) -> OSStatus
 
+    typealias AddItem = @Sendable (CFDictionary) -> OSStatus
+
     let service: String
     private let account = "refreshToken"
     private let copyMatching: CopyMatching
+    private let addItem: AddItem
 
-    /// `copyMatching` stands in for the system call in tests.
-    init(service: String = Self.appService, copyMatching: @escaping CopyMatching = { SecItemCopyMatching($0, $1) }) {
+    /// `copyMatching` and `addItem` stand in for the system calls in tests.
+    init(
+        service: String = Self.appService, copyMatching: @escaping CopyMatching = { SecItemCopyMatching($0, $1) },
+        addItem: @escaping AddItem = { SecItemAdd($0, nil) }
+    ) {
         self.service = service
         self.copyMatching = copyMatching
+        self.addItem = addItem
     }
 
     private var query: [String: Any] {
@@ -61,14 +68,18 @@ struct KeychainStore: Sendable {
         }
     }
 
-    /// Replaces the stored value. Returns false (and logs the status, never the token) when it could not be stored.
+    /// Replaces the stored value in place (an update, so the old token stays until the new one is stored).
+    /// Returns false (and logs the status, never the token) when it could not be stored.
     @discardableResult
     func write(_ value: String) -> Bool {
-        delete()
-        var item = query
-        item[kSecValueData as String] = Data(value.utf8)
-        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        let status = SecItemAdd(item as CFDictionary, nil)
+        let data = Data(value.utf8)
+        var status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+        if status == errSecItemNotFound {
+            var item = query
+            item[kSecValueData as String] = data
+            item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            status = addItem(item as CFDictionary)
+        }
         if status != errSecSuccess { Self.log.error("Keychain write failed, status \(status)") }
         return status == errSecSuccess
     }

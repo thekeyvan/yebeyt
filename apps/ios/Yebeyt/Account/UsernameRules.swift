@@ -69,7 +69,7 @@ enum DisplayNameRules {
         var message: String {
             switch self {
             case .tooLong: "حداکثر ۳۰ حرف"
-            case .controlChars: APIError.badResponse.persianMessage
+            case .controlChars: "این حرف توی اسم نمی‌شه"
             }
         }
     }
@@ -77,7 +77,9 @@ enum DisplayNameRules {
     /// Checks a trimmed name.
     static func problem(_ name: String) -> Problem? {
         if name.unicodeScalars.count > maxLength { return .tooLong }
-        if name.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) || $0 == "\u{2028}" || $0 == "\u{2029}" }) { return .controlChars }
+        // As the server: control characters and line or paragraph separators only. ZWNJ (a format character) is allowed.
+        let refused: Set<Unicode.GeneralCategory> = [.control, .lineSeparator, .paragraphSeparator]
+        if name.unicodeScalars.contains(where: { refused.contains($0.properties.generalCategory) }) { return .controlChars }
         return nil
     }
 }

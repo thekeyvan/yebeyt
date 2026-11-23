@@ -62,6 +62,18 @@ final class AccountModel {
     /// drops it. `needed: false` is for what a guest may still do (taking back a like).
     func require(_ feature: AccountFeature, needed: Bool = true, then action: @escaping @MainActor () -> Void) {
         guard needed else { return action() }
+        if isSignedIn, session.user == nil {
+            // Signed in, but the user is not loaded yet (a launch that has not finished restoring): load it first.
+            Task {
+                await session.restore()
+                decide(feature, action)
+            }
+        } else {
+            decide(feature, action)
+        }
+    }
+
+    private func decide(_ feature: AccountFeature, _ action: @escaping @MainActor () -> Void) {
         if !isSignedIn {
             pending = action
             prompt = .gate(feature)
@@ -69,7 +81,7 @@ final class AccountModel {
             pending = action
             prompt = .username
         } else {
-            action()
+            action()  // an account with a username, or one that could not be looked up (no network): the server decides later
         }
     }
 

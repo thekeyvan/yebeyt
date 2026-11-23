@@ -9,9 +9,14 @@ final class Session {
     /// never shown the account gate.
     private(set) var isSignedIn: Bool
     private(set) var user: APIUser?
+    /// The refresh token is in the Keychain. False when the last write failed: the person stays signed in for this
+    /// run only, on a token kept in memory.
+    private(set) var isPersisted = true
     let api: API
     @ObservationIgnored private let store: KeychainStore
     @ObservationIgnored private var accessToken: String?
+    /// The newest refresh token when it could not be stored; it, not the Keychain's older one, is the valid one.
+    @ObservationIgnored private var unstoredRefreshToken: String?
     @ObservationIgnored private var refreshTask: Task<Void, Error>?
 
     init(api: API, store: KeychainStore = KeychainStore()) {
@@ -32,7 +37,8 @@ final class Session {
     /// Takes a new sign-in: both tokens and the user.
     func apply(_ session: APISession) {
         accessToken = session.accessToken
-        store.write(session.refreshToken)
+        isPersisted = store.write(session.refreshToken)
+        unstoredRefreshToken = isPersisted ? nil : session.refreshToken
         user = session.user
         isSignedIn = true
     }
@@ -69,7 +75,7 @@ final class Session {
     func refresh() async throws {
         if let refreshTask { return try await refreshTask.value }
         let sent: String
-        switch store.load() {
+        switch unstoredRefreshToken.map(KeychainRead.value) ?? store.load() {
         case .value(let token): sent = token
         case .unavailable: throw APIError.network  // the Keychain is locked: try later, stay signed in
         case .none:
@@ -85,7 +91,7 @@ final class Session {
                 // The token is single use. If the Keychain holds another one now, a refresh that raced this one (or a
                 // sign-in that landed meanwhile) has won: its result stands and this is not a sign-out. An access token
                 // that came with it is kept; only the one this refresh set out to replace is dropped.
-                switch store.load() {
+                switch unstoredRefreshToken == nil ? store.load() : .none {
                 case .value(let stored) where stored != sent:
                     if accessToken == before { accessToken = nil }
                     return
@@ -103,7 +109,7 @@ final class Session {
 
     /// «خروج»: forgets the sign-in here at once, then tells the server (which may fail; the token expires anyway).
     func signOut() async {
-        let token = store.read()
+        let token = unstoredRefreshToken ?? store.read()
         clear()
         if let token { try? await api.logout(refreshToken: token) }
     }
@@ -116,6 +122,8 @@ final class Session {
 
     private func clear() {
         store.delete()
+        unstoredRefreshToken = nil
+        isPersisted = true
         accessToken = nil
         user = nil
         isSignedIn = false

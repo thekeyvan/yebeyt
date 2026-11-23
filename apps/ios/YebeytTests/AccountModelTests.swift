@@ -72,12 +72,13 @@ struct AccountModelTests {
         #expect(f.account.prompt == .gate(.likes))
     }
 
-    @Test func aSignedInPersonGoesStraightThrough() {
+    @Test func aSignedInPersonGoesStraightThrough() async {
         let f = fixture(credentials: .google(), signedIn: true)
         defer { f.keychain.delete() }
         var ran = 0
         f.account.require(.messages) { ran += 1 }
-        #expect(ran == 1)
+        for _ in 0..<50 where ran == 0 { try? await Task.sleep(for: .milliseconds(20)) }  // the user is looked up first
+        #expect(ran == 1)  // the lookup failed (no such server): the action still goes ahead
         #expect(f.account.prompt == nil)
     }
 
@@ -257,6 +258,9 @@ struct AccountModelTests {
         #expect(DisplayNameRules.problem(String(repeating: "ن", count: 31)) == .tooLong)
         #expect(DisplayNameRules.Problem.tooLong.message == "حداکثر ۳۰ حرف")
         #expect(DisplayNameRules.problem("a\nb") == .controlChars)
+        #expect(DisplayNameRules.problem("a\u{2028}b") == .controlChars)
+        #expect(DisplayNameRules.problem("علی\u{200C}رضا") == nil)  // ZWNJ is part of Persian names
+        #expect(DisplayNameRules.Problem.controlChars.message == "این حرف توی اسم نمی‌شه")
         #expect(DisplayNameRules.problem("") == nil)
         let f = fixture(credentials: .google(), signedIn: true)
         defer { f.keychain.delete() }
@@ -289,5 +293,24 @@ struct AccountModelTests {
         _ = await f.account.saveProfile(displayName: "علی", username: "ali")
         let order = f.stub.requests.map(\.path).filter { $0.hasPrefix("/v1/me/") }
         #expect(order == ["/v1/me/profile", "/v1/me/username"])
+    }
+
+    @Test func aSignedInPersonWhoseUserIsNotLoadedYetIsLookedUpBeforeAnythingIsAsked() async {
+        let f = fixture(credentials: .google(), signedIn: true)  // a stored token, no user yet (just launched)
+        defer { f.keychain.delete() }
+        f.stub.respond { _ in .json(200, StubJSON.session(access: "a1", refresh: "r1", username: nil)) }
+        var ran = 0
+        f.account.require(.likes) { ran += 1 }
+        for _ in 0..<50 where f.account.prompt == nil { try? await Task.sleep(for: .milliseconds(20)) }
+        #expect(f.account.prompt == .username)  // the user turned out to have no username
+        #expect(ran == 0)
+
+        let g = fixture(credentials: .google(), signedIn: true)
+        defer { g.keychain.delete() }
+        g.stub.respond { _ in .json(200, StubJSON.session(access: "a1", refresh: "r1", username: "ali")) }
+        var ranAgain = 0
+        g.account.require(.likes) { ranAgain += 1 }
+        for _ in 0..<50 where ranAgain == 0 { try? await Task.sleep(for: .milliseconds(20)) }
+        #expect(ranAgain == 1 && g.account.prompt == nil)
     }
 }
