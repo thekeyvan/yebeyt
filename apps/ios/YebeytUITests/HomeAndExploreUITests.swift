@@ -37,6 +37,33 @@ final class HomeAndExploreUITests: XCTestCase {
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
     }
 
+    @MainActor func testTheTabBarStaysOutOfTheWayOfTheKeyboardOnTheSearchScreen() {
+        let app = launch(["-beytTab", "explore"])
+        let bar = app.otherElements["تب‌ها"]
+        XCTAssertTrue(bar.waitForExistence(timeout: 10))
+        let resting = bar.frame
+        app.buttons["searchField"].tap()
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        // never on top of the keyboard: either hidden, or still where it was, behind the keyboard
+        if bar.exists {
+            XCTAssertEqual(bar.frame.minY, resting.minY, accuracy: 1, "the bar moved up with the keyboard")
+        }
+        XCTAssertFalse(bar.exists && bar.frame.maxY <= keyboard.frame.minY, "the bar rides above the keyboard")
+        app.buttons["back"].tap()
+        XCTAssertTrue(app.buttons["searchField"].waitForExistence(timeout: 5))
+        XCTAssertTrue(bar.waitForExistence(timeout: 5))
+        XCTAssertEqual(bar.frame.minY, resting.minY, accuracy: 1)
+    }
+
+    @MainActor func testSwipingFromTheEdgeGoesBackOnAPushedScreen() {
+        let app = launch(["-beytRoute", "library"])
+        XCTAssertTrue(app.buttons["book-9"].waitForExistence(timeout: 10))
+        let edge = app.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5))
+        edge.press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)))
+        XCTAssertTrue(app.buttons["searchField"].waitForExistence(timeout: 5))
+    }
+
     @MainActor func testSearchFindsPoetsBooksAndCouplets() {
         let app = launch(["-beytRoute", "search:حافظ"])
         XCTAssertTrue(app.staticTexts["شاعرها"].waitForExistence(timeout: 10))

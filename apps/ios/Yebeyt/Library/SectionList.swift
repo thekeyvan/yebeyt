@@ -14,8 +14,9 @@ enum SectionSort: CaseIterable, Sendable {
 
 /// The poems of a section as the section screen lists them: searched and sorted.
 enum SectionList {
-    /// The Persian alphabet in dictionary order, for sorting by the last letter of the rhyme.
-    private static let alphabet = Array("ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی")
+    /// The Persian alphabet in dictionary order, for sorting by the last letter of the rhyme: the hamza
+    /// follows alef, and waw with hamza follows waw.
+    private static let alphabet = Array("اءبپتثجچحخدذرزژسشصضطظعغفقکگلمنوؤهی")
 
     static func sorted(_ poems: [IndexedPoem], by sort: SectionSort) -> [IndexedPoem] {
         switch sort {
@@ -25,16 +26,20 @@ enum SectionList {
             return poems.sorted { ($0.recitations, $1.number) > ($1.recitations, $0.number) }
         case .lastLetter:
             return poems.sorted { lhs, rhs in
-                let (left, right) = (letterKey(lhs.rhyme), letterKey(rhs.rhyme))
-                return left == right ? lhs.number < rhs.number : left.lexicographicallyPrecedes(right)
+                lhs.rhymeKey == rhs.rhymeKey ? lhs.number < rhs.number : lhs.rhymeKey.lexicographicallyPrecedes(rhs.rhymeKey)
             }
         }
     }
 
-    /// The rhyme's letters from the last backwards, as alphabet places; a poem without a rhyme goes last.
-    static func letterKey(_ rhyme: String) -> [Int] {
+    /// The rhyme's letters from the last backwards as alphabet places, then an end marker (-1) that sorts
+    /// before every letter, so «ا» comes before «ارا». A poem without a rhyme goes last; letters outside the
+    /// alphabet go after all letters.
+    static func rhymeKey(_ rhyme: String) -> [Int] {
         let letters = TextNormalizer.normalize(rhyme).filter { $0 != " " }
-        return letters.reversed().map { alphabet.firstIndex(of: $0) ?? alphabet.count } + [alphabet.count + 1]
+        guard !letters.isEmpty else { return [Int.max] }
+        return letters.reversed().map { letter in
+            alphabet.firstIndex(of: letter == "ئ" ? "ی" : letter) ?? alphabet.count
+        } + [-1]
     }
 
     /// The poems whose first line contains the query, or whose number it is.
@@ -42,6 +47,6 @@ enum SectionList {
         let wanted = TextNormalizer.normalize(query)
         guard !wanted.isEmpty else { return poems }
         let number = Int(wanted)
-        return poems.filter { $0.number == number || TextNormalizer.normalize($0.first).contains(wanted) }
+        return poems.filter { $0.number == number || $0.searchText.contains(wanted) }
     }
 }

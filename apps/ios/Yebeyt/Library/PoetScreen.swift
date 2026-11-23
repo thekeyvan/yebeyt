@@ -55,14 +55,20 @@ struct PoetScreen: View {
 
     // MARK: The card
 
+    /// How much taller Lalezar's line box is than its size at 64: trimmed so the name takes 64 per line, as on the board.
+    private static let lalezarSpare: CGFloat = {
+        let font = UIFont(name: Tokens.Fonts.title.postScript, size: 64)
+        return max((font?.lineHeight ?? 64) - 64, 0)
+    }()
+
     private var hero: some View {
         let on = poet.color.onColor
         return VStack(alignment: .leading, spacing: 6) {
             Text(poet.name)
                 .font(.title(64))
-                .lineLimit(1)
-                .minimumScaleFactor(0.4)
-                .frame(height: 64)  // the board's line-height 1: Lalezar's own line box is taller
+                .lineSpacing(-Self.lalezarSpare)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, -Self.lalezarSpare / 2)  // the board's line-height 1: Lalezar's own line box is taller
                 .padding(.top, 8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.trailing, 110)  // keeps clear of the circle, which sits at the left

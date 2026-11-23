@@ -42,7 +42,7 @@ struct HomeModelTests {
         #expect(home.pick == nil)
         await home.load(poetry: poetry, library: library)
         let pick = try #require(home.pick)
-        #expect(poetry.isBundled(poemPath: pick.path))
+        #expect(poetry.bundledPaths.contains { pick.path.hasPrefix($0 + "/") })
         #expect(!pick.couplet.m1.isEmpty && !pick.poet.isEmpty && !pick.title.isEmpty)
     }
 
@@ -68,6 +68,23 @@ struct HomeModelTests {
         #expect(reopened.rejected == 1)
         await reopened.load(poetry: poetry, library: library)
         #expect(reopened.pick?.path == after.path && reopened.pick?.index == after.index)
+    }
+
+    @Test func comingBackOnANewDayShowsThatDaysCoupletWithoutRejects() async throws {
+        let (poetry, library) = try stores()
+        let home = HomeModel(day: 20_500, defaults: defaults)
+        await home.load(poetry: poetry, library: library)
+        await home.reject(poetry: poetry, library: library)
+        #expect(home.rejected == 1)
+
+        await home.refresh(today: 20_500, poetry: poetry, library: library)  // the same day changes nothing
+        #expect(home.rejected == 1 && home.day == 20_500)
+
+        await home.refresh(today: 20_501, poetry: poetry, library: library)
+        #expect(home.day == 20_501 && home.rejected == 0)
+        let fresh = HomeModel(day: 20_501, defaults: defaults)
+        await fresh.load(poetry: poetry, library: library)
+        #expect(home.pick?.path == fresh.pick?.path && home.pick?.index == fresh.pick?.index)
     }
 
     @Test func aNewDayStartsWithoutRejects() {

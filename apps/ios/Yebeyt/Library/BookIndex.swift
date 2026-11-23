@@ -16,6 +16,23 @@ struct IndexedPoem: Hashable, Sendable, Identifiable {
     var recitations: Int
     /// The 1-based place among the poems of its category, in the book's order.
     var number: Int
+    /// `first` normalised for matching, computed once when the index is read.
+    let searchText: String
+    /// The rhyme as a sort key (`SectionList.rhymeKey`), computed once when the index is read.
+    let rhymeKey: [Int]
+
+    init(id: Int, catId: Int, path: String, first: String, couplets: Int, rhyme: String, recitations: Int, number: Int) {
+        self.id = id
+        self.catId = catId
+        self.path = path
+        self.first = first
+        self.couplets = couplets
+        self.rhyme = rhyme
+        self.recitations = recitations
+        self.number = number
+        searchText = TextNormalizer.normalize(first)
+        rhymeKey = SectionList.rhymeKey(rhyme)
+    }
 }
 
 /// The poems of one book, in the book's order.

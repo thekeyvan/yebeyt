@@ -64,11 +64,6 @@ final class PoetryStore {
         return list.sorted { $0.audioOrder < $1.audioOrder }
     }
 
-    /// True when the poem's text is bundled in the app (it loads without the network).
-    func isBundled(poemPath: String) -> Bool {
-        bundledPaths.contains { poemPath.hasPrefix($0 + "/") }
-    }
-
     /// The Ganjoor paths of the bundled books.
     var bundledPaths: [String] {
         booksById.values.filter(\.isBundled).map(\.path)

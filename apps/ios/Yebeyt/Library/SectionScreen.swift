@@ -8,13 +8,19 @@ struct SectionScreen: View {
     let book: LibraryBook
     let section: BookSection
     @State private var index: BookIndex?
+    @State private var poems: [IndexedPoem] = []
+    @State private var shown: [IndexedPoem] = []
     @State private var query = ""
     @State private var sort = SectionSort.number
 
-    private var poems: [IndexedPoem] { index?.poems(in: section.id) ?? [] }
+    /// What the shown list depends on; `.task(id:)` recomputes it when this changes.
+    private struct Listing: Hashable {
+        var query: String
+        var sort: SectionSort
+        var count: Int
+    }
 
     var body: some View {
-        let shown = SectionList.sorted(SectionList.filtered(poems, query: query), by: sort)
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 8) {
                 ScreenHeader(title: section.title, subtitle: subtitle)
@@ -37,7 +43,14 @@ struct SectionScreen: View {
         .scrollDismissesKeyboard(.interactively)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
-        .task { index = try? await library.index(of: book) }
+        .task {
+            index = try? await library.index(of: book)
+            poems = index?.poems(in: section.id) ?? []
+        }
+        .task(id: Listing(query: query, sort: sort, count: poems.count)) {
+            let (poems, query, sort) = (poems, query, sort)
+            shown = await Task.detached { SectionList.sorted(SectionList.filtered(poems, query: query), by: sort) }.value
+        }
     }
 
     /// «دیوان حافظ · ۴۹۵ غزل · ۲ تا خوندی»

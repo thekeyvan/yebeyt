@@ -7,15 +7,21 @@ struct SearchScreen: View {
     @Environment(CorpusStore.self) private var corpusStore
     @State private var query: String
     @State private var corpus: CoupletCorpus?
+    /// The results of the settled query (nil while there is nothing to search for).
+    @State private var results: SearchResults?
     @FocusState private var focused: Bool
 
     init(initial: String) {
         _query = State(initialValue: initial)
     }
 
+    /// What the results depend on: the text, and whether the couplets have loaded.
+    private struct Search: Hashable {
+        var query: String
+        var loaded: Bool
+    }
+
     var body: some View {
-        let results = library.search(query, corpus: corpus)
-        let searching = !TextNormalizer.normalize(query).isEmpty
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 12) {
@@ -23,10 +29,8 @@ struct SearchScreen: View {
                     SearchBox(text: $query, placeholder: "شاعر، شعر یا یه تیکه از بیت…", style: .round, focus: $focused)
                 }
                 .padding(.bottom, 6)
-                if searching, corpus != nil, results.isEmpty {
-                    NothingFound()
-                } else if searching {
-                    resultSections(results)
+                if let results {
+                    if corpus != nil, results.isEmpty { NothingFound() } else { resultSections(results) }
                 }
             }
             .padding(.horizontal, 18)
@@ -40,6 +44,13 @@ struct SearchScreen: View {
         .task {
             focused = true
             corpus = await corpusStore.corpus(poetry: poetry, library: library)
+        }
+        .task(id: Search(query: query, loaded: corpus != nil)) {
+            // Searching on every key press would redo the work for text that is already gone.
+            guard !TextNormalizer.normalize(query).isEmpty else { results = nil; return }
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled else { return }
+            results = library.search(query, corpus: corpus)
         }
     }
 

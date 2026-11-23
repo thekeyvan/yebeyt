@@ -112,14 +112,36 @@ extension View {
     }
 }
 
-extension UINavigationController: UIGestureRecognizerDelegate {
-    /// Screens hide the system navigation bar for their round back button; this keeps the swipe-back gesture.
-    override open func viewDidLoad() {
-        super.viewDidLoad()
-        interactivePopGestureRecognizer?.delegate = self
-    }
+/// Our screens hide the system navigation bar for their round back button, which switches off the edge-swipe
+/// back gesture. Put `.swipeBack()` on the first screen of a stack to turn it on again for that stack only.
+struct SwipeBack: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> Probe { Probe() }
+    func updateUIViewController(_ controller: Probe, context: Context) {}
 
-    public func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
-        viewControllers.count > 1
+    final class Probe: UIViewController {
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            navigationController?.interactivePopGestureRecognizer?.delegate = SwipeBackDelegate.shared
+        }
+    }
+}
+
+/// Lets the swipe begin only when there is a screen to go back to.
+final class SwipeBackDelegate: NSObject, UIGestureRecognizerDelegate {
+    static let shared = SwipeBackDelegate()
+
+    func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
+        var responder: UIResponder? = recognizer.view
+        while let current = responder {
+            if let navigation = current as? UINavigationController { return navigation.viewControllers.count > 1 }
+            responder = current.next
+        }
+        return false
+    }
+}
+
+extension View {
+    func swipeBack() -> some View {
+        background(SwipeBack().frame(width: 0, height: 0))
     }
 }

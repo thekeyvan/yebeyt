@@ -7,14 +7,15 @@ struct TabPage: View {
     var body: some View {
         switch model.selectedTab {
         case .home:
-            NavigationStack { HomeView() }
+            NavigationStack { HomeView().swipeBack() }
         case .explore:
             NavigationStack(path: $model.explorePath) {
                 ExploreView()
-                    .navigationDestination(for: Destination.self) { DestinationView(destination: $0) }
+                    .swipeBack()
+                    .navigationDestination(for: Destination.self) { DestinationView(destination: $0).swipeBack() }
             }
         case .games, .messages, .me:
-            NavigationStack { PlaceholderPage(tab: model.selectedTab) }
+            NavigationStack { PlaceholderPage(tab: model.selectedTab).swipeBack() }
         }
     }
 }

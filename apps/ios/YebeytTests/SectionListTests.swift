@@ -27,6 +27,18 @@ struct SectionListTests {
         #expect(SectionList.sorted(poems, by: .lastLetter).map(\.number) == [3, 2, 4, 1])
     }
 
+    @Test func theEndOfTheRhymeSortsBeforeEveryLetterAndNoRhymeIsLast() {
+        let poems = [poem(1, rhyme: "ارا"), poem(2, rhyme: "ا"), poem(3, rhyme: ""), poem(4, rhyme: "ب")]
+        #expect(SectionList.sorted(poems, by: .lastLetter).map(\.number) == [2, 1, 4, 3])
+        #expect(SectionList.rhymeKey("ا").first == 0 && SectionList.rhymeKey("ا").last == -1)
+    }
+
+    @Test func hamzaAndWawWithHamzaHaveTheirPlaceInTheAlphabet() {
+        let poems = [poem(1, rhyme: "ی"), poem(2, rhyme: "ؤ"), poem(3, rhyme: "ء"), poem(4, rhyme: "و"), poem(5, rhyme: "ا"), poem(6, rhyme: "ب"), poem(7, rhyme: "ئ")]
+        // ا ء ب … و ؤ … ی (ئ counts as ی)
+        #expect(SectionList.sorted(poems, by: .lastLetter).map(\.number) == [5, 3, 6, 4, 2, 1, 7])
+    }
+
     @Test func popularitySortsByRecitationsThenNumber() {
         let poems = [poem(1, recitations: 2), poem(2, recitations: 9), poem(3, recitations: 2), poem(4, recitations: 0)]
         #expect(SectionList.sorted(poems, by: .popularity).map(\.number) == [2, 1, 3, 4])

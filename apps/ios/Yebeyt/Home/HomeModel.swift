@@ -16,7 +16,7 @@ final class HomeModel {
 
     static let defaultsKey = "home.rejected"
 
-    let day: Int
+    private(set) var day: Int
     private(set) var rejected: Int
     private(set) var pick: Pick?
     @ObservationIgnored private var candidates: [DailyPick.Candidate] = []
@@ -25,14 +25,26 @@ final class HomeModel {
     init(day: Int = DailyPick.dayNumber(for: .now), defaults: UserDefaults = .standard) {
         self.day = day
         self.defaults = defaults
-        let saved = defaults.array(forKey: Self.defaultsKey) as? [Int]
-        rejected = saved?.count == 2 && saved?.first == day ? saved![1] : 0
+        rejected = Self.savedRejects(for: day, in: defaults)
+    }
+
+    private static func savedRejects(for day: Int, in defaults: UserDefaults) -> Int {
+        let saved = defaults.array(forKey: defaultsKey) as? [Int]
+        return saved?.count == 2 && saved?.first == day ? saved![1] : 0
     }
 
     func load(poetry: PoetryStore, library: Library) async {
         guard pick == nil else { return }
         candidates = DailyPick.candidates(from: await library.indexedPoems(coveringAny: poetry.bundledPaths))
         await show(poetry: poetry, library: library)
+    }
+
+    /// The app came back on `today`: after midnight it is a new day with its own couplet and no rejects.
+    func refresh(today: Int, poetry: PoetryStore, library: Library) async {
+        guard today != day else { return }
+        day = today
+        rejected = Self.savedRejects(for: today, in: defaults)
+        if candidates.isEmpty { pick = nil; await load(poetry: poetry, library: library) } else { await show(poetry: poetry, library: library) }
     }
 
     /// «رد کن»: the next candidate for today.
