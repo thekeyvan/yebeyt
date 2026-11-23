@@ -8,6 +8,11 @@ struct PersianDigitsTests {
         #expect(PersianDigits.string(7) == "۷")
     }
 
+    @Test func convertsTheDigitsOfAText() {
+        #expect(PersianDigits.convert("2.0.0") == "۲.۰.۰")
+        #expect(PersianDigits.convert("نسخه 12") == "نسخه ۱۲")
+    }
+
     @Test func groupsThousandsWithThePersianSeparator() {
         #expect(PersianDigits.grouped(2480) == "۲٬۴۸۰")
         #expect(PersianDigits.grouped(999) == "۹۹۹")

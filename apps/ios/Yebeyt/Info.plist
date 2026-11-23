@@ -37,6 +37,11 @@
 	<string>587119002915-eosraa9cam7d314kt6s86t0bnbd6e4fa.apps.googleusercontent.com</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tg</string>
+		<string>whatsapp</string>
+	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Lalezar-Regular.ttf</string>

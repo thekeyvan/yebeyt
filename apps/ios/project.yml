@@ -66,6 +66,7 @@ targets:
           - Shabnam.ttf
           - Sahel.ttf
         UIBackgroundModes: [audio]
+        LSApplicationQueriesSchemes: [tg, whatsapp]
         UIUserInterfaceStyle: Light
         UILaunchScreen:
           UIColorName: LaunchBackground

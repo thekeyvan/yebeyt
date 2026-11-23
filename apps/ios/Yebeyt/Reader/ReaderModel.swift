@@ -144,6 +144,17 @@ final class ReaderModel {
         ReaderText.caption(poet: content?.poet ?? "", title: content?.title ?? "", index: couplet)
     }
 
+    /// The couplet a long press lifts, for the hold menu.
+    func held(_ couplet: Int) -> HeldCouplet? {
+        guard let content, content.poem.couplets.indices.contains(couplet) else { return nil }
+        let lines = content.poem.couplets[couplet]
+        return HeldCouplet(
+            path: path, index: couplet, couplet: lines, caption: caption(for: couplet),
+            shareText: ReaderText.shareText(lines, poet: content.poet, title: content.title),
+            copyText: ReaderText.copyText(lines, poet: content.poet)
+        )
+    }
+
     func showToast(_ text: String) {
         toast = text
         toastTask?.cancel()

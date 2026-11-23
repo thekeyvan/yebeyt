@@ -1,14 +1,33 @@
 import SwiftUI
 import UIKit
 
+/// The couplet a long press lifted, with the words the menu writes around it. The reader builds it from the open
+/// poem; the divan (and later the home, games and messages) from the poem of a kept couplet.
+struct HeldCouplet: Equatable, Identifiable {
+    let path: String
+    /// 0-based, as in the reader.
+    let index: Int
+    let couplet: Couplet
+    /// «حافظ · غزل ۳ · بیت ۲»
+    let caption: String
+    let shareText: String
+    let copyText: String
+
+    var id: String { ReaderMarks.key(poemPath: path, couplet: index) }
+    var hasMeaning: Bool { couplet.meaning != nil }
+}
+
 /// A long press on a couplet: the page blurs, the couplet is lifted on a tilted card, with a row of icons and a list.
 struct HoldMenu: View {
     @Environment(TextSettingsStore.self) private var text
     @Environment(ReaderMarks.self) private var marks
     @Environment(AccountModel.self) private var account
-    let model: ReaderModel
-    let couplet: Int
+    let held: HeldCouplet
     let dismiss: () -> Void
+    /// بفرست: the share sheet with the couplet.
+    let share: () -> Void
+    /// «معنی این بیت» (true) and «بیت به بیت، از همین بیت» (false): the couplet's page in the reader.
+    let openCouplet: (_ withMeaning: Bool) -> Void
     let playWithCouplet: (Int) -> Void
 
     /// The board puts the lifted couplet 258pt below the top of the screen (844pt tall).
@@ -67,8 +86,8 @@ struct HoldMenu: View {
     private var lifted: some View {
         let settings = text.settings
         return VStack(spacing: 0) {
-            CoupletText(couplet: model.couplets[couplet], settings: settings, size: settings.listSize, factor: settings.listFactor, color: Tokens.Colors.ink)
-            Text(model.caption(for: couplet))
+            CoupletText(couplet: held.couplet, settings: settings, size: settings.listSize, factor: settings.listFactor, color: Tokens.Colors.ink)
+            Text(held.caption)
                 .font(.ui(12))
                 .foregroundStyle(Tokens.Colors.muted)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -86,27 +105,28 @@ struct HoldMenu: View {
 
     private var icons: some View {
         HStack {
-            let liked = marks.contains(.liked, poemPath: model.path, couplet: couplet)
+            let (path, couplet) = (held.path, held.index)
+            let liked = marks.contains(.liked, poemPath: path, couplet: couplet)
             round("پسند", on: liked) {
                 LineIcon(shape: HeartIcon(), size: 22, lineWidth: 2.2, fill: liked ? Tokens.Colors.magenta : nil).foregroundStyle(Tokens.Colors.magenta)
-            } action: { account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: model.path, couplet: couplet) } }
+            } action: { account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: path, couplet: couplet) } }
             Spacer()
-            let reposted = marks.contains(.reposted, poemPath: model.path, couplet: couplet)
+            let reposted = marks.contains(.reposted, poemPath: path, couplet: couplet)
             round("بازنشر", on: reposted) {
                 LineIcon(shape: RepostIcon(), size: 22, lineWidth: 2.2, fill: nil).foregroundStyle(reposted ? Tokens.Colors.lapis : Tokens.Colors.ink)
-            } action: { account.require(.likes, needed: !reposted) { marks.toggle(.reposted, poemPath: model.path, couplet: couplet) } }
+            } action: { account.require(.likes, needed: !reposted) { marks.toggle(.reposted, poemPath: path, couplet: couplet) } }
             Spacer()
             round("بفرست", on: false) {
                 LineIcon(shape: MessagesIcon(), size: 22, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.ink)
             } action: {
                 dismiss()
-                model.shareCouplet(couplet)
+                share()
             }
             Spacer()
-            let kept = marks.contains(.kept, poemPath: model.path, couplet: couplet)
+            let kept = marks.contains(.kept, poemPath: path, couplet: couplet)
             round("نگه دار", on: kept) {
                 LineIcon(shape: BookmarkIcon(), size: 22, lineWidth: 2.2, fill: kept ? Tokens.Colors.ink : nil).foregroundStyle(Tokens.Colors.ink)
-            } action: { marks.toggle(.kept, poemPath: model.path, couplet: couplet) }
+            } action: { marks.toggle(.kept, poemPath: path, couplet: couplet) }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -128,16 +148,16 @@ struct HoldMenu: View {
 
     private var list: some View {
         VStack(spacing: 0) {
-            if model.hasMeaning(couplet) {
-                row("معنی این بیت", BookIcon()) { withAnimation(.snappy) { model.openCouplet(couplet, withMeaning: true) } }
+            if held.hasMeaning {
+                row("معنی این بیت", BookIcon()) { openCouplet(true) }
                 rule
             }
-            row("بیت به بیت، از همین بیت", CoupletFocusIcon()) { withAnimation(.snappy) { model.openCouplet(couplet) } }
+            row("بیت به بیت، از همین بیت", CoupletFocusIcon()) { openCouplet(false) }
             rule
-            row("بازی با این بیت", GamesIcon()) { playWithCouplet(couplet) }
+            row("بازی با این بیت", GamesIcon()) { playWithCouplet(held.index) }
             rule
             row("کپی متن", CopyIcon()) {
-                UIPasteboard.general.string = model.copyText(of: couplet)
+                UIPasteboard.general.string = held.copyText
                 dismiss()
             }
         }

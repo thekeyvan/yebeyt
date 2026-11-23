@@ -6,7 +6,12 @@ enum PersianDigits {
 
     /// 2480 → «۲۴۸۰». For counts, so zero or more.
     static func string(_ number: Int) -> String {
-        String(String(number).map { digits[$0] ?? $0 })
+        convert(String(number))
+    }
+
+    /// «2.0.0» → «۲.۰.۰»: the digits of a text (a version) written as Persian digits.
+    static func convert(_ text: String) -> String {
+        String(text.map { digits[$0] ?? $0 })
     }
 
     /// 72 → «۱:۱۲» (minutes and two-digit seconds), the clock of the games.

@@ -12,6 +12,13 @@ struct APIUser: Codable, Equatable, Sendable {
     var usernameChangedAt: String?
     var createdAt: String
     var providers: [AuthProvider]
+    /// The face; nil until the person saves one.
+    var avatar: AvatarParts? = nil
+}
+
+/// `Divan` of the contract.
+struct DivanState: Codable, Equatable, Sendable {
+    var items: [DivanItem]
 }
 
 /// `Session` of the contract.

@@ -64,6 +64,34 @@ struct API: Sendable {
         let _: ProgressPayload = try await call("PUT", "/v1/me/progress", body: progress, token: token)
     }
 
+    func divan(token: String) async throws -> [DivanItem] {
+        let state: DivanState = try await call("GET", "/v1/me/divan", token: token)
+        return state.items
+    }
+
+    /// Merges `items` (at most 2000) into the stored divan; answers the whole merged divan.
+    func putDivan(_ items: [DivanItem], token: String) async throws -> [DivanItem] {
+        let state: DivanState = try await call("PUT", "/v1/me/divan", body: DivanState(items: items), token: token)
+        return state.items
+    }
+
+    func privacy(token: String) async throws -> PrivacySettings {
+        try await call("GET", "/v1/me/privacy", token: token)
+    }
+
+    func putPrivacy(_ patch: PrivacyPatch, token: String) async throws -> PrivacySettings {
+        try await call("PUT", "/v1/me/privacy", body: patch, token: token)
+    }
+
+    func setAvatar(_ parts: AvatarParts, token: String) async throws -> APIUser {
+        try await call("PUT", "/v1/me/avatar", body: parts, token: token)
+    }
+
+    /// Deletes the account and everything stored for it. 502 `apple_revoke_failed` leaves it as it was.
+    func deleteAccount(token: String) async throws {
+        _ = try await data(for: request("DELETE", "/v1/me", query: [], body: nil, token: token))
+    }
+
     func poetPictures() async throws -> [PoetPictureEntry] {
         try await call("GET", "/v1/poets/pictures")
     }

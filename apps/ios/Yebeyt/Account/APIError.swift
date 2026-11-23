@@ -53,6 +53,7 @@ enum APIError: Error, Equatable, Sendable {
             case .usernameReserved: "این اسم رزرو شده"
             case .usernameChangeTooSoon: "هر ۳۰ روز یه بار می‌شه نام کاربری رو عوض کرد."
             case .rateLimited: "یکم صبر کن و دوباره امتحان کن."
+            case .appleRevokeFailed: "الان نشد، یه کم دیگه دوباره امتحان کن"
             case .invalidToken, .unauthorized: "ورود انجام نشد؛ دوباره امتحان کن."
             default: "یه مشکلی پیش اومد؛ یه بار دیگه امتحان کن."
             }

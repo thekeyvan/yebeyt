@@ -33,9 +33,14 @@ struct ReaderView: View {
                 .accessibilityHidden(model.holdIndex != nil || model.textSheetOpen)
             if model.phase == .loaded, model.mode == .couplet { rail(theme) }
             if model.textSheetOpen { textSheet }
-            if let held = model.holdIndex, model.couplets.indices.contains(held) {
-                HoldMenu(model: model, couplet: held, dismiss: { withAnimation(.snappy) { model.holdIndex = nil } }, playWithCouplet: playWithCouplet)
-                    .transition(.opacity)
+            if let index = model.holdIndex, let held = model.held(index) {
+                HoldMenu(
+                    held: held, dismiss: { withAnimation(.snappy) { model.holdIndex = nil } },
+                    share: { model.shareCouplet(index) },
+                    openCouplet: { withMeaning in withAnimation(.snappy) { model.openCouplet(index, withMeaning: withMeaning) } },
+                    playWithCouplet: playWithCouplet
+                )
+                .transition(.opacity)
             }
         }
         .overlay(alignment: .bottom) { toast }
@@ -50,7 +55,7 @@ struct ReaderView: View {
         .onChange(of: model.phase) { _, _ in recordProgress() }
         .onChange(of: model.index) { _, _ in recordProgress() }
         .onChange(of: model.topIndex) { _, _ in recordProgress() }
-        .onChange(of: model.reachedEnd) { _, reached in if reached { progress.reachedEnd(path: model.path) } }
+        .onChange(of: model.reachedEnd) { _, reached in if reached { progress.reachedEnd(path: model.path, count: model.couplets.count) } }
         .onDisappear { model.close() }
     }
 

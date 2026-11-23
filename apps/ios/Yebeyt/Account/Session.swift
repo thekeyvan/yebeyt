@@ -104,10 +104,11 @@ final class Session {
     }
 
     /// «خروج»: forgets the sign-in here at once, then tells the server (which may fail; the token expires anyway).
-    func signOut() async {
+    /// After the account is deleted there is nobody to tell (`tellServer: false`).
+    func signOut(tellServer: Bool = true) async {
         let token = unstoredRefreshToken ?? store.read()
         clear()
-        if let token { try? await api.logout(refreshToken: token) }
+        if tellServer, let token { try? await api.logout(refreshToken: token) }
     }
 
     private func currentAccessToken() async throws -> String {

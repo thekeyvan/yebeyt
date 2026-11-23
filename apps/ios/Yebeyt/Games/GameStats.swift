@@ -44,6 +44,26 @@ final class GameStats {
 
     func best(_ game: GameKind) -> Int { saved.best[game.rawValue] ?? 0 }
 
+    /// The longest run of days the daily puzzle was solved, ever (what the «۷ روز» badge and the candle ask for).
+    var bestStreak: Int {
+        var longest = 0
+        var run = 0
+        var previous: Int?
+        for day in Set(saved.solvedDays).sorted() {
+            run = previous == day - 1 ? run + 1 : 1
+            longest = max(longest, run)
+            previous = day
+        }
+        return longest
+    }
+
+    /// Told when a quiz answer is right, with the game and the couplet's poet (for badges and avatar items).
+    @ObservationIgnored var rightAnswerHandler: (@MainActor (GameKind, String) -> Void)?
+
+    func recordRightAnswer(in game: GameKind, poetSlug: String) {
+        rightAnswerHandler?(game, poetSlug)
+    }
+
     func daily(on day: TehranDay) -> DailyRecord? { saved.daily[day.number] }
 
     /// The app came back: after Tehran midnight it is a new day.

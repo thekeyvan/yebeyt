@@ -47,6 +47,7 @@ final class QuizSession {
     func confirm() {
         guard let answer = round.confirm() else { return }
         stats.award(answer.points)
+        if answer.right { stats.recordRightAnswer(in: round.kind, poetSlug: round.current.couplet.poetSlug) }
     }
 
     /// «سؤال بعدی»; after the last question the round ends.
