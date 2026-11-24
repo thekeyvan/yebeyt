@@ -70,29 +70,6 @@ private extension View {
     func reportFrame(_ key: String, in space: String) -> some View {
         background(GeometryReader { proxy in Color.clear.preference(key: CardFrames.self, value: [key: proxy.frame(in: .named(space))]) })
     }
-
-    /// A short shake to the sides whenever `trigger` changes.
-    func shake(_ trigger: Int) -> some View {
-        modifier(Shake(trigger: trigger))
-    }
-}
-
-private struct Shake: ViewModifier {
-    let trigger: Int
-
-    func body(content: Content) -> some View {
-        content.keyframeAnimator(initialValue: 0.0, trigger: trigger) { view, offset in
-            view.offset(x: offset)
-        } keyframes: { _ in
-            KeyframeTrack {
-                LinearKeyframe(9, duration: 0.05)
-                LinearKeyframe(-9, duration: 0.09)
-                LinearKeyframe(6, duration: 0.08)
-                LinearKeyframe(-4, duration: 0.07)
-                LinearKeyframe(0, duration: 0.05)
-            }
-        }
-    }
 }
 
 /// The two columns of cards with the green curves behind them.
@@ -117,6 +94,8 @@ struct MatchBoard: View {
         }
         .coordinateSpace(name: Self.space)
         .backgroundPreferenceValue(CardFrames.self) { frames in curves(frames) }
+        .sensoryFeedback(.success, trigger: round.matched.count) { old, new in new > old }
+        .sensoryFeedback(.error, trigger: shakes.values.reduce(0, +))
     }
 
     private func wordCard(_ word: MatchWord) -> some View {
@@ -129,8 +108,9 @@ struct MatchBoard: View {
                 .background(RoundedRectangle(cornerRadius: 16).fill(matched ? Color(hex: 0xEEF9E7) : selected ? Tokens.Colors.lapis : Tokens.Colors.white))
                 .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(matched ? Tokens.Colors.green : Tokens.Colors.white, lineWidth: 3))
                 .shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 4, x: 0, y: 2)
+                .popWhen(matched, wiggle: true)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .allowsHitTesting(!matched)
         .accessibilityLabel(word.text)
         .accessibilityIdentifier("word-\(word.id)")
@@ -148,8 +128,9 @@ struct MatchBoard: View {
                 .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(matched ? Tokens.Colors.green : Tokens.Colors.white, lineWidth: 3))
                 .shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 4, x: 0, y: 2)
                 .shake(shakes[word.id] ?? 0)
+                .popWhen(matched, wiggle: true)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .allowsHitTesting(!matched)
         .accessibilityLabel(word.gloss)
         .accessibilityIdentifier("meaning-\(word.id)")
