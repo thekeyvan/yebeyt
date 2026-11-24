@@ -311,6 +311,8 @@ struct MyStatsTests {
 struct FriendsLaunchTests {
     @Test func theFriendsRoutesOpenTheirScreens() {
         #expect(LaunchOptions(["beytRoute": "people"]).homePath == [.people])
+        #expect(LaunchOptions(["beytRoute": "people:sa"]).peopleText == "sa")
+        #expect(LaunchOptions(["beytRoute": "people"]).peopleText == "")
         #expect(LaunchOptions(["beytRoute": "person:sara.ghazal"]).homePath == [.person("sara.ghazal")])
         #expect(LaunchOptions(["beytRoute": "leaderboard"]).gamesPath == [.leaderboard])
         #expect(LaunchOptions(["beytRoute": "leaderboard"]).route?.isGames == true)

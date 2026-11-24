@@ -54,7 +54,6 @@ private struct FriendsScreenBody: View {
                     .onAppear { if person.username == model.people.last?.username { Task { await model.loadMore() } } }
                 }
             }
-            .accessibilityIdentifier("friendsList")
         }
     }
 }

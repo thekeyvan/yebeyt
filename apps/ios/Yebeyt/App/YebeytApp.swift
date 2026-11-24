@@ -61,6 +61,8 @@ struct YebeytApp: App {
             mePath: options.mePath, game: options.game
         )
         model.autoplay = options.autoplay
+        model.leaderboardStart = options.board
+        model.peopleStart = options.peopleText
         _model = State(initialValue: model)
         let stats = options.today.map { today in GameStats(now: { today.noon }) } ?? GameStats()
         #else

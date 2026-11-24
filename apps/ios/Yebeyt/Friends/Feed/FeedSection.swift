@@ -84,7 +84,7 @@ private struct CoupletBox: View {
     @State private var couplet: Couplet?
 
     var body: some View {
-        Group {
+        ZStack {  // a view even when empty, so the task below runs
             if let couplet {
                 VStack(spacing: 0) {
                     Text(couplet.m1).font(.poem(18))

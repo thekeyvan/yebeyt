@@ -36,6 +36,10 @@ final class AppModel {
     var share: ReaderModel.Share?
     /// The game open over the tabs, nil when none is.
     var game: GameRoute?
+    /// The text «پیدا کردن دوست» starts with (a debug launch can fill the field).
+    var peopleStart = ""
+    /// The tab of رده‌بندی that opens first (a debug launch can start on another).
+    var leaderboardStart = LeaderboardModel.Tab.league
     #if DEBUG
     /// What a debug launch plays by itself before the game is shown (`-beytPlay`).
     var autoplay = GameAutoplay.none

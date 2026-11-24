@@ -12,7 +12,7 @@ import Foundation
 /// With `poem:` the reader opens, and `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`,
 /// `-beytMeaning 1` and `-beytHold <n>` set its state. The من routes `-beytRoute me|divan|privacy|avatar|invite|settings|badges`
 /// open the من tab, with that screen pushed (`me` is the profile), `-beytRoute friends` pushes my friends there, and `-beytSeedDivan 1`
-/// first keeps some sample couplets. `-beytRoute people|person:<username>` open the خونه tab with that screen pushed and `-beytRoute leaderboard`
+/// first keeps some sample couplets. `-beytRoute people|people:<text>|person:<username>` open the خونه tab with that screen pushed and `-beytRoute leaderboard`
 /// the بازی tab with رده‌بندی (they want `-beytSignedIn 1`). `-beytFresh 1` first forgets what the phone has kept
 /// (reading progress, marks, follows, rejected couplets, game stats). Values that don't parse are ignored.
 struct LaunchOptions {
@@ -43,7 +43,7 @@ struct LaunchOptions {
         case invite
         case settings
         case badges
-        case people
+        case people(String)
         case person(String)
         case leaderboard
         case friends
@@ -72,7 +72,7 @@ struct LaunchOptions {
             case ("invite", nil): self = .invite
             case ("settings", nil): self = .settings
             case ("badges", nil): self = .badges
-            case ("people", nil): self = .people
+            case ("people", let text): self = .people(text ?? "")
             case ("leaderboard", nil): self = .leaderboard
             case ("friends", nil): self = .friends
             case ("person", let username?) where !username.isEmpty: self = .person(username)
@@ -114,6 +114,8 @@ struct LaunchOptions {
     private let meaning: String?
     private let hold: Int?
     private let play: Int?
+    /// `-beytBoard league|friends|global`: the tab of رده‌بندی that opens first.
+    private(set) var board: LeaderboardModel.Tab
     /// `-beytStub 1`: گوش کن plays canned recitations instead of asking Ganjoor.
     private let stub: Bool
     /// `-beytToday <yyyy-mm-dd>`: the Tehran day the games use instead of the real one.
@@ -137,6 +139,11 @@ struct LaunchOptions {
         meaning = (values["beytMeaning"] as? String) ?? (values["beytMeaning"] as? Int).map(String.init)
         hold = number("beytHold")
         play = number("beytPlay")
+        board = switch values["beytBoard"] as? String {
+        case "friends": .friends
+        case "global": .global
+        default: .league
+        }
         stub = number("beytStub") == 1
         today = (values["beytToday"] as? String).flatMap { TehranDay(key: $0) }
         fresh = number("beytFresh") == 1
@@ -180,6 +187,11 @@ struct LaunchOptions {
         case .friends: [.friends]
         default: []
         }
+    }
+
+    /// What the «پیدا کردن دوست» field starts with (`people:<text>`).
+    var peopleText: String {
+        if case .people(let text) = route { text } else { "" }
     }
 
     /// The screens a friends route pushes on the خونه tab.

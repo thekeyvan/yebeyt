@@ -28,6 +28,7 @@ struct OnbFriendsView: View {
                 .padding(.vertical, 4)
             }
             .scrollIndicators(.hidden)
+            .scrollClipDisabled()
             .scrollDismissesKeyboard(.interactively)
             Button("بریم خونه") { onboarding.finish() }
                 .buttonStyle(OnbButtonStyle())

@@ -43,6 +43,10 @@ private struct LeaderboardScreenBody: View {
         .scrollIndicators(.hidden)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
+        .task {
+            model.tab = app.leaderboardStart
+            app.leaderboardStart = .league  // only the first opening starts elsewhere
+        }
         .task(id: model.tab) { await model.load() }
         .refreshable { await model.load(force: true) }
     }
@@ -186,7 +190,6 @@ private struct BoardCard: View {
         .background(Tokens.Colors.white)
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .shadow(color: Tokens.Colors.ink.opacity(0.12), radius: 6, x: 0, y: 3)
-        .accessibilityIdentifier("boardRows")
     }
 }
 

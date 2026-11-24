@@ -10,6 +10,7 @@ struct PeopleScreen: View {
 }
 
 private struct PeopleScreenBody: View {
+    @Environment(AppModel.self) private var app
     @State private var model: PeopleSearchModel
     @State private var text = ""
     @State private var toast: String?
@@ -34,7 +35,11 @@ private struct PeopleScreenBody: View {
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .toast($toast)
-        .task { focused = true }
+        .task {
+            focused = true
+            text = app.peopleStart
+            app.peopleStart = ""  // only the first opening starts with text
+        }
     }
 }
 
@@ -74,7 +79,6 @@ struct PeopleSearchSection: View {
                     }
                 }
             }
-            .accessibilityIdentifier("peopleResults")
         }
     }
 }
