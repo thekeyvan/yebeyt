@@ -82,20 +82,30 @@ struct MotionTests {
     // MARK: A like or a keep
 
     @Test func aTappedMarkBurstsAndTapsOnlyWhenItTurnsOn() {
-        let on = Motion.markOutcome(turnedOn: true, tapped: true, variant: .full)
-        #expect(on.burst && on.haptic)
-        #expect(on.pop == .turningOn(.full))
-        let off = Motion.markOutcome(turnedOn: false, tapped: true, variant: .full)
-        #expect(!off.burst && !off.haptic)
-        #expect(off.pop == .turningOff(.full))
+        for action in [Burst.Action.like, .keep, .repost] {
+            let on = Motion.markOutcome(action, turnedOn: true, tapped: true, variant: .full)
+            #expect(on.burst && on.haptic)
+            #expect(on.pop == .turningOn(action, .full))
+            let off = Motion.markOutcome(action, turnedOn: false, tapped: true, variant: .full)
+            #expect(!off.burst && !off.haptic)
+            #expect(off.pop == .turningOff(.full))
+        }
     }
 
     @Test func aStateChangeWithoutATapOnlyPopsSmall() {
-        for turnedOn in [true, false] {
-            let outcome = Motion.markOutcome(turnedOn: turnedOn, tapped: false, variant: .full)
-            #expect(!outcome.burst && !outcome.haptic)
-            #expect(outcome.pop == .turningOff(.full))
+        for action in Burst.Action.allCases {
+            for turnedOn in [true, false] {
+                let outcome = Motion.markOutcome(action, turnedOn: turnedOn, tapped: false, variant: .full)
+                #expect(!outcome.burst && !outcome.haptic)
+                #expect(outcome.pop == .turningOff(.full))
+            }
         }
+    }
+
+    @Test func aSendFliesButHasNoParticlesAndNoTap() {
+        let outcome = Motion.markOutcome(.send, turnedOn: true, tapped: true, variant: .full)
+        #expect(!outcome.burst && !outcome.haptic)
+        #expect(outcome.pop == .turningOn(.send, .full))
     }
 
     @Test func aChangeCountsAsTheTapsForAMomentOnly() {
@@ -105,9 +115,26 @@ struct MotionTests {
         #expect(!Motion.isOwnTap(lastTapAt: nil, now: now))
     }
 
-    @Test func reduceMotionKeepsTheTapButNotTheBurst() {
-        let outcome = Motion.markOutcome(turnedOn: true, tapped: true, variant: .reduced)
-        #expect(!outcome.burst && outcome.haptic)
+    @Test func reduceMotionKeepsTheTapButNotTheParticles() {
+        for action in [Burst.Action.like, .keep, .repost] {
+            let outcome = Motion.markOutcome(action, turnedOn: true, tapped: true, variant: .reduced)
+            #expect(!outcome.burst && outcome.haptic)
+        }
+    }
+
+    @Test func eachActionsIconMovesItsOwnWayAndReduceMotionOnlyScales() {
+        let drop = Motion.Pop.turningOn(.keep, .full), spin = Motion.Pop.turningOn(.repost, .full), fly = Motion.Pop.turningOn(.send, .full)
+        #expect(drop.dys.first?.value ?? 0 < 0 && drop.dys.last?.value == 0)  // from above, to rest
+        #expect(spin.rotations.last?.value == 360)
+        #expect(fly.dxs.first?.value ?? 0 > 0 && fly.dys.first?.value ?? 0 < 0)  // toward the top corner
+        #expect(fly.dxs.last?.value == 0 && fly.dys.last?.value == 0 && fly.opacities.last?.value == 1)  // lands back
+        #expect(Motion.Pop.turningOn(.like, .full) == .turningOn(.full))
+        for action in Burst.Action.allCases {
+            let full = Motion.Pop.turningOn(action, .full), reduced = Motion.Pop.turningOn(action, .reduced)
+            #expect(full.duration <= 0.5)
+            #expect(reduced.scales.map(\.value) == [1.05, 1])
+            #expect(reduced.rotations.isEmpty && reduced.dxs.isEmpty && reduced.dys.isEmpty && reduced.opacities.isEmpty)
+        }
     }
 
     // MARK: Celebrating a round
@@ -124,37 +151,66 @@ struct MotionTests {
 
     // MARK: Burst
 
-    @Test func theSameSeedMakesTheSameBurst() {
-        #expect(Burst.pieces(.small, seed: 7) == Burst.pieces(.small, seed: 7))
-        #expect(Burst.pieces(.small, seed: 7) != Burst.pieces(.small, seed: 8))
+    @Test func theSameSeedMakesTheSameBurstForEachAction() {
+        for action in Burst.Action.allCases where action != .send {
+            #expect(Burst.pieces(action, seed: 7) == Burst.pieces(action, seed: 7))
+            #expect(Burst.pieces(action, seed: 7) != Burst.pieces(action, seed: 8))
+        }
     }
 
-    @Test func aBurstHasSixToEightPlainPiecesWithinItsRadius() {
-        for style in [Burst.Style.small, .big] {
-            for seed in UInt64(0)..<20 {
-                let pieces = Burst.pieces(style, seed: seed)
-                #expect((6...8).contains(pieces.count))
-                #expect(pieces.allSatisfy { $0.distance <= style.radius && $0.distance >= style.radius * 0.6 })
-                #expect(Set(pieces.map(\.kind)).isSubset(of: [.dot, .dash, .square]))
+    @Test func eachActionHasItsOwnPiecesInItsOwnCount() {
+        let expected: [Burst.Action: (ClosedRange<Int>, Set<Burst.Kind>, Set<Burst.Tint>)] = [
+            .like: (4...6, [.heart], [.fire, .magenta]),
+            .keep: (3...4, [.ribbon], [.lapis]),
+            .repost: (2...2, [.arrow], [.lapis]),
+            .send: (0...0, [], []),
+            .right: (4...6, [.tick], [.green]),
+            .win: (6...8, [.dot, .dash, .square], Set(Burst.Tint.allCases)),
+        ]
+        for action in Burst.Action.allCases {
+            let (count, kinds, tints) = expected[action]!
+            for seed in UInt64(0)..<30 {
+                let pieces = Burst.pieces(action, seed: seed)
+                #expect(count.contains(pieces.count))
+                #expect(Set(pieces.map(\.kind)).isSubset(of: kinds))
+                #expect(Set(pieces.map(\.tint)).isSubset(of: tints))
+                #expect(pieces.allSatisfy { $0.distance <= action.style.radius && $0.distance >= action.style.radius * 0.7 - 0.001 })
             }
         }
+        #expect(Burst.pieces(.send, seed: 1).isEmpty)
+    }
+
+    @Test func heartsRiseAndRibbonsFanOutUpward() {
+        for action in [Burst.Action.like, .keep] {
+            for seed in UInt64(0)..<20 {
+                #expect(Burst.pieces(action, seed: seed).allSatisfy { sin($0.angle) < -0.3 || sin($0.angle + 2 * .pi) < -0.3 })
+            }
+        }
+        let heart = Burst.pieces(.like, seed: 2)[0]
+        #expect(Burst.Frame(heart, progress: 0.6).dy < Burst.Frame(heart, progress: 0.3).dy)  // still going up
+    }
+
+    @Test func aWinGetsConfettiAndBigIsBigger() {
         #expect(Burst.Style.big.radius > Burst.Style.small.radius)
+        #expect(Burst.pieces(.win, style: .big, seed: 1).allSatisfy { $0.distance <= Burst.Style.big.radius })
     }
 
     @Test func theAnglesSpreadAroundTheControl() {
-        let pieces = Burst.pieces(.small, seed: 3)
+        let pieces = Burst.pieces(.win, seed: 3)
         let sectors = Set(pieces.map { Int(($0.angle / (2 * .pi)).truncatingRemainder(dividingBy: 1) * 4) })
         #expect(sectors.count == 4)
     }
 
     @Test func aPieceStartsAndEndsInvisibleAndFliesOutward() {
-        let piece = Burst.pieces(.small, seed: 1)[0]
-        #expect(Burst.Frame(piece, progress: 0).opacity == 0)
-        #expect(Burst.Frame(piece, progress: 1).opacity == 0)
+        for action in Burst.Action.allCases where action != .send {
+            let piece = Burst.pieces(action, seed: 1)[0]
+            #expect(Burst.Frame(piece, progress: 0).opacity == 0)
+            #expect(Burst.Frame(piece, progress: 1).opacity == 0)
+            #expect(Burst.Frame(piece, progress: 0.2).opacity > 0)
+        }
+        let piece = Burst.pieces(.win, seed: 1)[0]
         let early = Burst.Frame(piece, progress: 0.2), late = Burst.Frame(piece, progress: 0.8)
-        #expect(early.opacity > 0)
         #expect(hypot(late.dx, late.dy) > hypot(early.dx, early.dy))
-        #expect(hypot(Burst.Frame(piece, progress: 0.999).dx, Burst.Frame(piece, progress: 0.999).dy) <= piece.distance + 0.01)
     }
 
     @Test func countingUpEndsOnTheValue() {

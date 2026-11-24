@@ -2,22 +2,24 @@ import SwiftUI
 
 /// The views of the motion vocabulary (`Motion.swift`).
 extension View {
-    /// A like or a keep: turning on pops with a wiggle, flies a burst and taps medium; turning off only pops a little.
-    /// A like or a keep: `taps` is the count of the control's own taps (`MarkButton` gives it). Only a change that comes
-    /// with a tap bursts and taps; one from elsewhere (a sync, the same couplet in another view) at most pops small.
-    /// `id` says which thing the mark is on: when it changes (a page scrolled to another couplet) nothing pops.
-    func markMotion(on: Bool, id: AnyHashable = 0, taps: Int) -> some View {
-        modifier(MarkMotion(on: on, id: id, taps: taps))
+    /// The icon of a like, a keep, a repost or a send (`action`; nil for another icon). Turning on does what the action
+    /// does (hearts rise, a bookmark drops in with ribbons, arrows spin and circle out; a send flies off and lands
+    /// back) and taps medium; turning off only pops a little. `taps` is the count of the control's own taps
+    /// (`MarkButton` gives it): only a change that comes with a tap gets the particles and the tap; one from elsewhere
+    /// (a sync, the same couplet in another view) at most pops small. `id` says which thing the mark is on: when it
+    /// changes (a page scrolled to another couplet) nothing pops.
+    func markMotion(_ action: Burst.Action?, on: Bool = false, id: AnyHashable = 0, taps: Int) -> some View {
+        modifier(OptionalMark(action: action, on: on, id: id, taps: taps))
     }
 
     /// Pops (and, when asked, bursts and gives `feedback`) when `condition` turns true: a tab's icon, a right answer.
-    func popWhen(_ condition: Bool, wiggle: Bool = false, burst: Burst.Style? = nil, feedback: SensoryFeedback? = nil) -> some View {
-        modifier(Reaction(condition: condition, wiggle: wiggle, burst: burst, feedback: feedback, shakes: false))
+    func popWhen(_ condition: Bool, wiggle: Bool = false, burst: Burst.Action? = nil, style: Burst.Style? = nil, feedback: SensoryFeedback? = nil) -> some View {
+        modifier(Reaction(condition: condition, wiggle: wiggle, burst: burst, style: style, feedback: feedback, shakes: false))
     }
 
     /// Shakes (and gives `feedback`) when `condition` turns true: a wrong answer.
     func shakeWhen(_ condition: Bool, feedback: SensoryFeedback? = nil) -> some View {
-        modifier(Reaction(condition: condition, wiggle: false, burst: nil, feedback: feedback, shakes: true))
+        modifier(Reaction(condition: condition, wiggle: false, burst: nil, style: nil, feedback: feedback, shakes: true))
     }
 
     /// Pops each time `value` changes: a score that went up.
@@ -25,7 +27,7 @@ extension View {
         modifier(ValuePop(value: value))
     }
 
-    /// The end of a round, when it appears: a win pops with a big burst and a success tap, anything else only pops.
+    /// The end of a round, when it appears: a win pops with a big confetti burst and a success tap, anything else only pops.
     func celebrateOnAppear(_ celebrates: Bool) -> some View {
         modifier(AppearCelebration(celebrates: celebrates))
     }
@@ -40,9 +42,10 @@ extension View {
         modifier(ArrivalTransition(toast: false))
     }
 
-    /// The verdict of an answer, when it appears: right pops with a burst and a success tap, wrong shakes with an error tap.
-    func verdictMotion(right: Bool, burst: Burst.Style = .small) -> some View {
-        modifier(AppearReaction(right: right, burst: burst))
+    /// The verdict of an answer, when it appears: right pops with ticks (or `burst`) and a success tap, wrong shakes with
+    /// an error tap and no particles.
+    func verdictMotion(right: Bool, burst: Burst.Action = .right, style: Burst.Style? = nil) -> some View {
+        modifier(AppearReaction(right: right, burst: burst, style: style))
     }
 
     /// A short shake to the sides whenever `trigger` changes.
@@ -115,6 +118,9 @@ private struct ArrivalTransition: ViewModifier {
 private struct PopFrame {
     var scale = 1.0
     var rotation = 0.0
+    var dx = 0.0
+    var dy = 0.0
+    var opacity = 1.0
 }
 
 private struct PopEffect: ViewModifier {
@@ -123,18 +129,21 @@ private struct PopEffect: ViewModifier {
 
     func body(content: Content) -> some View {
         content.keyframeAnimator(initialValue: PopFrame(), trigger: trigger) { view, frame in
-            view.scaleEffect(frame.scale).rotationEffect(.degrees(frame.rotation))
+            view.scaleEffect(frame.scale).rotationEffect(.degrees(frame.rotation)).offset(x: frame.dx, y: frame.dy).opacity(frame.opacity)
         } keyframes: { _ in
-            KeyframeTrack(\.scale) {
-                for step in pop.scales { CubicKeyframe(step.value, duration: step.duration) }
-            }
-            KeyframeTrack(\.rotation) {
-                if pop.rotations.isEmpty {
-                    LinearKeyframe(0, duration: pop.duration)
-                } else {
-                    for step in pop.rotations { CubicKeyframe(step.value, duration: step.duration) }
-                }
-            }
+            KeyframeTrack(\.scale) { steps(pop.scales, rest: 1) }
+            KeyframeTrack(\.rotation) { steps(pop.rotations, rest: 0) }
+            KeyframeTrack(\.dx) { steps(pop.dxs, rest: 0) }
+            KeyframeTrack(\.dy) { steps(pop.dys, rest: 0) }
+            KeyframeTrack(\.opacity) { steps(pop.opacities, rest: 1) }
+        }
+    }
+
+    @KeyframeTrackContentBuilder<Double> private func steps(_ steps: [Motion.Step], rest: Double) -> some KeyframeTrackContent<Double> {
+        if steps.isEmpty {
+            LinearKeyframe(rest, duration: pop.duration)
+        } else {
+            for step in steps { CubicKeyframe(step.value, duration: step.duration) }
         }
     }
 }
@@ -172,12 +181,13 @@ private struct ThrownEffect: ViewModifier {
 
 private struct BurstEffect: ViewModifier {
     let trigger: Int
-    let style: Burst.Style
+    let action: Burst.Action
+    let style: Burst.Style?
     /// Mixed into the seed, so two controls' bursts don't look the same.
     @State private var salt = UInt64.random(in: .min ... .max)
 
     func body(content: Content) -> some View {
-        let pieces = trigger == 0 ? [] : Burst.pieces(style, seed: salt &+ UInt64(trigger))
+        let pieces = trigger == 0 ? [] : Burst.pieces(action, style: style, seed: salt &+ UInt64(trigger))
         content.overlay {
             Color.clear.keyframeAnimator(initialValue: 0.0, trigger: trigger) { _, progress in
                 // Mounted only while it flies.
@@ -209,13 +219,23 @@ private struct BurstLayer: View {
     }
 
     @ViewBuilder private func shape(_ piece: Burst.Piece, _ frame: Burst.Frame) -> some View {
+        let size = piece.size
         switch piece.kind {
         case .dot:
-            Circle().frame(width: piece.size, height: piece.size)
+            Circle().frame(width: size, height: size)
         case .dash:
-            Capsule().frame(width: piece.size * 1.7, height: piece.size * 0.45).rotationEffect(.radians(piece.angle))
+            Capsule().frame(width: size * 1.7, height: size * 0.45).rotationEffect(.degrees(frame.heading))
         case .square:
-            RoundedRectangle(cornerRadius: 1.5).frame(width: piece.size * 0.8, height: piece.size * 0.8).rotationEffect(.degrees(frame.rotation))
+            RoundedRectangle(cornerRadius: 1.5).frame(width: size * 0.8, height: size * 0.8).rotationEffect(.degrees(frame.rotation))
+        case .heart:
+            HeartIcon().fill().frame(width: size, height: size)
+        case .ribbon:
+            BookmarkIcon().fill().frame(width: size, height: size).rotationEffect(.degrees(frame.heading - 90))
+        case .arrow:
+            SVGShape(d: "M4 12h16M14 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: size * 0.22, lineCap: .round, lineJoin: .round))
+                .frame(width: size, height: size).rotationEffect(.degrees(frame.heading))
+        case .tick:
+            CheckIcon().stroke(style: StrokeStyle(lineWidth: size * 0.26, lineCap: .round, lineJoin: .round)).frame(width: size, height: size)
         }
     }
 }
@@ -234,6 +254,21 @@ private extension Burst.Tint {
 
 // MARK: The modifiers
 
+private struct OptionalMark: ViewModifier {
+    let action: Burst.Action?
+    let on: Bool
+    let id: AnyHashable
+    let taps: Int
+
+    func body(content: Content) -> some View {
+        if let action {
+            content.modifier(MarkMotion(action: action, on: on, id: id, taps: taps))
+        } else {
+            content
+        }
+    }
+}
+
 private struct MarkMotion: ViewModifier {
     struct Snapshot: Equatable {
         var on: Bool
@@ -241,6 +276,7 @@ private struct MarkMotion: ViewModifier {
         var taps: Int
     }
 
+    let action: Burst.Action
     let on: Bool
     let id: AnyHashable
     let taps: Int
@@ -255,11 +291,15 @@ private struct MarkMotion: ViewModifier {
         let variant = Motion.variant(reduceMotion: reduceMotion)
         content
             .modifier(PopEffect(trigger: pops, pop: pop))
-            .modifier(BurstEffect(trigger: bursts, style: .small))
+            .modifier(BurstEffect(trigger: bursts, action: action, style: nil))
             .onChange(of: Snapshot(on: on, id: id, taps: taps)) { old, new in
                 if new.taps != old.taps { lastTapAt = .now }
-                guard old.id == new.id, old.on != new.on else { return }
-                let outcome = Motion.markOutcome(turnedOn: new.on, tapped: Motion.isOwnTap(lastTapAt: lastTapAt, now: .now), variant: variant)
+                // A send has no state: its tap is the change.
+                let changed = action == .send ? new.taps != old.taps : old.id == new.id && old.on != new.on
+                guard changed else { return }
+                let outcome = Motion.markOutcome(
+                    action, turnedOn: action == .send || new.on, tapped: Motion.isOwnTap(lastTapAt: lastTapAt, now: .now), variant: variant
+                )
                 pop = outcome.pop
                 pops += 1
                 if outcome.burst { bursts += 1 }
@@ -272,7 +312,8 @@ private struct MarkMotion: ViewModifier {
 private struct Reaction: ViewModifier {
     let condition: Bool
     let wiggle: Bool
-    let burst: Burst.Style?
+    let burst: Burst.Action?
+    let style: Burst.Style?
     let feedback: SensoryFeedback?
     let shakes: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -283,7 +324,7 @@ private struct Reaction: ViewModifier {
         content
             .modifier(PopEffect(trigger: shakes ? 0 : count, pop: .turningOn(variant, wiggle: wiggle)))
             .modifier(ShakeEffect(trigger: shakes ? count : 0))
-            .modifier(BurstEffect(trigger: burst != nil && Motion.bursts(variant) ? count : 0, style: burst ?? .small))
+            .modifier(BurstEffect(trigger: burst != nil && Motion.bursts(variant) ? count : 0, action: burst ?? .win, style: style))
             .onChange(of: condition) { _, now in if now { count += 1 } }
             .sensoryFeedback(trigger: count) { _, _ in feedback }
     }
@@ -291,13 +332,14 @@ private struct Reaction: ViewModifier {
 
 private struct AppearReaction: ViewModifier {
     let right: Bool
-    let burst: Burst.Style
+    let burst: Burst.Action
+    let style: Burst.Style?
     @State private var appeared = false
 
     func body(content: Content) -> some View {
         Group {
             if right {
-                content.popWhen(appeared, wiggle: true, burst: burst, feedback: .success)
+                content.popWhen(appeared, wiggle: true, burst: burst, style: style, feedback: .success)
             } else {
                 content.shakeWhen(appeared, feedback: .error)
             }
@@ -322,7 +364,7 @@ private struct Celebrating: ViewModifier {
     func body(content: Content) -> some View {
         Group {
             if celebrates {
-                content.popWhen(appeared, wiggle: true, burst: .big, feedback: .success)
+                content.popWhen(appeared, wiggle: true, burst: .win, style: .big, feedback: .success)
             } else {
                 content.popWhen(appeared)
             }

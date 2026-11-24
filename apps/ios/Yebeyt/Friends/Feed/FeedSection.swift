@@ -130,24 +130,24 @@ private struct FeedCard: View {
             let kept = marks.contains(.kept, poemPath: route.path, couplet: route.couplet)
             HStack {
                 HStack(spacing: 14) {
-                    action("پسند این بیت", on: liked, count: counts.map { FeedModel.shown($0.likes, serverMine: $0.likedByMe, localMine: liked) }, color: liked ? Tokens.Colors.magenta : Tokens.Colors.ink, id: "feedLike") {
+                    action("پسند این بیت", .like, on: liked, count: counts.map { FeedModel.shown($0.likes, serverMine: $0.likedByMe, localMine: liked) }, color: liked ? Tokens.Colors.magenta : Tokens.Colors.ink, id: "feedLike") {
                         LineIcon(shape: HeartIcon(), size: 20, lineWidth: 2.2, fill: liked ? Tokens.Colors.magenta : nil)
                     } tap: {
                         account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: route.path, couplet: route.couplet) }
                     }
-                    action("بازنشر این بیت", on: reposted, count: counts.map { FeedModel.shown($0.reposts, serverMine: $0.repostedByMe, localMine: reposted) }, color: reposted ? Tokens.Colors.lapis : Tokens.Colors.ink, id: "feedRepost") {
+                    action("بازنشر این بیت", .repost, on: reposted, count: counts.map { FeedModel.shown($0.reposts, serverMine: $0.repostedByMe, localMine: reposted) }, color: reposted ? Tokens.Colors.lapis : Tokens.Colors.ink, id: "feedRepost") {
                         LineIcon(shape: RepostIcon(), size: 20, lineWidth: 2.2, fill: nil)
                     } tap: {
                         account.require(.likes, needed: !reposted) { marks.toggle(.reposted, poemPath: route.path, couplet: route.couplet) }
                     }
-                    action("بفرست این بیت", on: false, count: nil, color: Tokens.Colors.ink, id: "feedSend") {
+                    action("بفرست این بیت", .send, on: false, count: nil, color: Tokens.Colors.ink, id: "feedSend") {
                         LineIcon(shape: MessagesIcon(), size: 20, lineWidth: 2.2, fill: nil)
                     } tap: {
                         if let shown { app.share = ReaderModel.Share(text: ReaderText.shareText(shown.couplet, poet: shown.poet, title: shown.title)) }
                     }
                 }
                 Spacer(minLength: 0)
-                action("نگه داشتن این بیت", on: kept, count: nil, color: Tokens.Colors.ink, id: "feedKeep") {
+                action("نگه داشتن این بیت", .keep, on: kept, count: nil, color: Tokens.Colors.ink, id: "feedKeep") {
                     LineIcon(shape: BookmarkIcon(), size: 20, lineWidth: 2.2, fill: kept ? Tokens.Colors.ink : nil)
                 } tap: {
                     marks.toggle(.kept, poemPath: route.path, couplet: route.couplet)
@@ -157,10 +157,10 @@ private struct FeedCard: View {
     }
 
     /// An icon with its count, in `color` (magenta ♥ and lapis repost when on, as on the Calm board; ink otherwise).
-    private func action(_ label: String, on: Bool, count: Int?, color: Color, id: String, @ViewBuilder icon: @escaping () -> some View, tap: @escaping () -> Void) -> some View {
+    private func action(_ label: String, _ mark: Burst.Action, on: Bool, count: Int?, color: Color, id: String, @ViewBuilder icon: @escaping () -> some View, tap: @escaping () -> Void) -> some View {
         MarkButton(action: tap) { taps in
             HStack(spacing: 4) {
-                icon().markMotion(on: on, taps: taps)
+                icon().markMotion(mark, on: on, taps: taps)
                 if let count, count > 0 { Text(PersianDigits.string(count)).font(.ui(12, weight: .bold)) }
             }
             .foregroundStyle(color)

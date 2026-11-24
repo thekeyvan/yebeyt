@@ -43,26 +43,26 @@ struct ReaderActionRow: View {
         HStack(spacing: 0) {
             if let player = model.player, player.isAvailable { PlayToggle(player: player) { model.togglePlayback() } }
             let liked = marks.contains(.liked, poemPath: model.path, couplet: couplet)
-            button("پسند", on: liked) {
+            button("پسند", .like, on: liked) {
                 account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: model.path, couplet: couplet) }
             } icon: {
                 LineIcon(shape: HeartIcon(), size: 21, lineWidth: 2, fill: liked ? Tokens.Colors.magenta : nil)
                     .foregroundStyle(Tokens.Colors.magenta)
             }
             let reposted = marks.contains(.reposted, poemPath: model.path, couplet: couplet)
-            button("بازنشر", on: reposted) {
+            button("بازنشر", .repost, on: reposted) {
                 account.require(.likes, needed: !reposted) { marks.toggle(.reposted, poemPath: model.path, couplet: couplet) }
             } icon: {
                 LineIcon(shape: RepostIcon(), size: 21, lineWidth: 2.2, fill: nil)
                     .foregroundStyle(reposted ? Tokens.Colors.lapis : theme.foreground)
             }
-            button("بفرست", on: false) {
+            button("بفرست", .send, on: false) {
                 model.shareCouplet(couplet)
             } icon: {
                 LineIcon(shape: MessagesIcon(), size: 21, lineWidth: 2.2, fill: nil).foregroundStyle(theme.foreground)
             }
             let kept = marks.contains(.kept, poemPath: model.path, couplet: couplet)
-            button("نگه دار", on: kept) {
+            button("نگه دار", .keep, on: kept) {
                 marks.toggle(.kept, poemPath: model.path, couplet: couplet)
             } icon: {
                 LineIcon(shape: BookmarkIcon(), size: 21, lineWidth: 2.2, fill: kept ? theme.foreground : nil)
@@ -71,9 +71,9 @@ struct ReaderActionRow: View {
         }
     }
 
-    private func button(_ label: String, on: Bool, action: @escaping () -> Void, @ViewBuilder icon: @escaping () -> some View) -> some View {
+    private func button(_ label: String, _ mark: Burst.Action, on: Bool, action: @escaping () -> Void, @ViewBuilder icon: @escaping () -> some View) -> some View {
         MarkButton(action: action) { taps in
-            icon().markMotion(on: on, id: "\(model.path)#\(couplet)", taps: taps).frame(width: 43, height: 44).contentShape(Rectangle())
+            icon().markMotion(mark, on: on, id: "\(model.path)#\(couplet)", taps: taps).frame(width: 43, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.press)
         .accessibilityLabel(label)

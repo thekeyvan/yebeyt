@@ -111,16 +111,16 @@ struct HoldMenu: View {
         HStack {
             let (path, couplet) = (held.path, held.index)
             let liked = marks.contains(.liked, poemPath: path, couplet: couplet)
-            round("پسند", on: liked) {
+            round("پسند", .like, on: liked) {
                 LineIcon(shape: HeartIcon(), size: 22, lineWidth: 2.2, fill: liked ? Tokens.Colors.magenta : nil).foregroundStyle(Tokens.Colors.magenta)
             } action: { account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: path, couplet: couplet) } }
             Spacer()
             let reposted = marks.contains(.reposted, poemPath: path, couplet: couplet)
-            round("بازنشر", on: reposted) {
+            round("بازنشر", .repost, on: reposted) {
                 LineIcon(shape: RepostIcon(), size: 22, lineWidth: 2.2, fill: nil).foregroundStyle(reposted ? Tokens.Colors.lapis : Tokens.Colors.ink)
             } action: { account.require(.likes, needed: !reposted) { marks.toggle(.reposted, poemPath: path, couplet: couplet) } }
             Spacer()
-            round("بفرست", on: false) {
+            round("بفرست", .send, on: false) {
                 LineIcon(shape: MessagesIcon(), size: 22, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.ink)
             } action: {
                 dismiss()
@@ -128,7 +128,7 @@ struct HoldMenu: View {
             }
             Spacer()
             let kept = marks.contains(.kept, poemPath: path, couplet: couplet)
-            round("نگه دار", on: kept) {
+            round("نگه دار", .keep, on: kept) {
                 LineIcon(shape: BookmarkIcon(), size: 22, lineWidth: 2.2, fill: kept ? Tokens.Colors.ink : nil).foregroundStyle(Tokens.Colors.ink)
             } action: { marks.toggle(.kept, poemPath: path, couplet: couplet) }
         }
@@ -139,10 +139,10 @@ struct HoldMenu: View {
         }
     }
 
-    private func round(_ label: String, on: Bool, @ViewBuilder icon: @escaping () -> some View, action: @escaping () -> Void) -> some View {
+    private func round(_ label: String, _ mark: Burst.Action, on: Bool, @ViewBuilder icon: @escaping () -> some View, action: @escaping () -> Void) -> some View {
         MarkButton(action: action) { taps in
             icon()
-                .markMotion(on: on, taps: taps)
+                .markMotion(mark, on: on, taps: taps)
                 .frame(width: 52, height: 52)
                 .background(Circle().fill(Tokens.Colors.paper))
         }

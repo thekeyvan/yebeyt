@@ -243,7 +243,7 @@ private struct SharedDivanCard: View {
                     let any = item.likedByMe || item.likedByThem
                     LineIcon(shape: HeartIcon(), size: 18, lineWidth: 2, fill: any ? Tokens.Colors.magenta : nil)
                         .foregroundStyle(any ? Tokens.Colors.magenta : Tokens.Colors.ink)
-                        .markMotion(on: item.likedByMe, taps: taps)
+                        .markMotion(.like, on: item.likedByMe, taps: taps)
                     Text(likeText).font(.ui(12)).foregroundStyle(Tokens.Colors.muted)
                 }
                 .padding(.vertical, 4)

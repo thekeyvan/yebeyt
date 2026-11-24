@@ -32,14 +32,19 @@ struct TabBar: View {
         .accessibilityIdentifier("tabBar")
     }
 
+    private func open(_ tab: Tab, wasOpen: Bool) {
+        if !wasOpen { tabTaps += 1 }
+        model.select(tab)
+    }
+
     private func item(_ tab: Tab) -> some View {
         let on = model.selectedTab == tab
         return Button {
-            if !on { tabTaps += 1 }
+            // The tap is felt when the tab opens, not when the account gate opens instead.
             if tab == .messages {
-                account.require(.messages) { model.select(tab) }
+                account.require(.messages) { open(tab, wasOpen: on) }
             } else {
-                model.select(tab)
+                open(tab, wasOpen: on)
             }
         } label: {
             VStack(spacing: 3) {

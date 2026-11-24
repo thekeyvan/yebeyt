@@ -66,7 +66,7 @@ struct AnswerSheet: View {
                 }
             }
             .frame(width: 46, height: 46)
-            .verdictMotion(right: right, burst: celebrates ? .big : .small)
+            .verdictMotion(right: right, burst: celebrates ? .win : .right, style: celebrates ? .big : nil)
             .tilted(-8)
             VStack(alignment: .leading, spacing: 0) {
                 Text(title ?? (right ? "درست چسبوندی!" : "این یکی نشد")).font(.title(26)).foregroundStyle(Tokens.Colors.ink)
@@ -105,18 +105,18 @@ struct AnswerSheet: View {
     private var actions: some View {
         let kept = marks.contains(.kept, poemPath: couplet.poem, couplet: couplet.index)
         return HStack(spacing: 10) {
-            action("کل شعر", BookIcon(), id: "sheetPoem") { app.openReader(ReaderRoute(path: couplet.poem, couplet: couplet.index)) }
-            action("نگه دار", BookmarkIcon(), fill: kept, id: "sheetKeep") {
+            action("کل شعر", BookIcon(), mark: nil, id: "sheetPoem") { app.openReader(ReaderRoute(path: couplet.poem, couplet: couplet.index)) }
+            action("نگه دار", BookmarkIcon(), mark: .keep, fill: kept, id: "sheetKeep") {
                 marks.toggle(.kept, poemPath: couplet.poem, couplet: couplet.index)
             }
-            action("بفرست", MessagesIcon(), id: "sheetSend") { share = ReaderModel.Share(text: couplet.share) }
+            action("بفرست", MessagesIcon(), mark: .send, id: "sheetSend") { share = ReaderModel.Share(text: couplet.share) }
         }
     }
 
-    private func action(_ title: String, _ icon: some Shape, fill: Bool = false, id: String, perform: @escaping () -> Void) -> some View {
+    private func action(_ title: String, _ icon: some Shape, mark: Burst.Action?, fill: Bool = false, id: String, perform: @escaping () -> Void) -> some View {
         MarkButton(action: perform) { taps in
             VStack(spacing: 4) {
-                LineIcon(shape: icon, size: 22, lineWidth: 2.2, fill: fill ? Tokens.Colors.ink : nil).markMotion(on: fill, taps: taps)
+                LineIcon(shape: icon, size: 22, lineWidth: 2.2, fill: fill ? Tokens.Colors.ink : nil).markMotion(mark, on: fill, taps: taps)
                 Text(title).font(.ui(13, weight: .medium))
             }
             .foregroundStyle(Tokens.Colors.ink)

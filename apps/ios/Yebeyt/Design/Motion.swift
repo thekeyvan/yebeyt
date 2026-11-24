@@ -81,12 +81,41 @@ enum Motion {
         var duration: Double
     }
 
-    /// A pop: the scale and the rotation (in degrees) it goes through, as keyframe steps.
+    /// A pop: the scale, the rotation (degrees), the shift (points) and the opacity it goes through, as keyframe steps.
+    /// An empty track stays at rest.
     struct Pop: Equatable, Sendable {
         var scales: [Step]
         var rotations: [Step]
+        var dxs: [Step] = []
+        var dys: [Step] = []
+        var opacities: [Step] = []
 
-        var duration: Double { max(scales.reduce(0) { $0 + $1.duration }, rotations.reduce(0) { $0 + $1.duration }) }
+        var duration: Double {
+            [scales, rotations, dxs, dys, opacities].map { $0.reduce(0) { $0 + $1.duration } }.max() ?? 0
+        }
+
+        /// What the icon of `action` does when it is turned on or tapped; with Reduce Motion a short scale for all.
+        static func turningOn(_ action: Burst.Action, _ variant: Variant) -> Pop {
+            guard variant == .full else { return reducedPop }
+            switch action.icon {
+            case .pop:
+                return turningOn(.full)
+            case .drop:  // from 18 points above, with a bounce
+                return Pop(
+                    scales: [Step(value: 1.1, duration: 0.15), Step(value: 1, duration: 0.25)], rotations: [],
+                    dys: [Step(value: -18, duration: 0.01), Step(value: 5, duration: 0.13), Step(value: -3, duration: 0.1), Step(value: 1.5, duration: 0.09), Step(value: 0, duration: 0.09)]
+                )
+            case .spin:  // once around
+                return Pop(scales: [Step(value: 1.2, duration: 0.2), Step(value: 1, duration: 0.25)], rotations: [Step(value: 360, duration: 0.45)])
+            case .fly:  // off toward the top corner, back in from the opposite one
+                return Pop(
+                    scales: [Step(value: 0.9, duration: 0.16), Step(value: 0.9, duration: 0.01), Step(value: 1, duration: 0.2)], rotations: [],
+                    dxs: [Step(value: 26, duration: 0.16), Step(value: -18, duration: 0.01), Step(value: 0, duration: 0.2)],
+                    dys: [Step(value: -26, duration: 0.16), Step(value: 18, duration: 0.01), Step(value: 0, duration: 0.2)],
+                    opacities: [Step(value: 0, duration: 0.16), Step(value: 0, duration: 0.01), Step(value: 1, duration: 0.2)]
+                )
+            }
+        }
 
         /// 1 → 1.35 → 0.9 → 1.05 → 1 over 0.45 s, with a wiggle of ±8° for stickers.
         static func turningOn(_ variant: Variant, wiggle: Bool = true) -> Pop {
@@ -125,12 +154,13 @@ enum Motion {
         }
     }
 
-    // MARK: A like or a keep
+    // MARK: A like, a keep, a repost, a send
 
-    /// What a mark's state change does. Only a change right after a tap on its own control gets the burst and the tap;
-    /// one that comes from elsewhere (a sync, the same couplet in another view) at most pops small.
+    /// What a mark's state change does. Only a change right after a tap on its own control gets the particles and the
+    /// tap; one that comes from elsewhere (a sync, the same couplet in another view) at most pops small.
     struct MarkOutcome: Equatable, Sendable {
         var pop: Pop
+        /// Particles fly (the action has some, and Reduce Motion is off).
         var burst: Bool
         var haptic: Bool
     }
@@ -142,77 +172,10 @@ enum Motion {
         lastTapAt.map { now.timeIntervalSince($0) <= tapWindow } ?? false
     }
 
-    /// `tapped`: see `isOwnTap`.
-    static func markOutcome(turnedOn: Bool, tapped: Bool, variant: Variant) -> MarkOutcome {
+    /// `tapped`: see `isOwnTap`. A send is never on or off: its tap is its change, and it has no particles and no tap.
+    static func markOutcome(_ action: Burst.Action, turnedOn: Bool, tapped: Bool, variant: Variant) -> MarkOutcome {
         guard tapped, turnedOn else { return MarkOutcome(pop: .turningOff(variant), burst: false, haptic: false) }
-        return MarkOutcome(pop: .turningOn(variant), burst: bursts(variant), haptic: true)
-    }
-}
-
-/// The burst of small sticker-coloured pieces that flies out of a control on a success: dots, short dashes and small
-/// squares (no crescents, no stars). Pieces are made from a seed, so a burst can be tested.
-enum Burst {
-    enum Kind: CaseIterable, Sendable { case dot, dash, square }
-    enum Tint: CaseIterable, Sendable { case magenta, amber, lapis, green, fire }
-
-    struct Style: Equatable, Sendable {
-        /// How far the pieces fly, in points.
-        var radius: Double
-        /// The size of a dot.
-        var size: Double
-
-        static let small = Style(radius: 34, size: 7)
-        /// For a result: a finished game or a daily puzzle.
-        static let big = Style(radius: 74, size: 11)
-    }
-
-    struct Piece: Equatable, Identifiable, Sendable {
-        var id: Int
-        /// Where it flies, in radians from the physical right, clockwise on screen.
-        var angle: Double
-        var distance: Double
-        var size: Double
-        var spin: Double
-        var kind: Kind
-        var tint: Tint
-    }
-
-    /// 6 to 8 pieces spread around the circle, one of them every sector, each with a little jitter.
-    static func pieces(_ style: Style, seed: UInt64) -> [Piece] {
-        var generator = SeededGenerator(seed: seed)
-        let count = Int.random(in: 6...8, using: &generator)
-        let step = 2 * Double.pi / Double(count)
-        let start = Double.random(in: 0..<step, using: &generator)
-        return (0..<count).map { index in
-            let jitter = Double.random(in: -0.3...0.3, using: &generator) * step
-            let angle = (start + Double(index) * step + jitter + 2 * .pi).truncatingRemainder(dividingBy: 2 * .pi)
-            return Piece(
-                id: index, angle: angle,
-                distance: style.radius * Double.random(in: 0.7...1, using: &generator),
-                size: style.size * Double.random(in: 0.8...1.2, using: &generator),
-                spin: Double.random(in: -200...200, using: &generator),
-                kind: Kind.allCases[(index + Int.random(in: 0..<3, using: &generator)) % Kind.allCases.count],
-                tint: Tint.allCases[Int.random(in: 0..<Tint.allCases.count, using: &generator)]
-            )
-        }
-    }
-
-    /// Where a piece is `progress` (0...1) of the way through the burst: out fast, slowing down, fading in the second half.
-    struct Frame: Equatable, Sendable {
-        var dx: Double
-        var dy: Double
-        var opacity: Double
-        var scale: Double
-        var rotation: Double
-
-        init(_ piece: Piece, progress: Double) {
-            let eased = 1 - pow(1 - progress, 3)
-            dx = cos(piece.angle) * piece.distance * eased
-            dy = sin(piece.angle) * piece.distance * eased
-            opacity = progress <= 0 || progress >= 1 ? 0 : progress < 0.45 ? 1 : 1 - (progress - 0.45) / 0.55
-            scale = progress < 0.45 ? 0.5 + 0.5 * min(progress / 0.2, 1) : 1 - 0.5 * (progress - 0.45) / 0.55
-            rotation = piece.spin * eased
-        }
+        return MarkOutcome(pop: .turningOn(action, variant), burst: bursts(variant) && !action.kinds.isEmpty, haptic: action != .send)
     }
 }
 

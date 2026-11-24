@@ -51,27 +51,27 @@ struct DailyCard: View {
         let liked = marks.contains(.liked, poemPath: pick.path, couplet: pick.index)
         let reposted = marks.contains(.reposted, poemPath: pick.path, couplet: pick.index)
         return HStack(spacing: 18) {
-            iconButton("پسند", on: liked) {
+            iconButton("پسند", .like, on: liked) {
                 account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: pick.path, couplet: pick.index) }
             } icon: {
                 LineIcon(shape: HeartIcon(), size: 22, lineWidth: 2.2, fill: liked ? Tokens.Colors.magenta : nil)
                     .foregroundStyle(liked ? Tokens.Colors.magenta : Tokens.Colors.ink)
             }
-            iconButton("بازنشر", on: reposted) {
+            iconButton("بازنشر", .repost, on: reposted) {
                 account.require(.likes, needed: !reposted) { marks.toggle(.reposted, poemPath: pick.path, couplet: pick.index) }
             } icon: {
                 LineIcon(shape: RepostIcon(), size: 22, lineWidth: 2.2, fill: nil)
                     .foregroundStyle(reposted ? Tokens.Colors.lapis : Tokens.Colors.ink)
             }
-            iconButton("بفرست", on: false, action: send) {
+            iconButton("بفرست", .send, on: false, action: send) {
                 LineIcon(shape: MessagesIcon(), size: 22, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.ink)
             }
         }
     }
 
-    private func iconButton(_ label: String, on: Bool, action: @escaping () -> Void, @ViewBuilder icon: @escaping () -> some View) -> some View {
+    private func iconButton(_ label: String, _ mark: Burst.Action, on: Bool, action: @escaping () -> Void, @ViewBuilder icon: @escaping () -> some View) -> some View {
         MarkButton(action: action) { taps in
-            icon().markMotion(on: on, taps: taps).padding(4).contentShape(Rectangle())
+            icon().markMotion(mark, on: on, taps: taps).padding(4).contentShape(Rectangle())
         }
         .buttonStyle(.press)
         .accessibilityLabel(label)
@@ -96,7 +96,7 @@ struct DailyCard: View {
                 marks.toggle(.kept, poemPath: pick.path, couplet: pick.index)
             } label: { taps in
                 HStack(spacing: 6) {
-                    LineIcon(shape: BookmarkIcon(), size: 18, lineWidth: 2.4, fill: kept ? Tokens.Colors.white : nil).markMotion(on: kept, taps: taps)
+                    LineIcon(shape: BookmarkIcon(), size: 18, lineWidth: 2.4, fill: kept ? Tokens.Colors.white : nil).markMotion(.keep, on: kept, taps: taps)
                     Text("نگه دار").font(.ui(15, weight: .bold))
                 }
                 .foregroundStyle(Tokens.Colors.white)
