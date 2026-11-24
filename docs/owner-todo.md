@@ -2,10 +2,6 @@
 
 Only what is still open. These need accounts or devices the agents don't have here (the corporate proxy on this laptop blocks Cloudflare, `gcloud` and the simulator's network). None of them blocks the build. What's already done is listed at the end.
 
-## 0. App Store Connect: an API key for TestFlight uploads
-
-So the lead can upload TestFlight builds from this Mac: appstoreconnect.apple.com → Users and Access → Integrations → App Store Connect API → Team Keys → «+». Name `yebeyt ci`, access **Admin** (needed so Xcode can create the distribution certificate). Download the `.p8` (only once; keep a copy with the push key) and tell the lead the **Key ID** and the **Issuer ID**. The lead keeps the file in `~/.appstoreconnect/private_keys/`, never in the repo. Then in the app's TestFlight tab, add yourself to an Internal Testing group.
-
 ## 1. Google Cloud
 
 - Once Google sign-in works on a phone, shut down the old project `beyt-515410` (IAM & Admin → Settings → Shut down).
@@ -25,7 +21,27 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 - The lead's decisions in [yebeyt-2.md](yebeyt-2.md) («Decisions the lead made while the owner was away»).
 - `tools/ganjoor/curation.json` (poet bios and book blurbs) and `tools/ganjoor/glossary.json` (word meanings): both written by an agent; please check the Persian.
 
-## 4. App Store Connect: the privacy label (don't fill it in yet)
+## 4. App Store Connect: what's there and what 2.0 needs (checked 24 Nov)
+
+The lead is logged in to App Store Connect in the agent browser and uploads TestFlight builds from this Mac with Xcode (no API key needed). The lead asks before anything that can't be undone: submitting for review, releasing, deleting, agreements, tax or payments.
+
+State now:
+- **Version 1.0.0 was rejected** (21 Nov, guideline 2.1 "Information Needed"). Apple asked, in the App Review Notes, for: a screen recording on a real device from launch through the main flow, including sign-in, **account deletion**, user content with **report and block**; the app's purpose and audience; how to reach the main features (and login details if needed); the external services used; regional differences; and proof of rights to third-party material. 2.0 replaces 1.0: the same in-flight version is renamed 2.0.0, the 2.0 build attached, and the Notes rewritten.
+- The listing text (promo text, description, keywords) still describes the 1.0 reader. 2.0 needs new text: games, friends, messages.
+- The screenshots are of 1.0. 2.0 needs new ones (the lead makes them in the simulator).
+- The icon shown is 1.0's crescent. It goes away with the first 2.0 build (the 2.0 icon is the two sticker cards).
+- Category: Books / Reference. With games, choose between Books + Games (Word) or Games (Word) + Books.
+- Age rating (13+) was answered for a reader. 2.0 adds messages between people and user-written content, so the questionnaire must be answered again.
+- App Privacy is published for 1.0 (name, email, user id, other user content, product interaction). 2.0 adds feedback diagnostics, screenshots and recordings, game scores and messages; the lead writes the full table before the first submission.
+- Fine as is: free, available in 174 countries (not China mainland, so its compliance banners don't apply), privacy URL `/en/privacy`, support URL `/en/support`, marketing URL `/en`, App Review contact, release set to automatic after approval.
+- TestFlight: internal group «K&S Team» exists. Test Information (beta description, feedback email, privacy URL, review contact) is empty; needed only for external testers.
+
+For you:
+- **The screen recording for App Review:** on your phone, once 2.0 is on TestFlight: launch, browse, a game, sign in with Apple, a friend request, a message, report and block, delete the account. The lead writes the script when the build is ready.
+- **Rights to the poems and meanings:** Ganjoor's content and any permission or licence text you have from them (Apple's point 6).
+- **A second account for the reviewer:** messages and friends need another person. The lead will propose a demo friend account on the server so the reviewer can try them alone.
+
+## 5. App Store Connect: the privacy label (don't fill it in yet)
 
 This table covers only feedback. Accounts, the divan sync, friends, messages and game scores also send data, and those rows are still missing. The lead will finish the full table before the first upload; fill in the label then, all at once.
 
