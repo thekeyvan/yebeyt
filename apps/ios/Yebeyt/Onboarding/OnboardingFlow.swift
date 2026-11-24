@@ -18,7 +18,7 @@ struct OnboardingFlow: View {
             }
         }
         .id(onboarding.step)
-        .transition(.opacity)
-        .animation(.snappy, value: onboarding.step)
+        .motionTransition { Motion.menu($0) }
+        .animation(Motion.bouncy, value: onboarding.step)
     }
 }

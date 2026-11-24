@@ -181,11 +181,11 @@ extension View {
                     .padding(.horizontal, 16).padding(.vertical, 9)
                     .background(Capsule().fill(Tokens.Colors.ink))
                     .padding(.bottom, 96)
-                    .transition(.opacity)
+                    .toastTransition()
                     .accessibilityIdentifier("toast")
             }
         }
-        .animation(.snappy, value: message.wrappedValue)
+        .animation(Motion.bouncy, value: message.wrappedValue)
         .task(id: message.wrappedValue) {
             guard message.wrappedValue != nil else { return }
             try? await Task.sleep(for: .seconds(2.5))

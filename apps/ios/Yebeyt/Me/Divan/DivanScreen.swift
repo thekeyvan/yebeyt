@@ -46,6 +46,7 @@ struct DivanScreen: View {
                             sectionView(section)
                         }
                     }
+                    .animation(Motion.bouncy, value: keptKeys)  // a couplet taken out (or brought back by «برگردون») shrinks away (or in)
                 }
             }
             .padding(.horizontal, 18)
@@ -150,7 +151,7 @@ struct DivanScreen: View {
     private func sectionView(_ section: DivanSection) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             if !section.title.isEmpty { sectionHeader(section) }
-            ForEach(section.entries) { card($0) }
+            ForEach(section.entries) { card($0).motionTransition(Motion.row) }
         }
         .accessibilityElement(children: .contain)
     }

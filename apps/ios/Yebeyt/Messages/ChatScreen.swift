@@ -28,6 +28,8 @@ private struct ChatContent: View {
     /// The bottom of the list is on screen: new messages scroll into view; otherwise a pill says there is one.
     @State private var atBottom = true
     @State private var newBelow = false
+    /// The first messages are in: from now on a new one springs in.
+    @State private var settled = false
 
     /// The chat is looked at: on screen, the app in front, and no poem opened over it.
     private var isLooked: Bool { scenePhase == .active && model.reader == nil }
@@ -124,7 +126,7 @@ private struct ChatContent: View {
                         failure(reason)
                     }
                     ForEach(entries) { entry in
-                        row(entry).id(entry.id)
+                        row(entry).id(entry.id).motionTransition(Motion.row)
                     }
                     Color.clear.frame(height: 1).id(Self.bottomID)
                         .onAppear {
@@ -136,10 +138,13 @@ private struct ChatContent: View {
                 .padding(.horizontal, 18)
                 .padding(.top, 6)
                 .padding(.bottom, 8)
+                // A message that arrives or is sent springs in; the first load, and older pages, do not.
+                .animation(settled ? Motion.bouncy : nil, value: chat.entries().last?.id)
             }
             .defaultScrollAnchor(.bottom)
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.interactively)
+            .onChange(of: chat.entries().last?.id, initial: true) { _, now in if now != nil { settled = true } }
             .onChange(of: chat.entries().last?.id) { _, _ in
                 guard let last = chat.entries().last else { return }
                 // What I send scrolls into view; what comes while I am reading higher up only shows the pill.

@@ -58,7 +58,9 @@ struct RequestsScreen: View {
                                 }
                             }
                         }
+                        .motionTransition(Motion.row)
                     }
+                    .animation(Motion.bouncy, value: requests.incoming.map(\.username))
                 }
             }
             if !requests.outgoing.isEmpty {
@@ -72,7 +74,9 @@ struct RequestsScreen: View {
                             }
                             .accessibilityIdentifier("cancel-\(request.username)")
                         }
+                        .motionTransition(Motion.row)
                     }
+                    .animation(Motion.bouncy, value: requests.outgoing.map(\.username))
                 }
             }
         }
