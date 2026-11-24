@@ -9,6 +9,7 @@ import { requireUser, requireUsername } from "./middleware.js";
 import { newRouter } from "./router.js";
 import { authRoutes } from "./routes/auth.js";
 import { blockRoutes } from "./routes/blocks.js";
+import { challengeRoutes } from "./routes/challenges.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { divanRoutes } from "./routes/divan.js";
 import { feedRoutes } from "./routes/feed.js";
@@ -65,7 +66,9 @@ export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
   const messaging = ["/v1/blocks/*", "/v1/reports", "/v1/conversations", "/v1/conversations/*", "/v1/messages/*", "/v1/shared-divans", "/v1/shared-divans/*", "/v1/games", "/v1/games/*"];
   for (const path of messaging) app.use(path, user);
   const named = requireUsername(deps);
-  for (const path of [...messaging, "/v1/me/blocks", "/v1/me/unread", "/v1/me/games"]) app.use(path, named);
+  // Making a challenge needs a username too; looking one up and answering one do not need an account (routes/challenges.ts).
+  app.use("/v1/challenges", user);
+  for (const path of [...messaging, "/v1/me/blocks", "/v1/me/unread", "/v1/me/games", "/v1/me/challenges", "/v1/challenges"]) app.use(path, named);
   // The first request of a new week closes the leagues of the weeks before it (see src/leagues.ts), before anything reads tiers or standings.
   const closeWeeks = createWeekCloser(deps);
   const afterClose = createMiddleware(async (_c, next) => {
@@ -87,6 +90,7 @@ export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
   app.route("/", messageRoutes(deps));
   app.route("/", sharedDivanRoutes(deps));
   app.route("/", gameRoutes(deps));
+  app.route("/", challengeRoutes(deps));
   app.route("/", peopleRoutes(deps));
   app.route("/", reactionRoutes(deps));
   app.route("/", scoreRoutes(deps));

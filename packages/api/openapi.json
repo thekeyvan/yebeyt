@@ -1692,6 +1692,268 @@
         ],
         "additionalProperties": false
       },
+      "ChallengeCreated": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "7KQ2"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://yebeyt.com/c/7KQ2"
+          }
+        },
+        "required": [
+          "code",
+          "url"
+        ]
+      },
+      "CreateChallengeRequest": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "string",
+            "enum": [
+              "jigsaw",
+              "poet"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 200,
+              "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+              "example": "/hafez/ghazal/sh3#0",
+              "description": "<poemPath>#<coupletIndex>"
+            },
+            "description": "The ten couplet keys, in the order they were played."
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "How many of the ten the creator got."
+          },
+          "seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600
+          }
+        },
+        "required": [
+          "game",
+          "items",
+          "score",
+          "seconds"
+        ],
+        "additionalProperties": false
+      },
+      "Challenge": {
+        "type": "object",
+        "properties": {
+          "creator": {
+            "$ref": "#/components/schemas/PersonShort"
+          },
+          "game": {
+            "type": "string",
+            "enum": [
+              "jigsaw",
+              "poet"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 200,
+              "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+              "example": "/hafez/ghazal/sh3#0",
+              "description": "<poemPath>#<coupletIndex>"
+            }
+          },
+          "score": {
+            "type": "integer"
+          },
+          "seconds": {
+            "type": "integer"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "«۱۰ بیت سعدی» when every couplet is by the same poet, else null."
+          }
+        },
+        "required": [
+          "creator",
+          "game",
+          "items",
+          "score",
+          "seconds",
+          "label"
+        ]
+      },
+      "ChallengeResultSaved": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "ChallengeResultRequest": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Required without an account: 1 to 30 characters after trimming, no control characters. Ignored when signed in."
+          }
+        },
+        "required": [
+          "score",
+          "seconds"
+        ],
+        "additionalProperties": false
+      },
+      "MyChallengeList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyChallenge"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "MyChallenge": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "game": {
+            "type": "string",
+            "enum": [
+              "jigsaw",
+              "poet"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 200,
+              "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+              "example": "/hafez/ghazal/sh3#0",
+              "description": "<poemPath>#<coupletIndex>"
+            }
+          },
+          "score": {
+            "type": "integer"
+          },
+          "seconds": {
+            "type": "integer"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "«۱۰ بیت سعدی» when every couplet is by the same poet, else null."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChallengeResult"
+            },
+            "description": "Best score first, then fastest."
+          }
+        },
+        "required": [
+          "code",
+          "url",
+          "game",
+          "items",
+          "score",
+          "seconds",
+          "label",
+          "createdAt",
+          "expiresAt",
+          "results"
+        ]
+      },
+      "ChallengeResult": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The username's display name, or the name a guest left."
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
+          },
+          "score": {
+            "type": "integer"
+          },
+          "seconds": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "name",
+          "username",
+          "avatar",
+          "score",
+          "seconds",
+          "createdAt"
+        ]
+      },
       "UserSearch": {
         "type": "object",
         "properties": {
@@ -2931,7 +3193,7 @@
           "me"
         ],
         "summary": "Delete the account and everything stored for it",
-        "description": "Also removes its blocks, chats with their messages (the other person loses the chat) and shared divans. Revokes the Apple token when there is one. If Apple cannot be reached the account is kept (502) so the call can be repeated.",
+        "description": "Also removes its blocks, chats with their messages (the other person loses the chat), shared divans, challenges with all their results, and its results on other people's challenges. Waiting games it made go; its active games end with the other player as winner (and the other keeps the finished game). Revokes the Apple token when there is one. If Apple cannot be reached the account is kept (502) so the call can be repeated.",
         "security": [
           {
             "bearerAuth": []
@@ -5759,6 +6021,271 @@
           },
           "409": {
             "description": "game_not_active: waiting or already done.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/challenges": {
+      "post": {
+        "tags": [
+          "challenges"
+        ],
+        "summary": "Challenge friends to the ten couplets I just played",
+        "description": "Makes a challenge that lasts 30 days. Share `url` (yebeyt.com/c/<code>, four characters); anyone can play it, with or without an account. 30 an hour per user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChallengeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The code and the link.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: not ten different couplet keys, or a score or time out of range.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 30 an hour per user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/challenges/{code}": {
+      "get": {
+        "tags": [
+          "challenges"
+        ],
+        "summary": "A challenge, for the page and the app that open its link",
+        "description": "No account needed. The code is read in any case, with O as 0 and I or L as 1. An expired or unknown code is 404.",
+        "security": [
+          {}
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9A-Za-z]{4}$"
+            },
+            "required": true,
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Who made it, the couplets and their score.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Challenge"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such challenge, or it expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/challenges/{code}/results": {
+      "post": {
+        "tags": [
+          "challenges"
+        ],
+        "summary": "Leave my result on a challenge",
+        "description": "Signing in is optional. Without an account `name` is required; with one the result is mine, one per person (a second is 409 `conflict`), and the maker's own challenge cannot be answered by the maker (409 `conflict`). The maker gets a live `challenge.result` event, and when the player has an account too (and nobody blocked the other) a `game` message `{event: \"challenge_result\", code, game, score, seconds}` in their chat. Signed-in users may send 60 an hour; all guests together 120 an hour.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {}
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9A-Za-z]{4}$"
+            },
+            "required": true,
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChallengeResultRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeResultSaved"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a score or time out of range, or no valid `name` without an account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A token was sent and it is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such challenge, or it expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict: I already left a result, or it is my own challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/challenges": {
+      "get": {
+        "tags": [
+          "challenges"
+        ],
+        "summary": "My challenges with their results",
+        "description": "Newest first, at most 50, the ones that have not expired. Results of people I blocked or who blocked me are left out.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "My challenges.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyChallengeList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required.",
             "content": {
               "application/json": {
                 "schema": {

@@ -190,3 +190,24 @@ export async function sweepGames(deps: Deps): Promise<number> {
   for (const { id } of lost) if (!deps.duels.has(id) && (await endGame(deps, id, null, "left"))) ended++;
   return ended;
 }
+
+/**
+ * For an account that is being deleted: its waiting games go, and its active games end with the other player as winner (the account's
+ * player rows then go with the account; the finished games stay for the other player).
+ */
+export async function leaveGames(deps: Deps, userId: string): Promise<void> {
+  const mine = await deps.db
+    .select({ id: games.id, status: games.status })
+    .from(games)
+    .innerJoin(gamePlayers, eq(gamePlayers.gameId, games.id))
+    .where(and(eq(gamePlayers.userId, userId), inArray(games.status, ["waiting", "active"])));
+  const players = await playersOf(deps.db, mine.map((g) => g.id));
+  for (const { id, status } of mine) {
+    if (status === "waiting") {
+      deps.duels.abort(id);
+      await deps.db.delete(games).where(eq(games.id, id));
+    } else {
+      await endGame(deps, id, players.get(id)!.find((p) => p.userId !== userId)?.userId ?? null, "left");
+    }
+  }
+}

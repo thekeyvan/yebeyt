@@ -467,3 +467,44 @@ export const moshMoves = pgTable(
   },
   (t) => [primaryKey({ columns: [t.gameId, t.n] }), unique("mosh_moves_key").on(t.gameId, t.key)],
 );
+
+/**
+ * A challenge: the same ten couplets of جورچین or حدس شاعر that `creatorId` played, with their score, shared by a link `yebeyt.com/c/<code>`.
+ * Anyone may play it without an account. It expires after 30 days. Deleting the creator's account deletes it with all its results.
+ */
+export const challenges = pgTable(
+  "challenges",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    code: text("code").notNull().unique(),
+    game: text("game", { enum: ["jigsaw", "poet"] }).notNull(),
+    creatorId: userRef("creator_id"),
+    items: jsonb("items").$type<string[]>().notNull(),
+    score: integer("score").notNull(),
+    seconds: integer("seconds").notNull(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+    expiresAt: timestamptz("expires_at").notNull(),
+  },
+  (t) => [check("challenges_score", sql`${t.score} between 0 and 10`), index("challenges_creator_created").on(t.creatorId, t.createdAt), index("challenges_expires").on(t.expiresAt)],
+);
+
+/** Someone's result on a challenge: a signed-in user (one result each), or a guest who left a `name`. Deleting a user's account deletes their results. */
+export const challengeResults = pgTable(
+  "challenge_results",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    challengeId: uuid("challenge_id").notNull().references(() => challenges.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    name: text("name"),
+    score: integer("score").notNull(),
+    seconds: integer("seconds").notNull(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique("challenge_results_user").on(t.challengeId, t.userId),
+    check("challenge_results_score", sql`${t.score} between 0 and 10`),
+    check("challenge_results_who", sql`${t.userId} is not null or ${t.name} is not null`),
+    check("challenge_results_name_length", sql`char_length(${t.name}) <= 30`),
+    index("challenge_results_user_idx").on(t.userId),
+  ],
+);
