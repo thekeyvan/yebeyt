@@ -9,7 +9,6 @@ struct AvatarScreen: View {
     @Environment(Achievements.self) private var achievements
     @State private var draft = AvatarParts.standard
     @State private var part = AvatarPart.accessory
-    @State private var saving = false
     @State private var loaded = false
 
     private var progress: AvatarProgress { AvatarProgress(stats: stats, achievements: achievements) }
@@ -46,19 +45,14 @@ struct AvatarScreen: View {
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)
             Button {
-                saving = true
-                Task {
-                    await store.save(draft)
-                    saving = false
-                    dismiss()
-                }
+                store.save(draft)  // saved at once, sent in the background
+                dismiss()
             } label: {
                 Text("ذخیره").font(.title(18)).foregroundStyle(Tokens.Colors.white)
                     .padding(EdgeInsets(top: 6, leading: 16, bottom: 2, trailing: 16))
                     .sticker(fill: Tokens.Colors.lapis, radius: 16, border: 4, shadow: ShadowToken(y: 2, blur: 8, opacity: 0.22))
             }
             .buttonStyle(.plain)
-            .disabled(saving)
             .accessibilityIdentifier("avatarSave")
         }
     }

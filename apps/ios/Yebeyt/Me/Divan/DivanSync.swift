@@ -15,7 +15,7 @@ final class DivanSync {
     @ObservationIgnored private let session: Session
     @ObservationIgnored private let debounce: Duration
     @ObservationIgnored private var scheduled: Task<Void, Never>?
-    @ObservationIgnored private var isRunning = false
+    @ObservationIgnored private var running: Task<Void, Never>?
     @ObservationIgnored private var runAgain = false
 
     init(marks: ReaderMarks, session: Session, debounce: Duration = .seconds(2)) {
@@ -37,19 +37,23 @@ final class DivanSync {
         }
     }
 
-    /// Pull, merge, push. A call while one is running makes it go around once more.
+    /// Pull, merge, push. A call while one is running makes it go around once more, and waits for it to end.
     func syncNow() async {
         guard session.isSignedIn else { return }
-        if isRunning {
+        if let running {
             runAgain = true
+            await running.value
             return
         }
-        isRunning = true
-        defer { isRunning = false }
-        repeat {
-            runAgain = false
-            do { try await runOnce() } catch { return }
-        } while runAgain
+        let task = Task { [self] in
+            repeat {
+                runAgain = false
+                do { try await runOnce() } catch { return }
+            } while runAgain
+        }
+        running = task
+        await task.value
+        running = nil
     }
 
     private func runOnce() async throws {

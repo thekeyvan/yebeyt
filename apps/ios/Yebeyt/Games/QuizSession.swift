@@ -47,7 +47,7 @@ final class QuizSession {
     func confirm() {
         guard let answer = round.confirm() else { return }
         stats.award(answer.points)
-        if answer.right { stats.recordRightAnswer(in: round.kind, poetSlug: round.current.couplet.poetSlug) }
+        if answer.right { stats.recordRightAnswer(poetSlug: round.current.couplet.poetSlug) }
     }
 
     /// «سؤال بعدی»; after the last question the round ends.
@@ -60,5 +60,6 @@ final class QuizSession {
         guard !finished else { return }
         finished = true
         stats.raiseBest(round.kind, to: round.points)
+        stats.recordRoundEnd(of: round.kind, right: round.rightCount, questions: round.questions.count)
     }
 }

@@ -46,33 +46,41 @@ struct MeRulesTests {
     @Test func hafezAnswersAndBookWinsAreCountedAndKept() {
         let defaults = defaults()
         let counters = Achievements(defaults: defaults)
-        counters.recordRight(game: .poet, poetSlug: "hafez")
-        counters.recordRight(game: .misra, poetSlug: "saadi")
-        counters.recordRight(game: .book, poetSlug: "hafez")
-        counters.recordRight(game: .book, poetSlug: "moulavi")
+        counters.recordRight(poetSlug: "hafez")
+        counters.recordRight(poetSlug: "saadi")
+        counters.recordRight(poetSlug: "hafez")
+        counters.recordRound(game: .book, right: 7, of: 10)
+        counters.recordRound(game: .book, right: 6, of: 10)  // not a win
+        counters.recordRound(game: .poet, right: 10, of: 10)  // only از کدوم کتاب؟ counts
+        counters.recordRound(game: .book, right: 10, of: 10)
         #expect(counters.hafezRight == 2)
         #expect(counters.bookWins == 2)
         let reopened = Achievements(defaults: defaults)
         #expect(reopened.hafezRight == 2 && reopened.bookWins == 2)
-        reopened.clear()
-        #expect(Achievements(defaults: defaults).hafezRight == 0)
     }
 
-    @Test func aRightQuizAnswerReachesTheCountersThroughTheStatsHook() {
+    /// Plays a round of 10 in از کدوم کتاب؟ with `right` right answers (Hafez couplets) through the stats hooks.
+    private func playBookRound(right: Int, counters: Achievements) {
         let stats = GameStats(defaults: defaults())
+        stats.rightAnswerHandler = { counters.recordRight(poetSlug: $0) }
+        stats.roundHandler = { counters.recordRound(game: $0, right: $1, of: $2) }
+        let questions = (0..<10).map { QuizMakerFixtures.question($0, poet: "hafez") }
+        let session = QuizSession(round: QuizRound(kind: .book, questions: questions)!, stats: stats)
+        for (index, question) in questions.enumerated() {
+            session.select(index < right ? question.correct : (question.correct + 1) % question.options.count)
+            session.confirm()
+            session.next()
+        }
+    }
+
+    @Test func aBookRoundWithSevenRightOfTenIsAWinAndCountsTheHafezAnswers() {
         let counters = Achievements(defaults: defaults())
-        stats.rightAnswerHandler = { game, slug in counters.recordRight(game: game, poetSlug: slug) }
-        let questions = (0..<3).map { QuizMakerFixtures.question($0, poet: "hafez") }
-        let round = QuizRound(kind: .book, questions: questions)!
-        let session = QuizSession(round: round, stats: stats)
-        session.select(questions[0].correct)
-        session.confirm()
-        #expect(counters.hafezRight == 1)
+        playBookRound(right: 6, counters: counters)
+        #expect(counters.bookWins == 0)
+        #expect(counters.hafezRight == 6)
+        playBookRound(right: 7, counters: counters)
         #expect(counters.bookWins == 1)
-        session.next()
-        session.select((questions[1].correct + 1) % questions[1].options.count)  // a wrong one
-        session.confirm()
-        #expect(counters.hafezRight == 1)
+        #expect(counters.hafezRight == 13)
     }
 
     @Test func theBestStreakIsTheLongestRunEverNotTheCurrentOne() {

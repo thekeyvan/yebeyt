@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 /// Counters the phone keeps for badges and avatar items, outside the games: right answers on Hafez couplets and
-/// right answers in «از کدوم کتاب؟» (counted as that game's wins). The games tell it through `GameStats`'s hook.
+/// wins in «از کدوم کتاب؟» (a round with at least 7 right of 10). The games tell it through `GameStats`'s hooks.
 @MainActor @Observable
 final class Achievements {
     private struct Saved: Codable {
@@ -24,15 +24,21 @@ final class Achievements {
     var bookWins: Int { saved.bookWins }
 
     /// A right answer in a quiz game, on a couplet of this poet.
-    func recordRight(game: GameKind, poetSlug: String) {
-        if poetSlug == "hafez" { saved.hafezRight += 1 }
-        if game == .book { saved.bookWins += 1 }
-        if let data = try? JSONEncoder().encode(saved) { defaults.set(data, forKey: Self.defaultsKey) }
+    func recordRight(poetSlug: String) {
+        guard poetSlug == "hafez" else { return }
+        saved.hafezRight += 1
+        save()
     }
 
-    func clear() {
-        saved = Saved()
-        defaults.removeObject(forKey: Self.defaultsKey)
+    /// A finished quiz round: in «از کدوم کتاب؟» at least 7 right of 10 (the same share for any other length) is a win.
+    func recordRound(game: GameKind, right: Int, of total: Int) {
+        guard game == .book, total > 0, right * 10 >= total * 7 else { return }
+        saved.bookWins += 1
+        save()
+    }
+
+    private func save() {
+        if let data = try? JSONEncoder().encode(saved) { defaults.set(data, forKey: Self.defaultsKey) }
     }
 }
 

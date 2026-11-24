@@ -1,16 +1,20 @@
 import Foundation
 import Observation
 
-/// The face: kept on the phone (every guest has one) and, for a signed-in person, on the server. «ذخیره» saves
-/// both. When someone signs in, the server's face comes down if this phone never changed its own; a face made
-/// here goes up if the server has none (or another one).
+/// The face: kept on the phone (every guest has one) and, for a signed-in person, on the server. «ذخیره» saves it
+/// here at once and sends it in the background. A face that is saved but not yet received by the server is
+/// «unsent» (kept on the phone until a send succeeds). When someone signs in or the app starts: an unsent face
+/// goes up; otherwise the server's face comes down, so a face changed on another phone is not overwritten by an
+/// old one here.
 @MainActor @Observable
 final class AvatarStore {
     static let defaultsKey = "me.avatar"
+    static let unsentKey = "me.avatar.unsent"
 
     private(set) var parts: AvatarParts
     @ObservationIgnored private let session: Session
     @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private var lastSend: Task<Void, Never>?
 
     init(session: Session, defaults: UserDefaults = .standard) {
         self.session = session
@@ -19,39 +23,62 @@ final class AvatarStore {
         parts = saved.flatMap { AvatarCatalogue.isValid($0) ? $0 : nil } ?? .standard
     }
 
-    /// Saves the face here and, with an account, sends it. A failed send is not shown: the face is saved, and
-    /// `reconcile` sends it again the next time the app signs in.
-    func save(_ new: AvatarParts) async {
+    var isUnsent: Bool { defaults.bool(forKey: Self.unsentKey) }
+
+    /// Saves the face here and sends it in the background (when signed in).
+    func save(_ new: AvatarParts) {
         parts = new
-        if let data = try? JSONEncoder().encode(new) { defaults.set(data, forKey: Self.defaultsKey) }
-        await send(new)
+        store(new)
+        defaults.set(true, forKey: Self.unsentKey)
+        queueSend()
     }
 
-    /// With the user the server knows: its face replaces the phone's standard one; a different face made here goes up.
+    /// With the user the server knows: an unsent face goes up; else the server's face replaces the phone's.
     func reconcile(with user: APIUser?) async {
         guard let user, session.isSignedIn else { return }
-        if let remote = user.avatar, AvatarCatalogue.isValid(remote) {
-            if parts == .standard { adopt(remote) } else if remote != parts { await send(parts) }
-        } else if parts != .standard {
-            await send(parts)
+        await lastSend?.value
+        if isUnsent {
+            _ = await send()
+        } else if let remote = user.avatar, AvatarCatalogue.isValid(remote), remote != parts {
+            parts = remote
+            store(remote)
         }
     }
 
-    /// After the account is deleted.
+    /// Sends an unsent face now and waits for it (before signing out, and for tests).
+    func flush() async {
+        await lastSend?.value
+        if isUnsent, session.isSignedIn { _ = await send() }
+    }
+
+    /// After the account is deleted or signed out of.
     func clear() {
         parts = .standard
         defaults.removeObject(forKey: Self.defaultsKey)
+        defaults.removeObject(forKey: Self.unsentKey)
     }
 
-    private func adopt(_ remote: AvatarParts) {
-        parts = remote
-        if let data = try? JSONEncoder().encode(remote) { defaults.set(data, forKey: Self.defaultsKey) }
+    private func store(_ face: AvatarParts) {
+        if let data = try? JSONEncoder().encode(face) { defaults.set(data, forKey: Self.defaultsKey) }
     }
 
-    private func send(_ face: AvatarParts) async {
+    private func queueSend() {
         guard session.isSignedIn else { return }
+        let previous = lastSend
+        lastSend = Task { [self] in
+            await previous?.value
+            _ = await send()
+        }
+    }
+
+    /// Sends the current face; the unsent mark goes away only when the server took it and it is still the current face.
+    private func send() async -> Bool {
+        let face = parts
         let session = session
         let api = session.api
-        if let user = try? await session.authorized({ try await api.setAvatar(face, token: $0) }) { session.update(user: user) }
+        guard let user = try? await session.authorized({ try await api.setAvatar(face, token: $0) }) else { return false }
+        session.update(user: user)
+        if face == parts { defaults.removeObject(forKey: Self.unsentKey) }
+        return true
     }
 }

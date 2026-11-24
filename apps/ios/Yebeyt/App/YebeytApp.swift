@@ -69,7 +69,8 @@ struct YebeytApp: App {
         _accounts = State(initialValue: accounts)
         let achievements = Achievements()
         _achievements = State(initialValue: achievements)
-        stats.rightAnswerHandler = { game, slug in achievements.recordRight(game: game, poetSlug: slug) }
+        stats.rightAnswerHandler = { slug in achievements.recordRight(poetSlug: slug) }
+        stats.roundHandler = { game, right, total in achievements.recordRound(game: game, right: right, of: total) }
         _avatar = State(initialValue: AvatarStore(session: accounts.session))
         _privacy = State(initialValue: PrivacyStore(session: accounts.session))
         _divanSync = State(initialValue: DivanSync(marks: marks, session: accounts.session))

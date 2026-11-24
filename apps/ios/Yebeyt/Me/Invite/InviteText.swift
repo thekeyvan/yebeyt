@@ -26,10 +26,6 @@ enum InviteMessage {
     static let opener = "الا یا ایها الساقی ادر کأسا و ناولها"
 
     /// The body, the opener in guillemets, and the personal link, each on its own line.
-    static func text(body: String, username: String) -> String {
-        text(body: body, link: InviteLink.display(username: username))
-    }
-
     static func text(body: String, link: String) -> String {
         "\(body)\n«\(opener)»\n\(link)"
     }

@@ -94,10 +94,13 @@ final class ReaderMarks {
         if changed { saveDivan() }
     }
 
-    /// Forgets the divan and its times (after the account is deleted).
-    func clearDivan() {
+    /// Forgets everything that belongs to an account: the divan with its times, and the likes and reposts
+    /// (after signing out or deleting the account).
+    func clearAccountData() {
         divan = [:]
+        marked = [:]
         defaults.removeObject(forKey: Self.divanKey)
+        defaults.removeObject(forKey: Self.defaultsKey)
     }
 
     private func toggleKept(_ key: String) -> Bool {

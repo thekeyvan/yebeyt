@@ -75,7 +75,7 @@ struct DivanScreen: View {
                     if privacy.settings.keptVisibility == .me {
                         LineIcon(shape: LockIcon(), size: 14, lineWidth: 2.4, fill: nil)
                     }
-                    Text(privacy.settings.keptVisibility == .me ? "فقط خودم" : "دوستا").font(.ui(12, weight: .bold))
+                    Text(privacy.settings.keptVisibility == .me ? "فقط من" : "دوستا").font(.ui(12, weight: .bold))
                 }
                 .foregroundStyle(Tokens.Colors.muted)
                 .padding(.horizontal, 11).frame(height: 32)

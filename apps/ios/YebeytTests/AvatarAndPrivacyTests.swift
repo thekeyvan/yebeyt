@@ -113,7 +113,8 @@ struct AvatarTests {
         var parts = AvatarParts.standard
         parts.hair = "fire"
         parts.accessory = "rose"
-        await f.store.save(parts)
+        f.store.save(parts)
+        await f.store.flush()
         #expect(f.store.parts == parts)
         #expect(f.stub.requests.isEmpty)
         #expect(AvatarStore(session: Session(api: f.stub.api, store: f.keychain), defaults: f.defaults).parts == parts)
@@ -124,7 +125,9 @@ struct AvatarTests {
         defer { f.keychain.delete() }
         var parts = AvatarParts.standard
         parts.mouth = "grin"
-        await f.store.save(parts)
+        f.store.save(parts)
+        #expect(f.store.parts == parts)  // saved at once, before anything is sent
+        await f.store.flush()
         let put = try #require(f.stub.requests(to: "/v1/me/avatar").first)
         #expect(put.method == "PUT")
         #expect(put.authorization == "Bearer a1")
@@ -154,19 +157,92 @@ struct AvatarTests {
         defer { f.keychain.delete() }
         var mine = AvatarParts.standard
         mine.eyes = "wink"
-        await f.store.save(mine)  // saved as a guest would: the request is made, then:
+        f.stub.respond { _ in .offline }
+        f.store.save(mine)
+        await f.store.flush()
+        #expect(f.store.isUnsent)  // the server did not take it
+        f.stub.respond { request in
+            request.path == "/v1/auth/refresh" ? .json(200, StubJSON.session(access: "a1", refresh: "r1", username: "niloofar")) : .json(200, StubJSON.user(username: "niloofar"))
+        }
         let before = f.stub.requests(to: "/v1/me/avatar").count
         await f.store.reconcile(with: APIUser(id: "u", username: "a", displayName: nil, usernameChangedAt: nil, createdAt: "2026-11-23T08:00:00.000Z", providers: [.apple], avatar: nil))
         #expect(f.stub.requests(to: "/v1/me/avatar").count == before + 1)
         #expect(f.store.parts == mine)
+        #expect(!f.store.isUnsent)  // sent now
+    }
+
+    /// A server that keeps the face of the account, answering as the real one does.
+    private final class FaceServer: @unchecked Sendable {
+        private let lock = NSLock()
+        private(set) var face: AvatarParts?
+        func handle(_ request: StubServer.Request) -> StubServer.Response {
+            if request.path == "/v1/auth/refresh" { return .json(200, StubJSON.session(access: "a1", refresh: "r1", username: "niloofar")) }
+            guard request.path == "/v1/me/avatar", request.method == "PUT" else { return .json(404, "{}") }
+            lock.withLock { face = try? JSONDecoder().decode(AvatarParts.self, from: request.body) }
+            return .json(200, StubJSON.user(username: "niloofar"))
+        }
+        var user: APIUser {
+            APIUser(id: "u", username: "niloofar", displayName: nil, usernameChangedAt: nil, createdAt: "2026-11-23T08:00:00.000Z", providers: [.apple], avatar: lock.withLock { face })
+        }
+    }
+
+    private func device(_ server: FaceServer) -> (store: AvatarStore, stub: StubServer, keychain: KeychainStore) {
+        let keychain = KeychainStore(service: "com.yebeyt.tests.\(UUID().uuidString)")
+        keychain.write("r0")
+        let stub = StubServer { server.handle($0) }
+        return (AvatarStore(session: Session(api: stub.api, store: keychain), defaults: defaults()), stub, keychain)
+    }
+
+    @Test func aFaceChangedOnAnotherPhoneIsNotOverwrittenByAnOldOneHere() async {
+        let server = FaceServer()
+        let a = device(server), b = device(server)
+        defer { a.keychain.delete(); b.keychain.delete() }
+        var old = AvatarParts.standard
+        old.hair = "lapis"
+        b.store.save(old)
+        await b.store.flush()  // the phone B's face reached the server
+        #expect(!b.store.isUnsent)
+
+        var newer = AvatarParts.standard
+        newer.background = "mint"
+        a.store.save(newer)  // changed on phone A later
+        await a.store.flush()
+        #expect(server.face == newer)
+
+        await b.store.reconcile(with: server.user)  // B comes back
+        #expect(b.store.parts == newer)  // it takes the server's face ...
+        #expect(server.face == newer)  // ... and sends nothing
+        #expect(b.stub.requests(to: "/v1/me/avatar").count == 1)
+    }
+
+    @Test func aFaceSavedButNeverReceivedIsSentBeforeTheServersFaceIsTaken() async {
+        let server = FaceServer()
+        let a = device(server)
+        defer { a.keychain.delete() }
+        var remote = AvatarParts.standard
+        remote.background = "rose"
+        var mine = AvatarParts.standard
+        mine.eyes = "happy"
+        a.stub.respond { _ in .offline }
+        a.store.save(mine)
+        await a.store.flush()
+        #expect(a.store.isUnsent)
+        a.stub.respond { server.handle($0) }
+        var user = server.user
+        user.avatar = remote  // another phone saved a different face meanwhile
+        await a.store.reconcile(with: user)
+        #expect(a.store.parts == mine)
+        #expect(server.face == mine)
+        #expect(!a.store.isUnsent)
     }
 
     @Test func clearingGoesBackToTheStandardFace() async {
         let f = fixture(signedIn: false)
         var parts = AvatarParts.standard
         parts.face = "tan"
-        await f.store.save(parts)
+        f.store.save(parts)
         f.store.clear()
+        #expect(!f.store.isUnsent)
         #expect(f.store.parts == .standard)
         #expect(AvatarStore(session: Session(api: f.stub.api, store: f.keychain), defaults: f.defaults).parts == .standard)
     }
@@ -224,9 +300,10 @@ struct PrivacyTests {
         let f = fixture(signedIn: true)
         defer { f.keychain.delete() }
         f.store.set(\.messagesFrom, to: .all)
+        await f.store.flush()
         f.store.set(\.allowReposts, to: false)
         f.store.set(\.allowReposts, to: false)  // no change: nothing sent
-        await f.store.waitForPushes()
+        await f.store.flush()
         let puts = f.stub.requests(to: "/v1/me/privacy").filter { $0.method == "PUT" }
         #expect(puts.count == 2)
         #expect(puts[0].json as? [String: String] == ["messagesFrom": "all"])
@@ -257,6 +334,44 @@ struct PrivacyTests {
         offline.store.set(\.showOnline, to: false)
         await offline.store.refresh()
         #expect(!offline.store.settings.showOnline)
+    }
+
+    @Test func changesNotYetReceivedAreKeptSentFirstAndNotOverwrittenByTheServer() async throws {
+        let f = fixture(signedIn: true)
+        defer { f.keychain.delete() }
+        let remote = #"{"keptVisibility":"friends","dailyVisibility":"me","showOnline":true,"inGlobalLeaderboard":false,"messagesFrom":"friends","gameInvitesFrom":"all","allowReposts":true}"#
+        f.stub.respond { _ in .offline }
+        f.store.set(\.keptVisibility, to: .me)
+        f.store.set(\.showOnline, to: false)
+        await f.store.refresh()
+        #expect(f.store.hasUnsentChanges)
+        #expect(f.store.settings.keptVisibility == .me && !f.store.settings.showOnline)  // the server's values are not taken
+        // The unsent changes survive a restart.
+        let restarted = PrivacyStore(session: Session(api: f.stub.api, store: f.keychain), defaults: f.defaults)
+        #expect(restarted.hasUnsentChanges)
+
+        // Back online: they are sent first (one update, both fields), then the server's other settings come down.
+        f.stub.respond { request in
+            switch request.path {
+            case "/v1/auth/refresh": .json(200, StubJSON.session(access: "a1", refresh: "r1", username: "niloofar"))
+            default: .json(200, remote)
+            }
+        }
+        await restarted.refresh()
+        let calls = f.stub.requests(to: "/v1/me/privacy").map(\.method)
+        #expect(Array(calls.suffix(2)) == ["PUT", "GET"])
+        let put = try #require(f.stub.requests(to: "/v1/me/privacy").last { $0.method == "PUT" })
+        #expect(put.json.count == 2 && put.json["keptVisibility"] as? String == "me" && put.json["showOnline"] as? Bool == false)
+        #expect(!restarted.hasUnsentChanges)
+        #expect(restarted.settings.dailyVisibility == .me)  // from the server
+    }
+
+    @Test func aFieldChangedAgainWhileItWasBeingSentStaysUnsent() {
+        let sent = PrivacyPatch(from: PrivacySettings(), to: { var s = PrivacySettings(); s.showOnline = false; s.allowReposts = false; return s }())
+        var unsent = sent
+        unsent.showOnline = true  // changed back after the send began
+        let left = unsent.removing(sent: sent)
+        #expect(left.showOnline == true && left.allowReposts == nil)
     }
 
     @Test func clearingGoesBackToTheDefaults() {

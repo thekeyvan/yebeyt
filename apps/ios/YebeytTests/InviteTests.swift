@@ -11,13 +11,13 @@ struct InviteTests {
     }
 
     @Test func theMessageIsTheBodyTheOpenerCoupletAndTheLink() {
-        let text = InviteMessage.text(body: InviteTone.short.body, username: "niloofar")
+        let text = InviteMessage.text(body: InviteTone.short.body, link: InviteLink.display(username: "niloofar"))
         #expect(text == "بیا با هم مشاعره کنیم:\n«الا یا ایها الساقی ادر کأسا و ناولها»\nyebeyt.com/i/niloofar")
         #expect(InviteMessage.opener == "الا یا ایها الساقی ادر کأسا و ناولها")
     }
 
     @Test func aTextWrittenByTheUserIsUsedAsIs() {
-        let text = InviteMessage.text(body: "سلام، بیا!", username: "ali.r")
+        let text = InviteMessage.text(body: "سلام، بیا!", link: InviteLink.display(username: "ali.r"))
         #expect(text.hasPrefix("سلام، بیا!\n"))
         #expect(text.hasSuffix("yebeyt.com/i/ali.r"))
     }

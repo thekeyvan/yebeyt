@@ -57,11 +57,18 @@ final class GameStats {
         return longest
     }
 
-    /// Told when a quiz answer is right, with the game and the couplet's poet (for badges and avatar items).
-    @ObservationIgnored var rightAnswerHandler: (@MainActor (GameKind, String) -> Void)?
+    /// Told when a quiz answer is right, with the couplet's poet (for the «حافظ‌شناس» badge).
+    @ObservationIgnored var rightAnswerHandler: (@MainActor (String) -> Void)?
 
-    func recordRightAnswer(in game: GameKind, poetSlug: String) {
-        rightAnswerHandler?(game, poetSlug)
+    func recordRightAnswer(poetSlug: String) {
+        rightAnswerHandler?(poetSlug)
+    }
+
+    /// Told when a quiz round ends, with how many answers were right of how many questions.
+    @ObservationIgnored var roundHandler: (@MainActor (GameKind, Int, Int) -> Void)?
+
+    func recordRoundEnd(of game: GameKind, right: Int, questions: Int) {
+        roundHandler?(game, right, questions)
     }
 
     func daily(on day: TehranDay) -> DailyRecord? { saved.daily[day.number] }

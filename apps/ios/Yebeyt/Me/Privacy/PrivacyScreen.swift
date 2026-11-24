@@ -96,7 +96,7 @@ struct PrivacyScreen: View {
                 .overlay(Circle().strokeBorder(Tokens.Colors.white, lineWidth: 3))
                 .stickerShadow(ShadowToken(y: 2, blur: 6, opacity: 0.22))
                 .tilted(-8)
-            (Text("هر بیت رو موقع نگه داشتن هم می‌تونی جدا ") + Text("فقط برای خودت").bold() + Text(" کنی، حتی اگه بقیه برای دوستات باز باشه."))
+            Text("بیت‌هایی که نگه می‌داری رو فقط دوستات می‌بینن، اگه بخوای.")
                 .font(.ui(13)).foregroundStyle(Tokens.Colors.ink).lineSpacing(5)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }

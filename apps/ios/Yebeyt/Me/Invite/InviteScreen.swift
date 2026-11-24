@@ -54,8 +54,6 @@ struct InviteScreen: View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("شعر با رفیق\nقشنگ‌تره").font(.title(26)).lineSpacing(-4)
-                Text("هر کی با لینک تو بیاد، یه آیتم تازه برای چهره‌تون می‌گیرید.")
-                    .font(.ui(12.5)).foregroundStyle(Color(hex: 0xD6D8FF)).lineSpacing(4)
             }
             .foregroundStyle(Tokens.Colors.white)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -129,7 +127,7 @@ struct InviteScreen: View {
                 Text(text).font(.ui(14)).lineSpacing(6).foregroundStyle(Tokens.Colors.ink)
                     .accessibilityIdentifier("inviteBody")
             }
-            Text("«\(InviteMessage.opener)»").font(.poem(16)).foregroundStyle(Tokens.Colors.ink)
+            Text("«\(InviteMessage.opener)»").font(.ui(14, weight: .bold)).foregroundStyle(Tokens.Colors.ink)
                 .padding(.top, 2)
             Text(link).font(.ui(14, weight: .bold)).foregroundStyle(Tokens.Colors.lapis)
                 .environment(\.layoutDirection, .leftToRight)
