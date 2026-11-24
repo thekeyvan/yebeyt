@@ -1,10 +1,9 @@
-import { serve } from "@hono/node-server";
 import { createRemoteJWKSet } from "jose";
-import { createApp } from "./app.js";
 import { ConfigError, loadConfig } from "./config.js";
 import { connectAndMigrate } from "./db/connect.js";
 import type { Deps } from "./deps.js";
 import { createHub } from "./hub.js";
+import { startServer } from "./server.js";
 
 async function main() {
   const config = await loadConfig(process.env);
@@ -19,11 +18,10 @@ async function main() {
     googleKeys: createRemoteJWKSet(new URL("https://www.googleapis.com/oauth2/v3/certs")),
     log: (line) => console.log(line),
   };
-  const server = serve({ fetch: createApp(deps).fetch, port: config.port }, (info) => {
-    console.log(`yebeyt server listening on ${info.port}`);
-  });
+  const server = await startServer(deps, config.port);
+  console.log(`yebeyt server listening on ${server.port}`);
   const stop = () => {
-    server.close(() => void close().then(() => process.exit(0)));
+    void server.close().then(() => close()).then(() => process.exit(0));
   };
   process.on("SIGTERM", stop);
   process.on("SIGINT", stop);
