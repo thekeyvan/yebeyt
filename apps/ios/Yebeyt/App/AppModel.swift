@@ -19,7 +19,10 @@ enum Tab: String, CaseIterable, Sendable {
 @MainActor @Observable
 final class AppModel {
     private(set) var selectedTab: Tab
+    /// The badge of the «پیام‌ها» tab: the unread messages plus the incoming friend requests.
     var unreadCount: Int
+    /// How many of `unreadCount` are friend requests.
+    var friendRequestCount = 0
     /// The poem on screen in the full-screen reader, nil when it is closed.
     var reader: ReaderRoute?
     /// The screens pushed on the خونه tab: finding friends and a person's page.
@@ -151,7 +154,14 @@ final class AppModel {
         unreadCount > 0 ? PersianDigits.string(unreadCount) : nil
     }
 
+    /// What VoiceOver says of the badge: the unread messages and the friend requests, each left out at zero.
     var unreadAccessibilityLabel: String? {
-        unreadBadgeText.map { "\($0) پیام نخونده" }
+        let messages = max(unreadCount - friendRequestCount, 0)
+        let parts = [
+            messages > 0 ? "\(PersianDigits.string(messages)) پیام نخونده" : nil,
+            friendRequestCount > 0 ? "\(PersianDigits.string(friendRequestCount)) درخواست دوستی" : nil,
+        ]
+        let label = parts.compactMap { $0 }.joined(separator: "، ")
+        return label.isEmpty ? nil : label
     }
 }

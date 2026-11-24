@@ -3,9 +3,10 @@ import SwiftUI
 /// «پیدا کردن دوست»: a field for a username and the people found, each with the button of its friendship.
 struct PeopleScreen: View {
     @Environment(Session.self) private var session
+    @Environment(MessagesCenter.self) private var center
 
     var body: some View {
-        PeopleScreenBody(session: session)
+        PeopleScreenBody(session: session, center: center)
     }
 }
 
@@ -16,8 +17,8 @@ private struct PeopleScreenBody: View {
     @State private var toast: String?
     @FocusState private var focused: Bool
 
-    init(session: Session) {
-        _model = State(initialValue: PeopleSearchModel(session: session))
+    init(session: Session, center: MessagesCenter) {
+        _model = State(initialValue: PeopleSearchModel(session: session, center: center))
     }
 
     var body: some View {
@@ -89,9 +90,10 @@ struct PeopleSearchSection: View {
 /// The same search under the invite card of OnbFriends: the rows ask but don't open a page, as onboarding has no stack.
 struct OnboardingPeopleSearch: View {
     @Environment(Session.self) private var session
+    @Environment(MessagesCenter.self) private var center
 
     var body: some View {
-        Inner(session: session)
+        Inner(session: session, center: center)
     }
 
     private struct Inner: View {
@@ -99,8 +101,8 @@ struct OnboardingPeopleSearch: View {
         @State private var text = ""
         @State private var toast: String?
 
-        init(session: Session) {
-            _model = State(initialValue: PeopleSearchModel(session: session))
+        init(session: Session, center: MessagesCenter) {
+            _model = State(initialValue: PeopleSearchModel(session: session, center: center))
         }
 
         var body: some View {

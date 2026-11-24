@@ -21,6 +21,11 @@ struct FriendshipStateTests {
         #expect(FriendCopy.accepted(by: "سارا") == "سارا درخواستت رو قبول کرد")
     }
 
+    @Test func onlyAskingAndAcceptingArePaintedAsTheMainButton() {
+        #expect(FriendAction.send.isMain && FriendAction.accept.isMain)
+        #expect(!FriendAction.cancel.isMain && !FriendAction.reject.isMain && !FriendAction.unfriend.isMain)  // «درخواست فرستادی» is grey
+    }
+
     @Test func eachActionMovesOneStateToAnother() {
         let moves: [(FriendAction, Friendship, Friendship)] = [
             (.send, .none, .requested), (.cancel, .requested, .none), (.accept, .incoming, .friends),
@@ -420,6 +425,66 @@ struct FriendRequestsCenterTests {
         #expect(toasts == ["سارا درخواستت رو قبول کرد"] && center.friendsRevision == before + 1)
         center.handle(.friendAccepted(from: PersonShort(username: "aryan", displayName: nil, avatar: nil)))
         #expect(toasts.last == "aryan درخواستت رو قبول کرد")
+    }
+
+    /// A center whose unread answer has `before` requests, and `after` once something was written (an accept, a reject, a block).
+    private func centerWithRequests(before: Int = 2, after: Int = 1) -> (MessagesCenter, StubServer) {
+        let written = Recorded<Int>()
+        let profile = #"{"username":"aryan","displayName":"آرین","avatar":null,"friendsCount":3,"friendship":"incoming","isFriend":false,"canMessage":false,"league":null,"weekPoints":null}"#
+        return center { request in
+            switch (request.method, request.path) {
+            case ("GET", "/v1/me/unread"): return .json(200, #"{"total":1,"friendRequests":\#(written.all.isEmpty ? before : after)}"#)
+            case ("GET", "/v1/users/aryan"): return .json(200, profile)
+            case ("GET", "/v1/users/search"): return .json(200, #"{"items":[{"username":"aryan","displayName":"آرین","avatar":null,"friendship":"incoming","isFriend":false}]}"#)
+            case ("POST", _): written.add(1); return .json(200, #"{"friendship":"friends"}"#)
+            default: written.add(1); return .json(204, "")
+            }
+        }
+    }
+
+    @Test func acceptingOnAPersonsPageLowersTheBadgeAtOnceAndRefreshesMyFriends() async {
+        let (center, stub) = centerWithRequests()
+        var badge: [Int] = []
+        center.onUnread = { badge.append($0) }
+        await center.refreshUnread()
+        #expect(badge.last == 3)
+        let person = PersonModel(username: "aryan", session: center.session, center: center)
+        await person.load()
+        let revision = center.friendsRevision
+        await person.perform(.accept)
+        #expect(center.requests.incomingCount == 1 && badge.last == 2)
+        #expect(center.friendsRevision == revision + 1)
+        #expect(await eventually { stub.requests(to: "/v1/me/unread").count == 2 })  // and the server's count is read again
+        #expect(center.requests.incomingCount == 1)
+    }
+
+    @Test func rejectingOnAPersonsPageLowersTheBadgeButFriendsStayAsTheyWere() async {
+        let (center, _) = centerWithRequests()
+        await center.refreshUnread()
+        let person = PersonModel(username: "aryan", session: center.session, center: center)
+        await person.load()
+        let revision = center.friendsRevision
+        await person.perform(.reject)
+        #expect(center.requests.incomingCount == 1 && center.friendsRevision == revision)
+    }
+
+    @Test func acceptingFromASearchRowDropsTheRequestRowAndTheCount() async {
+        let (center, _) = centerWithRequests(before: 1, after: 0)
+        center.requests.received(from: PersonShort(username: "aryan", displayName: "آرین", avatar: nil))
+        let search = PeopleSearchModel(session: center.session, debounce: .milliseconds(1), center: center)
+        search.queryChanged("ary")
+        await search.settle()
+        let revision = center.friendsRevision
+        #expect(await search.perform(.accept, on: "aryan") == nil)
+        #expect(center.requests.incoming.isEmpty && center.requests.incomingCount == 0 && center.friendsRevision == revision + 1)
+    }
+
+    @Test func blockingSomeoneWhoAskedTakesTheirRequestAway() async {
+        let (center, _) = centerWithRequests(before: 1, after: 0)
+        center.requests.received(from: PersonShort(username: "aryan", displayName: nil, avatar: nil))
+        let person = PersonModel(username: "aryan", session: center.session, center: center)
+        #expect(await person.block())
+        #expect(center.requests.incoming.isEmpty && center.requests.incomingCount == 0)
     }
 
     @Test func theSocketsFramesBecomeTheTwoEvents() throws {

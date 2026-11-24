@@ -5,10 +5,11 @@ import SwiftUI
 /// and a ⋯ menu with «حذف از دوستا» (for a friend), «بلاک» and «گزارش».
 struct PersonScreen: View {
     @Environment(Session.self) private var session
+    @Environment(MessagesCenter.self) private var center
     let username: String
 
     var body: some View {
-        PersonScreenBody(username: username, session: session)
+        PersonScreenBody(username: username, session: session, center: center)
     }
 }
 
@@ -22,8 +23,8 @@ private struct PersonScreenBody: View {
     @State private var confirmingUnfriend = false
     @State private var reporting = false
 
-    init(username: String, session: Session) {
-        _model = State(initialValue: PersonModel(username: username, session: session))
+    init(username: String, session: Session, center: MessagesCenter) {
+        _model = State(initialValue: PersonModel(username: username, session: session, center: center))
     }
 
     var body: some View {
@@ -134,7 +135,7 @@ private struct PersonScreenBody: View {
                 }
                 ForEach(profile.friendship.buttons, id: \.self) { action in
                     Button { Task { await model.perform(action) } } label: { Text(FriendCopy.title(action)).frame(maxWidth: .infinity) }
-                        .buttonStyle(.sticker(action == profile.friendship.buttons.first ? .primary : .secondary))
+                        .buttonStyle(.sticker(action.isMain ? .primary : .secondary))
                         .disabled(model.isBusy)
                         .accessibilityIdentifier("person-\(action)")
                 }

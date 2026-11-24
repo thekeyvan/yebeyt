@@ -51,7 +51,8 @@ struct FriendControl: View {
     let username: String
     let friendship: Friendship
     var busy = false
-    let act: (FriendAction) -> Void
+    /// Nil where the buttons are not offered (my friends list).
+    var act: ((FriendAction) -> Void)?
 
     var body: some View {
         if friendship.buttons.isEmpty {
@@ -65,7 +66,7 @@ struct FriendControl: View {
         } else {
             HStack(spacing: 8) {
                 ForEach(friendship.buttons, id: \.self) { action in
-                    FriendButton(title: FriendCopy.title(action), quiet: action != friendship.buttons.first, busy: busy) { act(action) }
+                    FriendButton(title: FriendCopy.title(action), quiet: !action.isMain, busy: busy) { act?(action) }
                         .accessibilityIdentifier("\(Self.identifier(action))-\(username)")
                 }
             }
@@ -109,7 +110,8 @@ struct PersonRow: View {
     var opens = true
     /// Set when the list is for choosing someone (a new chat): a tap picks, and there are no buttons.
     var pick: ((FoundPerson) -> Void)?
-    let act: (FriendAction) -> Void
+    /// What a tap on a button does; nil for a list without buttons (my friends).
+    var act: ((FriendAction) -> Void)?
 
     var body: some View {
         HStack(spacing: 12) {

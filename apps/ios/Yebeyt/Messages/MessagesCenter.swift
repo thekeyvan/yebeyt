@@ -17,6 +17,8 @@ final class MessagesCenter {
 
     /// Told when the badge changes: the unread messages plus the incoming friend requests (the tab bar's badge).
     @ObservationIgnored var onUnread: (@MainActor (Int) -> Void)?
+    /// Told when the number of incoming requests changes (the badge's VoiceOver label says it apart).
+    @ObservationIgnored var onRequests: (@MainActor (Int) -> Void)?
     /// Shows a line («<name> درخواستت رو قبول کرد»).
     @ObservationIgnored var onToast: (@MainActor (String) -> Void)?
     @ObservationIgnored private var published = 0
@@ -33,7 +35,10 @@ final class MessagesCenter {
         self.sockets = sockets
         inbox = InboxModel(session: session)
         requests = FriendRequestsModel(session: session)
-        requests.onCountChange = { [weak self] _ in self?.publishBadge() }
+        requests.onCountChange = { [weak self] count in
+            self?.onRequests?(count)
+            self?.publishBadge()
+        }
     }
 
     private func publishBadge() {
@@ -98,6 +103,27 @@ final class MessagesCenter {
         if inbox.apply(event, viewing: viewing) { Task { await inbox.load() } }
         chats.values.forEach { $0.apply(event) }
         divans.values.forEach { $0.apply(event) }
+    }
+
+    // MARK: Friendships changed outside the requests screen
+
+    /// An action on the friendship with `username` went through (on their page or a search row) and ended in `state`:
+    /// the request they sent is answered, so the row and the badge drop at once and the server's count is read again;
+    /// my friends read themselves again when someone became or stopped being one.
+    func friendshipChanged(_ username: String, action: FriendAction, state: Friendship) {
+        let answered = action == .accept || action == .reject || (action == .send && state == .friends)
+        if answered {
+            requests.answered(username)
+            Task { await refreshUnread() }
+        }
+        if action == .cancel || state == .friends { requests.removeSent(to: username) }
+        if state == .friends || action == .unfriend { friendsRevision += 1 }
+    }
+
+    /// I blocked `username`: any request between us is gone (the server drops them).
+    func blocked(_ username: String) {
+        requests.removeAll(of: username)
+        Task { await refreshUnread() }
     }
 
     // MARK: Unread

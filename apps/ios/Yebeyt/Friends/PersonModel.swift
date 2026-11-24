@@ -37,10 +37,13 @@ final class PersonModel {
     /// A short message for the person (a failed request, «گزارشت رسید»).
     var toast: String?
     @ObservationIgnored private let session: Session
+    /// Told what changed, so the requests row and the badge follow.
+    @ObservationIgnored private weak var center: MessagesCenter?
 
-    init(username: String, session: Session) {
+    init(username: String, session: Session, center: MessagesCenter? = nil) {
         self.username = username
         self.session = session
+        self.center = center
     }
 
     var name: String { profile?.short.name ?? username }
@@ -83,6 +86,7 @@ final class PersonModel {
         do {
             let state = try await session.authorized { try await api.friendAction(action, username: username, token: $0) }
             profile?.friendship = state
+            center?.friendshipChanged(username, action: action, state: state)
             await load()  // the friends count, the league and «پیام بده» follow the friendship
         } catch {
             profile?.friendship = action.requires
@@ -96,6 +100,7 @@ final class PersonModel {
         let username = username
         do {
             try await session.authorized { try await api.block(username, token: $0) }
+            center?.blocked(username)
             return true
         } catch {
             toast = FeedbackLog.shared.shown(error as? APIError ?? .badResponse)

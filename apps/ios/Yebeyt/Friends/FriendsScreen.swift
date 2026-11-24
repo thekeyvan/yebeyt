@@ -50,7 +50,7 @@ private struct FriendsScreenBody: View {
             PeopleCard {
                 let visible = blocked.visible(model.people)
                 ForEach(visible, id: \.username) { person in
-                    PersonRow(person: person) { _ in }
+                    PersonRow(person: person)
                     .onAppear { if person.username == visible.last?.username { Task { await model.loadMore(hiding: blocked) } } }
                 }
             }

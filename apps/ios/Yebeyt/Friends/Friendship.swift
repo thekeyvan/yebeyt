@@ -37,6 +37,9 @@ enum FriendAction: Hashable, Sendable {
         }
     }
 
+    /// Painted as the main (lapis) button; «درخواست فرستادی», «رد» and the rest are grey.
+    var isMain: Bool { self == .send || self == .accept }
+
     var result: Friendship {
         switch self {
         case .send: .requested

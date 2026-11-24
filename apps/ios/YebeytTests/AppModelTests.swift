@@ -90,6 +90,10 @@ struct AppModelTests {
         let model = AppModel(unreadCount: 12)
         #expect(model.unreadBadgeText == "۱۲")
         #expect(model.unreadAccessibilityLabel == "۱۲ پیام نخونده")
+        model.friendRequestCount = 1
+        #expect(model.unreadAccessibilityLabel == "۱۱ پیام نخونده، ۱ درخواست دوستی")
+        model.unreadCount = 1
+        #expect(model.unreadAccessibilityLabel == "۱ درخواست دوستی")  // no messages: that part is left out
     }
 }
 

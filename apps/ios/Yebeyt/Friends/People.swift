@@ -18,11 +18,14 @@ final class PeopleSearchModel {
     private(set) var phase = Phase.idle
     let session: Session
     @ObservationIgnored private let debounce: Duration
+    /// Told what changed, so the requests row and the badge follow.
+    @ObservationIgnored private weak var center: MessagesCenter?
     @ObservationIgnored private var task: Task<Void, Never>?
 
-    init(session: Session, debounce: Duration = .milliseconds(300)) {
+    init(session: Session, debounce: Duration = .milliseconds(300), center: MessagesCenter? = nil) {
         self.session = session
         self.debounce = debounce
+        self.center = center
     }
 
     /// What is searched for: without spaces or a leading «@», in lowercase (usernames are).
@@ -78,6 +81,7 @@ final class PeopleSearchModel {
             let api = session.api
             let state = try await session.authorized { try await api.friendAction(action, username: username, token: $0) }
             if let now = people.firstIndex(where: { $0.username == username }) { people[now].friendship = state }
+            center?.friendshipChanged(username, action: action, state: state)
             return nil
         } catch {
             if let now = people.firstIndex(where: { $0.username == username }) { people[now].friendship = action.requires }

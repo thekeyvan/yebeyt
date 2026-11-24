@@ -108,6 +108,21 @@ final class FriendRequestsModel {
         incomingCount += 1
     }
 
+    /// I answered (or answered by asking back) the request of `username` somewhere other than this screen: the row goes,
+    /// or, when the list was not read, the count is one less.
+    func answered(_ username: String) {
+        if incoming.contains(where: { $0.username == username }) {
+            incoming.removeAll { $0.username == username }
+        }
+        incomingCount = max(incomingCount - 1, 0)
+    }
+
+    /// I blocked `username`: no request of theirs or mine stays in the lists.
+    func removeAll(of username: String) {
+        if incoming.contains(where: { $0.username == username }) { answered(username) }
+        removeSent(to: username)
+    }
+
     /// Live `friend.accepted`: the request I sent is no longer waiting.
     func removeSent(to username: String) {
         outgoing.removeAll { $0.username == username }

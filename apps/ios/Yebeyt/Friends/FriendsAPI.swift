@@ -1,10 +1,11 @@
 import Foundation
 
-/// The endpoints of friends, friend requests, scores, reactions and the feed (see `packages/api/openapi.json`).
+/// Which requests `GET /v1/me/friend-requests` lists: the ones I got or the ones I sent.
 enum FriendRequestDirection: String, Sendable {
     case incoming, outgoing
 }
 
+/// The endpoints of friends, friend requests, scores, reactions and the feed (see `packages/api/openapi.json`).
 extension API {
     // MARK: Scores
 
