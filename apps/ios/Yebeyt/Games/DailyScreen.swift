@@ -34,7 +34,6 @@ struct DailyScreen: View {
                     detail: session.game.outcome == .solved ? "+\(PersianDigits.string(session.game.points))" : nil,
                     buttonTitle: "برگرد", buttonIdentifier: "dailyBack", next: { app.closeGame() }, celebrates: true
                 )
-                .transition(.opacity)
             }
         }
         .dottedPaper()

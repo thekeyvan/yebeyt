@@ -96,7 +96,6 @@ struct MatchScreen: View {
                     buttonTitle: "سؤال بعدی", buttonIdentifier: "matchNext",
                     next: { withAnimation(.snappy) { session.next() } }
                 )
-                .transition(.opacity)
             }
         }
         .animation(.snappy, value: round.matched)

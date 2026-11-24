@@ -105,7 +105,6 @@ struct JigsawScreen: View {
                     detail: "+\(PersianDigits.string(answer.result.points)) · \(PersianDigits.string(answer.seconds)) ثانیه",
                     buttonTitle: "بیت بعدی", buttonIdentifier: "jigsawNext", next: { withAnimation(.snappy) { session.next() } }
                 )
-                .transition(.opacity)
             }
         }
         .animation(.snappy, value: round.sheetOpen)

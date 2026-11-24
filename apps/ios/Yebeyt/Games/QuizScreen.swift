@@ -134,7 +134,6 @@ struct QuizScreen: View {
                     detail: detail(answer, in: round), buttonTitle: "سؤال بعدی", buttonIdentifier: "quizNext",
                     next: { withAnimation(.snappy) { session.next() } }
                 )
-                .transition(.opacity)
             }
         }
         .animation(.snappy, value: round.sheetOpen)

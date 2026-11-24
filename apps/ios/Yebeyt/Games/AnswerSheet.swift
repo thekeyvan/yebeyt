@@ -20,15 +20,22 @@ struct AnswerSheet: View {
     @State private var aiToastShown = false
     @State private var aiToastTask: Task<Void, Never>?
 
+    /// The dimmed background and the sheet are two views of the screen's stack, so that each has its own transition
+    /// (a transition inside one container is not used: the container fades as a whole).
     var body: some View {
-        ZStack(alignment: .bottom) {
+        Group {
             Tokens.Colors.ink.opacity(0.18).ignoresSafeArea().accessibilityHidden(true)
+                .transition(Motion.scrim)
+            // Closing it is «بعدی»: a drag down does what the big button does. A tap on the background does not (it
+            // would skip the verdict by accident), so the scrim takes no tap.
             sheet
-                .transition(.move(edge: .bottom))
+                .dragToDismiss(next)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+                .accessibilityElement(children: .contain)
+                .accessibilityAddTraits(.isModal)
+                .sheet(item: $share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
+                .motionTransition(Motion.sheet)
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(.isModal)
-        .sheet(item: $share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
     }
 
     private var sheet: some View {
