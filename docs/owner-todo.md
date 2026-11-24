@@ -40,14 +40,9 @@ New project **yebeyt** (account accounts@ksco.nl) with the consent screen («ی�
 - The Sign in with Apple key `ZBLL8ASYCU` (team `95YDC2AP63`) is still valid; the server uses it to revoke tokens when an account is deleted.
 - App Store Connect: the app record for `com.yebeyt.app` exists; version 2.0.0 will be uploaded there.
 
-## 3b. Apple: a key for push notifications
+## 3b. Apple: a key for push notifications ✅
 
-«تا فردا» games and new messages need push notifications. On developer.apple.com → Certificates, IDs & Profiles → Keys → «+»: name it «yebeyt push», tick **Apple Push Notifications service (APNs)**, choose «Sandbox & Production», continue, register, and download the `.p8` file (it can be downloaded only once). Then in Railway → project yebeyt → service `server` → Variables add:
-
-- `APNS_KEY`: the whole text of the `.p8` file
-- `APNS_KEY_ID`: the key's 10-character id shown on the page
-
-Never commit the `.p8`. Tell the lead when it's there; push comes in its own slice after that.
+Done. Key «yebeyt push» (`K95YXBLYY5`, APNs, Sandbox & Production) is in Railway on service `server` as `APNS_KEY`, `APNS_KEY_ID` and `APNS_TEAM_ID`. Keep the `.p8` file somewhere safe off this Mac (a password manager); it can't be downloaded again. Never commit it.
 
 ## 4. Test on a real phone
 
@@ -77,7 +72,7 @@ These can't be tested in the simulator here:
 10. **Reading feedback:** there is no admin screen yet; feedback is read through the admin API (`GET /v1/admin/feedback` with `ADMIN_TOKEN`). Should a simple page come before the admin dashboard?
 11. **Friends = mutual follows.** Following is one-way; two people following each other are friends. OK, or should friend requests need acceptance?
 12. ✅ **League tiers** (owner: OK, 24 Nov) reuse the level names (نوآموز … استاد سخن), weekly from Saturday, groups of 30, top 5 up, bottom 5 down. OK?
-13. **Notifications:** (owner will add the key; steps in 3b) «تا فردا» games and messages need push notifications. That needs an APNs key (Apple Developer → Keys → a key with Apple Push Notifications). Please create one and put it in Railway as `APNS_KEY` (with its key id as `APNS_KEY_ID`), or tell the lead to do without push for now.
+13. ✅ **Notifications:** (key added, see 3b) «تا فردا» games and messages need push notifications. That needs an APNs key (Apple Developer → Keys → a key with Apple Push Notifications). Please create one and put it in Railway as `APNS_KEY` (with its key id as `APNS_KEY_ID`), or tell the lead to do without push for now.
 14. **Scores come from the phone,** so a determined cheater could fake them. The server caps points per round, and the daily and onboarding points count once. Good enough for now?
 15. **Privacy policy (slice 9, the new website):** a reported message keeps a copy of its text for moderation, even if its sender later deletes their account. The policy needs a line about that (and about feedback, see the feedback section).
 16. ✅ **Another person's page** (owner: plain layout is fine, 24 Nov) has no board; for now it is the Profile layout without the private parts, plus «دنبال کن», «پیام بده», and «بلاک» / «گزارش». Want a board for it?
