@@ -194,6 +194,7 @@ private struct LobbyBody: View {
     private func prepareShare() async -> SharePayload? {
         do {
             guard let game = try await model.makeGame(using: games) else { return nil }
+            if let line = model.skippedLine { toast = line }
             let url = "https://\(PlayCopy.gameLink(game.code))"
             return SharePayload(text: PlayCopy.gameShare(game: model.game.kind.name, url: url), url: url)
         } catch let error as APIError {
@@ -214,6 +215,7 @@ private struct LobbyBody: View {
         case .friendGame(let kind, _, _):
             do {
                 guard let game = try await model.makeGame(using: games) else { return }
+                if let line = model.skippedLine { app.showToast(line) }  // shown over the game
                 app.play(kind == .duel ? .duel(game.id) : .mosh(game.id))
             } catch let error as APIError {
                 toast = PlayCopy.gameError(error)

@@ -111,7 +111,6 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
 
     private static let userJSON = #"{"id":"00000000-0000-0000-0000-000000000001","username":"niloofar","displayName":null,"usernameChangedAt":null,"createdAt":"2026-11-23T08:00:00.000Z","providers":["apple"]}"#
 }
-#endif
 
 extension DebugBackend {
     /// The answer for a games or challenges request, nil when the request is about something else.
@@ -122,3 +121,4 @@ extension DebugBackend {
         )
     }
 }
+#endif

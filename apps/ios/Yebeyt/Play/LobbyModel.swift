@@ -69,6 +69,8 @@ final class LobbyModel {
     private(set) var selected: [String]
     /// The game made for the link or the button; the second tap uses it instead of making another.
     private(set) var made: FriendGame?
+    /// Who could not be invited when it was made: «سارا» takes invitations only from friends.
+    private(set) var skipped: [GameCreated.Skipped] = []
     private var friends: [PersonShort] = []
     private var extras: [PersonShort] = []
     private let start: PersonShort?
@@ -124,7 +126,14 @@ final class LobbyModel {
         if let made { return made }
         let created = try await games.create(kind: kind, turnSeconds: seconds, invite: invite)
         made = created.game
+        skipped = created.skipped
         return created.game
+    }
+
+    /// The line for the people who were not invited (nil when everybody was): the game is made anyway, and its link works.
+    var skippedLine: String? {
+        let lines = skipped.compactMap { PlayCopy.skipped($0) }
+        return lines.isEmpty ? nil : lines.joined(separator: "؛ ")
     }
 
     /// The link of the game made, or «yebeyt.com/g/…» before one is.

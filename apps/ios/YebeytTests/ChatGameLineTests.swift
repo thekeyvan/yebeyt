@@ -92,3 +92,33 @@ struct ChatGameLineTests {
         #expect(MoshLetters.lastLetterRange(in: trailing).map { String(trailing[$0]) } == "د")
     }
 }
+
+/// The link of a challenge in a message.
+struct ChallengeLinkTests {
+    @Test func theCodeIsFoundInTheLineOfTheChat() {
+        #expect(ChallengeLink.code(in: "نیلوفر تو رو به جورچین بیت چالش کشید · yebeyt.com/c/7KQ2") == "7KQ2")
+        #expect(ChallengeLink.code(in: "https://yebeyt.com/c/7kq2 ببین") == "7kq2")
+        #expect(ChallengeLink.code(in: "https://www.yebeyt.com/c/AB12") == "AB12")
+    }
+
+    @Test func aTextWithoutAChallengeLinkHasNoCode() {
+        #expect(ChallengeLink.code(in: "سلام") == nil)
+        #expect(ChallengeLink.code(in: "yebeyt.com/i/sara") == nil)  // an invite link is another thing
+        #expect(ChallengeLink.code(in: "yebeyt.com/c/7KQ2X") == nil)  // five characters are not a code
+        #expect(ChallengeLink.code(in: "other.com/c/7KQ2") == nil)
+    }
+
+    @Test func aTappedUrlGivesItsCode() {
+        #expect(ChallengeLink.code(of: URL(string: "https://yebeyt.com/c/7KQ2")!) == "7KQ2")
+        #expect(ChallengeLink.code(of: URL(string: "https://example.com")!) == nil)
+    }
+
+    @Test func theLinkInATextIsMadeALink() {
+        let text = "چالش · yebeyt.com/c/7KQ2"
+        let linked = ChallengeLink.linked(text, color: .black)
+        let links = linked.runs.compactMap(\.link)
+        #expect(links == [URL(string: "https://yebeyt.com/c/7KQ2")!])
+        #expect(String(linked.characters) == text)
+        #expect(ChallengeLink.linked("سلام", color: .black).runs.compactMap(\.link).isEmpty)
+    }
+}

@@ -296,6 +296,17 @@ struct FriendGamesTests {
         #expect(json["type"] as? String == "duel.answer" && json["gameId"] as? String == "d1" && json["round"] as? Int == 1 && json["option"] as? Int == 1)
     }
 
+    @Test func aDuelWaitsForTheFriendAndStartsWhenTheyJoin() async throws {
+        let waiting = GameJSON.game(id: "d1", kind: "duel", turnSeconds: 8, status: "waiting", players: [GameJSON.player("niloofar", seat: 0)], turn: nil)
+        let (games, _) = rig { _ in .json(200, waiting) }
+        await games.load("d1")
+        #expect(games.duel("d1") == nil)  // nobody to play against: the screen says «منتظر دوستت…»
+        games.handle(.gameStarted(try GameJSON.decoded(GameJSON.game(id: "d1", kind: "duel", turnSeconds: 8, turn: nil))))
+        let started = try #require(games.duel("d1"))
+        #expect(started.other == "sara.ghazal" && started.question == nil && !started.isEnded)  // started: «منتظر سارا…» until the first question
+        #expect(games.mineIDs == ["d1"])
+    }
+
     @Test func aDuelThatEndedWhileTheAppWasAwayHasItsEndFromTheGame() async throws {
         let round = #"{"round":1,"type":"second","key":"/hafez/ghazal/sh1#0","m1":"الف","m2":"ب","meaning":"م","poet":"hafez","bookTitle":"غزلیات","winner":"niloofar"}"#
         let done = GameJSON.game(id: "d1", kind: "duel", turnSeconds: 8, status: "done", winner: "niloofar", reason: "left", turn: nil, rounds: [round])
@@ -319,5 +330,45 @@ struct FriendGamesTests {
         #expect(made.invited == ["sara.ghazal"] && games.game("g1")?.status == .waiting && games.mineIDs == ["g1"])
         let sent = try #require(stub.requests.first)
         #expect(sent.path == "/v1/games" && sent.json["kind"] as? String == "mosh" && sent.json["turnSeconds"] as? Int == 30 && sent.json["invite"] as? [String] == ["sara.ghazal"])
+    }
+}
+
+/// Sending a text to a person from a card, without leaving the screen.
+@MainActor
+struct SendTextTests {
+    @Test func theChatIsFoundThenTheTextIsSent() async throws {
+        let stub = StubServer { request in
+            switch request.path {
+            case "/v1/conversations": .json(200, #"{"id":"c1","other":\#(MessageJSON.person)}"#)
+            case "/v1/conversations/c1/messages": .json(201, MessageJSON.message(id: "m1", fromMe: true, text: "سلام"))
+            default: .json(404, "{}")
+            }
+        }
+        let center = MessagesCenter(session: signedInSession(stub.api))
+        #expect(await center.sendText("سلام", to: "sara") == nil)
+        #expect(stub.requests.map(\.path) == ["/v1/conversations", "/v1/conversations/c1/messages"])
+        #expect(stub.requests[0].json["username"] as? String == "sara")
+        let sent = stub.requests[1].json
+        #expect(sent["kind"] as? String == "text" && sent["text"] as? String == "سلام" && (sent["clientId"] as? String)?.isEmpty == false)
+    }
+
+    @Test func aClosedChatGivesItsLine() async {
+        let stub = StubServer { _ in .json(403, #"{"error":"messages_closed"}"#) }
+        let center = MessagesCenter(session: signedInSession(stub.api))
+        #expect(await center.sendText("سلام", to: "sara") == MessageCopy.closed)
+    }
+
+    @Test func aLiveFrameGoesNowhereWhileTheSocketIsClosed() async {
+        let center = MessagesCenter(session: signedInSession(StubServer().api))
+        #expect(await center.sendLive("x") == false)
+    }
+
+    @Test func liveEventsAreHandedToTheGamesAfterTheMessages() {
+        let center = MessagesCenter(session: signedInSession(StubServer().api))
+        let seen = Recorded<LiveEvent>()
+        center.onLive = { seen.add($0) }
+        center.handle(.presence(username: "sara", online: true))
+        center.handle(.duelAnswered(gameId: "d1", round: 1, username: "sara"))
+        #expect(seen.all == [.presence(username: "sara", online: true), .duelAnswered(gameId: "d1", round: 1, username: "sara")])
     }
 }

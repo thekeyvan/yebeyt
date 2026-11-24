@@ -131,6 +131,14 @@ final class PlayUITests: XCTestCase {
 
     // MARK: Challenges
 
+    @MainActor func testTappingAChallengeLinkInAChatOpensTheBoard() {
+        let app = launch(["-beytRoute", "chat:mahsa.m"])
+        let bubble = element(app, "bubble-h1")
+        XCTAssertTrue(bubble.waitForExistence(timeout: 10))
+        bubble.coordinate(withNormalizedOffset: CGVector(dx: 0.45, dy: 0.55)).tap()  // the link, on the second line of the bubble
+        XCTAssertTrue(element(app, "challengeAccept").waitForExistence(timeout: 10))
+    }
+
     @MainActor func testTheEndOfARoundOffersAChallengeToASignedInPlayer() {
         let app = launch(["-beytRoute", "challenge-send"])
         XCTAssertTrue(element(app, "challengeSend").waitForExistence(timeout: 15))

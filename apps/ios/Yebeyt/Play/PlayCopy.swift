@@ -71,6 +71,15 @@ enum PlayCopy {
     static let lobbyFooter = "هر کی اول اومد، بازی شروع می‌شه. تو هم اول می‌تونی بیت اول رو بگی."
     static let lobbyDuelFooter = "هر کی اول اومد، بازی شروع می‌شه."
     static let lobbyChallengeFooter = "اول خودت ۱۰ بیت رو بازی می‌کنی، بعد چالش برای دوستات می‌ره."
+    /// Why somebody did not get the invitation: they take game invitations only from friends (`gameInvitesFrom`), or are not there.
+    static func skipped(_ person: GameCreated.Skipped) -> String? {
+        switch person.reason {
+        case "friends_only": "\(person.username) فقط از دوستاش دعوت به بازی می‌گیره"
+        case "not_found": "\(person.username) رو پیدا نکردیم"
+        default: nil
+        }
+    }
+
     static let tooManyInvites = "حداکثر ۵ نفر رو می‌شه دعوت کرد"
 
     // MARK: Chat

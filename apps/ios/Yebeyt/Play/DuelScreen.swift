@@ -15,7 +15,7 @@ struct DuelScreen: View {
 
     var body: some View {
         Group {
-            if let game, let state, state.isEnded,
+            if let state, state.isEnded,
                let summary = state.summary(otherName: other?.name ?? "", poetName: { library.poet(slug: $0)?.name ?? $0 }) {
                 RoundEndScreen(summary: summary)
             } else if let game {

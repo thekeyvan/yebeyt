@@ -23,10 +23,12 @@ struct TextBubble: View {
         let corners = RectangleCornerRadii(
             topLeading: mine ? 20 : 6, bottomLeading: 20, bottomTrailing: 20, topTrailing: mine ? 6 : 20
         )
-        Text(text)
+        let ink = mine ? Tokens.Colors.white : muted ? Tokens.Colors.muted : Tokens.Colors.ink
+        Text(ChallengeLink.linked(text, color: ink))
             .font(.ui(15))
             .lineSpacing(3)
-            .foregroundStyle(mine ? Tokens.Colors.white : muted ? Tokens.Colors.muted : Tokens.Colors.ink)
+            .tint(ink)
+            .foregroundStyle(ink)
             .multilineTextAlignment(.leading)
             .padding(.horizontal, 14)
             .padding(.vertical, 9)

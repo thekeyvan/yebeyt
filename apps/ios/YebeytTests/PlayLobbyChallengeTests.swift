@@ -92,6 +92,17 @@ struct LobbyModelTests {
         #expect(sent.json["invite"] as? [String] == ["sara.ghazal"] && sent.json["turnSeconds"] as? Int == 86_400)
     }
 
+    @Test func whoCouldNotBeInvitedIsToldAndTheGameIsMadeAnyway() async throws {
+        let stub = StubServer { _ in
+            .json(201, #"{"game":\#(GameJSON.game(id: "made", status: "waiting", turn: nil)),"invited":["sara.ghazal"],"skipped":[{"username":"kian_k","reason":"friends_only"},{"username":"ghost","reason":"not_found"},{"username":"niloofar","reason":"yourself"}]}"#)
+        }
+        let model = LobbyModel(start: LobbyStart(), session: session(stub))
+        #expect(model.skippedLine == nil)
+        let game = try await model.makeGame(using: FriendGames(session: session(stub)))
+        #expect(game?.id == "made")
+        #expect(model.skippedLine == "kian_k فقط از دوستاش دعوت به بازی می‌گیره؛ ghost رو پیدا نکردیم")
+    }
+
     @Test func changingTheGameOrTheTimeMakesANewOneNextTime() async throws {
         let (model, stub) = await lobby()
         let games = FriendGames(session: session(stub))

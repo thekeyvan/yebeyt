@@ -60,6 +60,12 @@ private struct ChatContent: View {
             }
             Button("بیخیال", role: .cancel) {}
         }
+        // A challenge link in a message opens the challenge in the app.
+        .environment(\.openURL, OpenURLAction { url in
+            guard let code = ChallengeLink.code(of: url) else { return .systemAction }
+            model.play(.challenge(code))
+            return .handled
+        })
         .onAppear { chat.isVisible = isLooked }
         .onDisappear { chat.isVisible = false }
         .onChange(of: isLooked) { _, looked in chat.isVisible = looked }
