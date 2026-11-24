@@ -1,9 +1,9 @@
 import Foundation
 
 /// What on this phone belongs to an account: the divan with its times, the privacy settings and the face (and, for
-/// deleting, the likes and reposts). It goes when the person signs out or deletes the account, so the next person to sign in on this
-/// phone starts clean and nothing is carried over to their account. What a guest has anyway (reading, game scores,
-/// text settings) stays.
+/// deleting, the likes and reposts). It goes when the person signs out or deletes the account, so nothing of it is carried over to the
+/// next account on this phone. Likes and reposts stay on sign-out and go only with a deleted account, until they sync with the server.
+/// What a guest has anyway (reading, game scores, text settings) stays.
 @MainActor
 struct LocalAccountData {
     let marks: ReaderMarks
