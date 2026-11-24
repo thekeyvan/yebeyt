@@ -20,6 +20,7 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 - Feel: like, keep, repost, send and right answers each have their own pop-up and a light tap; a win gets confetti; try with Settings → Accessibility → Motion → Reduce Motion on too.
 - Confirmations: leaving a started game, cancelling or rejecting a friend request, signing out, closing unsent feedback ask first; removing a couplet from the divan and «رد کن» on today's couplet show «برگردون».
 - The «یه بیت» demo friend: search `yebeyt`, send a request (accepted at once), send a message (it answers with a couplet).
+- Build 202611242331 and later: back/close rows stay pinned at the top while you scroll; every bottom sheet shows a grabber and closes with a drag down; tabs slide, the reader springs up, lists spring instead of fading. Invite links on yebeyt.com show your own avatar.
 
 ## 3. Read when there's time
 
