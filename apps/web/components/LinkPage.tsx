@@ -1,6 +1,6 @@
 import { Brand } from "./Brand";
 import { CodeLine } from "./CodeLine";
-import { Face } from "./Face";
+import { Avatar } from "./Avatar";
 import { SiteFooter } from "./SiteFooter";
 import { StoreButton } from "./StoreButton";
 import { APP_CLIP_READY } from "../lib/config";
@@ -18,7 +18,7 @@ export function LinkPage({ view, appClip = APP_CLIP_READY }: { view: LinkView | 
         {versus ? (
           <div className="versus">
             <span className="player">
-              <Face />
+              <Avatar avatar={view.avatar} />
               {view.name}
               <span className="score">{versus.mine}</span>
             </span>
@@ -32,7 +32,7 @@ export function LinkPage({ view, appClip = APP_CLIP_READY }: { view: LinkView | 
           </div>
         ) : (
           <div>
-            <Face large />
+            <Avatar avatar={view.avatar} large />
           </div>
         )}
         <div className="headline">

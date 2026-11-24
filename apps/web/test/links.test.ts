@@ -8,6 +8,7 @@ describe("challengeView", () => {
   it("makes the labels of the board", () => {
     expect(challengeView(challenge, "7kq2")).toEqual({
       name: "نیلوفر",
+      avatar: null,
       heading: "نیلوفر تو رو به چالش کشیده!",
       description: "جورچین بیت با ۱۰ بیت از سعدی. کلمه‌های هر بیت ریخته؛ به ترتیب بچسبونشون.",
       after: "بعد از نصب، همین چالش خودش باز می‌شه.",
@@ -32,6 +33,14 @@ describe("challengeView", () => {
 });
 
 describe("inviteView and gameView", () => {
+  it("carry the creator's avatar to the page", () => {
+    const avatar = { face: "tan", eyes: "happy", hair: "fire", mouth: "grin", accessory: "none", background: "sky" };
+    const person = { ...creator, avatar };
+    expect(inviteView(person).avatar).toEqual(avatar);
+    expect(gameView({ kind: "mosh", creator: person, status: "waiting" }, "K3M9").avatar).toEqual(avatar);
+    expect(challengeView({ ...challenge, creator: person }, "7KQ2").avatar).toEqual(avatar);
+  });
+
   it("invite: the person, a line and the username as the code", () => {
     expect(inviteView(creator)).toMatchObject({
       name: "نیلوفر",

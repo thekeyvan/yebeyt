@@ -1,10 +1,11 @@
-import type { Challenge, Person, PublicGame } from "./api";
+import type { Avatar, Challenge, Person, PublicGame } from "./api";
 import { APP_CLIP_BUNDLE_ID, APP_STORE_ID, SITE_URL } from "./config";
 import { persianNumber } from "./persian";
 
 /** Everything a link page shows, worked out from what the server said. */
 export type LinkView = {
   name: string;
+  avatar: Avatar | null;
   heading: string;
   description: string;
   after: string;
@@ -28,6 +29,7 @@ export function challengeView(challenge: Challenge, code: string): ChallengeView
   const things = thingsOf(challenge.label, challenge.items.length);
   return {
     name,
+    avatar: challenge.creator.avatar,
     heading: `${name} تو رو به چالش کشیده!`,
     description:
       challenge.game === "jigsaw"
@@ -46,6 +48,7 @@ export function inviteView(person: Person): LinkView {
   const name = nameOf(person);
   return {
     name,
+    avatar: person.avatar,
     heading: `${name} دعوتت کرده به یه بیت`,
     after: "بعد از نصب، همین دعوت خودش باز می‌شه.",
     description: "هر روز یه بیت برای تو، بازی با شعر، و مشاعره با دوستات.",
@@ -65,6 +68,7 @@ export function gameView(game: PublicGame, code: string): LinkView {
   const name = nameOf(game.creator);
   return {
     name,
+    avatar: game.creator.avatar,
     heading: `${name} دعوتت کرده به ${GAME_NAMES[game.kind]}`,
     description: GAME_DESCRIPTIONS[game.kind],
     after: "بعد از نصب، همین بازی خودش باز می‌شه.",
