@@ -77,6 +77,8 @@ final class LobbyModel {
     @ObservationIgnored private var generation = 0
     /// Who could not be invited when it was made: «سارا» takes invitations only from friends.
     private(set) var skipped: [GameCreated.Skipped] = []
+    /// The line a chat invitation failed with, by username; gone when it goes on a later try.
+    private var lateFailures: [String: String] = [:]
     private var friends: [PersonShort] = []
     private var extras: [PersonShort] = []
     private let start: PersonShort?
@@ -133,6 +135,7 @@ final class LobbyModel {
         creating = nil
         invited = []
         skipped = []
+        lateFailures = [:]
         generation += 1
     }
 
@@ -171,13 +174,19 @@ final class LobbyModel {
         let text = PlayCopy.gameShare(game: self.game.kind.name, url: url)
         for username in selected where !invited.contains(username) && !skipped.contains(where: { $0.username == username }) {
             invited.insert(username)
-            if await sendText(text, username) != nil { invited.remove(username) }
+            if let failure = await sendText(text, username) {
+                invited.remove(username)  // tried again next time
+                lateFailures[username] = failure
+            } else {
+                lateFailures[username] = nil
+            }
         }
     }
 
-    /// The line for the people who were not invited (nil when everybody was): the game is made anyway, and its link works.
+    /// The line for the people who were not invited, or whose chat invitation did not go (nil when everybody was): the game
+    /// is made anyway, and its link works.
     var skippedLine: String? {
-        let lines = skipped.compactMap { PlayCopy.skipped($0) }
+        let lines = skipped.compactMap { PlayCopy.skipped($0) } + selected.compactMap { name in lateFailures[name].map { "\(name): \($0)" } }
         return lines.isEmpty ? nil : lines.joined(separator: "؛ ")
     }
 

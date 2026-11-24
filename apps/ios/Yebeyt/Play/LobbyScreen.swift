@@ -109,7 +109,7 @@ private struct LobbyBody: View {
                 style: SegmentedStyle(track: Tokens.Colors.trackLight, trackRadius: 14, trackPadding: 4, itemRadius: 11, fontSize: 12.5, vertical: 7, horizontal: nil, spacing: 4),
                 label: "وقت هر نوبت", idPrefix: "lobbyTurn"
             )
-            Text("«تا فردا» یعنی هر وقت سرت خلوت شد جواب بدی؛ وقتی نوبتت شد، توی پیام‌ها می‌بینی.")
+            Text("«تا فردا» یعنی هر وقت سرت خلوت شد جواب بدی؛ وقتی نوبتت شد، توی بازی‌ها می‌بینی.")
                 .font(.ui(11.5)).foregroundStyle(Color(hex: 0x8A8698))
         }
     }

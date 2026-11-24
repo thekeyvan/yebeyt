@@ -134,6 +134,21 @@ struct LobbyModelTests {
         #expect(stub.requests.filter { $0.path == "/v1/games" }.count == 1)
     }
 
+    @Test func aChatInviteThatFailsIsToldAndTriedAgain() async throws {
+        let stub = StubServer { _ in
+            .json(201, #"{"game":\#(GameJSON.game(id: "made", status: "waiting", turn: nil)),"invited":[],"skipped":[]}"#)
+        }
+        let model = LobbyModel(start: LobbyStart(), session: session(stub))
+        let games = FriendGames(session: session(stub))
+        model.toggle("kian_k")
+        _ = try await model.makeGame(using: games) { _, _ in "پیام نرفت" }
+        #expect(model.skippedLine == "kian_k: پیام نرفت")
+        let sent = Recorded<String>()
+        _ = try await model.makeGame(using: games) { _, username in sent.add(username); return nil }
+        #expect(sent.all == ["kian_k"])  // tried again, and now it went
+        #expect(model.skippedLine == nil)
+    }
+
     @Test func aFailedMakeIsTriedAgain() async throws {
         let calls = Recorded<Int>()
         let stub = StubServer { _ in
