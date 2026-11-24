@@ -70,7 +70,7 @@ struct MatchScreen: View {
             ScrollView {
                 VStack(spacing: 14) {
                     HStack(spacing: 12) {
-                        GameCloseButton { app.closeGame() }
+                        GameCloseButton(asking: session.asksBeforeLeaving) { app.closeGame() }
                         ProgressDots(
                             total: round.current.words.count, results: Array(repeating: true, count: round.matched.count),
                             sheetOpen: round.sheetOpen, noun: "جفت"

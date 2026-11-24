@@ -2,15 +2,32 @@ import SwiftUI
 
 /// The pieces the game screens share (JigsawE, PlayDaily, JigsawResult, ChallengeSend).
 
-/// The round white close button at the start of a game's header: 44pt, an ×.
+/// The round white close button at the start of a game's header: 44pt, an ×. With `asking` (a round that has started, see
+/// `LeaveGame`) it asks first and leaves only on «برو بیرون».
 struct GameCloseButton: View {
+    var asking = false
     let action: () -> Void
+    @Environment(AppModel.self) private var app
+    @State private var confirming = false
 
     var body: some View {
-        RoundButton(label: "بستن", action: action) {
+        RoundButton(label: "بستن", action: { if asking { confirming = true } else { action() } }) {
             LineIcon(shape: CloseIcon(), size: 18, lineWidth: 2.6, fill: nil).foregroundStyle(Tokens.Colors.ink)
         }
         .accessibilityIdentifier("gameClose")
+        // The app knows whether a round has started (the reader asks before starting another game) and whether the clock waits.
+        .onChange(of: asking, initial: true) { _, now in app.gameAsksBeforeLeaving = now }
+        .onChange(of: confirming) { _, now in app.leaveQuestionOpen = now }
+        .onDisappear {
+            app.gameAsksBeforeLeaving = false
+            app.leaveQuestionOpen = false
+        }
+        .sheet(isPresented: $confirming) {
+            ConfirmSheet(
+                title: LeaveGame.title, message: LeaveGame.message, confirm: LeaveGame.leave, cancel: LeaveGame.stay,
+                prefix: "leaveGame", isPresented: $confirming, action: action
+            )
+        }
     }
 }
 

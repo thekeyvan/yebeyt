@@ -126,14 +126,21 @@ struct SwipeBack: UIViewControllerRepresentable {
     }
 }
 
-/// Lets the swipe begin only when there is a screen to go back to.
+/// Lets the swipe begin only when there is a screen to go back to, and not while the screen in front has something to lose
+/// (`blocked`: the face screen with changes not saved, where the question is the only way out).
 final class SwipeBackDelegate: NSObject, UIGestureRecognizerDelegate {
     static let shared = SwipeBackDelegate()
+    /// Set by the screen in front, and cleared when it goes.
+    @MainActor static var blocked = false
+
+    static func allows(stackDepth: Int, blocked: Bool) -> Bool { stackDepth > 1 && !blocked }
 
     func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
         var responder: UIResponder? = recognizer.view
         while let current = responder {
-            if let navigation = current as? UINavigationController { return navigation.viewControllers.count > 1 }
+            if let navigation = current as? UINavigationController {
+                return MainActor.assumeIsolated { Self.allows(stackDepth: navigation.viewControllers.count, blocked: Self.blocked) }
+            }
             responder = current.next
         }
         return false

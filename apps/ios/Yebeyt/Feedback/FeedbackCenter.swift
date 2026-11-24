@@ -22,6 +22,19 @@ enum FeedbackSettings {
     }
 }
 
+/// The question before a report with something written is closed (docs/yebeyt-2.md, «Asking before it hurts»).
+enum FeedbackCopy {
+    static let title = "بازخوردت هنوز فرستاده نشده. ولش کنی؟"
+    static let discard = "ول کن"
+    static let stay = "بمون"
+    /// The report is on the server and only a file did not go (it can still be sent again).
+    static let filesTitle = "فیلم یا عکست فرستاده نشده. ولش کنی؟"
+    /// «حذف فیلم»: the recording can't be brought back.
+    static let recordingTitle = "فیلم پاک بشه؟"
+    static let recordingDelete = "پاک کن"
+    static let recordingKeep = "نه"
+}
+
 /// The feedback flow of the app: shake or the settings row opens the sheet over the current screen, the person picks a
 /// type and writes, a bug may be recorded in between, and the report is sent. One report is open at a time.
 @MainActor @Observable
@@ -36,6 +49,8 @@ final class FeedbackCenter {
     /// The little message over the app after sending («رسید، ممنون!»).
     private(set) var toast: String?
     private(set) var isRecording = false
+    /// The question «بازخوردت هنوز فرستاده نشده. ولش کنی؟» is on screen.
+    var isConfirmingClose = false
     /// ReplayKit said no, or cannot record here: the bug screen hides the option.
     private(set) var recordingRefused = false
 
@@ -135,7 +150,19 @@ final class FeedbackCenter {
 
     // MARK: Closing and sending
 
-    /// The × (or a swipe down on the choices): the draft is dropped.
+    /// What the question before closing says: the draft, or (when the report already reached the server) the files.
+    var closeQuestion: String { model?.reportReachedServer == true ? FeedbackCopy.filesTitle : FeedbackCopy.title }
+
+    /// The × or a swipe down: closes at once when nothing is written, otherwise asks first. «بمون» just closes the question
+    /// (the sheet's binding), and the form is as it was.
+    func requestClose() async {
+        guard model?.hasUnsentWork == true else { return await close() }
+        // The keyboard goes first, so it doesn't come and go under the question.
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        isConfirmingClose = true
+    }
+
+    /// The draft is dropped and the sheet goes.
     func close() async {
         await presenter?.dismiss()
         discard()
@@ -147,6 +174,7 @@ final class FeedbackCenter {
     }
 
     private func discard() {
+        isConfirmingClose = false
         model?.removeRecording()
         model = nil
         snapshot = nil

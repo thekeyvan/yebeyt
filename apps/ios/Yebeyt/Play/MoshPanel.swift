@@ -33,9 +33,10 @@ struct MoshPanel: View {
         .frame(maxWidth: .infinity)
         .background(UnevenRoundedRectangle(topLeadingRadius: 26, topTrailingRadius: 26).fill(Tokens.Colors.white.opacity(0.7)).ignoresSafeArea(edges: .bottom))
         .padding(.horizontal, -18)
-        .confirmationDialog("کم آوردی؟ بازی رو می‌بازی.", isPresented: $confirmingResign, titleVisibility: .visible) {
-            Button("کم آوردم", role: .destructive) { Task { toast = await games.resign(state.game.id) } }
-            Button("نه", role: .cancel) {}
+        .sheet(isPresented: $confirmingResign) {
+            ConfirmSheet(title: "کم آوردی؟ بازی رو می‌بازی.", message: nil, confirm: "کم آوردم", prefix: "resign", isPresented: $confirmingResign) {
+                toast = await games.resign(state.game.id)
+            }
         }
         .task { await loadSources() }
         .task(id: SuggestionKey(typed: typed, letter: state.requiredLetter, used: state.usedKeys.count, divan: divan.count, books: books.count)) { refreshSuggestions() }

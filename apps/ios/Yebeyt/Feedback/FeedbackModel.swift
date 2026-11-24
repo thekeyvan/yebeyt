@@ -48,6 +48,13 @@ final class FeedbackModel {
     var canSend: Bool { draft.canSend && phase != .sending }
     var failure: String? { if case .failed(let line) = phase { line } else { nil } }
 
+    /// Typed text, a screenshot with marks or a recording that has not been sent: closing would throw it away. Once the report
+    /// is on the server a file that did not go is what is left.
+    var hasUnsentWork: Bool { phase != .sent && (reportReachedServer || draft.hasTypedText || edited != nil || recording != nil) }
+
+    /// The report was made on the server; only a file may be missing.
+    var reportReachedServer: Bool { sender.hasCreatedReport }
+
     /// The report has reached the server (only a file failed): what was written can no longer change.
     var isLocked: Bool { phase == .sending || sender.hasCreatedReport }
 

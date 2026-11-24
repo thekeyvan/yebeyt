@@ -35,7 +35,7 @@ struct RootView: View {
                     .transition(.move(edge: .bottom))
             }
         }
-        .messageToast($model.toast, bottom: 110)
+        .messageToast($model.toast, undo: model.toastUndo, serial: model.toastSerial, bottom: 110)
         .animation(.snappy, value: model.game)
         // The bar sits 18pt above the screen edge, as on the board; the pages reserve its height.
         .ignoresSafeArea(.container, edges: .bottom)
@@ -88,6 +88,7 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }
         .onChange(of: model.currentScreen, initial: true) { _, screen in FeedbackLog.shared.visit(screen) }
         .accountPrompt(host: model.reader == nil)
+        .leaveGameQuestion(model, active: model.reader == nil)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
         .sharedDivanSheet(item: $model.sharedTarget) { model.showToast($0) }
         .fullScreenCover(item: $model.reader) { route in
@@ -107,13 +108,16 @@ struct RootView: View {
             share: { model.share = ReaderModel.Share(text: held.shareText) },
             openCouplet: { withMeaning in model.openReader(ReaderRoute(path: held.path, couplet: held.index, meaning: withMeaning)) },
             playWithCouplet: { index in
-                model.hold = nil
-                model.playWithCouplet(poem: held.path, index: index)
+                model.startGame {
+                    model.hold = nil
+                    model.playWithCouplet(poem: held.path, index: index)
+                }
             },
             addToSharedDivan: {
                 model.hold = nil
                 model.sharedTarget = SharedDivanTarget(key: held.id, person: held.sharedWith)
-            }
+            },
+            offerUndo: { model.showToast($0, undo: $1) }
         )
         .transition(.opacity)
     }

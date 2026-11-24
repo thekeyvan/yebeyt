@@ -47,37 +47,107 @@ struct SharedDivanBooksIcon: Shape {
     }
 }
 
-/// A line that says something for a moment, over the bottom of a screen: ink capsule, white text.
+/// The way back a toast offers for something done at once («از دیوانت برداشته شد» with «برگردون»).
+struct ToastUndo {
+    var title = "برگردون"
+    let run: @MainActor () -> Void
+
+    init(_ run: @escaping @MainActor () -> Void) {
+        self.run = run
+    }
+}
+
+/// How long a toast stays.
+enum ToastTiming {
+    /// The seconds before it goes by itself; nil when it stays until it is dismissed or acted on: a toast with an undo, for
+    /// someone using VoiceOver, who needs longer than 5 seconds to find the button.
+    static func seconds(hasUndo: Bool, voiceOver: Bool) -> Double? {
+        guard hasUndo else { return 2.5 }
+        return voiceOver ? nil : 5
+    }
+
+    @MainActor static func seconds(hasUndo: Bool) -> Double? {
+        seconds(hasUndo: hasUndo, voiceOver: UIAccessibility.isVoiceOverRunning)
+    }
+}
+
+/// A line that says something for a moment, over the bottom of a screen: ink capsule, white text; with an `undo`, a button at its end.
 struct MessageToast: View {
     let text: String
+    var undo: ToastUndo?
+    /// Called when the toast should go: after the undo ran, or when VoiceOver dismisses it.
+    var dismiss: () -> Void = {}
 
     var body: some View {
-        Text(text)
-            .font(.ui(13, weight: .medium))
-            .foregroundStyle(Tokens.Colors.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 9)
-            .background(Capsule().fill(Tokens.Colors.ink))
-            .toastTransition()
-            .accessibilityAddTraits(.isStaticText)
-            // VoiceOver can't see it come and go: it is said aloud.
-            .onChange(of: text, initial: true) { _, line in AccessibilityNotification.Announcement(line).post() }
+        HStack(spacing: 14) {
+            Text(text)
+            if let undo {
+                Button {
+                    undo.run()
+                    dismiss()
+                } label: {
+                    Text(undo.title).font(.ui(13, weight: .bold)).underline()
+                        .padding(.vertical, 8).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(undo.title)
+                .accessibilityIdentifier("toastUndo")
+            }
+        }
+        .font(.ui(13, weight: .medium))
+        .foregroundStyle(Tokens.Colors.white)
+        .padding(.horizontal, 16)
+        .padding(.vertical, undo == nil ? 9 : 1)
+        .background(Capsule().fill(Tokens.Colors.ink))
+        .toastTransition()
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isStaticText)
+        .accessibilityAction(.escape, dismiss)
+        .modifier(UndoAction(undo: undo, dismiss: dismiss))
+        // VoiceOver can't see it come and go: it is said aloud.
+        .onChange(of: text, initial: true) { _, line in AccessibilityNotification.Announcement(line).post() }
+    }
+
+    /// «برگردون» as an action of the whole toast, for VoiceOver's actions rotor.
+    private struct UndoAction: ViewModifier {
+        let undo: ToastUndo?
+        let dismiss: () -> Void
+
+        func body(content: Content) -> some View {
+            if let undo {
+                content.accessibilityAction(named: Text(undo.title)) {
+                    undo.run()
+                    dismiss()
+                }
+            } else {
+                content
+            }
+        }
     }
 }
 
 extension View {
-    /// Shows `text` as a toast at the bottom and clears it after a moment.
-    func messageToast(_ text: Binding<String?>, bottom: CGFloat = 96) -> some View {
+    /// Shows `text` as a toast at the bottom and clears it after a moment (longer with an `undo`, so there is time to tap it;
+    /// with VoiceOver it stays until dismissed). `serial` changes with every new toast, so the same line shown again starts
+    /// its time over.
+    func messageToast(_ text: Binding<String?>, undo: ToastUndo? = nil, serial: Int = 0, bottom: CGFloat = 96) -> some View {
         overlay(alignment: .bottom) {
             if let line = text.wrappedValue {
-                MessageToast(text: line)
+                MessageToast(text: line, undo: undo, dismiss: { text.wrappedValue = nil })
                     .padding(.bottom, bottom)
-                    .task(id: line) {
-                        try? await Task.sleep(for: .seconds(2.5))
-                        if text.wrappedValue == line { text.wrappedValue = nil }
+                    .task(id: ToastRun(line: line, serial: serial)) {
+                        guard let seconds = ToastTiming.seconds(hasUndo: undo != nil) else { return }
+                        try? await Task.sleep(for: .seconds(seconds))
+                        if !Task.isCancelled, text.wrappedValue == line { text.wrappedValue = nil }
                     }
             }
         }
         .animation(Motion.bouncy, value: text.wrappedValue)
     }
+}
+
+/// One showing of a toast: a new `serial` is a new showing, even of the same line.
+private struct ToastRun: Hashable {
+    let line: String
+    let serial: Int
 }

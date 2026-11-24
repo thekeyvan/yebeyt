@@ -157,7 +157,9 @@ final class SoloGamesUITests: XCTestCase {
         }
         app.buttons["game-misra"].tap()
         XCTAssertTrue(element(app, "quizCouplet").waitForExistence(timeout: 10))
-        app.buttons["gameClose"].tap()
+        app.buttons["gameClose"].tap()  // the round is timed, so it asks
+        XCTAssertTrue(app.buttons["leaveGameConfirm"].waitForExistence(timeout: 10))
+        app.buttons["leaveGameConfirm"].tap()
         app.buttons["allGames"].tap()
         XCTAssertTrue(app.buttons["catalog-match"].waitForExistence(timeout: 5))
         for kind in ["daily", "jigsaw", "poet", "misra", "book", "match", "listen"] {

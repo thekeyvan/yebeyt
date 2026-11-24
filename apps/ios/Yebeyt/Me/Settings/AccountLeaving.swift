@@ -25,6 +25,15 @@ struct LocalAccountData {
     }
 }
 
+/// The question before «خروج از حساب». What it says is what `AccountSignOut` does: one last sync of the divan, then the divan
+/// leaves this phone, and signing in again brings it back from the account.
+enum SignOutCopy {
+    static let title = "از حسابت بیرون بری؟"
+    static let message = "دیوانت به حسابت همگام می‌شه و از این گوشی پاک می‌شه؛ با ورود دوباره برمی‌گرده."
+    static let confirm = "بیرون برو"
+    static let stay = "نه"
+}
+
 /// «خروج از حساب»: one last sync (the divan, the likes and reposts, an unsent face, unsent privacy changes, the scores), so nothing made on this phone
 /// is lost, then the sign-in is forgotten and the account's data goes from the phone. When the last sync did not go
 /// through, nothing happens until the person insists (`force`): what is not on the account would be lost.

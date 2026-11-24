@@ -1,6 +1,11 @@
 import Foundation
 import Observation
 
+/// The line shown when a couplet is taken out of the divan, with the button that brings it back.
+enum DivanCopy {
+    static let removed = "از دیوانت برداشته شد"
+}
+
 /// What the reader has marked on this phone, per couplet: پسند, بازنشر and نگه دار. Keys look like
 /// «/hafez/ghazal/sh3#1» (the poem path and the 0-based couplet index).
 ///
@@ -67,6 +72,16 @@ final class ReaderMarks {
         saveMarks()
         reactionDidChange?(key, mark == .liked ? .like : .repost, isOn)
         return isOn
+    }
+
+    /// «نگه دار» in one tap: keeps the couplet, or takes it out of the divan without asking (it is easy to take back):
+    /// `offerUndo` is then given the line to show and the way back.
+    func toggleKept(poemPath: String, couplet: Int, offerUndo: (String, ToastUndo) -> Void) {
+        guard !toggle(.kept, poemPath: poemPath, couplet: couplet) else { return }
+        offerUndo(DivanCopy.removed, ToastUndo { [self] in
+            // Kept after the removal, so the last change per couplet wins in the sync; one kept again by hand stays as it is.
+            if !contains(.kept, poemPath: poemPath, couplet: couplet) { toggle(.kept, poemPath: poemPath, couplet: couplet) }
+        })
     }
 
     func keys(_ mark: Mark) -> Set<String> {

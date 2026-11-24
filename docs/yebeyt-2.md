@@ -106,6 +106,18 @@ After these: the web app, the admin dashboard and Android, each designed first.
 - In chat, a system line appears when a friend adds to a shared divan, and the long-press menu has «به دیوان مشترک».
 - فال حافظ stays a random Hafez ghazal in the whole-poem view; no separate flow.
 
+## Asking before it hurts (lead, 24 Nov, after the owner: «any action that can be dangerous should have a confirmation»)
+
+The rule: **ask first when an action loses progress or can't be undone; for a small action that is easy to take back, act at once and show a toast with «برگردون» (undo) instead of asking; never ask when nothing is lost.** One sticker sheet asks (`ConfirmSheet` in `apps/ios/Yebeyt/Design/`): a title, an optional line, the safe button («نه», «بمون») first (on the right in right-to-left) and the red one that does it.
+
+- Closing a solo game (the × of جورچین, حدس شاعر, مصراع دوم, از کدوم کتاب؟, گوش کن, معنی‌یاب, also when it answers a challenge) asks «از بازی بری بیرون؟» / «نتیجه‌ی این دور ثبت نمی‌شه.» (the best score, the leaderboard and a challenge's result; points already earned stay) / «برو بیرون» · «بمون», only once the round has started (an answer is given or its clock runs) and its result screen isn't showing. The game clock waits while the question is open. «بازی با این بیت/غزل» from the reader over such a round asks the same question. A duel never asks: leaving its screen doesn't forfeit. The onboarding game, the daily puzzle (every try is kept, it resumes) and مشاعره (turns wait on the server) never ask.
+- Friend requests: «درخواستت رو پس بگیری؟» (پس بگیر / نه) and «درخواستش رو رد کنی؟» / «بهش خبر نمی‌دیم.» (رد کن / نه), wherever the buttons are (a person's page, the requests list, people search).
+- Sign out: «از حسابت بیرون بری؟» with what really happens: the divan is synced, leaves this phone, and comes back when signing in again (بیرون برو / نه). The warning for an unsynced divan still follows when the last sync failed.
+- Closing the feedback sheet (× or a swipe down) with typed text, a screenshot with marks or a recording not sent: «بازخوردت هنوز فرستاده نشده. ولش کنی؟» (ول کن / بمون); while something is written a swipe can't close it. An empty form closes at once.
+- Un-keeping a couplet from the divan (wherever it is one tap: the reader, the hold menu, the home card, the feed, the divan, the after-answer sheet) asks nothing: «از دیوانت برداشته شد» with «برگردون». The way back keeps it again, so it counts as kept now (the sync's last change wins).
+- «حذف فیلم» in the feedback form asks «فیلم پاک بشه؟» (پاک کن / نه). Leaving the face screen with changes not saved asks «چهره‌ات ذخیره نشده. ولش کنی؟» (ول کن / بمون). «رد کن» on today's couplet acts at once and shows «امروز دیگه نشونت نمی‌دیم» with «برگردون». The username hint under the field says «… · تا ۳۰ روز نمی‌شه عوضش کرد.» (no dialog); the edge swipe back can't leave a face with unsaved changes. When the feedback report already reached the server and only a file failed, closing asks «فیلم یا عکست فرستاده نشده. ولش کنی؟». A toast with «برگردون» stays for 5 seconds (restarted by every new toast), and with VoiceOver until dismissed.
+- Still ask (the same sheet, or a choice list for report): «این پیام پاک بشه؟» (delete message), report, block, remove a friend, delete account, «کم آوردی؟ بازی رو می‌بازی.» (resign مشاعره).
+
 ## Still open (ask the user)
 
 - A full end-of-round screen per game (for now `ChallengeSend` covers it).

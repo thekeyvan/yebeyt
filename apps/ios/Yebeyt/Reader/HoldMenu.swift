@@ -33,6 +33,8 @@ struct HoldMenu: View {
     let playWithCouplet: (Int) -> Void
     /// «به دیوان مشترک»: the sheet that adds this couplet to a shared divan.
     let addToSharedDivan: () -> Void
+    /// Taking the couplet out of the divan shows a toast with «برگردون»: the screen's toast takes the line and the way back.
+    let offerUndo: (String, ToastUndo) -> Void
 
     /// The board puts the lifted couplet 258pt below the top of the screen (844pt tall).
     private static let boardTop: CGFloat = 258
@@ -130,7 +132,7 @@ struct HoldMenu: View {
             let kept = marks.contains(.kept, poemPath: path, couplet: couplet)
             round("نگه دار", .keep, on: kept) {
                 LineIcon(shape: BookmarkIcon(), size: 22, lineWidth: 2.2, fill: kept ? Tokens.Colors.ink : nil).foregroundStyle(Tokens.Colors.ink)
-            } action: { marks.toggle(.kept, poemPath: path, couplet: couplet) }
+            } action: { marks.toggleKept(poemPath: path, couplet: couplet, offerUndo: offerUndo) }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

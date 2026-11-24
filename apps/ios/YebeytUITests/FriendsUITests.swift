@@ -18,6 +18,11 @@ final class FriendsUITests: XCTestCase {
         app.descendants(matching: .any)[identifier]
     }
 
+    @MainActor private func waitForDisappearance(of element: XCUIElement, timeout: TimeInterval = 8) -> Bool {
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
+        return XCTWaiter().wait(for: [gone], timeout: timeout) == .completed
+    }
+
     @MainActor func testHomeLeadsToFindingAPersonAndAskingThemToBeFriends() {
         let app = launch(["-beytTab", "home"])
         let find = app.buttons["پیدا کردن دوست"]
@@ -37,7 +42,15 @@ final class FriendsUITests: XCTestCase {
         expectation(for: sent, evaluatedWith: ask)
         waitForExpectations(timeout: 10)
 
-        ask.tap()  // a tap on it cancels, with no question
+        ask.tap()  // a tap on it asks first: «نه» keeps the request, «پس بگیر» takes it back
+        XCTAssertTrue(element(app, "cancelRequestTitle").waitForExistence(timeout: 10))
+        app.buttons["cancelRequestCancel"].tap()
+        XCTAssertTrue(waitForDisappearance(of: element(app, "cancelRequestTitle")))
+        XCTAssertEqual(ask.label, "درخواست فرستادی")
+        ask.tap()
+        let confirm = app.buttons["cancelRequestConfirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        confirm.tap()
         let again = NSPredicate(format: "label == %@", "درخواست دوستی")
         expectation(for: again, evaluatedWith: ask)
         waitForExpectations(timeout: 10)

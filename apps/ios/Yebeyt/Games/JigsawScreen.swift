@@ -35,6 +35,7 @@ struct JigsawScreen: View {
         .dottedPaper()
         .task { await begin() }
         .onChange(of: scenePhase) { _, phase in session?.isPaused = phase != .active }
+        .onChange(of: app.leaveQuestionOpen) { _, open in session?.isAsking = open }
     }
 
     /// Builds the round; the couplets of a poem of the reader come first. A poem that can't be loaded just
@@ -119,7 +120,7 @@ struct JigsawScreen: View {
 
     private func header(_ session: JigsawSession) -> some View {
         HStack(spacing: 12) {
-            GameCloseButton { app.closeGame() }
+            GameCloseButton(asking: session.asksBeforeLeaving) { app.closeGame() }
             ProgressDots(round: session.round)
             TimerCapsule(text: session.timeText)
         }

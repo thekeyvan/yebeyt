@@ -259,4 +259,85 @@ struct FeedbackCenterTests {
         #expect(!FileManager.default.fileExists(atPath: stale.path))
         #expect(FileManager.default.fileExists(atPath: other.path))
     }
+
+    // MARK: Closing with something written
+
+    @Test func closingAnEmptyFormOrTheChoicesAsksNothing() async {
+        let f = fixture()
+        f.center.open(source: .shake)
+        await f.center.requestClose()
+        #expect(f.presenter.dismissed == 1 && !f.center.isOpen, "the choices hold nothing")
+
+        f.center.open(source: .shake, type: .idea)
+        #expect(f.center.model?.hasUnsentWork == false)
+        f.center.model?.draft.text = "  \n "
+        #expect(f.center.model?.hasUnsentWork == false, "spaces are not a report")
+        await f.center.requestClose()
+        #expect(f.presenter.dismissed == 2 && !f.center.isConfirmingClose && !f.center.isOpen)
+    }
+
+    @Test func typedTextAScreenshotMarkupOrARecordingAsksBeforeClosing() async {
+        let f = fixture()
+        f.center.open(source: .shake, type: .bug)
+        let model = f.center.model!
+        model.draft.text = "یه چیزی شد"
+        #expect(model.hasUnsentWork)
+        model.draft.text = ""
+        #expect(!model.hasUnsentWork)
+        model.edited = UIImage()
+        #expect(model.hasUnsentWork)
+        model.edited = nil
+        model.recording = FeedbackModel.Recording(url: URL(filePath: "/tmp/none.mp4"), seconds: 3)
+        #expect(model.hasUnsentWork)
+        model.recording = nil
+
+        model.draft.text = "نوشتم"
+        await f.center.requestClose()
+        #expect(f.center.isConfirmingClose && f.center.isOpen && f.presenter.dismissed == 0, "nothing is dropped until the person says so")
+        f.center.isConfirmingClose = false  // «بمون»: the sheet's binding closes the question
+        #expect(f.center.model?.draft.text == "نوشتم" && f.center.isOpen)
+        await f.center.requestClose()
+        await f.center.close()
+        #expect(f.presenter.dismissed == 1 && !f.center.isOpen && !f.center.isConfirmingClose)
+    }
+
+    @Test func aGameIdeaWithOnlyANameCountsAsWritten() {
+        let f = fixture()
+        f.center.open(source: .shake, type: .game)
+        f.center.model?.draft.gameName = "بیت عوضی"
+        #expect(f.center.model?.hasUnsentWork == true)
+    }
+
+    @Test func aSentReportHasNothingLeftToLose() async {
+        let f = fixture()
+        f.center.open(source: .shake, type: .idea)
+        f.center.model?.draft.text = "یه ایده"
+        await f.center.send()
+        #expect(!f.center.isOpen && !f.center.isConfirmingClose)
+    }
+
+    @Test func theQuestionIsTheLeadsCopy() {
+        #expect(FeedbackCopy.title == "بازخوردت هنوز فرستاده نشده. ولش کنی؟")
+        #expect(FeedbackCopy.discard == "ول کن" && FeedbackCopy.stay == "بمون")
+    }
+
+    @Test func whenOnlyAFileDidNotGoTheQuestionSaysSoAndStillAsks() async throws {
+        let f = fixture()
+        f.stub.respond { request in
+            request.path == "/v1/feedback" ? .json(201, #"{"id":"6f1c2a52-0d0b-4a9e-8a52-3f3b1a2f9c11","uploadToken":"t"}"#) : .json(503, #"{"error":"busy"}"#)
+        }
+        f.center.open(source: .shake, type: .bug)
+        let clip = FileManager.default.temporaryDirectory.appending(path: "feedback-test-\(UUID().uuidString).mp4")
+        try Data([1]).write(to: clip)
+        defer { try? FileManager.default.removeItem(at: clip) }
+        let model = try #require(f.center.model)
+        #expect(f.center.closeQuestion == FeedbackCopy.title)
+        model.draft.text = "باگ"
+        model.recording = FeedbackModel.Recording(url: clip, seconds: 2)
+        await f.center.send()
+        #expect(model.reportReachedServer && model.failure != nil && f.center.isOpen)
+        #expect(f.center.closeQuestion == "فیلم یا عکست فرستاده نشده. ولش کنی؟")
+        await f.center.requestClose()
+        #expect(f.center.isConfirmingClose && f.presenter.dismissed == 0)
+    }
 }

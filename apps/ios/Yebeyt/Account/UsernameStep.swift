@@ -114,8 +114,9 @@ struct UsernameStep: View {
             .frame(height: 52)
             .background(RoundedRectangle(cornerRadius: 16).fill(Tokens.Colors.white))
             .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(borderColor, lineWidth: 2) }
-            Text("حروف انگلیسی، عدد، «_» و «.» · ۳ تا ۲۰ حرف · هر ۳۰ روز یه بار می‌شه عوضش کرد")
+            Text(UsernameRules.hint)
                 .font(.ui(11.5)).foregroundStyle(Color(hex: 0x8A8698)).lineSpacing(3)
+                .accessibilityIdentifier("usernameHint")
         }
     }
 

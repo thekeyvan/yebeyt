@@ -37,7 +37,6 @@ final class FeedbackSheetPresenter: NSObject, FeedbackPresenting, UIAdaptivePres
                 sheet.detents = [.custom(identifier: .init("choices")) { context in min(520, context.maximumDetentValue) }]
             } else {
                 sheet.detents = [.large()]
-                controller.isModalInPresentation = true
             }
         }
         host = controller
@@ -46,7 +45,6 @@ final class FeedbackSheetPresenter: NSObject, FeedbackPresenting, UIAdaptivePres
 
     func expandToForm() {
         guard let host, let sheet = host.sheetPresentationController else { return }
-        host.isModalInPresentation = true  // a swipe must not throw away what is being written
         sheet.animateChanges {
             sheet.detents = [.large()]
             sheet.selectedDetentIdentifier = .large
@@ -59,6 +57,12 @@ final class FeedbackSheetPresenter: NSObject, FeedbackPresenting, UIAdaptivePres
         await withCheckedContinuation { continuation in
             host.dismiss(animated: true) { continuation.resume() }
         }
+    }
+
+    /// A swipe down was refused because something is written (`interactiveDismissDisabled` in `FeedbackSheetRoot`): ask.
+    func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) {
+        guard let center else { return }
+        Task { await center.requestClose() }
     }
 
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {

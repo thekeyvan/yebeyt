@@ -40,6 +40,10 @@ enum FriendAction: Hashable, Sendable {
     /// Painted as the main (lapis) button; «درخواست فرستادی», «رد» and the rest are grey.
     var isMain: Bool { self == .send || self == .accept }
 
+    /// Taking a request back and rejecting one ask first; sending and accepting don't, and a friend is removed from the ⋯ menu,
+    /// which asks on its own.
+    var asksFirst: Bool { self == .cancel || self == .reject }
+
     var result: Friendship {
         switch self {
         case .send: .requested
@@ -68,6 +72,23 @@ enum FriendCopy {
         case .accept: "قبول"
         case .reject: "رد"
         case .unfriend: "حذف از دوستا"
+        }
+    }
+
+    static let cancelQuestion = "درخواستت رو پس بگیری؟"
+    static let cancelConfirm = "پس بگیر"
+    static let rejectQuestion = "درخواستش رو رد کنی؟"
+    static let rejectNote = "بهش خبر نمی‌دیم."
+    static let rejectConfirm = "رد کن"
+    /// The safe button of both questions.
+    static let keep = "نه"
+
+    /// What the sheet asking before `action` says; nil for an action that doesn't ask.
+    static func confirmation(for action: FriendAction) -> (title: String, message: String?, confirm: String)? {
+        switch action {
+        case .cancel: (cancelQuestion, nil, cancelConfirm)
+        case .reject: (rejectQuestion, rejectNote, rejectConfirm)
+        case .send, .accept, .unfriend: nil
         }
     }
 

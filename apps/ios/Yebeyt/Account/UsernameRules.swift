@@ -57,6 +57,11 @@ enum UsernameRules {
     }
 }
 
+extension UsernameRules {
+    /// The hint under the field (onboarding and settings): the rules, and that saving a username holds it for 30 days.
+    static let hint = "حروف انگلیسی، عدد، «_» و «.» · ۳ تا ۲۰ حرف · تا ۳۰ روز نمی‌شه عوضش کرد."
+}
+
 /// The display name rules, mirroring the server (`apps/server/src/profile.ts`): at most 30 characters, no control
 /// characters. An empty name is fine on the phone: it is just not saved.
 enum DisplayNameRules {

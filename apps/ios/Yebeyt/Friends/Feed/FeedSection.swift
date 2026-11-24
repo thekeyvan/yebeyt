@@ -150,7 +150,7 @@ private struct FeedCard: View {
                 action("نگه داشتن این بیت", .keep, on: kept, count: nil, color: Tokens.Colors.ink, id: "feedKeep") {
                     LineIcon(shape: BookmarkIcon(), size: 20, lineWidth: 2.2, fill: kept ? Tokens.Colors.ink : nil)
                 } tap: {
-                    marks.toggle(.kept, poemPath: route.path, couplet: route.couplet)
+                    marks.toggleKept(poemPath: route.path, couplet: route.couplet) { app.showToast($0, undo: $1) }
                 }
             }
         }

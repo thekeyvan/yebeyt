@@ -28,6 +28,8 @@ final class ReaderModel {
     private(set) var content: Content?
     private(set) var player: RecitationPlayer?
     private(set) var toast: String?
+    /// The button of the toast («برگردون»).
+    private(set) var toastUndo: ToastUndo?
 
     private(set) var mode: ReaderMode
     private(set) var index: Int
@@ -181,13 +183,21 @@ final class ReaderModel {
         )
     }
 
-    func showToast(_ text: String) {
+    func showToast(_ text: String, undo: ToastUndo? = nil) {
         toast = text
+        toastUndo = undo
         toastTask?.cancel()
-        toastTask = Task {
-            try? await Task.sleep(for: .seconds(2.5))
-            if !Task.isCancelled { toast = nil }
+        toastTask = ToastTiming.seconds(hasUndo: undo != nil).map { seconds in
+            Task {
+                try? await Task.sleep(for: .seconds(seconds))
+                if !Task.isCancelled { dismissToast() }
+            }
         }
+    }
+
+    func dismissToast() {
+        toast = nil
+        toastUndo = nil
     }
 
     func close() {

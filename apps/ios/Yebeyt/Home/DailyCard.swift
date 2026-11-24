@@ -3,6 +3,7 @@ import SwiftUI
 /// The card of «بیتِ امروز» as drawn on the Calm board: the couplet, the poet, پسند / بازنشر / بفرست, and
 /// «رد کن» next to «نگه دار».
 struct DailyCard: View {
+    @Environment(AppModel.self) private var app
     @Environment(ReaderMarks.self) private var marks
     @Environment(AccountModel.self) private var account
     let pick: HomeModel.Pick
@@ -93,7 +94,7 @@ struct DailyCard: View {
             .buttonStyle(.press)
             .accessibilityIdentifier("reject")
             MarkButton {
-                marks.toggle(.kept, poemPath: pick.path, couplet: pick.index)
+                marks.toggleKept(poemPath: pick.path, couplet: pick.index) { app.showToast($0, undo: $1) }
             } label: { taps in
                 HStack(spacing: 6) {
                     LineIcon(shape: BookmarkIcon(), size: 18, lineWidth: 2.4, fill: kept ? Tokens.Colors.white : nil).markMotion(.keep, on: kept, taps: taps)

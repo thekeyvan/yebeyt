@@ -6,13 +6,14 @@ struct FeedbackForm: View {
     let center: FeedbackCenter
     @Bindable var model: FeedbackModel
     @State private var editing = false
+    @State private var removingRecording = false
 
     private var type: FeedbackType { model.type }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                FeedbackHeader(title: type.title, canSend: model.canSend, close: { Task { await center.close() } }, send: { Task { await center.send() } })
+                FeedbackHeader(title: type.title, canSend: model.canSend, close: { Task { await center.requestClose() } }, send: { Task { await center.send() } })
                 VStack(alignment: .leading, spacing: 6) {
                     if type == .bug { FeedbackLabel(title: "چی شد؟") }
                     FeedbackTextArea(
@@ -34,6 +35,12 @@ struct FeedbackForm: View {
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
         .background(Tokens.Colors.boardPaper.ignoresSafeArea())
+        .sheet(isPresented: $removingRecording) {
+            ConfirmSheet(
+                title: FeedbackCopy.recordingTitle, message: nil, confirm: FeedbackCopy.recordingDelete, cancel: FeedbackCopy.recordingKeep,
+                prefix: "feedbackRecording", isPresented: $removingRecording
+            ) { model.removeRecording() }
+        }
         .fullScreenCover(isPresented: $editing) {
             if let image = model.image {
                 ScreenshotEditor(image: image) { edited in
@@ -65,7 +72,7 @@ struct FeedbackForm: View {
                 Text("فیلم ضبط شد · \(PersianDigits.clock(clip.seconds))").font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.ink)
                     .accessibilityIdentifier("feedbackRecorded")
                 Spacer(minLength: 0)
-                Button { model.removeRecording() } label: {
+                Button { removingRecording = true } label: {
                     LineIcon(shape: CloseIcon(), size: 14, lineWidth: 2.6, fill: nil).foregroundStyle(Tokens.Colors.muted)
                         .frame(width: 30, height: 30)
                         .background(Circle().fill(Tokens.Colors.paper))

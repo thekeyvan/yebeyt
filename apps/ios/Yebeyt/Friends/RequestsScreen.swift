@@ -5,6 +5,7 @@ import SwiftUI
 struct RequestsScreen: View {
     @Environment(MessagesCenter.self) private var center
     @State private var toast: String?
+    @State private var pending: PendingFriendAction?
 
     var body: some View {
         let requests = center.requests
@@ -21,9 +22,15 @@ struct RequestsScreen: View {
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .toast($toast)
+        .askingBeforeFriendAction($pending) { toast = await center.requests.perform($0.action, on: $0.username) }
         .onAppear { requests.isVisible = true }
         .onDisappear { requests.isVisible = false }
         .task { await requests.load() }
+    }
+
+    /// «قبول» goes at once; «رد» and «لغو» ask first.
+    private func ask(_ action: FriendAction, _ username: String, _ requests: FriendRequestsModel) {
+        if action.asksFirst { pending = PendingFriendAction(action: action, username: username) } else { Task { toast = await requests.perform(action, on: username) } }
     }
 
     @ViewBuilder private func content(_ requests: FriendRequestsModel) -> some View {
@@ -45,7 +52,7 @@ struct RequestsScreen: View {
                             HStack(spacing: 8) {
                                 ForEach(Friendship.incoming.buttons, id: \.self) { action in
                                     FriendButton(title: FriendCopy.title(action), quiet: action == .reject, busy: requests.pending.contains(request.username)) {
-                                        Task { toast = await requests.perform(action, on: request.username) }
+                                        ask(action, request.username, requests)
                                     }
                                     .accessibilityIdentifier("\(action == .accept ? "accept" : "reject")-\(request.username)")
                                 }
@@ -61,7 +68,7 @@ struct RequestsScreen: View {
                     ForEach(requests.outgoing) { request in
                         RequestRow(request: request) {
                             FriendButton(title: FriendCopy.cancelSent, quiet: true, busy: requests.pending.contains(request.username)) {
-                                Task { toast = await requests.perform(.cancel, on: request.username) }
+                                ask(.cancel, request.username, requests)
                             }
                             .accessibilityIdentifier("cancel-\(request.username)")
                         }

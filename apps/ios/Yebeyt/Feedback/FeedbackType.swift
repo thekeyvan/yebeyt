@@ -92,6 +92,9 @@ struct FeedbackDraft: Equatable, Sendable {
 
     var trimmedText: String { String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.textLimit)) }
 
+    /// Something was typed: the text, or the name of a game idea.
+    var hasTypedText: Bool { !trimmedText.isEmpty || !gameName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
     /// The send button waits for the required text.
     var canSend: Bool { !trimmedText.isEmpty }
 

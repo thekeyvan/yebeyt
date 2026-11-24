@@ -1,5 +1,12 @@
 import SwiftUI
 
+/// The question before leaving a face that was not saved.
+enum AvatarCopy {
+    static let title = "چهره‌ات ذخیره نشده. ولش کنی؟"
+    static let discard = "ول کن"
+    static let stay = "بمون"
+}
+
 /// چهره‌ی تو: the big face, a chip for each part, the choices of that part (the accessories with lock badges and
 /// their unlock text) and the couplet of the chosen accessory. «ذخیره» saves it.
 struct AvatarScreen: View {
@@ -10,6 +17,10 @@ struct AvatarScreen: View {
     @State private var draft = AvatarParts.standard
     @State private var part = AvatarPart.accessory
     @State private var loaded = false
+    @State private var asking = false
+
+    /// A face that differs from the saved one is lost by leaving without «ذخیره».
+    static func asksBeforeLeaving(draft: AvatarParts, saved: AvatarParts) -> Bool { draft != saved }
 
     private var progress: AvatarProgress { AvatarProgress(stats: stats, achievements: achievements) }
 
@@ -29,18 +40,32 @@ struct AvatarScreen: View {
         .scrollIndicators(.hidden)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $asking) {
+            ConfirmSheet(
+                title: AvatarCopy.title, message: nil, confirm: AvatarCopy.discard, cancel: AvatarCopy.stay,
+                prefix: "avatarDiscard", isPresented: $asking
+            ) { dismiss() }
+        }
         .onAppear {
             guard !loaded else { return }
             loaded = true
             draft = store.parts
         }
+        // The edge swipe back would lose the changes without asking.
+        .onChange(of: Self.asksBeforeLeaving(draft: draft, saved: store.parts)) { _, unsaved in SwipeBackDelegate.blocked = unsaved }
+        .onDisappear { SwipeBackDelegate.blocked = false }
     }
 
     // MARK: Pieces
 
     private var header: some View {
         HStack(spacing: 12) {
-            BackButton()
+            RoundButton(label: "برگشت", action: {
+                if Self.asksBeforeLeaving(draft: draft, saved: store.parts) { asking = true } else { dismiss() }
+            }) {
+                LineIcon(shape: ChevronRightIcon(), size: 20, lineWidth: 2.6, fill: nil).foregroundStyle(Tokens.Colors.ink)
+            }
+            .accessibilityIdentifier("back")
             Text("چهره‌ی تو").font(.title(30)).foregroundStyle(Tokens.Colors.ink).padding(.top, 4)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)

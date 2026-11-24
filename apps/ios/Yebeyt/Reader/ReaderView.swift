@@ -7,6 +7,7 @@ struct ReaderView: View {
     @Environment(TextSettingsStore.self) private var text
     @Environment(ReadingProgress.self) private var progress
     @Environment(Library.self) private var library
+    @Environment(AppModel.self) private var app
     @State private var model: ReaderModel
     @State private var sharedTarget: SharedDivanTarget?
     let close: () -> Void
@@ -39,11 +40,12 @@ struct ReaderView: View {
                     held: held, dismiss: { withAnimation(.snappy) { model.holdIndex = nil } },
                     share: { model.shareCouplet(index) },
                     openCouplet: { withMeaning in withAnimation(.snappy) { model.openCouplet(index, withMeaning: withMeaning) } },
-                    playWithCouplet: playWithCouplet,
+                    playWithCouplet: { index in app.startGame { playWithCouplet(index) } },
                     addToSharedDivan: {
                         model.holdIndex = nil
                         sharedTarget = SharedDivanTarget(key: ReaderMarks.key(poemPath: model.path, couplet: index), person: nil)
-                    }
+                    },
+                    offerUndo: { model.showToast($0, undo: $1) }
                 )
                 .transition(.opacity)
             }
@@ -54,6 +56,7 @@ struct ReaderView: View {
         .animation(Motion.bouncy, value: model.toast)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
         .sharedDivanSheet(item: $sharedTarget) { model.showToast($0) }
+        .leaveGameQuestion(app)
         .background { Color.clear.accountPrompt(host: true) }
         .environment(\.layoutDirection, .rightToLeft)
         .preferredColorScheme(theme.isDark ? .dark : .light)  // light status bar text on the dark theme
@@ -83,7 +86,7 @@ struct ReaderView: View {
 
     private func page(_ theme: ReaderTheme) -> some View {
         VStack(spacing: 8) {
-            ReaderHeader(model: model, theme: theme, close: close, playWithPoem: playWithPoem, openPoet: poetAction)
+            ReaderHeader(model: model, theme: theme, close: close, playWithPoem: { app.startGame(playWithPoem) }, openPoet: poetAction)
             switch model.phase {
             case .loading:
                 Spacer()
@@ -144,14 +147,8 @@ struct ReaderView: View {
 
     @ViewBuilder private var toast: some View {
         if let message = model.toast {
-            Text(message)
-                .font(.ui(13, weight: .medium))
-                .foregroundStyle(Tokens.Colors.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 9)
-                .background(Capsule().fill(Tokens.Colors.ink))
+            MessageToast(text: message, undo: model.toastUndo, dismiss: { model.dismissToast() })
                 .padding(.bottom, 96)
-                .toastTransition()
         }
     }
 }

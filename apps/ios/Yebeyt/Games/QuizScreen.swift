@@ -49,6 +49,7 @@ struct QuizScreen: View {
         .animation(Motion.bouncy, value: toast)
         .task { await begin() }
         .onChange(of: scenePhase) { _, phase in session?.isPaused = phase != .active }
+        .onChange(of: app.leaveQuestionOpen) { _, open in session?.isAsking = open }
         .onDisappear { audio.stop() }
     }
 
@@ -149,7 +150,7 @@ struct QuizScreen: View {
 
     private func header(_ session: QuizSession) -> some View {
         HStack(spacing: 12) {
-            GameCloseButton { app.closeGame() }
+            GameCloseButton(asking: session.asksBeforeLeaving) { app.closeGame() }
             ProgressDots(total: session.round.questions.count, results: session.round.results, sheetOpen: session.round.sheetOpen, noun: "سؤال")
             if let time = session.timeText { TimerCapsule(text: time) }
         }

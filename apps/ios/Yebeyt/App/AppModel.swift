@@ -36,7 +36,13 @@ final class AppModel {
     /// The screens pushed on the پیام‌ها tab: a chat, a shared divan.
     var messagesPath: [Destination]
     /// A line shown for a moment over the tabs («به دیوان من و سارا اضافه شد»); nil when none is.
-    var toast: String?
+    var toast: String? {
+        didSet { if toast == nil { toastUndo = nil } }
+    }
+    /// The button of the toast («برگردون»); goes with it.
+    private(set) var toastUndo: ToastUndo?
+    /// Counts the toasts shown, so one shown again with the same line starts its time over.
+    private(set) var toastSerial = 0
     /// The couplet that «به دیوان مشترک» was chosen for, over the tabs; nil when no sheet is open.
     var sharedTarget: SharedDivanTarget?
     /// The couplet lifted by a long press outside the reader (the divan), shown over the tabs; nil when none is.
@@ -44,7 +50,18 @@ final class AppModel {
     /// What the iOS share sheet shows over the tabs, nil when it is closed.
     var share: ReaderModel.Share?
     /// The game open over the tabs, nil when none is.
-    var game: GameRoute?
+    var game: GameRoute? {
+        didSet {
+            gameAsksBeforeLeaving = false
+            leaveQuestionOpen = false
+        }
+    }
+    /// The game in front is in a round that has started, so leaving it asks first (`LeaveGame`); its close button says so.
+    var gameAsksBeforeLeaving = false
+    /// The question «از بازی بری بیرون؟» is on screen: the game clock waits.
+    var leaveQuestionOpen = false
+    /// Another game that waits for «برو بیرون» (see `startGame`).
+    var pendingGameStart: PendingGameStart?
     /// The text «پیدا کردن دوست» starts with (a debug launch can fill the field).
     var peopleStart = ""
     /// The tab of رده‌بندی that opens first (a debug launch can start on another).
@@ -125,8 +142,16 @@ final class AppModel {
         messagesPath = [.chat(id)]
     }
 
-    func showToast(_ text: String) {
+    func showToast(_ text: String, undo: ToastUndo? = nil) {
         toast = text
+        toastUndo = undo
+        toastSerial += 1
+    }
+
+    /// Starts another game over the one in front (the reader's «بازی با این بیت», and later a link or a notification): a round
+    /// that has started would be thrown away, so that asks «از بازی بری بیرون؟» first (`leaveGameQuestion`); otherwise it starts at once.
+    func startGame(_ start: @escaping () -> Void) {
+        if gameAsksBeforeLeaving { pendingGameStart = PendingGameStart(start: start) } else { start() }
     }
 
     func play(_ route: GameRoute) {

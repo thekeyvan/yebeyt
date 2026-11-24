@@ -54,6 +54,7 @@ struct PeopleSearchSection: View {
     /// Set to choose someone instead of asking them (the sheet of a new chat).
     var pick: ((FoundPerson) -> Void)?
     @Environment(BlockedPeople.self) private var blocked
+    @State private var pending: PendingFriendAction?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -63,6 +64,7 @@ struct PeopleSearchSection: View {
                 .onChange(of: text) { _, new in model.queryChanged(new) }
             results
         }
+        .askingBeforeFriendAction($pending) { toast = await model.perform($0.action, on: $0.username) }
     }
 
     @ViewBuilder private var results: some View {
@@ -79,7 +81,7 @@ struct PeopleSearchSection: View {
             PeopleCard {
                 ForEach(blocked.visible(model.people), id: \.username) { person in
                     PersonRow(person: person, busy: model.pending.contains(person.username), opens: opens, pick: pick) { action in
-                        Task { toast = await model.perform(action, on: person.username) }
+                        if action.asksFirst { pending = PendingFriendAction(action: action, username: person.username) } else { Task { toast = await model.perform(action, on: person.username) } }
                     }
                 }
             }

@@ -46,11 +46,13 @@ private struct ChatContent: View {
         .sheet(isPresented: $picking) {
             CoupletPickerSheet(title: "بیت بفرست", action: "بفرست") { key, note in chat.sendCouplet(key: key, note: note) }
         }
-        .confirmationDialog("این پیام پاک بشه؟", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
-            Button("پاک کن", role: .destructive) {
-                if let message = deleting { Task { await chat.delete(message) } }
+        .sheet(isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
+            ConfirmSheet(
+                title: "این پیام پاک بشه؟", message: nil, confirm: "پاک کن", prefix: "deleteMessage",
+                isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })
+            ) {
+                if let message = deleting { await chat.delete(message) }
             }
-            Button("نه", role: .cancel) {}
         }
         .confirmationDialog("چرا گزارشش می‌کنی؟", isPresented: Binding(get: { reporting != nil }, set: { if !$0 { reporting = nil } }), titleVisibility: .visible) {
             ForEach(ReportReason.allCases, id: \.self) { reason in

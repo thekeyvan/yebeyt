@@ -63,7 +63,7 @@ struct ReaderActionRow: View {
             }
             let kept = marks.contains(.kept, poemPath: model.path, couplet: couplet)
             button("نگه دار", .keep, on: kept) {
-                marks.toggle(.kept, poemPath: model.path, couplet: couplet)
+                marks.toggleKept(poemPath: model.path, couplet: couplet) { model.showToast($0, undo: $1) }
             } icon: {
                 LineIcon(shape: BookmarkIcon(), size: 21, lineWidth: 2.2, fill: kept ? theme.foreground : nil)
                     .foregroundStyle(theme.foreground)

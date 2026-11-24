@@ -83,7 +83,7 @@ struct WholePoemView: View {
             if let player = model.player, player.isAvailable { readButton(player) }
             let kept = marks.contains(.kept, poemPath: model.path, couplet: model.topIndex)
             round("نگه دار", .keep, on: kept, id: model.topIndex) {
-                marks.toggle(.kept, poemPath: model.path, couplet: model.topIndex)
+                marks.toggleKept(poemPath: model.path, couplet: model.topIndex) { model.showToast($0, undo: $1) }
             } icon: {
                 LineIcon(shape: BookmarkIcon(), size: 20, lineWidth: 2.2, fill: kept ? Tokens.Colors.ink : nil)
             }

@@ -184,7 +184,7 @@ struct DivanScreen: View {
                 Text("\(entry.title) · \(DivanDays.relative(keptAt: entry.keptAt, now: .now))")
                     .font(.ui(11)).foregroundStyle(Color(hex: 0x8A8698))
                 Spacer(minLength: 0)
-                Button { marks.toggle(.kept, poemPath: entry.path, couplet: entry.index) } label: {
+                Button { marks.toggleKept(poemPath: entry.path, couplet: entry.index) { model.showToast($0, undo: $1) } } label: {
                     LineIcon(shape: BookmarkIcon(), size: 18, lineWidth: 2, fill: Tokens.Colors.lapis).foregroundStyle(Tokens.Colors.lapis)
                         .frame(width: 36, height: 28)
                         .contentShape(Rectangle())

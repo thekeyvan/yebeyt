@@ -18,6 +18,9 @@ struct SettingsScreen: View {
     @State private var editingProfile = false
     @State private var textOpen = false
     @State private var confirmingDelete = false
+    @State private var askingSignOut = false
+    /// «بیرون برو» was chosen; the sign-out starts once that sheet is gone, so the warning of an unsynced divan can follow it.
+    @State private var signOutChosen = false
     @State private var confirmingSignOut = false
     @State private var signingOut = false
 
@@ -72,6 +75,16 @@ struct SettingsScreen: View {
                 .environment(\.layoutDirection, .rightToLeft)
         }
         .sheet(isPresented: $confirmingDelete) { DeleteAccountSheet(isPresented: $confirmingDelete) }
+        .sheet(isPresented: $askingSignOut, onDismiss: {
+            guard signOutChosen else { return }
+            signOutChosen = false
+            signOut()
+        }) {
+            ConfirmSheet(
+                title: SignOutCopy.title, message: SignOutCopy.message, confirm: SignOutCopy.confirm, cancel: SignOutCopy.stay,
+                prefix: "signOutAsk", isPresented: $askingSignOut
+            ) { signOutChosen = true }
+        }
         .sheet(isPresented: $confirmingSignOut) {
             UnsyncedSignOutSheet(isPresented: $confirmingSignOut) { await leaving.signOut(force: true) }
         }
@@ -86,7 +99,7 @@ struct SettingsScreen: View {
                 divider
                 row("نام کاربری", value: session.user?.username.map { "@\($0)" } ?? "", id: "settingsUsername", valueIsLatin: true) { editingProfile = true }
                 divider
-                row("خروج از حساب", id: "signOut", chevron: false) { signOut() }
+                row("خروج از حساب", id: "signOut", chevron: false) { askingSignOut = true }
                 divider
                 row("پاک کردن حساب", id: "deleteAccount", chevron: false, tint: Tokens.Colors.fire) { confirmingDelete = true }
             }

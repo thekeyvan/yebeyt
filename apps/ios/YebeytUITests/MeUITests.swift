@@ -113,11 +113,36 @@ final class MeUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["readerTitle"].waitForExistence(timeout: 10))
     }
 
+    /// «بیرون برو» on the question that comes first.
+    @MainActor private func confirmSignOut(_ app: XCUIApplication) {
+        let confirm = app.buttons["signOutAskConfirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        confirm.tap()
+    }
+
+    @MainActor func testSigningOutAsksFirstAndSayingNoKeepsTheAccount() {
+        let app = launch(["-beytRoute", "settings", "-beytSignedIn", "1", "-beytSeedDivan", "1"])
+        let signOut = app.buttons["signOut"]
+        XCTAssertTrue(signOut.waitForExistence(timeout: 10))
+        signOut.tap()
+        let title = app.staticTexts["signOutAskTitle"]
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        XCTAssertEqual(title.label, "از حسابت بیرون بری؟")
+        XCTAssertEqual(app.staticTexts["signOutAskMessage"].label, "دیوانت به حسابت همگام می‌شه و از این گوشی پاک می‌شه؛ با ورود دوباره برمی‌گرده.")
+        XCTAssertEqual(app.buttons["signOutAskCancel"].label, "نه")
+        XCTAssertEqual(app.buttons["signOutAskConfirm"].label, "بیرون برو")
+        app.buttons["signOutAskCancel"].tap()
+        XCTAssertTrue(waitForDisappearance(of: title))
+        XCTAssertTrue(signOut.exists)
+        XCTAssertFalse(app.buttons["settingsSignIn"].exists, "«نه» keeps the account")
+    }
+
     @MainActor func testSigningOutWithAnUnsyncedDivanWarnsFirstAndOnlyInsistingLeaves() {
         let app = launch(["-beytRoute", "settings", "-beytSignedIn", "1", "-beytSyncFails", "1", "-beytSeedDivan", "1"])
         let signOut = app.buttons["signOut"]
         XCTAssertTrue(signOut.waitForExistence(timeout: 10))
         signOut.tap()
+        confirmSignOut(app)
         let title = app.staticTexts["unsyncedTitle"]
         XCTAssertTrue(title.waitForExistence(timeout: 10))
         XCTAssertEqual(title.label, "همه‌ی بیت‌هات هنوز به حسابت نرسیده. اگه الان خارج بشی، از این گوشی پاک می‌شن.")
@@ -128,6 +153,7 @@ final class MeUITests: XCTestCase {
         XCTAssertFalse(app.buttons["settingsSignIn"].exists)
 
         signOut.tap()
+        confirmSignOut(app)
         XCTAssertTrue(title.waitForExistence(timeout: 10))
         app.buttons["unsyncedLeave"].tap()  // «خروج»
         XCTAssertTrue(app.buttons["settingsSignIn"].waitForExistence(timeout: 10))  // a guest now
@@ -137,6 +163,7 @@ final class MeUITests: XCTestCase {
     @MainActor func testSigningOutWhenTheSyncWorksNeedsNoWarning() {
         let app = launch(["-beytRoute", "settings", "-beytSignedIn", "1", "-beytSeedDivan", "1"])
         app.buttons["signOut"].tap()
+        confirmSignOut(app)
         XCTAssertTrue(app.buttons["settingsSignIn"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.staticTexts["unsyncedTitle"].exists)
     }

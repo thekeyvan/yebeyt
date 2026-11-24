@@ -9,6 +9,8 @@ final class QuizSession {
     private(set) var finished = false
     /// The app is not in front (another app, the lock screen, a share sheet): the clock waits.
     var isPaused = false
+    /// The question «از بازی بری بیرون؟» is open: the clock waits for the answer.
+    var isAsking = false
     private let stats: GameStats
     @ObservationIgnored private var generator: SeededGenerator
 
@@ -22,7 +24,7 @@ final class QuizSession {
     var timeText: String? { round.timeLeft.map(PersianDigits.clock) }
 
     func tick() {
-        guard !isPaused else { return }
+        guard !isPaused, !isAsking else { return }
         let before = round.answers.count
         round.tick()
         if round.answers.count > before { stats.award(round.answers[before].points) }

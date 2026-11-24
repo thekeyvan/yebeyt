@@ -117,7 +117,8 @@ final class PlayUITests: XCTestCase {
         let resign = app.buttons["moshResign"]
         XCTAssertTrue(resign.waitForExistence(timeout: 10))
         resign.tap()
-        app.sheets.buttons["کم آوردم"].tap()  // the question asked once
+        XCTAssertTrue(app.buttons["resignConfirm"].waitForExistence(timeout: 10))
+        app.buttons["resignConfirm"].tap()  // the question asked once
         XCTAssertTrue(element(app, "moshOutcome").waitForExistence(timeout: 10))
         XCTAssertEqual(element(app, "moshOutcome").label, "سارا برد")
     }

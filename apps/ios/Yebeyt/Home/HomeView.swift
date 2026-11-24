@@ -29,9 +29,11 @@ struct HomeView: View {
                                 share = ReaderModel.Share(text: ReaderText.shareText(pick.couplet, poet: pick.poet, title: pick.title))
                             },
                             reject: {
+                                let day = home.day
                                 dealReset?.cancel()
                                 dealing = true
                                 await home.reject(poetry: poetry, library: library)
+                                app.showToast(HomeModel.rejectedLine, undo: ToastUndo { Task { await home.undoReject(onDay: day, poetry: poetry, library: library) } })
                                 endDealing()  // without waiting: the next «رد کن» works at once
                             }
                         )

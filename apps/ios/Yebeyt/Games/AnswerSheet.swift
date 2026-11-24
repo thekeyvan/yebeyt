@@ -107,7 +107,7 @@ struct AnswerSheet: View {
         return HStack(spacing: 10) {
             action("کل شعر", BookIcon(), mark: nil, id: "sheetPoem") { app.openReader(ReaderRoute(path: couplet.poem, couplet: couplet.index)) }
             action("نگه دار", BookmarkIcon(), mark: .keep, fill: kept, id: "sheetKeep") {
-                marks.toggle(.kept, poemPath: couplet.poem, couplet: couplet.index)
+                marks.toggleKept(poemPath: couplet.poem, couplet: couplet.index) { app.showToast($0, undo: $1) }
             }
             action("بفرست", MessagesIcon(), mark: .send, id: "sheetSend") { share = ReaderModel.Share(text: couplet.share) }
         }

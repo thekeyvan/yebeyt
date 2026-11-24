@@ -21,6 +21,7 @@ private struct PersonScreenBody: View {
     @State private var model: PersonModel
     @State private var confirmingBlock = false
     @State private var confirmingUnfriend = false
+    @State private var pendingFriendAction: PendingFriendAction?
     @State private var reporting = false
 
     init(username: String, session: Session, center: MessagesCenter) {
@@ -71,6 +72,7 @@ private struct PersonScreenBody: View {
                 prefix: "unfriend", isPresented: $confirmingUnfriend
             ) { await model.perform(.unfriend) }
         }
+        .askingBeforeFriendAction($pendingFriendAction) { await model.perform($0.action) }
         .sheet(isPresented: $reporting) {
             ReportSheet(name: model.name, isPresented: $reporting) { reason, note in await model.report(reason, note: note) }
         }
@@ -134,7 +136,9 @@ private struct PersonScreenBody: View {
                         .accessibilityIdentifier("personFriendChip")
                 }
                 ForEach(profile.friendship.buttons, id: \.self) { action in
-                    Button { Task { await model.perform(action) } } label: { Text(FriendCopy.title(action)).frame(maxWidth: .infinity) }
+                    Button {
+                        if action.asksFirst { pendingFriendAction = PendingFriendAction(action: action, username: model.username) } else { Task { await model.perform(action) } }
+                    } label: { Text(FriendCopy.title(action)).frame(maxWidth: .infinity) }
                         .buttonStyle(.sticker(action.isMain ? .primary : .secondary))
                         .disabled(model.isBusy)
                         .accessibilityIdentifier("person-\(action)")
@@ -146,51 +150,6 @@ private struct PersonScreenBody: View {
                 }
             }
         }
-    }
-}
-
-/// A question with «نه» and a red confirm button: «<name> بلاک بشه؟», «<name> از دوستات حذف بشه؟». The identifiers are
-/// `<prefix>Title`, `<prefix>Cancel` and `<prefix>Confirm`.
-struct ConfirmSheet: View {
-    let title: String
-    let message: String?
-    /// The confirm button: «بلاک کن», «حذف کن».
-    let confirm: String
-    let prefix: String
-    @Binding var isPresented: Bool
-    let action: () async -> Void
-    @State private var busy = false
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Text(title).font(.title(24)).foregroundStyle(Tokens.Colors.ink).multilineTextAlignment(.center)
-                .accessibilityIdentifier("\(prefix)Title")
-            if let message {
-                Text(message).font(.ui(14)).foregroundStyle(Tokens.Colors.muted).multilineTextAlignment(.center)
-            }
-            HStack(spacing: 12) {
-                Button { isPresented = false } label: { Text("نه").frame(maxWidth: .infinity) }
-                    .buttonStyle(.sticker(.secondary))
-                    .accessibilityIdentifier("\(prefix)Cancel")
-                Button {
-                    busy = true
-                    Task {
-                        await action()
-                        busy = false
-                        isPresented = false
-                    }
-                } label: { Text(confirm).frame(maxWidth: .infinity) }
-                    .buttonStyle(DangerButtonStyle())
-                    .disabled(busy)
-                    .accessibilityIdentifier("\(prefix)Confirm")
-            }
-        }
-        .padding(EdgeInsets(top: 28, leading: 22, bottom: 16, trailing: 22))
-        .presentationDetents([.height(280)])
-        .presentationBackground(Tokens.Colors.white)
-        .presentationCornerRadius(30)
-        .presentationDragIndicator(.visible)
-        .environment(\.layoutDirection, .rightToLeft)
     }
 }
 

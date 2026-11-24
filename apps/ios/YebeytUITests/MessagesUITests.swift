@@ -65,6 +65,8 @@ final class MessagesUITests: XCTestCase {
         waitForExpectations(timeout: 10)
 
         app.buttons["reject-bardia"].tap()
+        XCTAssertTrue(app.buttons["rejectRequestConfirm"].waitForExistence(timeout: 10), "rejecting asks first")
+        app.buttons["rejectRequestConfirm"].tap()
         expectation(for: gone, evaluatedWith: app.buttons["reject-bardia"])
         waitForExpectations(timeout: 10)
         app.buttons["back"].tap()

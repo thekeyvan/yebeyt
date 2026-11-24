@@ -70,6 +70,31 @@ struct HomeModelTests {
         #expect(reopened.pick?.path == after.path && reopened.pick?.index == after.index)
     }
 
+    @Test func takingARejectBackShowsTheSameCoupletAgainAndIsRemembered() async throws {
+        let (poetry, library) = try stores()
+        let home = HomeModel(day: 20_500, defaults: defaults)
+        await home.load(poetry: poetry, library: library)
+        let first = try #require(home.pick)
+        await home.reject(poetry: poetry, library: library)
+        await home.undoReject(onDay: 20_500, poetry: poetry, library: library)
+        #expect(home.rejected == 0 && home.pick?.path == first.path && home.pick?.index == first.index)
+        #expect(HomeModel(day: 20_500, defaults: defaults).rejected == 0)
+
+        await home.undoReject(onDay: 20_500, poetry: poetry, library: library)  // nothing to take back
+        #expect(home.rejected == 0)
+    }
+
+    @Test func aRejectOfYesterdayCanNotBeTakenBackToday() async throws {
+        let (poetry, library) = try stores()
+        let home = HomeModel(day: 20_500, defaults: defaults)
+        await home.load(poetry: poetry, library: library)
+        await home.reject(poetry: poetry, library: library)
+        await home.refresh(today: 20_501, poetry: poetry, library: library)
+        await home.undoReject(onDay: 20_500, poetry: poetry, library: library)
+        #expect(home.day == 20_501 && home.rejected == 0)
+        #expect(HomeModel(day: 20_500, defaults: defaults).rejected == 1)
+    }
+
     @Test func comingBackOnANewDayShowsThatDaysCoupletWithoutRejects() async throws {
         let (poetry, library) = try stores()
         let home = HomeModel(day: 20_500, defaults: defaults)

@@ -9,7 +9,7 @@ struct FeedbackGameForm: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                FeedbackHeader(title: "یه بازی پیشنهاد بده", canSend: model.canSend, close: { Task { await center.close() } }, send: { Task { await center.send() } })
+                FeedbackHeader(title: "یه بازی پیشنهاد بده", canSend: model.canSend, close: { Task { await center.requestClose() } }, send: { Task { await center.send() } })
                 VStack(alignment: .leading, spacing: 7) {
                     FeedbackLabel(title: "اسمش", hint: "اگه داره")
                     TextField("", text: $model.draft.gameName, prompt: Text("مثلاً «بیت عوضی»").foregroundStyle(Color.feedbackHint))

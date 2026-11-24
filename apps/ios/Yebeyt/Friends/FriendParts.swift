@@ -83,6 +83,29 @@ struct FriendControl: View {
     }
 }
 
+/// A friend action that waits for the person's answer («درخواستت رو پس بگیری؟», «درخواستش رو رد کنی؟»).
+struct PendingFriendAction: Identifiable, Equatable {
+    let action: FriendAction
+    let username: String
+
+    var id: String { "\(action)-\(username)" }
+}
+
+extension View {
+    /// Shows the question of `pending` as a sheet; «پس بگیر» / «رد کن» runs `perform`, «نه» only closes it.
+    func askingBeforeFriendAction(_ pending: Binding<PendingFriendAction?>, perform: @escaping (PendingFriendAction) async -> Void) -> some View {
+        sheet(item: pending) { item in
+            if let words = FriendCopy.confirmation(for: item.action) {
+                ConfirmSheet(
+                    title: words.title, message: words.message, confirm: words.confirm, cancel: FriendCopy.keep,
+                    prefix: item.action == .cancel ? "cancelRequest" : "rejectRequest",
+                    isPresented: Binding(get: { pending.wrappedValue != nil }, set: { if !$0 { pending.wrappedValue = nil } })
+                ) { await perform(item) }
+            }
+        }
+    }
+}
+
 /// A person's face, name and @username.
 struct PersonIdentity: View {
     let person: PersonShort

@@ -22,6 +22,17 @@ struct FeedbackSheetRoot: View {
         .preferredColorScheme(.light)
         .font(.ui(16))
         .tint(Tokens.Colors.lapis)
+        .interactiveDismissDisabled(center.model.map { $0.hasUnsentWork || $0.isLocked } ?? false)
+        .sheet(isPresented: confirming) {
+            ConfirmSheet(
+                title: center.closeQuestion, message: nil, confirm: FeedbackCopy.discard, cancel: FeedbackCopy.stay,
+                prefix: "feedbackDiscard", isPresented: confirming
+            ) { await center.close() }
+        }
+    }
+
+    private var confirming: Binding<Bool> {
+        Binding(get: { center.isConfirmingClose }, set: { center.isConfirmingClose = $0 })
     }
 }
 

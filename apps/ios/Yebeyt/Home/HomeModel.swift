@@ -50,6 +50,17 @@ final class HomeModel {
         if candidates.isEmpty { pick = nil; await load(poetry: poetry, library: library) } else { await show(poetry: poetry, library: library) }
     }
 
+    /// The toast after «رد کن» (it comes with «برگردون»).
+    nonisolated static let rejectedLine = "امروز دیگه نشونت نمی‌دیم"
+
+    /// «برگردون»: the couplet rejected on `day` is shown again. Nothing happens on another day or with nothing rejected.
+    func undoReject(onDay rejectedDay: Int, poetry: PoetryStore, library: Library) async {
+        guard rejectedDay == day, rejected > 0 else { return }
+        rejected -= 1
+        defaults.set([day, rejected], forKey: Self.defaultsKey)
+        await show(poetry: poetry, library: library)
+    }
+
     /// «رد کن»: the next candidate for today.
     func reject(poetry: PoetryStore, library: Library) async {
         guard pick != nil else { return }
