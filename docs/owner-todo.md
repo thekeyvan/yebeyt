@@ -2,6 +2,10 @@
 
 Only what is still open. These need accounts or devices the agents don't have here (the corporate proxy on this laptop blocks Cloudflare, `gcloud` and the simulator's network). None of them blocks the build. What's already done is listed at the end.
 
+## 0. App Store Connect: an API key for TestFlight uploads
+
+So the lead can upload TestFlight builds from this Mac: appstoreconnect.apple.com → Users and Access → Integrations → App Store Connect API → Team Keys → «+». Name `yebeyt ci`, access **Admin** (needed so Xcode can create the distribution certificate). Download the `.p8` (only once; keep a copy with the push key) and tell the lead the **Key ID** and the **Issuer ID**. The lead keeps the file in `~/.appstoreconnect/private_keys/`, never in the repo. Then in the app's TestFlight tab, add yourself to an Internal Testing group.
+
 ## 1. Google Cloud
 
 - Once Google sign-in works on a phone, shut down the old project `beyt-515410` (IAM & Admin → Settings → Shut down).
