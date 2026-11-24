@@ -7,7 +7,7 @@ import "../../globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: "yebeyt · Every couplet, a game", template: "%s · yebeyt" },
-  description: "yebeyt: Persian poetry, games with couplets, and mosha'ere with your friends.",
+  description: "yebeyt: Persian poetry, games with couplets, and mosha'ere (poetry duels) with your friends.",
   openGraph: { siteName: "yebeyt", locale: "en_US", type: "website" },
 };
 

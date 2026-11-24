@@ -20,7 +20,7 @@ const TEXT = {
       <>
         A new couplet every day, games with poetry,
         <br />
-        and mosha&apos;ere with your friends.
+        and mosha&apos;ere (poetry duels) with your friends.
       </>
     ),
     button: "Download on the App Store",
