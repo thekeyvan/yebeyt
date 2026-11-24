@@ -15,6 +15,11 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 - Poet pictures appear on Explore (Hafez, Saadi, …) after a moment online.
 - Feedback: shake the phone on any screen and the sheet opens; the «بازخورد» row in settings opens it too. Send a bug with a screenshot and a screen recording («دوباره انجامش بده، ما فیلم می‌گیریم»): iOS asks once to allow recording, then the red «در حال ضبط · تموم» pill shows. The simulator gives ReplayKit no frames, so recording can only be tested on a real phone. The report should appear in `GET /v1/admin/feedback` with the screenshot and the recording.
 - With a second account (another phone, or a friend): send a friend request and accept it, send a message, and play a game together.
+- Build 202611241909 and later: in «بیت جورچین» a dragged word follows your finger; nothing hides under the tab bar; poet pictures are the new bold portraits and refresh on every launch.
+- Recitation: press play on any couplet and it starts there; swipe to another couplet (or tap one in the whole poem) and the audio jumps there. Tell the lead if starting feels slow on mobile data (the audio loads in a precise mode now).
+- Feel: like, keep, repost, send and right answers each have their own pop-up and a light tap; a win gets confetti; try with Settings → Accessibility → Motion → Reduce Motion on too.
+- Confirmations: leaving a started game, cancelling or rejecting a friend request, signing out, closing unsent feedback ask first; removing a couplet from the divan and «رد کن» on today's couplet show «برگردون».
+- The «یه بیت» demo friend: search `yebeyt`, send a request (accepted at once), send a message (it answers with a couplet).
 
 ## 3. Read when there's time
 
