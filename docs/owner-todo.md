@@ -30,7 +30,7 @@ State now:
 - The listing text (promo text, description, keywords) still describes the 1.0 reader. 2.0 needs new text: games, friends, messages.
 - The screenshots are of 1.0. 2.0 needs new ones (the lead makes them in the simulator).
 - The icon shown is 1.0's crescent. It goes away with the first 2.0 build (the 2.0 icon is the two sticker cards).
-- Category: Books / Reference. With games, choose between Books + Games (Word) or Games (Word) + Books.
+- Category: Books / Reference now. The lead suggests **Games (Word, Trivia) + Books** for 2.0; set it when the 2.0 listing is written, if the owner agrees.
 - Age rating (13+) was answered for a reader. 2.0 adds messages between people and user-written content, so the questionnaire must be answered again.
 - App Privacy is published for 1.0 (name, email, user id, other user content, product interaction). 2.0 adds feedback diagnostics, screenshots and recordings, game scores and messages; the lead writes the full table before the first submission.
 - Fine as is: free, available in 174 countries (not China mainland, so its compliance banners don't apply), privacy URL `/en/privacy`, support URL `/en/support`, marketing URL `/en`, App Review contact, release set to automatic after approval.
@@ -38,8 +38,13 @@ State now:
 
 For you:
 - **The screen recording for App Review:** on your phone, once 2.0 is on TestFlight: launch, browse, a game, sign in with Apple, a friend request, a message, report and block, delete the account. The lead writes the script when the build is ready.
-- **Rights to the poems and meanings:** Ganjoor's content and any permission or licence text you have from them (Apple's point 6).
-- **A second account for the reviewer:** messages and friends need another person. The lead will propose a demo friend account on the server so the reviewer can try them alone.
+- **Permission from Ganjoor (for Apple's point 6):** ganjoor-data has no licence file. The poems are public domain, but the meanings and summaries are Ganjoor's own work. Ganjoor's about page says it publishes its data so others can do similar work, which shows intent but isn't a permission. Please send this from hello@yebeyt.com through https://ganjoor.net/contact (or to Hamid Reza Mohammadi directly) and keep the reply; the lead attaches it to the App Review notes:
+
+  > سلام آقای محمدی، وقت‌تون بخیر.
+  > من کیوان محمودی هستم، سازندهٔ «یه بیت» (yebeyt.com)، یک اپ رایگان iOS برای خواندن و بازی با شعر فارسی، بدون تبلیغ و بدون فروش داده. متن شعرها، معنی‌ها و خلاصه‌ها را از مخزن عمومی ganjoor-data برمی‌داریم و خوانش‌ها را از API عمومی گنجور پخش می‌کنیم؛ در اپ و سایت، گنجور با لینک به‌عنوان منبع آمده است.
+  > اپل برای انتشار اپ مدرکی می‌خواهد که اجازهٔ استفاده از این محتوا را داریم. ممکن است لطف کنید با یک پاسخ کوتاه به همین ایمیل اجازه بدهید که از متن شعرها، معنی‌ها، خلاصه‌ها و خوانش‌های گنجور با ذکر منبع در «یه بیت» استفاده کنیم؟ اگر شرطی برای ذکر منبع یا نحوهٔ استفاده دارید، با کمال میل رعایت می‌کنیم.
+  > از سال‌ها کاری که برای شعر فارسی کرده‌اید سپاسگزارم.
+- A second account for the reviewer: the lead builds the «یه بیت» demo friend (owner OK, 24 Nov).
 
 ## 5. App Store Connect: the privacy label (don't fill it in yet)
 
