@@ -4995,7 +4995,7 @@
           "messages"
         ],
         "summary": "Send a text or a couplet",
-        "description": "`kind` is `text` (`text`, 1–1000 characters) or `couplet` (`key` and an optional `note` of up to 200). Idempotent per sender and `clientId`: a repeat answers 200 with the first message. Blocks and «بهم پیام بده» are checked on every send (403 messages_closed); answering a person who already wrote in the chat is always allowed, unless blocked. 30 messages a minute per user. Both people get a live `message` event.",
+        "description": "`kind` is `text` (`text`, 1–1000 characters) or `couplet` (`key` and an optional `note` of up to 200). Idempotent per sender and `clientId`: a repeat answers 200 with the first message. Blocks and «بهم پیام بده» are checked on every send (403 messages_closed); answering a person who already wrote in the chat is always allowed, unless blocked. 30 messages a minute per user. Both people get a live `message` event. A message to the demo friend «یه بیت» (`yebeyt`) gets one couplet back after 1–2 seconds, as a normal live `message` (at most one reply per 2 seconds and 30 a day per person; none while blocked).",
         "security": [
           {
             "bearerAuth": []

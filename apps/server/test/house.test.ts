@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { friendRequests, friendships, identities, messages, reports, sessions, users } from "../src/db/schema.js";
 import { createHouse, HOUSE_COUPLETS } from "../src/house.js";
@@ -44,8 +44,8 @@ describe("the built-in account", () => {
   });
 
   it("is made by a migration that can run again without a second copy", async () => {
-    await h.db.execute((await import("drizzle-orm")).sql.raw(houseSeedSql()));
-    await h.db.execute((await import("drizzle-orm")).sql.raw(houseSeedSql()));
+    await h.db.execute(sql.raw(houseSeedSql()));
+    await h.db.execute(sql.raw(houseSeedSql()));
     expect(await h.db.select({ id: users.id }).from(users).where(eq(users.username, "yebeyt"))).toHaveLength(1);
     expect(await h.db.select({ id: users.id }).from(users).where(eq(users.isHouse, true))).toHaveLength(1);
     await expect(h.db.insert(users).values({ username: "other_house", isHouse: true })).rejects.toThrow();
@@ -72,6 +72,14 @@ describe("the built-in account", () => {
     expect(await found.json()).toEqual({ items: [{ username: "yebeyt", displayName: "یه بیت", avatar: null, friendship: "none", isFriend: false }] });
     const profile = await h.request("/v1/users/yebeyt", { token: ali.token });
     expect(await profile.json()).toMatchObject({ username: "yebeyt", displayName: "یه بیت", friendsCount: 0, friendship: "none", canMessage: false, league: null });
+  });
+
+  it("shows no friends count, though everyone may be its friend", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    for (const u of [ali, sara]) await h.request("/v1/friend-requests/yebeyt", { method: "POST", token: u.token });
+    const profile = await h.request("/v1/users/yebeyt", { token: sara.token });
+    expect(await profile.json()).toMatchObject({ friendsCount: 0, friendship: "friends" });
   });
 
   it("has a fixed list of 30 different couplets that the game data knows", () => {
@@ -229,11 +237,10 @@ describe("its reply to a message", () => {
 
   it("does not come from messages between other people", async () => {
     const ali = await h.signUp("ali");
-    const sara = await h.signUp("sara");
+    await h.signUp("sara");
     const res = await h.request("/v1/conversations", { method: "POST", token: ali.token, json: { username: "sara" } });
     await say(ali, ((await res.json()) as { id: string }).id);
     expect(h.houseTimers).toHaveLength(0);
-    expect(sara.id).toBeTruthy();
   });
 });
 
@@ -288,7 +295,7 @@ describe("safety and accounts", () => {
     await h.flushHouse();
     expect((await h.request("/v1/me", { method: "DELETE", token: ali.token })).status).toBe(204);
     expect(await h.db.select().from(friendships)).toEqual([]);
-    expect(await h.db.select().from(messages).where(and(eq(messages.senderId, await houseId())))).toEqual([]);
+    expect(await h.db.select().from(messages).where(eq(messages.senderId, await houseId()))).toEqual([]);
     expect(await h.db.select({ id: users.id }).from(users).where(eq(users.isHouse, true))).toHaveLength(1);
   });
 });

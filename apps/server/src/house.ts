@@ -74,6 +74,9 @@ export function createHouse(deps: Deps, options: Options = {}): House {
   const pick = options.pick ?? randomInt;
   const gap = createRateLimiter(1, REPLY_GAP_MS, deps.now);
   const daily = createRateLimiter(REPLIES_PER_DAY, 86_400_000, deps.now);
+  /** Found by its flag on the first message and kept; a house made again (a test database emptied) needs a new `createHouse`. */
+  let houseId: string | undefined;
+  const findHouse = async () => (houseId ??= (await db.select({ id: users.id }).from(users).where(eq(users.isHouse, true)))[0]?.id);
 
   async function reply(conversationId: string, userId: string, houseId: string) {
     try {
@@ -98,11 +101,10 @@ export function createHouse(deps: Deps, options: Options = {}): House {
   return {
     async onMessage(conversationId, from, to) {
       try {
-        const [house] = await db.select({ id: users.id }).from(users).where(and(eq(users.id, to), eq(users.isHouse, true)));
-        if (!house || !gap.fits(from, 1) || !daily.fits(from, 1)) return;
+        if (to !== (await findHouse()) || !gap.fits(from, 1) || !daily.fits(from, 1)) return;
         gap.spend(from, 1);
         daily.spend(from, 1);
-        later(() => reply(conversationId, from, house.id), delayMs());
+        later(() => reply(conversationId, from, to), delayMs());
       } catch {
         deps.log("house reply failed");
       }

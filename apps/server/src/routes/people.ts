@@ -120,7 +120,7 @@ export function peopleRoutes(deps: Deps) {
           username: person.username!,
           displayName: person.displayName,
           avatar: person.avatar,
-          friendsCount: count!.n,
+          friendsCount: person.isHouse ? 0 : count!.n, // «یه بیت» is everyone's friend, so its count says nothing
           friendship,
           isFriend: friendship === "friends",
           canMessage: mayWrite,
