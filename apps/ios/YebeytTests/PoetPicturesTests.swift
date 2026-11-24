@@ -8,7 +8,7 @@ struct PoetPicturesTests {
     private struct Clock: @unchecked Sendable {
         final class Box: @unchecked Sendable { var now = Date(timeIntervalSince1970: 1_800_000_000) }
         let box = Box()
-        func advance(hours: Double) { box.now = box.now.addingTimeInterval(hours * 3600) }
+        func advance(seconds: Double) { box.now = box.now.addingTimeInterval(seconds) }
     }
 
     private func png(_ color: UIColor) -> Data {
@@ -22,55 +22,95 @@ struct PoetPicturesTests {
         URL.temporaryDirectory.appending(path: "poet-pictures-\(UUID().uuidString)", directoryHint: .isDirectory)
     }
 
-    /// A server with a list of `versions` (slug → version) and a picture per slug.
-    private func server(_ versions: [String: String], offline: Bool = false) -> StubServer {
-        let image = png(.red)
+    /// What the server lists now (slug → version); a test can change it while the app runs.
+    private final class Listed: @unchecked Sendable {
+        var versions: [String: String]
+        init(_ versions: [String: String]) { self.versions = versions }
+    }
+
+    /// A server with a list of `versions` (slug → version) and a picture per slug; a new version has a new picture.
+    private func server(_ listed: Listed, offline: Bool = false) -> StubServer {
+        let red = png(.red), green = png(.green)
         return StubServer { request in
             if offline { return .offline }
             if request.path == "/v1/poets/pictures" {
-                let entries = versions.sorted { $0.key < $1.key }.map { #"{"slug":"\#($0.key)","version":"\#($0.value)","url":"/v1/poets/\#($0.key)/picture?v=\#($0.value)"}"# }
+                let entries = listed.versions.sorted { $0.key < $1.key }.map { #"{"slug":"\#($0.key)","version":"\#($0.value)","url":"/v1/poets/\#($0.key)/picture?v=\#($0.value)"}"# }
                 return .json(200, "[\(entries.joined(separator: ","))]")
             }
-            return request.path.hasSuffix("/picture") ? .data(image) : .json(404, "{}")
+            return request.path.hasSuffix("/picture") ? .data(request.query == "v=bbb" ? green : red) : .json(404, "{}")
         }
+    }
+
+    private func server(_ versions: [String: String], offline: Bool = false) -> StubServer {
+        server(Listed(versions), offline: offline)
     }
 
     private func pictures(_ stub: StubServer, in folder: URL, clock: Clock = Clock()) -> PoetPictures {
         PoetPictures(api: stub.api, directory: folder, now: { clock.box.now })
     }
 
-    @Test func theListIsAskedForAtMostOnceADay() async {
+    @Test func theListIsNotAskedForAgainWithinAMinute() async {
         let stub = server(["hafez": "aaa"])
         let clock = Clock()
         let pictures = pictures(stub, in: directory(), clock: clock)
-        await pictures.refreshIfNeeded()
-        await pictures.refreshIfNeeded()
-        clock.advance(hours: 23)
-        await pictures.refreshIfNeeded()
+        await pictures.refreshList()
+        clock.advance(seconds: 30)
+        await pictures.refreshList()
+        clock.advance(seconds: 29)
+        await pictures.refreshList()
         #expect(stub.requests(to: "/v1/poets/pictures").count == 1)
-        clock.advance(hours: 2)
-        await pictures.refreshIfNeeded()
+        clock.advance(seconds: 2)
+        await pictures.refreshList()
         #expect(stub.requests(to: "/v1/poets/pictures").count == 2)
         #expect(pictures.versions == ["hafez": "aaa"])
     }
 
-    @Test func theListSurvivesARestartSoAFreshLaunchDoesNotAskAgain() async {
+    @Test func comingBackAfterAMinuteAsksAgainAndANewVersionReplacesThePicture() async {
         let folder = directory()
         let clock = Clock()
-        let first = server(["hafez": "aaa"])
-        await pictures(first, in: folder, clock: clock).refreshIfNeeded()
+        let listed = Listed(["hafez": "aaa"])
+        let stub = server(listed)
+        let pictures = pictures(stub, in: folder, clock: clock)
+        await pictures.refreshList()
+        await pictures.load(slug: "hafez")
+        let old = pictures.images["hafez"]?.pngData()
+        #expect(old != nil)
+
+        listed.versions = ["hafez": "bbb"]  // uploaded while the app was in the background
+        clock.advance(seconds: 61)
+        await pictures.refreshList()
+        #expect(stub.requests(to: "/v1/poets/pictures").count == 2)
+        #expect(pictures.versions == ["hafez": "bbb"])
+        await pictures.load(slug: "hafez")  // what a circle on screen does when the version changes
+        #expect(pictures.images["hafez"]?.pngData() != old)
+        #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "hafez-aaa.img").path))
+        #expect(FileManager.default.fileExists(atPath: folder.appending(path: "hafez-bbb.img").path))
+    }
+
+    @Test func aFreshLaunchAsksAgainAndTheSavedListShowsUntilTheAnswerComes() async {
+        let folder = directory()
+        await pictures(server(["hafez": "aaa"]), in: folder).refreshList()
         let second = server(["hafez": "bbb"])
-        let relaunched = pictures(second, in: folder, clock: clock)
+        let relaunched = pictures(second, in: folder)
         #expect(relaunched.versions == ["hafez": "aaa"])
-        await relaunched.refreshIfNeeded()
-        #expect(second.requests.isEmpty)
+        await relaunched.refreshList()
+        #expect(second.requests(to: "/v1/poets/pictures").count == 1)
+        #expect(relaunched.versions == ["hafez": "bbb"])
+    }
+
+    @Test func aFailedAskKeepsTheSavedList() async {
+        let folder = directory()
+        await pictures(server(["hafez": "aaa"]), in: folder).refreshList()
+        let offline = pictures(server(["hafez": "bbb"], offline: true), in: folder)
+        await offline.refreshList()
+        #expect(offline.versions == ["hafez": "aaa"])
     }
 
     @Test func aPictureIsDownloadedWhenFirstShownAndKeptOnTheDisk() async {
         let folder = directory()
         let stub = server(["hafez": "aaa", "saadi": "bbb"])
         let pictures = pictures(stub, in: folder)
-        await pictures.refreshIfNeeded()
+        await pictures.refreshList()
         #expect(pictures.images.isEmpty)  // nothing is downloaded before a circle asks
         await pictures.load(slug: "hafez")
         await pictures.load(slug: "hafez")
@@ -86,7 +126,7 @@ struct PoetPicturesTests {
         let stub = server(["hafez": "aaa"])
         stub.delay = 0.1
         let pictures = pictures(stub, in: directory())
-        await pictures.refreshIfNeeded()
+        await pictures.refreshList()
         let loads = (0..<5).map { _ in Task { await pictures.load(slug: "hafez") } }
         for load in loads { await load.value }
         #expect(stub.requests(to: "/v1/poets/hafez/picture").count == 1)
@@ -94,16 +134,14 @@ struct PoetPicturesTests {
 
     @Test func aNewVersionIsFetchedAndTheOldFileRemoved() async {
         let folder = directory()
-        let clock = Clock()
         let old = server(["hafez": "aaa"])
-        let before = pictures(old, in: folder, clock: clock)
-        await before.refreshIfNeeded()
+        let before = pictures(old, in: folder)
+        await before.refreshList()
         await before.load(slug: "hafez")
 
-        clock.advance(hours: 30)
         let new = server(["hafez": "bbb"])
-        let after = pictures(new, in: folder, clock: clock)
-        await after.refreshIfNeeded()
+        let after = pictures(new, in: folder)
+        await after.refreshList()
         #expect(after.versions == ["hafez": "bbb"])
         await after.load(slug: "hafez")
         #expect(new.requests(to: "/v1/poets/hafez/picture").first?.query == "v=bbb")
@@ -114,16 +152,14 @@ struct PoetPicturesTests {
 
     @Test func withNoNetworkTheSavedPictureShowsAndPoetsWithoutOneKeepTheDefault() async {
         let folder = directory()
-        let clock = Clock()
         let online = server(["hafez": "aaa"])
-        let first = pictures(online, in: folder, clock: clock)
-        await first.refreshIfNeeded()
+        let first = pictures(online, in: folder)
+        await first.refreshList()
         await first.load(slug: "hafez")
 
-        clock.advance(hours: 48)  // the list is due, and the phone is offline
         let offline = server(["hafez": "aaa"], offline: true)
-        let second = pictures(offline, in: folder, clock: clock)
-        await second.refreshIfNeeded()
+        let second = pictures(offline, in: folder)
+        await second.refreshList()
         await second.load(slug: "hafez")
         await second.load(slug: "saadi")
         #expect(second.images["hafez"] != nil)  // from the disk
@@ -134,7 +170,7 @@ struct PoetPicturesTests {
     @Test func aPhoneThatHasNeverBeenOnlineJustShowsDefaults() async {
         let stub = server(["hafez": "aaa"], offline: true)
         let pictures = pictures(stub, in: directory())
-        await pictures.refreshIfNeeded()
+        await pictures.refreshList()
         await pictures.load(slug: "hafez")
         #expect(pictures.images.isEmpty && pictures.versions.isEmpty)
     }
@@ -145,7 +181,7 @@ struct PoetPicturesTests {
             request.path == "/v1/poets/pictures" ? .json(200, #"[{"slug":"hafez","version":"aaa","url":"/v1/poets/hafez/picture?v=aaa"}]"#) : .data(Data("not an image".utf8))
         }
         let pictures = pictures(stub, in: folder)
-        await pictures.refreshIfNeeded()
+        await pictures.refreshList()
         await pictures.load(slug: "hafez")
         #expect(pictures.images["hafez"] == nil)
         #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "hafez-aaa.img").path))
@@ -156,7 +192,7 @@ struct PoetPicturesTests {
             .json(200, #"[{"slug":"../evil","version":"a","url":"/x"},{"slug":"ok","version":"a/b","url":"/x"},{"slug":"far","version":"a","url":"https://evil.test/p"},{"slug":"good","version":"a1","url":"/v1/poets/good/picture?v=a1"}]"#)
         }
         let pictures = pictures(stub, in: directory())
-        await pictures.refreshIfNeeded()
+        await pictures.refreshList()
         #expect(pictures.versions == ["good": "a1"])
     }
 }

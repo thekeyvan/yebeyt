@@ -3,6 +3,7 @@ import SwiftUI
 
 @main
 struct YebeytApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var model: AppModel
     @State private var poetry: PoetryStore
     @State private var library: Library
@@ -173,9 +174,10 @@ struct YebeytApp: App {
                 .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
                     if !accounts.onboarding.isRunning { feedback.shake() }
                 }
-                .task {
-                    await accounts.session.restore()
-                    await accounts.pictures.refreshIfNeeded()
+                .task { await accounts.session.restore() }
+                // The poets' pictures: the list is asked for at launch and each time the app comes back to the front.
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    if phase == .active { Task { await accounts.pictures.refreshList() } }
                 }
                 #if DEBUG
                 .task {
