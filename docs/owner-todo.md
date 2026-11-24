@@ -6,11 +6,13 @@ Only what is still open. These need accounts or devices the agents don't have he
 
 - **App Clip ID:** if it isn't finished yet, register `com.yebeyt.app.Clip` (Identifiers → «+» → App IDs → App Clip, parent `com.yebeyt.app`, Product Name `Clip`), with only **Associated Domains** ticked.
 - **App Store id:** send the lead the app's Apple ID (App Store Connect → the app → App Information → General → Apple ID; a number of about 10 digits). The lead puts it in the website's store buttons.
+- **App Store Connect URLs:** in App Store Connect set the Privacy Policy URL to https://yebeyt.com/en/privacy and the support URL to https://yebeyt.com/en/support.
 - **Push key backup:** the push key file `AuthKey_K95YXBLYY5.p8` is still in Downloads. Put it in a password manager and delete it from Downloads; it can't be downloaded again.
 
 ## 2. Google Cloud
 
 - When the Apple ID from item 1 is known, add it to the iOS client (APIs & Services → Credentials → the iOS client → App Store ID).
+- On the OAuth consent screen (Branding) set the home page https://yebeyt.com/en, privacy https://yebeyt.com/en/privacy, terms https://yebeyt.com/en/terms.
 - Once Google sign-in works on a phone, shut down the old project `beyt-515410` (IAM & Admin → Settings → Shut down).
 
 ## 3. Test on a real phone
