@@ -1,8 +1,8 @@
 import { z } from "@hono/zod-openapi";
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, lt, ne, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import type { Db } from "./db/index.js";
-import { gamePlayers, games, messages, moshMoves, scoreEvents, users } from "./db/schema.js";
+import { type DuelRound, gamePlayers, games, messages, moshMoves, scoreEvents, users } from "./db/schema.js";
 import type { Deps } from "./deps.js";
 import { joinLeague } from "./leagues.js";
 import { getOrCreateConversation, publishMessage } from "./messaging.js";
@@ -11,6 +11,7 @@ import { avatarSchema } from "./schemas.js";
 import { weekOf } from "./week.js";
 
 export const SWEEP_MS = 30_000;
+const ORPHAN_DUEL_MS = 60_000;
 /** Points a friend game adds to the weekly league: for each accepted couplet (مشاعره) or round won (رودررو), up to the game's cap in `GAME_CAPS`. */
 export const POINTS_PER_UNIT = { mosh: 10, duel: 30 } as const;
 
@@ -93,18 +94,24 @@ export function summaryOf(game: GameRow, players: PlayerRow[]): GameSummary {
   };
 }
 
+/** The couplets of a finished duel's rounds, with their meanings and who won each. */
+export function duelRoundViews(data: Deps["data"], rounds: DuelRound[], players: PlayerRow[]) {
+  return rounds.flatMap((r) => {
+    const couplet = data.byKey.get(r.key);
+    if (!couplet) return [];
+    const winner = players.find((p) => p.userId === r.winnerId)?.username ?? null;
+    return [{ round: r.round, type: r.type, key: r.key, m1: couplet.m1, m2: couplet.m2, meaning: couplet.meaning, poet: couplet.poet, bookTitle: couplet.bookTitle, winner }];
+  });
+}
+
 /** The whole game: the summary, the couplets played (مشاعره) and the rounds of a finished duel. */
 export async function gameView(deps: Deps, game: GameRow, players: PlayerRow[]) {
   const name = (id: string | null) => players.find((p) => p.userId === id)?.username ?? null;
   const moves = await deps.db.select().from(moshMoves).where(eq(moshMoves.gameId, game.id)).orderBy(asc(moshMoves.n));
-  const rounds = (game.rounds ?? []).flatMap((r) => {
-    const couplet = deps.data.byKey.get(r.key);
-    return couplet ? [{ round: r.round, type: r.type, key: r.key, m1: couplet.m1, m2: couplet.m2, meaning: couplet.meaning, poet: couplet.poet, bookTitle: couplet.bookTitle, winner: name(r.winnerId) }] : [];
-  });
   return {
     ...summaryOf(game, players),
     moves: moves.map((m) => ({ n: m.n, username: name(m.userId), key: m.key, m1: m.m1, m2: m.m2, createdAt: m.createdAt.toISOString() })),
-    rounds,
+    rounds: duelRoundViews(deps.data, game.rounds ?? [], players),
   };
 }
 
@@ -142,6 +149,7 @@ export async function endGame(deps: Deps, gameId: string, winnerId: string | nul
     return { game, players, line };
   });
   if (!ended) return false;
+  deps.duels.abort(gameId);
   const { players, line } = ended;
   if (line) publishMessage(deps, [players[0]!.userId, players[1]!.userId], line);
   const winner = players.find((p) => p.userId === winnerId);
@@ -165,7 +173,7 @@ export async function endIfOverdue(deps: Deps, game: GameRow, players: PlayerRow
   return endGame(deps, game.id, winner?.userId ?? null, "timeout");
 }
 
-/** Ends every مشاعره game whose turn has run out. Runs every 30 seconds; reads and moves also check the game they touch. */
+/** Ends every مشاعره game whose turn has run out, and the duels nobody runs. Runs every 30 seconds; reads and moves also check the مشاعره game they touch. Returns how many ended. */
 export async function sweepGames(deps: Deps): Promise<number> {
   const due = await deps.db
     .select()
@@ -174,5 +182,11 @@ export async function sweepGames(deps: Deps): Promise<number> {
   const players = await playersOf(deps.db, due.map((g) => g.id));
   let ended = 0;
   for (const game of due) if (await endIfOverdue(deps, game, players.get(game.id)!)) ended++;
+  // A duel nobody runs (the server restarted while it was on) is ended without a winner, unless it only just started.
+  const lost = await deps.db
+    .select({ id: games.id })
+    .from(games)
+    .where(and(eq(games.status, "active"), eq(games.kind, "duel"), lt(games.startedAt, new Date(deps.now().getTime() - ORPHAN_DUEL_MS))));
+  for (const { id } of lost) if (!deps.duels.has(id) && (await endGame(deps, id, null, "left"))) ended++;
   return ended;
 }

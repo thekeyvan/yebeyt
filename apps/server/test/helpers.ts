@@ -11,6 +11,7 @@ import type { Config } from "../src/config.js";
 import type { Db } from "../src/db/index.js";
 import * as schema from "../src/db/schema.js";
 import type { Deps } from "../src/deps.js";
+import { createDuels } from "../src/duel.js";
 import { loadGameData } from "../src/gameData.js";
 import { createHub } from "../src/hub.js";
 import type { UploadBudgets } from "../src/routes/feedback.js";
@@ -88,7 +89,9 @@ export async function makeHarness(uploadBudgets?: UploadBudgets) {
     appleKeys: apple.keys,
     googleKeys: google.keys,
     log: (line) => logs.push(line),
+    duels: undefined as never,
   };
+  deps.duels = createDuels(deps);
   const app = createApp(deps, uploadBudgets);
 
   const nowSec = () => Math.floor(clock.time.getTime() / 1000);

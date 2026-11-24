@@ -3,6 +3,7 @@ import { ConfigError, loadConfig } from "./config.js";
 import { connectAndMigrate } from "./db/connect.js";
 import type { Deps } from "./deps.js";
 import { loadGameData } from "./gameData.js";
+import { createDuels } from "./duel.js";
 import { createHub } from "./hub.js";
 import { startServer } from "./server.js";
 
@@ -19,7 +20,9 @@ async function main() {
     appleKeys: createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys")),
     googleKeys: createRemoteJWKSet(new URL("https://www.googleapis.com/oauth2/v3/certs")),
     log: (line) => console.log(line),
+    duels: undefined as never, // needs the rest of the deps, so it is made next
   };
+  deps.duels = createDuels(deps);
   const server = await startServer(deps, config.port);
   console.log(`yebeyt server listening on ${server.port}`);
   const stop = () => {

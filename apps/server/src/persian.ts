@@ -50,3 +50,6 @@ export function normalizeText(text: string): string {
   }
   return out.toLowerCase().split(/\s+/).filter(Boolean).join(" ");
 }
+
+/** The text without diacritics and tatweel (the marks stay in the poem, not in the options of a question). */
+export const plain = (text: string): string => text.replace(/[\u064B-\u065F\u0670\u0640]/g, "");

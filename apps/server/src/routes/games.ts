@@ -146,6 +146,7 @@ export function gameRoutes(deps: Deps) {
     const players = (await playersOf(db, [gameId])).get(gameId)!;
     if (joined.started) {
       for (const p of players) deps.hub.publish(p.userId, { type: "game.started", game: summaryOf(joined.game, players) });
+      if (joined.game.kind === "duel") await deps.duels.begin(gameId);
     }
     return { game: joined.game, players };
   };
@@ -164,7 +165,7 @@ export function gameRoutes(deps: Deps) {
       path: "/v1/games/{id}/join",
       tags: ["games"],
       summary: "Join a waiting game",
-      description: "Whoever comes first takes the second seat; the game is then active (a live `game.started` event goes to both). Joining a game I am already in answers 200 and changes nothing.",
+      description: "Whoever comes first takes the second seat; the game is then active (a live `game.started` event goes to both). Joining a game I am already in answers 200 and changes nothing. A رودررو game then starts by itself once both players have a live socket (see the README).",
       security,
       request: { params: idParam },
       responses: joinResponses,

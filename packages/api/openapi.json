@@ -5315,7 +5315,7 @@
           "games"
         ],
         "summary": "Join a waiting game",
-        "description": "Whoever comes first takes the second seat; the game is then active (a live `game.started` event goes to both). Joining a game I am already in answers 200 and changes nothing.",
+        "description": "Whoever comes first takes the second seat; the game is then active (a live `game.started` event goes to both). Joining a game I am already in answers 200 and changes nothing. A رودررو game then starts by itself once both players have a live socket (see the README).",
         "security": [
           {
             "bearerAuth": []

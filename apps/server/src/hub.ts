@@ -1,6 +1,6 @@
 /** An event for a live socket: `type` plus its data, sent as one JSON text frame. */
 export type LiveEvent = {
-  type: "message" | "deleted" | "read" | "presence" | "divan" | "game.started" | "game.move" | "game.turn" | "game.ended" | "duel.question" | "duel.round" | "challenge.result";
+  type: "message" | "deleted" | "read" | "presence" | "divan" | "game.started" | "game.move" | "game.turn" | "game.ended" | "duel.question" | "duel.answered" | "duel.round" | "challenge.result";
 } & Record<string, unknown>;
 
 export const MAX_SOCKETS_PER_USER = 5;

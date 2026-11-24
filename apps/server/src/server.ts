@@ -24,6 +24,7 @@ export function startServer(deps: Deps, port: number, live?: LiveOptions): Promi
         close: () =>
           new Promise((done) => {
             clearInterval(sweeper);
+            deps.duels.stop();
             for (const client of wss.clients) client.terminate();
             server.close(() => done());
             if ("closeAllConnections" in server) server.closeAllConnections();
