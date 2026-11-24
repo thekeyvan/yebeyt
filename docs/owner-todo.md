@@ -4,14 +4,14 @@ Only what is still open. These need accounts or devices the agents don't have he
 
 ## 1. Google Cloud
 
-- Once Google sign-in works on a phone, shut down the old project `beyt-515410` (IAM & Admin → Settings → Shut down).
+- Google sign-in works on a phone now (24 Nov), so shut down the old project `beyt-515410` (console.cloud.google.com → pick `beyt-515410` → IAM & Admin → Settings → Shut down; type the project id to confirm).
 
 ## 2. Test on a real phone
 
 These can't be tested in the simulator here (build from Xcode onto the phone):
 
 - A recitation plays and the reader follows it (Hafez, any ghazal, ▶).
-- «ادامه با اپل» and «ادامه با گوگل» sign in, and then the username step. api.yebeyt.com works now, so this can be tested.
+- «ادامه با اپل» signs in, and then the username step. (Google ✅ 24 Nov: sign in, save a couplet, sign out and in again, the couplet is still there.)
 - Poet pictures appear on Explore (Hafez, Saadi, …) after a moment online.
 - Feedback: shake the phone on any screen and the sheet opens; the «بازخورد» row in settings opens it too. Send a bug with a screenshot and a screen recording («دوباره انجامش بده، ما فیلم می‌گیریم»): iOS asks once to allow recording, then the red «در حال ضبط · تموم» pill shows. The simulator gives ReplayKit no frames, so recording can only be tested on a real phone. The report should appear in `GET /v1/admin/feedback` with the screenshot and the recording.
 - With a second account (another phone, or a friend): send a friend request and accept it, send a message, and play a game together.
@@ -72,6 +72,7 @@ Notes:
 - 24 Nov: App ID `com.yebeyt.app` (description yebeyt) with Associated Domains, Push Notifications and Sign in with Apple. The Sign in with Apple key `ZBLL8ASYCU` is valid.
 - 24 Nov: App Clip ID `com.yebeyt.app.Clip` registered (Associated Domains). App Store Apple ID `6837700208` (the lead turns it on in the website's store buttons when 2.0 is live; until then the id has no store page). The old Pages project is deleted.
 - 24 Nov: App Store Connect Privacy Policy URL https://yebeyt.com/en/privacy and Support URL https://yebeyt.com/en/support; Google consent screen links (/en, /en/privacy, /en/terms) and the App Store id on the Google iOS client.
+- 24 Nov: first 2.0 TestFlight build 2.0.0 (202611241416) in the «K&S Team» group; Google sign-in and divan sync tested on a phone.
 - 24 Nov: push key «yebeyt push» (`K95YXBLYY5`) in Railway as `APNS_KEY`, `APNS_KEY_ID`, `APNS_TEAM_ID`.
 - Answered 24 Nov: badges (the four), delete-account copy, the three invite texts, divan topics, feedback in Postgres, feedback read through the admin API until the dashboard, score caps are enough for now, the friend-requests copy; the English home adds "(poetry duels)" after mosha'ere.
 - Answered earlier: levels, avatar parts, settings as a plain list, feedback stays anonymous after account deletion, league tiers, push notifications, another person's page in a plain layout, friend requests instead of mutual follows. The privacy policy has the lines about reported messages and feedback.
