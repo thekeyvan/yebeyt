@@ -13,6 +13,7 @@ struct SettingsScreen: View {
     @State private var editingProfile = false
     @State private var textOpen = false
     @State private var confirmingDelete = false
+    @State private var confirmingSignOut = false
 
     static let termsURL = URL(string: "https://yebeyt.com/terms")!
     static let privacyURL = URL(string: "https://yebeyt.com/privacy")!
@@ -58,6 +59,9 @@ struct SettingsScreen: View {
                 .environment(\.layoutDirection, .rightToLeft)
         }
         .sheet(isPresented: $confirmingDelete) { DeleteAccountSheet(isPresented: $confirmingDelete) }
+        .sheet(isPresented: $confirmingSignOut) {
+            UnsyncedSignOutSheet(isPresented: $confirmingSignOut) { await leaving.signOut(force: true) }
+        }
     }
 
     // MARK: Cards
@@ -99,10 +103,14 @@ struct SettingsScreen: View {
 
     private var divider: some View { Tokens.Colors.chipBorder.frame(height: 1) }
 
-    /// One last sync, then out; the account's data goes from the phone.
+    private var leaving: AccountSignOut {
+        AccountSignOut(session: session, data: LocalAccountData(marks: marks, privacy: privacy, avatar: avatar), divanSync: divanSync)
+    }
+
+    /// One last sync, then out; when it did not go through, the person is asked before anything is lost.
     private func signOut() {
-        let leaving = AccountSignOut(session: session, data: LocalAccountData(marks: marks, privacy: privacy, avatar: avatar), divanSync: divanSync)
-        Task { await leaving.signOut() }
+        let leaving = leaving
+        Task { if await leaving.signOut() == .unsynced { confirmingSignOut = true } }
     }
 
     private func card(title: String? = nil, @ViewBuilder rows: () -> some View) -> some View {

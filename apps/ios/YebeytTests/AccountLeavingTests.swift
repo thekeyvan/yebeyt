@@ -162,6 +162,45 @@ struct AccountLeavingTests {
         expectNothingLeft(f)
     }
 
+    @Test func ifTheLastSyncFailsSigningOutWaitsAndNothingIsLost() async {
+        let f = fixture()
+        defer { f.keychain.delete() }
+        f.marks.toggle(.kept, poemPath: "/a/b/c", couplet: 0)
+        f.stub.respond { request in request.path == "/v1/auth/refresh" ? f.server.handle(request) : .offline }
+
+        let outcome = await f.signOut.signOut()
+
+        #expect(outcome == .unsynced)
+        #expect(f.session.isSignedIn)
+        #expect(f.marks.keys(.kept) == ["/a/b/c#0"])
+        #expect(f.stub.requests(to: "/v1/auth/logout").isEmpty)
+    }
+
+    @Test func insistingSignsOutEvenThoughTheSyncFailed() async {
+        let f = fixture()
+        defer { f.keychain.delete() }
+        f.marks.toggle(.kept, poemPath: "/a/b/c", couplet: 0)
+        f.marks.toggle(.liked, poemPath: "/a/b/c", couplet: 1)
+        f.stub.respond { request in request.path == "/v1/auth/refresh" ? f.server.handle(request) : .offline }
+        #expect(await f.signOut.signOut() == .unsynced)
+
+        let outcome = await f.signOut.signOut(force: true)
+
+        #expect(outcome == .done)
+        #expect(!f.session.isSignedIn)
+        expectNothingLeft(f)
+    }
+
+    @Test func unsentPrivacyOrFaceAlsoHoldsBackSigningOut() async {
+        let f = fixture()
+        defer { f.keychain.delete() }
+        f.stub.respond { request in request.path == "/v1/auth/refresh" ? f.server.handle(request) : request.path == "/v1/me/divan" ? f.server.handle(request) : .offline }
+        f.privacy.set(\.showOnline, to: false)  // the server cannot be reached for it
+        #expect(await f.signOut.signOut() == .unsynced)
+        #expect(f.session.isSignedIn)
+        #expect(f.privacy.hasUnsentChanges)
+    }
+
     @Test func anotherPersonSigningInAfterwardsGetsNothingOfTheFirstOnes() async {
         let f = fixture()
         defer { f.keychain.delete() }

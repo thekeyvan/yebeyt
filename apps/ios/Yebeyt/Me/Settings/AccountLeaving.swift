@@ -18,19 +18,26 @@ struct LocalAccountData {
 }
 
 /// «خروج از حساب»: one last sync (the divan, an unsent face, unsent privacy changes), so nothing made on this phone
-/// is lost, then the sign-in is forgotten and the account's data goes from the phone.
+/// is lost, then the sign-in is forgotten and the account's data goes from the phone. When the last sync did not go
+/// through, nothing happens until the person insists (`force`): what is not on the account would be lost.
 @MainActor
 struct AccountSignOut {
+    enum Outcome: Equatable { case done, unsynced }
+
     let session: Session
     let data: LocalAccountData
     let divanSync: DivanSync
 
-    func signOut() async {
-        await divanSync.syncNow()
+    @discardableResult
+    func signOut(force: Bool = false) async -> Outcome {
+        let divanSent = await divanSync.syncNow()
         await data.privacy.flush()
         await data.avatar.flush()
+        let everythingSent = divanSent && !data.privacy.hasUnsentChanges && !data.avatar.isUnsent
+        guard everythingSent || force else { return .unsynced }
         await session.signOut()
         data.clear()
+        return .done
     }
 }
 
