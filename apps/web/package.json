@@ -1,0 +1,27 @@
+{
+  "name": "@yebeyt/web",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "predev": "node scripts/copy-fonts.mjs",
+    "dev": "next dev",
+    "prebuild": "node scripts/copy-fonts.mjs",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "typecheck": "next typegen && tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "~5.9.0",
+    "vitest": "^5.1.1"
+  }
+}
