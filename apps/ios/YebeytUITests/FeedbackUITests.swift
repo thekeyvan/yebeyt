@@ -138,4 +138,13 @@ final class FeedbackUITests: XCTestCase {
         XCTAssertTrue(app.buttons["feedbackType-bug"].waitForExistence(timeout: 10))
         XCTAssertTrue(element(app, "feedbackShakeNote").exists)
     }
+
+    @MainActor func testTheRecordingPillStaysOverTheAppAndGoesAwayOnDone() {
+        let app = launch(["-beytFeedback", "recording"])
+        let pill = element(app, "recordingPill")
+        XCTAssertTrue(pill.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["dailyCouplet"].exists)  // the app is still there under it
+        app.buttons["recordingStop"].tap()
+        XCTAssertTrue(waitForDisappearance(of: pill))
+    }
 }

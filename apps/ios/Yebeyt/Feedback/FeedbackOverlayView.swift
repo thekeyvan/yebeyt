@@ -1,38 +1,41 @@
 import SwiftUI
 
-/// What floats over the whole app: the recording pill «● در حال ضبط · تموم» and the toast after sending.
-struct FeedbackOverlayView: View {
+/// The toast after sending («رسید، ممنون!»), over the whole app.
+struct FeedbackToastView: View {
     let center: FeedbackCenter
 
     var body: some View {
-        ZStack {
-            if center.isRecording {
-                VStack {
-                    RecordingPill { Task { await center.stopRecording() } }
-                        .padding(.top, 8)
-                    Spacer()
-                }
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
+        VStack {
+            Spacer()
             if let toast = center.toast {
-                VStack {
-                    Spacer()
-                    Text(toast)
-                        .font(.ui(13, weight: .medium))
-                        .foregroundStyle(Tokens.Colors.white)
-                        .padding(.horizontal, 16).padding(.vertical, 9)
-                        .background(Capsule().fill(Tokens.Colors.ink))
-                        .padding(.bottom, 96)
-                        .accessibilityIdentifier("feedbackToast")
-                }
-                .transition(.opacity)
+                Text(toast)
+                    .font(.ui(13, weight: .medium))
+                    .foregroundStyle(Tokens.Colors.white)
+                    .padding(.horizontal, 16).padding(.vertical, 9)
+                    .background(Capsule().fill(Tokens.Colors.ink))
+                    .padding(.bottom, 96)
+                    .transition(.opacity)
+                    .accessibilityIdentifier("feedbackToast")
             }
         }
-        .animation(.snappy, value: center.isRecording)
+        .frame(maxWidth: .infinity)
         .animation(.snappy, value: center.toast)
         .environment(\.layoutDirection, .rightToLeft)
         .environment(\.locale, Locale(identifier: "fa_IR"))
         .font(.ui(16))
+    }
+}
+
+/// The content of the pill's window.
+struct RecordingPillHost: View {
+    let center: FeedbackCenter
+
+    var body: some View {
+        RecordingPill { Task { await center.stopRecording() } }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .environment(\.layoutDirection, .rightToLeft)
+            .environment(\.locale, Locale(identifier: "fa_IR"))
+            .font(.ui(16))
     }
 }
 
@@ -47,12 +50,14 @@ struct RecordingPill: View {
             Text("·").font(.ui(13, weight: .bold))
             Button(action: stop) {
                 Text("تموم").font(.ui(13, weight: .bold)).underline()
+                    .padding(.vertical, 8).padding(.horizontal, 4)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("recordingStop")
         }
         .foregroundStyle(Tokens.Colors.white)
-        .padding(.horizontal, 14).padding(.vertical, 5)
+        .padding(.horizontal, 14).padding(.vertical, 0)
         .sticker(fill: Tokens.Colors.fire, radius: Tokens.Sticker.Radius.pill, border: Tokens.Sticker.BorderWidth.badge, shadow: Tokens.Sticker.Shadow.badge)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("recordingPill")

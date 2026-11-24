@@ -75,28 +75,48 @@ final class FeedbackSheetPresenter: NSObject, FeedbackPresenting, UIAdaptivePres
     }
 }
 
-/// A window above everything that lets touches through except on its own controls: the recording pill and the toast.
-final class PassthroughWindow: UIWindow {
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        let hit = super.hitTest(point, with: event)
-        return hit === rootViewController?.view ? nil : hit
-    }
-}
-
+/// Two small windows above everything: the recording pill (only as big as the pill, so every other touch goes to
+/// the app) and the toast after sending (full screen, but it takes no touches).
 @MainActor
 final class FeedbackOverlay {
-    private var window: PassthroughWindow?
+    private var pillWindow: UIWindow?
+    private var toastWindow: UIWindow?
 
-    func show(for center: FeedbackCenter) {
-        guard window == nil else { return }
-        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-        guard let scene = scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first else { return }
-        let window = PassthroughWindow(windowScene: scene)
+    func showPill(for center: FeedbackCenter) {
+        guard pillWindow == nil, let scene = Self.scene else { return }
+        let top = scene.windows.first(where: \.isKeyWindow)?.safeAreaInsets.top ?? 59
+        let width: CGFloat = 280
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: (scene.screen.bounds.width - width) / 2, y: top - 12, width: width, height: 64)
         window.windowLevel = .alert + 1
-        let controller = UIHostingController(rootView: FeedbackOverlayView(center: center))
-        controller.view.backgroundColor = .clear
-        window.rootViewController = controller
+        window.rootViewController = Self.host(RecordingPillHost(center: center))
         window.isHidden = false
-        self.window = window
+        pillWindow = window
+    }
+
+    func hidePill() {
+        pillWindow?.isHidden = true
+        pillWindow = nil
+    }
+
+    func showToast(for center: FeedbackCenter) {
+        guard toastWindow == nil, let scene = Self.scene else { return }
+        let window = UIWindow(windowScene: scene)
+        window.windowLevel = .alert + 1
+        window.isUserInteractionEnabled = false
+        window.rootViewController = Self.host(FeedbackToastView(center: center))
+        window.isHidden = false
+        toastWindow = window
+    }
+
+    private static var scene: UIWindowScene? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        return scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first
+    }
+
+    private static func host(_ view: some View) -> UIViewController {
+        let controller = UIHostingController(rootView: view)
+        controller.view.backgroundColor = .clear
+        return controller
     }
 }

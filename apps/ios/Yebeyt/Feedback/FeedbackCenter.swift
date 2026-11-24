@@ -148,7 +148,7 @@ final class FeedbackCenter {
 
     func showToast(_ line: String) {
         toast = line
-        overlay.show(for: self)
+        overlay.showToast(for: self)
         toastTask?.cancel()
         toastTask = Task {
             try? await Task.sleep(for: .seconds(2.5))
@@ -177,15 +177,16 @@ final class FeedbackCenter {
         guard isRecording else { return }
         recordingTask?.cancel()
         isRecording = false
+        overlay.hidePill()
         let clip = await recorder.stop()
         model?.recording = clip.map { FeedbackModel.Recording(url: $0.url, seconds: $0.seconds) }
-        presenter?.present(self)
+        if isOpen { presenter?.present(self) }
         if clip == nil { showToast(Self.recordingNote) }
     }
 
     private func beginRecordingState() {
         isRecording = true
-        overlay.show(for: self)
+        overlay.showPill(for: self)
         recordingTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(RecordingBudget.maxSeconds))
             if !Task.isCancelled { await self?.stopRecording() }
@@ -196,7 +197,7 @@ final class FeedbackCenter {
     /// Debug launch (`-beytFeedback recording`): the pill, without recording anything.
     func debugShowRecordingPill() {
         isRecording = true
-        overlay.show(for: self)
+        overlay.showPill(for: self)
     }
     #endif
 }
