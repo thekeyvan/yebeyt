@@ -61,6 +61,7 @@ struct RootView: View {
         }
         .task(id: session.user?.id) { await avatar.reconcile(with: session.user) }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }
+        .onChange(of: model.currentScreen, initial: true) { _, screen in FeedbackLog.shared.visit(screen) }
         .accountPrompt(host: model.reader == nil)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
         .fullScreenCover(item: $model.reader) { route in

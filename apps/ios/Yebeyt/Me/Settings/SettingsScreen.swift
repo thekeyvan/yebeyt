@@ -10,6 +10,8 @@ struct SettingsScreen: View {
     @Environment(PrivacyStore.self) private var privacy
     @Environment(AvatarStore.self) private var avatar
     @Environment(DivanSync.self) private var divanSync
+    @Environment(FeedbackCenter.self) private var feedback
+    @AppStorage(FeedbackSettings.shakeKey) private var shakeForFeedback = true
     @State private var editingProfile = false
     @State private var textOpen = false
     @State private var confirmingDelete = false
@@ -34,6 +36,13 @@ struct SettingsScreen: View {
                     row("متن", id: "settingsText") { textOpen = true }
                     divider
                     row("حریم خصوصی", id: "settingsPrivacy") { model.mePath.append(.privacy) }
+                    divider
+                    Toggle(isOn: $shakeForFeedback) {
+                        Text("تکون دادن برای بازخورد").font(.ui(14, weight: .medium)).foregroundStyle(Tokens.Colors.ink)
+                    }
+                    .toggleStyle(MeSwitchStyle())
+                    .padding(.vertical, 10)
+                    .accessibilityIdentifier("settingsShake")
                 }
                 aboutCard
             }
@@ -97,6 +106,8 @@ struct SettingsScreen: View {
             linkRow("شرایط استفاده", Self.termsURL, id: "terms")
             divider
             linkRow("سیاست حریم خصوصی", Self.privacyURL, id: "privacyPolicy")
+            divider
+            row("بازخورد", id: "settingsFeedback") { feedback.open(source: .settings) }
             divider
             row("مجوزها", id: "licenses") { model.mePath.append(.licenses) }
         }

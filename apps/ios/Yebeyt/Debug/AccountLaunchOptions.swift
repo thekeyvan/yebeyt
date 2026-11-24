@@ -16,6 +16,10 @@ struct AccountLaunchOptions {
     let fresh: Bool
     /// `-beytSyncFails 1`: the fake server refuses the divan, so the sign-out warning can be shown.
     let syncFails: Bool
+    /// `-beytFeedback …` or `-beytFeedbackFails …`: the fake server also takes feedback reports and their files.
+    let feedbackStub: Bool
+    /// `-beytFeedbackFails offline|rate`: sending a report fails as if the phone were offline or the server said 429.
+    let feedbackFails: String?
 
     init(_ values: [String: Any]) {
         onboarding = (values["beytOnboarding"] as? String).flatMap(OnboardingStep.init(rawValue:))
@@ -24,6 +28,8 @@ struct AccountLaunchOptions {
         api = values["beytAPI"] as? String
         fresh = Self.flag(values["beytFresh"])
         syncFails = Self.flag(values["beytSyncFails"])
+        feedbackFails = (values["beytFeedbackFails"] as? String).flatMap { ["offline", "rate"].contains($0) ? $0 : nil }
+        feedbackStub = values["beytFeedback"] != nil || feedbackFails != nil
     }
 
     private static func flag(_ value: Any?) -> Bool {
@@ -42,8 +48,9 @@ struct AccountLaunchOptions {
 
     /// The client: the real server, `-beytAPI`, or with `-beytSignedIn` a stand-in on the phone.
     func makeAPI() -> API {
-        if signedIn {
+        if signedIn || feedbackStub {
             DebugBackend.failsSync = syncFails
+            DebugBackend.feedbackFails = feedbackFails
             let configuration = URLSessionConfiguration.ephemeral
             configuration.protocolClasses = [DebugBackend.self]
             return API.configured(override: api, session: URLSession(configuration: configuration))
@@ -57,6 +64,8 @@ struct AccountLaunchOptions {
 final class DebugBackend: URLProtocol, @unchecked Sendable {
     /// Set once at launch (`-beytSyncFails`), before any request.
     nonisolated(unsafe) static var failsSync = false
+    /// Set once at launch (`-beytFeedbackFails`), before any request.
+    nonisolated(unsafe) static var feedbackFails: String?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -64,7 +73,14 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
 
     override func startLoading() {
         let path = request.url?.path ?? ""
+        if path.hasPrefix("/v1/feedback"), Self.feedbackFails == "offline" {
+            client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+            return
+        }
         let (status, body): (Int, String) = switch (request.httpMethod ?? "GET", path) {
+        case (_, "/v1/feedback") where Self.feedbackFails == "rate": (429, #"{"error":"rate_limited"}"#)
+        case ("POST", "/v1/feedback"): (201, #"{"id":"00000000-0000-0000-0000-0000000000f1","uploadToken":"debug-upload-token"}"#)
+        case ("PUT", _) where path.hasPrefix("/v1/feedback/"): (204, "")
         case (_, "/v1/usernames/check"): (200, #"{"available":true}"#)
         case (_, "/v1/usernames/suggestions"): (200, #"{"suggestions":["niloofar.sh","niloo_ghazal","niloofar1403"]}"#)
         case ("PUT", "/v1/me/username"), ("PUT", "/v1/me/profile"): (200, Self.userJSON)

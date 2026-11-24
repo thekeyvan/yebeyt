@@ -56,7 +56,11 @@ struct ReaderView: View {
         .onChange(of: model.index) { _, _ in recordProgress() }
         .onChange(of: model.topIndex) { _, _ in recordProgress() }
         .onChange(of: model.reachedEnd) { _, reached in if reached { progress.reachedEnd(path: model.path, count: model.couplets.count) } }
-        .onDisappear { model.close() }
+        .onAppear { FeedbackLog.shared.reader = model }
+        .onDisappear {
+            model.close()
+            if FeedbackLog.shared.reader === model { FeedbackLog.shared.reader = nil }
+        }
     }
 
     /// The subtitle's tap: the poet's page, when the library has one.
