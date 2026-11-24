@@ -7,7 +7,6 @@ struct PrivacyScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                header
                 section("دوستات چی ببینن") {
                     choice("بیت‌هایی که نگه می‌دارم", \.keptVisibility, [(.friends, "دوستا"), (.me, "فقط من")], id: "kept")
                     divider
@@ -32,6 +31,7 @@ struct PrivacyScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { header }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task { await privacy.refresh() }

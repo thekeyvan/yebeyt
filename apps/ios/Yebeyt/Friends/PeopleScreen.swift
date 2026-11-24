@@ -24,7 +24,6 @@ private struct PeopleScreenBody: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                ScreenHeader(title: "پیدا کردن دوست")
                 PeopleSearchSection(model: model, text: $text, opens: true, toast: $toast, focus: $focused)
             }
             .padding(.horizontal, 18)
@@ -32,6 +31,7 @@ private struct PeopleScreenBody: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { ScreenHeader(title: "پیدا کردن دوست") }
         .scrollDismissesKeyboard(.interactively)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)

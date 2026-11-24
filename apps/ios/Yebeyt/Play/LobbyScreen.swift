@@ -26,7 +26,6 @@ private struct LobbyBody: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                header
                 label("چی بازی کنیم؟")
                 gameTiles
                 if model.game.hasTurnTime { turnTime }
@@ -46,6 +45,7 @@ private struct LobbyBody: View {
             .accessibilityIdentifier("lobby")
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { header }
         .dottedPaper()
         .toast($toast)
         .sheet(isPresented: $picking) {

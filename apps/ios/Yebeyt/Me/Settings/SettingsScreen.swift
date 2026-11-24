@@ -36,7 +36,6 @@ struct SettingsScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                ScreenHeader(title: "تنظیمات")
                 accountCard
                 card {
                     row("متن", id: "settingsText") { textOpen = true }
@@ -57,6 +56,7 @@ struct SettingsScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { ScreenHeader(title: "تنظیمات") }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $editingProfile) {

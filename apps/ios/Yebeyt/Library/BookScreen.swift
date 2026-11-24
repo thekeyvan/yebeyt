@@ -12,7 +12,6 @@ struct BookScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                topRow
                 header
                 if let index { actions(index) }
                 Text(book.blurb)
@@ -28,6 +27,7 @@ struct BookScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { topRow }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task { index = try? await library.index(of: book) }

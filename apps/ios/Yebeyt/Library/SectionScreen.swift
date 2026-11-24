@@ -23,7 +23,6 @@ struct SectionScreen: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 8) {
-                ScreenHeader(title: section.title, subtitle: subtitle)
                 SearchBox(text: $query, placeholder: "یه کلمه یا شماره‌ی \(section.unit)…")
                     .padding(.top, 6)
                 sortControl
@@ -40,6 +39,7 @@ struct SectionScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { ScreenHeader(title: section.title, subtitle: subtitle) }
         .scrollDismissesKeyboard(.interactively)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)

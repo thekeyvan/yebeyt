@@ -116,7 +116,6 @@ struct QuizScreen: View {
         return ZStack {
             ScrollView {
                 VStack(spacing: 14) {
-                    header(session)
                     titleRow(round)
                     content(session)
                 }
@@ -126,6 +125,7 @@ struct QuizScreen: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
+            .stickyHeader { header(session) }
             .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar(session) }
             .accessibilityHidden(round.sheetOpen)
             if let answer = round.lastAnswer {

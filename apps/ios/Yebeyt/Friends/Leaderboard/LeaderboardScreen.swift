@@ -24,11 +24,6 @@ private struct LeaderboardScreenBody: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 12) {
-                    BackButton()
-                    Text("رده‌بندی").font(.title(32)).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
-                    Spacer(minLength: 0)
-                }
                 SegmentedControl(
                     options: LeaderboardModel.Tab.allCases.map { ($0, $0.title) }, selection: $model.tab,
                     style: Self.tabStyle, label: "رده‌بندی", idPrefix: "board"
@@ -41,6 +36,11 @@ private struct LeaderboardScreenBody: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { HStack(spacing: 12) {
+            BackButton()
+            Text("رده‌بندی").font(.title(32)).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+        } }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task {

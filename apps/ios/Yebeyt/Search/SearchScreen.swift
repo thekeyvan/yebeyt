@@ -24,11 +24,6 @@ struct SearchScreen: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 12) {
-                    BackButton()
-                    SearchBox(text: $query, placeholder: "شاعر، شعر یا یه تیکه از بیت…", style: .round, focus: $focused)
-                }
-                .padding(.bottom, 6)
                 if let results {
                     if corpus != nil, results.isEmpty { NothingFound() } else { resultSections(results) }
                 }
@@ -38,6 +33,10 @@ struct SearchScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { HStack(spacing: 12) {
+            BackButton()
+            SearchBox(text: $query, placeholder: "شاعر، شعر یا یه تیکه از بیت…", style: .round, focus: $focused)
+        } }
         .scrollDismissesKeyboard(.interactively)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)

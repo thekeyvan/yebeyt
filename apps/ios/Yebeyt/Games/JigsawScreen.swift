@@ -77,7 +77,6 @@ struct JigsawScreen: View {
         return ZStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    header(session)
                     titleRow(round)
                     JigsawCard(
                         board: round.board, revealed: round.sheetOpen,
@@ -97,6 +96,7 @@ struct JigsawScreen: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
+            .stickyHeader { header(session) }
             .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar(session) }
             .accessibilityHidden(round.sheetOpen)
             if let answer = round.lastAnswer {

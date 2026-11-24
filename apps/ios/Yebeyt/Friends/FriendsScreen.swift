@@ -21,7 +21,6 @@ private struct FriendsScreenBody: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
-                ScreenHeader(title: "دوستا")
                 content
             }
             .padding(.horizontal, 18)
@@ -29,6 +28,7 @@ private struct FriendsScreenBody: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { ScreenHeader(title: "دوستا") }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task { await model.load() }

@@ -8,7 +8,6 @@ struct GamesCatalogScreen: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                ScreenHeader(title: "بازی‌ها")
                 ForEach(GameKind.allCases, id: \.self) { kind in
                     card(kind)
                 }
@@ -18,6 +17,7 @@ struct GamesCatalogScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { ScreenHeader(title: "بازی‌ها") }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
     }

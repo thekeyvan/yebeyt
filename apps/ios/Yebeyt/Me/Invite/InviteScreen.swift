@@ -19,12 +19,6 @@ struct InviteScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 12) {
-                    BackButton()
-                    Text("دوستاتو بیار").font(.title(28)).foregroundStyle(Tokens.Colors.ink).padding(.top, 3)
-                        .accessibilityAddTraits(.isHeader)
-                    Spacer(minLength: 0)
-                }
                 hero
                 textCard
             }
@@ -33,6 +27,12 @@ struct InviteScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { HStack(spacing: 12) {
+            BackButton()
+            Text("دوستاتو بیار").font(.title(28)).foregroundStyle(Tokens.Colors.ink).padding(.top, 3)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+        } }
         .scrollDismissesKeyboard(.interactively)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)

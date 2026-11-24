@@ -21,7 +21,6 @@ struct RoundEndScreen<Card: View>: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                topBar
                 scoreRow
                 if let offer {
                     ChallengeSendCard(offer: offer)
@@ -35,6 +34,7 @@ struct RoundEndScreen<Card: View>: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { topBar }
         .accessibilityIdentifier("roundEnd")
         .task {
             withAnimation(Motion.countUp(Motion.variant(reduceMotion: reduceMotion))) { counted = true }

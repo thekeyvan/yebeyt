@@ -13,8 +13,6 @@ struct MoodScreen: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 8) {
-                ScreenHeader(title: mood.title)
-                    .padding(.bottom, 6)
                 if let entries {
                     if entries.isEmpty { NothingFound() }
                     ForEach(entries) { CoupletRow(entry: $0) }
@@ -25,6 +23,7 @@ struct MoodScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { ScreenHeader(title: mood.title) }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task {

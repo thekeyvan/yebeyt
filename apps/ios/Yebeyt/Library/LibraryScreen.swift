@@ -18,10 +18,6 @@ struct LibraryScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                ScreenHeader(
-                    title: "کتابخونه",
-                    subtitle: "\(PersianDigits.string(library.books.count)) کتاب از \(PersianDigits.string(library.poetCount)) شاعر"
-                )
                 SearchBox(text: $query, placeholder: "کتاب یا شاعر…")
                 if let last = progress.last, let book = library.book(containing: last.path) {
                     ContinueCard(book: book, last: last)
@@ -42,6 +38,12 @@ struct LibraryScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader {
+            ScreenHeader(
+                title: "کتابخونه",
+                subtitle: "\(PersianDigits.string(library.books.count)) کتاب از \(PersianDigits.string(library.poetCount)) شاعر"
+            )
+        }
         .scrollDismissesKeyboard(.interactively)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)

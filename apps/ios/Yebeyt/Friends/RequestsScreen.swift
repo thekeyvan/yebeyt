@@ -11,7 +11,6 @@ struct RequestsScreen: View {
         let requests = center.requests
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                ScreenHeader(title: FriendCopy.requestsTitle)
                 content(requests)
             }
             .padding(.horizontal, 18)
@@ -19,6 +18,7 @@ struct RequestsScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { ScreenHeader(title: FriendCopy.requestsTitle) }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .toast($toast)

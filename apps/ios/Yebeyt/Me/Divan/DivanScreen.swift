@@ -27,7 +27,6 @@ struct DivanScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                header
                 if entries.isEmpty, !divan.isLoading {
                     Text("هنوز بیتی نگه نداشتی. توی شعرها «نگه دار» رو بزن.")
                         .font(.ui(14)).foregroundStyle(Tokens.Colors.muted).lineSpacing(5)
@@ -54,6 +53,7 @@ struct DivanScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { header }
         .scrollDismissesKeyboard(.interactively)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)

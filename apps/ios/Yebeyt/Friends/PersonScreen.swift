@@ -31,7 +31,6 @@ private struct PersonScreenBody: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                topBar
                 switch model.phase {
                 case .loading:
                     ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
@@ -50,6 +49,7 @@ private struct PersonScreenBody: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { topBar }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .toast(Binding(get: { model.toast }, set: { model.toast = $0 }))

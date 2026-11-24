@@ -33,7 +33,6 @@ struct LicensesScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                ScreenHeader(title: "مجوزها")
                 ForEach(Self.groups) { group in
                     VStack(alignment: .leading, spacing: 0) {
                         Text(group.id).font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.lapis).padding(.top, 4).padding(.bottom, 6)
@@ -60,6 +59,7 @@ struct LicensesScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { ScreenHeader(title: "مجوزها") }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
     }

@@ -19,7 +19,6 @@ struct PoetScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                topRow
                 hero
                 chips
                 if deck.hasRound(of: poet.slug) { gameCard }
@@ -30,6 +29,7 @@ struct PoetScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { topRow }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task { top = await loadTop() }

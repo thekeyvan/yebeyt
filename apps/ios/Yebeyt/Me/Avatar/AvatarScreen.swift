@@ -32,7 +32,6 @@ struct AvatarScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                header
                 bigFace
                 partChips
                 grid
@@ -43,6 +42,7 @@ struct AvatarScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { header }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $asking) {

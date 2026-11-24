@@ -49,6 +49,63 @@ struct ScreenHeader: View {
     }
 }
 
+/// Pins a screen's top navigation (back or close, and the title row with it) above the content, which scrolls under it.
+/// The pinned area is the page's own dotted paper, so nothing shows through, and a thin shadow appears once something has
+/// scrolled under it. Put it on the screen's `ScrollView`; the header keeps its place in VoiceOver order, first.
+struct StickyHeader<Header: View>: ViewModifier {
+    let header: Header
+    @State private var scrolledUnder = false
+
+    /// Fallback before iOS 18, which cannot tell how far a scroll view went: the shadow stays on.
+    private var tracksScroll: Bool {
+        if #available(iOS 18, *) { return true }
+        return false
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .safeAreaInset(edge: .top, spacing: 0) {
+                header
+                    .padding(.horizontal, 18)
+                    .padding(.top, 6)
+                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity)
+                    .background { DottedPaper().ignoresSafeArea(edges: .top) }
+                    .overlay(alignment: .bottom) {
+                        Rectangle().fill(Tokens.Colors.ink.opacity(0.1)).frame(height: 1)
+                            .opacity(scrolledUnder || !tracksScroll ? 1 : 0)
+                    }
+                    .shadow(color: Tokens.Colors.ink.opacity(scrolledUnder ? 0.08 : 0), radius: 4, x: 0, y: 2)
+                    .animation(.easeOut(duration: 0.15), value: scrolledUnder)
+            }
+            .modifier(ScrollUnderTracker(scrolledUnder: $scrolledUnder))
+    }
+}
+
+/// Tells the sticky header whether the content has moved up under it (iOS 18 and later).
+private struct ScrollUnderTracker: ViewModifier {
+    @Binding var scrolledUnder: Bool
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18, *) {
+            content.onScrollGeometryChange(for: Bool.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top > 2
+            } action: { _, under in
+                scrolledUnder = under
+            }
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    /// `ScrollView { … }.stickyHeader { BackButton() … }`: the header stays at the top while the content scrolls.
+    func stickyHeader<Header: View>(@ViewBuilder _ header: () -> Header) -> some View {
+        modifier(StickyHeader(header: header()))
+    }
+}
+
 /// «شاعرها … همه»: a Lalezar heading with a link at the other end.
 struct SectionHeading: View {
     let title: String

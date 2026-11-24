@@ -64,7 +64,6 @@ struct BadgesScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                ScreenHeader(title: "نشان‌ها")
                 VStack(spacing: 0) {
                     let badges = MeBadge.all(BadgeProgress(stats: stats, achievements: achievements, reading: reading))
                     ForEach(badges) { badge in
@@ -91,6 +90,7 @@ struct BadgesScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .stickyHeader { ScreenHeader(title: "نشان‌ها") }
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
     }

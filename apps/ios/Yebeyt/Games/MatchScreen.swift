@@ -69,13 +69,6 @@ struct MatchScreen: View {
         return ZStack {
             ScrollView {
                 VStack(spacing: 14) {
-                    HStack(spacing: 12) {
-                        GameCloseButton(asking: session.asksBeforeLeaving) { app.closeGame() }
-                        ProgressDots(
-                            total: round.current.words.count, results: Array(repeating: true, count: round.matched.count),
-                            sheetOpen: round.sheetOpen, noun: "جفت"
-                        )
-                    }
                     titleRow(round)
                     MatchCoupletCard(question: round.current)
                     MatchBoard(round: round, shakes: shakes, selectWord: { session.selectWord($0) }, pick: { pick($0, in: session) })
@@ -88,6 +81,13 @@ struct MatchScreen: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
+            .stickyHeader { HStack(spacing: 12) {
+                GameCloseButton(asking: session.asksBeforeLeaving) { app.closeGame() }
+                ProgressDots(
+                    total: round.current.words.count, results: Array(repeating: true, count: round.matched.count),
+                    sheetOpen: round.sheetOpen, noun: "جفت"
+                )
+            } }
             .accessibilityHidden(sheetShown)
             if sheetShown {
                 AnswerSheet(
