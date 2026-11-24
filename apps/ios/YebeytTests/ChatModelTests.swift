@@ -336,8 +336,9 @@ struct ChatModelTests {
         #expect(days == ["دیروز", "امروز"])
     }
 
-    @Test func onlyTheSystemLineOfTheSharedDivanIsShown() async {
+    @Test func onlyTheDivanLineAndTheGameInvitationAreShown() async {
         let page = MessageJSON.page([
+            MessageJSON.message(id: "m4", kind: "game", payload: #"{"event":"challenge_result","code":"AB12"}"#, at: "2026-11-24T09:04:00Z"),
             MessageJSON.message(id: "m3", kind: "game", payload: #"{"event":"game_invite","kind":"mosh"}"#, at: "2026-11-24T09:03:00Z"),
             MessageJSON.message(id: "m2", kind: "system", payload: #"{"event":"game_ended","kind":"mosh"}"#, at: "2026-11-24T09:02:00Z"),
             MessageJSON.message(id: "m1", kind: "system", payload: #"{"event":"divan_add","key":"/hafez/ghazal/sh3#0"}"#, at: "2026-11-24T09:01:00Z"),

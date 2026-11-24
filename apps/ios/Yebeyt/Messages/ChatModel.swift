@@ -275,8 +275,9 @@ final class ChatModel {
 
     // MARK: What the list draws
 
-    /// Day labels, messages and sends on their way, oldest first. System lines are shown only for a couplet added
-    /// to the shared divan; game lines are shown; other system events (a game that ended) are left out.
+    /// Day labels, messages and sends on their way, oldest first. Of the lines that are not texts or couplets only two
+    /// are shown: a couplet added to the shared divan and a game invitation; the rest (a game that ended, a result)
+    /// wait for the games with friends (slice 8c).
     func entries(now: Date? = nil, calendar: Calendar = .current) -> [Entry] {
         let today = now ?? self.now()
         let seen = seenMessageID
@@ -300,7 +301,11 @@ final class ChatModel {
     }
 
     static func isShown(_ message: ChatMessage) -> Bool {
-        message.kind != .system || message.payload?.event == "divan_add"
+        switch message.kind {
+        case .text, .couplet: true
+        case .system: message.payload?.event == "divan_add"
+        case .game: message.payload?.event == "game_invite"
+        }
     }
 
     // MARK: Tasks

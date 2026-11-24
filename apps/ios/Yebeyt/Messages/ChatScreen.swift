@@ -271,7 +271,7 @@ private struct ChatContent: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("فرستادن")
-            .accessibilityIdentifier("send")
+            .accessibilityIdentifier("sendMessage")
         }
     }
 

@@ -188,6 +188,7 @@ private struct SharedDivanCard: View {
         .background {
             RoundedRectangle(cornerRadius: 22).fill(Tokens.Colors.white).stickerShadow(ShadowToken(y: 2, blur: 20, opacity: 0.07))
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sharedItem-\(item.id)")
         .task(id: item.key) { resolved = await resolver.resolve(item.key) }
     }
