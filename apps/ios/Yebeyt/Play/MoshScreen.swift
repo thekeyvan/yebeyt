@@ -166,9 +166,15 @@ struct MoshMoves: View {
 
 /// The couplet's second hemistich with its last letter marked: amber on the other's white bubble, lapis on the card in the chat.
 enum MoshLastLetter {
+    /// The board's chip is the letter with 4 to 5pt of room on both sides. Text can't pad a background, and a space before
+    /// the letter would cut its joining with the letter before it, so the room is a thin space after it (the end of the line).
     static func marked(_ text: String, highlight: Bool, background: Color = Tokens.Colors.amber, foreground: Color = Tokens.Colors.ink) -> AttributedString {
-        var result = AttributedString(text)
-        guard highlight, let range = MoshLetters.lastLetterRange(in: text), let marked = Range(range, in: result) else { return result }
+        guard highlight, let range = MoshLetters.lastLetterRange(in: text) else { return AttributedString(text) }
+        let start = text.distance(from: text.startIndex, to: range.lowerBound), end = text.distance(from: text.startIndex, to: range.upperBound)
+        let padded = String(text[..<range.upperBound]) + "\u{2009}" + String(text[range.upperBound...])
+        var result = AttributedString(padded)
+        let from = padded.index(padded.startIndex, offsetBy: start), to = padded.index(padded.startIndex, offsetBy: end + 1)
+        guard let marked = Range(from..<to, in: result) else { return result }
         result[marked].backgroundColor = background
         result[marked].foregroundColor = foreground
         return result

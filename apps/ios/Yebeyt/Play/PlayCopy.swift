@@ -117,9 +117,9 @@ enum PlayCopy {
     static func outOfTen(_ score: Int) -> String { "\(PersianDigits.string(score)) از ۱۰" }
     static let namePrompt = "اسمت چیه؟"
     static let nameNeeded = "یه اسم بنویس"
-    static let alreadyAnswered = "نتیجه‌ت قبلاً ثبت شده"
     static let challengePending = "چالش هنوز آماده نیست؛ یه لحظه صبر کن"
     static func challengeSentTo(_ name: String) -> String { "برای \(name) فرستاده شد" }
+    static let challengeNotOpened = "این چالش باز نشد"
     static let challengeGone = "این چالش پیدا نشد یا تموم شده"
     /// «تو ۷ · نیلوفر ۸»
     static func scores(mine: Int, name: String, theirs: Int) -> String { "تو \(PersianDigits.string(mine)) · \(name) \(PersianDigits.string(theirs))" }
@@ -129,6 +129,7 @@ enum PlayCopy {
 
     // MARK: رودررو
 
+    static let answerNotSent = "جوابت نرسید؛ دوباره بزن"
     static func duelWaiting(for name: String) -> String { "منتظر \(name)…" }
     static func duelLeft(_ name: String) -> String { "\(name) رفت" }
     static func duelRound(winner: String?, me: String, otherName: String) -> String {

@@ -85,15 +85,24 @@ struct DuelState: Equatable {
         return true
     }
 
+    /// My answer could not be sent: I may answer again.
+    mutating func undoChoice() {
+        if !lockedOut, !isRoundOver { chosen = nil }
+    }
+
     mutating func apply(_ event: LiveEvent, now: Date = .now) {
         switch event {
         case .duelQuestion(let next) where next.gameId == gameID:
+            // The server asks an open round again when a socket comes back: it is the same round, with the time that is left.
+            let again = next.round == question?.round && rightOption == nil
             question = next
             askedAt = now
-            chosen = nil
-            lockedOut = false
-            otherAnswered = false
-            rightOption = nil
+            if !again {
+                chosen = nil
+                lockedOut = false
+                otherAnswered = false
+                rightOption = nil
+            }
         case .duelAnswered(let id, let round, let username) where id == gameID && round == self.round:
             if username == me { lockedOut = true } else { otherAnswered = true }
         case .duelRound(let id, let round, let winner, let right, let newScores) where id == gameID:

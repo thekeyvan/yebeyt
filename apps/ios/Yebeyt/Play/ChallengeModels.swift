@@ -115,7 +115,8 @@ final class ChallengeAccept {
         return trimmed.isEmpty ? nil : trimmed
     }
 
-    /// Leaves my result: with my account, or as a guest with a name. Returns the line to show when it failed.
+    /// Leaves my result: with my account, or as a guest with a name. Returns the line to show when it failed. A 409 means the
+    /// result is there already (a second try, or the maker's own challenge): that is done, not a failure.
     func post(score: Int, seconds: Int, name: String?) async -> String? {
         do {
             if asksName {
@@ -126,9 +127,22 @@ final class ChallengeAccept {
             }
             return nil
         } catch let error as APIError {
-            return error.code == .conflict ? PlayCopy.alreadyAnswered : error.persianMessage
+            return error.code == .conflict ? nil : error.persianMessage
         } catch {
             return APIError.network.persianMessage
+        }
+    }
+
+    /// The ten couplets of the challenge, found in the game deck in order. Nil unless there are exactly ten and every one can be
+    /// played here (a jigsaw needs a second hemistich of 3 to 14 words; حدس شاعر a poet of the library): a round with
+    /// other couplets in their place would not be the maker's.
+    static func couplets(for challenge: Challenge, deck: GameDeck, poets: Set<String>) -> [GameCouplet]? {
+        let byKey = Dictionary(deck.couplets.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let found = challenge.items.compactMap { byKey[$0] }
+        guard found.count == ChallengeOffer.itemCount, challenge.items.count == found.count else { return nil }
+        switch challenge.game {
+        case .jigsaw: return found.allSatisfy(JigsawQuestion.canPlay) ? found : nil
+        case .poet: return found.allSatisfy { poets.contains($0.poetSlug) } ? found : nil
         }
     }
 

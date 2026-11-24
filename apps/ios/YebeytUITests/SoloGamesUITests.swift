@@ -163,8 +163,7 @@ final class SoloGamesUITests: XCTestCase {
         for kind in ["daily", "jigsaw", "poet", "misra", "book", "match", "listen"] {
             XCTAssertTrue(app.buttons["catalog-\(kind)"].isEnabled, kind)
         }
-        XCTAssertFalse(app.buttons["catalog-mosh"].isEnabled)
-        XCTAssertFalse(app.buttons["catalog-duel"].isEnabled)
+        XCTAssertTrue(app.buttons["catalog-mosh"].isEnabled && app.buttons["catalog-duel"].isEnabled)
         app.buttons["catalog-match"].tap()
         XCTAssertTrue(app.buttons["word-0"].waitForExistence(timeout: 10))
     }

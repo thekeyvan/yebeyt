@@ -80,6 +80,30 @@ struct DuelStateTests {
         #expect(duel.theirScore == 1 && duel.myScore == 0)
     }
 
+    @Test func aQuestionAskedAgainForTheSameRoundKeepsMyAnswerAndLockout() {
+        var duel = state()
+        let start = Date(timeIntervalSince1970: 1000)
+        duel.apply(question(2), now: start)
+        duel.choose(1)
+        duel.apply(.duelAnswered(gameId: "d1", round: 2, username: "niloofar"))
+        duel.apply(.duelAnswered(gameId: "d1", round: 2, username: "sara.ghazal"))
+        duel.apply(question(2, deadlineMs: 4000), now: start.addingTimeInterval(4))  // the socket came back: the time left is sent
+        #expect(duel.chosen == 1 && duel.lockedOut && duel.otherAnswered && !duel.canAnswer)
+        #expect(duel.secondsLeft(now: start.addingTimeInterval(4)) == 4)
+    }
+
+    @Test func aChoiceThatWasNotSentCanBeTakenBack() {
+        var duel = state()
+        duel.apply(question(1))
+        duel.choose(0)
+        duel.undoChoice()
+        #expect(duel.chosen == nil && duel.canAnswer)
+        duel.choose(1)
+        duel.apply(.duelAnswered(gameId: "d1", round: 1, username: "niloofar"))
+        duel.undoChoice()  // a wrong answer the server knows about stays
+        #expect(duel.chosen == 1 && duel.lockedOut)
+    }
+
     @Test func theNextQuestionStartsFresh() {
         var duel = state()
         duel.apply(question(1))
@@ -294,6 +318,36 @@ struct FriendGamesTests {
         #expect(sent.all.count == 1)
         let json = try #require(JSONSerialization.jsonObject(with: Data(frame.utf8)) as? [String: Any])
         #expect(json["type"] as? String == "duel.answer" && json["gameId"] as? String == "d1" && json["round"] as? Int == 1 && json["option"] as? Int == 1)
+    }
+
+    @Test func anAnswerThatCouldNotBeSentIsTakenBackAndToasted() async {
+        let (games, _) = rig { _ in .json(200, duel) }
+        let toasts = Recorded<String>()
+        games.toast = { toasts.add($0) }
+        games.sendLive = { _ in false }  // the socket is not open
+        await games.load("d1")
+        games.handle(.duelQuestion(DuelQuestion(gameId: "d1", round: 1, rounds: 5, kind: .second, m1: "x", m2: nil, poet: nil, options: ["a", "b"], deadlineMs: 8000)))
+        await games.answer(0, in: "d1")
+        #expect(games.duel("d1")?.chosen == nil && games.duel("d1")?.canAnswer == true)
+        #expect(toasts.all == [PlayCopy.answerNotSent])
+    }
+
+    @Test func aReadAskedBeforeALiveEventDoesNotPutTheGameBack() async throws {
+        let older = GameJSON.game(turn: #"{"username":"sara.ghazal","deadline":"2026-11-25T09:40:00.000Z"}"#, moves: [])  // before Sara's move: her turn
+        let move = try JSONDecoder().decode(MoshMove.self, from: Data(GameJSON.sara.utf8))
+        let gate = Recorded<Int>()
+        let (games, _) = rig { _ in
+            gate.add(1)
+            Thread.sleep(forTimeInterval: 0.3)  // the answer is slow: the event comes first
+            return .json(200, older)
+        }
+        let loading = Task { await games.load("g1") }
+        #expect(await eventually { !gate.all.isEmpty })
+        games.handle(.gameStarted(try GameJSON.decoded(GameJSON.game(moves: []))))
+        games.handle(.gameMove(gameId: "g1", move: move, scores: [GameScore(username: "sara.ghazal", score: 1)]))
+        games.handle(.gameTurn(gameId: "g1", username: "niloofar", deadline: .distantFuture))
+        await loading.value
+        #expect(games.game("g1")?.moves.count == 1 && games.game("g1")?.turn?.username == "niloofar")  // the older answer was dropped
     }
 
     @Test func aDuelWaitsForTheFriendAndStartsWhenTheyJoin() async throws {

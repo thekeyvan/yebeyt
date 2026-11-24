@@ -13,6 +13,7 @@ struct LobbyScreen: View {
 private struct LobbyBody: View {
     @Environment(AppModel.self) private var app
     @Environment(FriendGames.self) private var games
+    @Environment(MessagesCenter.self) private var messages
     @State private var model: LobbyModel
     @State private var picking = false
     @State private var busy = false
@@ -108,7 +109,7 @@ private struct LobbyBody: View {
                 style: SegmentedStyle(track: Tokens.Colors.trackLight, trackRadius: 14, trackPadding: 4, itemRadius: 11, fontSize: 12.5, vertical: 7, horizontal: nil, spacing: 4),
                 label: "وقت هر نوبت", idPrefix: "lobbyTurn"
             )
-            Text("«تا فردا» یعنی هر وقت سرت خلوت شد جواب بدی؛ بهت خبر می‌دیم نوبت توئه.")
+            Text("«تا فردا» یعنی هر وقت سرت خلوت شد جواب بدی؛ وقتی نوبتت شد، توی پیام‌ها می‌بینی.")
                 .font(.ui(11.5)).foregroundStyle(Color(hex: 0x8A8698))
         }
     }
@@ -193,7 +194,7 @@ private struct LobbyBody: View {
     /// A tap on a way to share the link makes the game first (the link has its code), with the invitations picked so far.
     private func prepareShare() async -> SharePayload? {
         do {
-            guard let game = try await model.makeGame(using: games) else { return nil }
+            guard let game = try await model.makeGame(using: games, sendText: { await messages.sendText($0, to: $1) }) else { return nil }
             if let line = model.skippedLine { toast = line }
             let url = "https://\(PlayCopy.gameLink(game.code))"
             return SharePayload(text: PlayCopy.gameShare(game: model.game.kind.name, url: url), url: url)
@@ -214,7 +215,7 @@ private struct LobbyBody: View {
             app.play(.challengeRound(game, invite: invite))
         case .friendGame(let kind, _, _):
             do {
-                guard let game = try await model.makeGame(using: games) else { return }
+                guard let game = try await model.makeGame(using: games, sendText: { await messages.sendText($0, to: $1) }) else { return }
                 if let line = model.skippedLine { app.showToast(line) }  // shown over the game
                 app.play(kind == .duel ? .duel(game.id) : .mosh(game.id))
             } catch let error as APIError {

@@ -61,9 +61,12 @@ final class GameDeck: Observable, Sendable {
     }
 
     let couplets: [GameCouplet]
+    /// The keys of the couplets (`GameCouplet.id`), which are what the server accepts in a challenge.
+    let keys: Set<String>
 
     init(couplets: [GameCouplet]) {
         self.couplets = couplets
+        keys = Set(couplets.map(\.id))
     }
 
     /// Reads games.json from the bundle; throws if it is missing or unreadable. `poetNames` maps a poet's slug to
@@ -79,5 +82,6 @@ final class GameDeck: Observable, Sendable {
                 poetName: poetNames[$0.poet] ?? "", bookTitle: $0.bookTitle, bookPath: $0.book ?? "", meaningIsAI: $0.ai == true
             )
         }
+        keys = Set(couplets.map(\.id))
     }
 }

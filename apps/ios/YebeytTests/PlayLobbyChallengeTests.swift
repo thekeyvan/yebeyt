@@ -103,6 +103,49 @@ struct LobbyModelTests {
         #expect(model.skippedLine == "kian_k فقط از دوستاش دعوت به بازی می‌گیره؛ ghost رو پیدا نکردیم")
     }
 
+    @Test func theLinkAndTheButtonTappedTogetherMakeOneGame() async throws {
+        let stub = StubServer { _ in
+            Thread.sleep(forTimeInterval: 0.2)
+            return .json(201, #"{"game":\#(GameJSON.game(id: "made", status: "waiting", turn: nil)),"invited":[],"skipped":[]}"#)
+        }
+        let model = LobbyModel(start: LobbyStart(), session: session(stub))
+        let games = FriendGames(session: session(stub))
+        async let first = model.makeGame(using: games)
+        async let second = model.makeGame(using: games)
+        let both = try await [first, second]
+        #expect(both.map { $0?.id } == ["made", "made"])
+        #expect(stub.requests.filter { $0.path == "/v1/games" }.count == 1)
+    }
+
+    @Test func friendsPickedAfterTheGameWasMadeGetTheLinkInAChat() async throws {
+        let stub = StubServer { _ in
+            .json(201, #"{"game":\#(GameJSON.game(id: "made", status: "waiting", turn: nil)),"invited":["sara.ghazal"],"skipped":[]}"#)
+        }
+        let model = LobbyModel(start: LobbyStart(), session: session(stub))
+        let games = FriendGames(session: session(stub))
+        let sent = Recorded<String>()
+        model.toggle("sara.ghazal")
+        _ = try await model.makeGame(using: games) { text, username in sent.add("\(username): \(text)"); return nil }
+        #expect(sent.all.isEmpty)  // she was in the invitations
+        model.toggle("kian_k")
+        _ = try await model.makeGame(using: games) { text, username in sent.add("\(username): \(text)"); return nil }
+        _ = try await model.makeGame(using: games) { text, username in sent.add("\(username): \(text)"); return nil }
+        #expect(sent.all == ["kian_k: بیا مشاعره کنیم · https://yebeyt.com/g/M4R9"])  // once
+        #expect(stub.requests.filter { $0.path == "/v1/games" }.count == 1)
+    }
+
+    @Test func aFailedMakeIsTriedAgain() async throws {
+        let calls = Recorded<Int>()
+        let stub = StubServer { _ in
+            calls.add(1)
+            return calls.all.count == 1 ? .json(429, #"{"error":"rate_limited"}"#) : .json(201, #"{"game":\#(GameJSON.game(id: "made", status: "waiting", turn: nil)),"invited":[],"skipped":[]}"#)
+        }
+        let model = LobbyModel(start: LobbyStart(), session: session(stub))
+        let games = FriendGames(session: session(stub))
+        await #expect(throws: APIError.self) { _ = try await model.makeGame(using: games) }
+        #expect(try await model.makeGame(using: games)?.id == "made")
+    }
+
     @Test func changingTheGameOrTheTimeMakesANewOneNextTime() async throws {
         let (model, stub) = await lobby()
         let games = FriendGames(session: session(stub))
@@ -264,10 +307,43 @@ struct ChallengeModelTests {
         #expect(sent.authorization == "Bearer debug-access-token" && sent.json["name"] == nil)
     }
 
-    @Test func aSecondResultIsSaidToBeThereAlready() async {
+    @Test func aSecondResultIsDoneNotAFailure() async {
         let stub = StubServer { _ in .json(409, #"{"error":"conflict"}"#) }
         let accept = ChallengeAccept(code: "7KQ2", session: session(stub))
-        #expect(await accept.post(score: 9, seconds: 80, name: nil) == PlayCopy.alreadyAnswered)
+        #expect(await accept.post(score: 9, seconds: 80, name: nil) == nil)
+    }
+
+    @Test func anotherFailureGivesItsLine() async {
+        let stub = StubServer { _ in .json(429, #"{"error":"rate_limited"}"#) }
+        let accept = ChallengeAccept(code: "7KQ2", session: session(stub))
+        #expect(await accept.post(score: 9, seconds: 80, name: nil) == APIError.server(status: 429, code: .rateLimited, allowedAt: nil).persianMessage)
+    }
+
+    @Test func aChallengeIsOpenedOnlyWithAllTenOfItsCoupletsPlayable() {
+        let deck = QuizFixtures.deck()
+        let poets = Set(QuizFixtures.poets.map(\.slug))
+        func challenge(_ game: ChallengeGame, _ keys: [String]) -> Challenge {
+            Challenge(creator: PersonShort(username: "nila", displayName: "نیلوفر", avatar: nil), game: game, items: keys, score: 8, seconds: 90, label: nil)
+        }
+        let keys = deck.couplets.prefix(10).map(\.id)
+        #expect(ChallengeAccept.couplets(for: challenge(.jigsaw, Array(keys)), deck: deck, poets: poets)?.map(\.id) == keys)
+        #expect(ChallengeAccept.couplets(for: challenge(.poet, Array(keys)), deck: deck, poets: poets)?.count == 10)
+        #expect(ChallengeAccept.couplets(for: challenge(.jigsaw, Array(keys.dropLast()) + ["/nowhere/p#0"]), deck: deck, poets: poets) == nil)  // not in the deck
+        #expect(ChallengeAccept.couplets(for: challenge(.jigsaw, Array(keys.dropLast())), deck: deck, poets: poets) == nil)  // nine
+        #expect(ChallengeAccept.couplets(for: challenge(.poet, Array(keys)), deck: deck, poets: ["nobody"]) == nil)  // no poets to choose from
+        let unplayable = GameCouplet(poem: "/x/y", index: 0, m1: "الف", m2: "ب", meaning: nil, poetSlug: "saadi", poetName: "سعدی", bookTitle: "")
+        let short = GameDeck(couplets: Array(deck.couplets.prefix(9)) + [unplayable])
+        #expect(ChallengeAccept.couplets(for: challenge(.jigsaw, short.couplets.map(\.id)), deck: short, poets: poets) == nil)  // one word: a jigsaw can't be made of it
+        #expect(ChallengeAccept.couplets(for: challenge(.poet, short.couplets.map(\.id)), deck: short, poets: poets)?.count == 10)
+    }
+
+    @Test func aRoundOutsideTheDeckIsNoChallenge() {
+        let deck = QuizFixtures.deck()
+        let outside = GameCouplet(poem: "/hafez/ghazal/sh1", index: 0, m1: "الف ب", m2: "ج د ه و", meaning: nil, poetSlug: "hafez", poetName: "حافظ", bookTitle: "")
+        let round = Array(deck.couplets.prefix(9)) + [outside]
+        let offer = ChallengeOffer(game: .jigsaw, couplets: round, score: 5, seconds: 60)
+        #expect(offer?.isInDeck(deck) == false)
+        #expect(ChallengeOffer(game: .jigsaw, couplets: Array(deck.couplets.prefix(10)), score: 5, seconds: 60)?.isInDeck(deck) == true)
     }
 
     @Test func moreThanTheMakersScoreWins() {

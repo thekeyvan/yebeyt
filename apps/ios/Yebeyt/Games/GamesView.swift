@@ -104,12 +104,11 @@ struct GamesView: View {
     }
 
     private func start(_ kind: GameKind) {
-        if let route = kind.route { app.play(route) }
+        app.play(kind.route)
     }
 }
 
-/// A game on the tab: its colour, name and a few words, with its sticker at the corner. The games with friends are
-/// dimmed and open nothing.
+/// A game on the tab: its colour, name and a few words, with its sticker at the corner.
 struct GameCard: View {
     let kind: GameKind
     let open: () -> Void
@@ -126,10 +125,8 @@ struct GameCard: View {
             .frame(maxWidth: .infinity, minHeight: 102, maxHeight: 102, alignment: .leading)
             .sticker(fill: kind.background.0, radius: 24, border: 5, shadow: Tokens.Sticker.Shadow.card)
             .overlay(alignment: .topTrailing) { GameIcon(kind: kind).padding(.trailing, 8).offset(y: -14) }
-            .opacity(kind.isBuilt ? 1 : 0.5)
         }
         .buttonStyle(.plain)
-        .disabled(!kind.isBuilt)
         .accessibilityLabel(kind.name)
         .accessibilityIdentifier("game-\(kind.rawValue)")
     }

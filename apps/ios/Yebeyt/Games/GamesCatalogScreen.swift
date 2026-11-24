@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// GamesCatalog: the nine games with their icons and what they are. The games with friends are dimmed.
+/// GamesCatalog: the nine games with their icons and what they are. The two with friends open the lobby (after the account gate).
 struct GamesCatalogScreen: View {
     @Environment(AppModel.self) private var app
+    @Environment(AccountModel.self) private var account
 
     var body: some View {
         ScrollView {
@@ -42,16 +43,18 @@ struct GamesCatalogScreen: View {
                 RoundedRectangle(cornerRadius: 24).fill(Tokens.Colors.white)
                     .shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 6, x: 0, y: 3)
             }
-            .opacity(kind.isBuilt ? 1 : 0.5)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!kind.isBuilt)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("catalog-\(kind.rawValue)")
     }
 
     private func open(_ kind: GameKind) {
-        if let route = kind.route { app.play(route) }
+        if kind == .mosh || kind == .duel {
+            account.require(.games) { app.play(kind.route) }
+        } else {
+            app.play(kind.route)
+        }
     }
 }

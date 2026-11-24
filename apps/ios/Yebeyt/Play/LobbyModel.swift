@@ -61,14 +61,20 @@ final class LobbyModel {
     static let shownFriends = 3
 
     var game: LobbyGame {
-        didSet { if game != oldValue { made = nil } }
+        didSet { if game != oldValue { discardMade() } }
     }
     var turnSeconds = 86_400 {
-        didSet { if turnSeconds != oldValue { made = nil } }
+        didSet { if turnSeconds != oldValue { discardMade() } }
     }
     private(set) var selected: [String]
     /// The game made for the link or the button; the second tap uses it instead of making another.
     private(set) var made: FriendGame?
+    /// Who the server sent an invitation to when the game was made, and who got the link as a chat message since.
+    private var invited: Set<String> = []
+    /// The game being made: a second tap (the link, then the button) waits for it instead of making another.
+    @ObservationIgnored private var creating: Task<GameCreated, any Error>?
+    /// Which settings a game was made for: a game made for earlier settings is dropped when it comes back.
+    @ObservationIgnored private var generation = 0
     /// Who could not be invited when it was made: «سارا» takes invitations only from friends.
     private(set) var skipped: [GameCreated.Skipped] = []
     private var friends: [PersonShort] = []
@@ -120,14 +126,53 @@ final class LobbyModel {
 
     // MARK: Making the game
 
-    /// The game that waits for the friend, made once: the link and the button share it. Nil for a challenge (made after the round).
-    func makeGame(using games: FriendGames) async throws -> FriendGame? {
+    /// A game made for other settings is forgotten. The server has no way to end a game that waits (it expires by itself
+    /// after a week, its code is free again then), so the old one is left; the next share or «بساز» makes a new one.
+    private func discardMade() {
+        made = nil
+        creating = nil
+        invited = []
+        skipped = []
+        generation += 1
+    }
+
+    /// The game that waits for the friend, made once: the link and the button share it, also when both are tapped before the
+    /// server answers. Friends picked after it was made get the link as a chat message (`sendText(text, username)` returns a
+    /// line when it failed). Nil for a challenge (made after the round).
+    func makeGame(using games: FriendGames, sendText: @MainActor (String, String) async -> String? = { _, _ in nil }) async throws -> FriendGame? {
         guard case .friendGame(let kind, let seconds, let invite) = plan else { return nil }
-        if let made { return made }
-        let created = try await games.create(kind: kind, turnSeconds: seconds, invite: invite)
-        made = created.game
-        skipped = created.skipped
-        return created.game
+        if made == nil {
+            let ticket = generation
+            let task = creating ?? Task { @MainActor in try await games.create(kind: kind, turnSeconds: seconds, invite: invite) }
+            creating = task
+            let created: GameCreated
+            do {
+                created = try await task.value
+            } catch {
+                if ticket == generation { creating = nil }  // a failed try is tried again next time
+                throw error
+            }
+            guard ticket == generation else { return created.game }  // the settings changed meanwhile: this one is not the lobby's
+            if made == nil {
+                made = created.game
+                invited = Set(created.invited)
+                skipped = created.skipped
+            }
+            creating = nil
+        }
+        guard let game = made else { return nil }
+        await inviteLate(to: game, sendText: sendText)
+        return game
+    }
+
+    /// Friends picked after the game was made were not in its invitations: they get the link in a chat.
+    private func inviteLate(to game: FriendGame, sendText: @MainActor (String, String) async -> String?) async {
+        let url = "https://\(PlayCopy.gameLink(game.code))"
+        let text = PlayCopy.gameShare(game: self.game.kind.name, url: url)
+        for username in selected where !invited.contains(username) && !skipped.contains(where: { $0.username == username }) {
+            invited.insert(username)
+            if await sendText(text, username) != nil { invited.remove(username) }
+        }
     }
 
     /// The line for the people who were not invited (nil when everybody was): the game is made anyway, and its link works.

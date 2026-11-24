@@ -149,6 +149,8 @@ class GlossaryNormalize(unittest.TestCase):
     def test_diacritics_arabic_letters_and_half_spaces(self):
         self.assertEqual(glossary.normalize("كأسًا"), "کاسا")
         self.assertEqual(glossary.normalize("يَد"), "ید")
+        # ئ ٱ ۀ fold as in the app's TextNormalizer and the server's normalizeText
+        self.assertEqual(glossary.normalize("جزئی خانۀ ٱلله"), "جزیی خانه الله")
         self.assertEqual(glossary.normalize("می\u200cکند، آری"), "می کند اری")
 
 

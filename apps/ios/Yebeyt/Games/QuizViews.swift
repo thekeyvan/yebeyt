@@ -60,6 +60,8 @@ struct QuizCoupletCard: View {
     var secondShown = true
     /// مصراع دوم: the poet's name on a magenta sticker.
     var tag: String?
+    /// The tag's colour: the poet's magenta in the solo games, ink in رودررو.
+    var tagColor = Tokens.Colors.magenta
     /// از کدوم کتاب؟: the poet's chip.
     var chip: LibraryPoet?
 
@@ -86,7 +88,7 @@ struct QuizCoupletCard: View {
         .overlay(alignment: .topTrailing) {
             if let tag {
                 Text(tag).font(.title(14)).foregroundStyle(Tokens.Colors.white).padding(.top, 2).padding(.horizontal, 11)
-                    .sticker(fill: Tokens.Colors.magenta, radius: Tokens.Sticker.Radius.pill, border: 3, shadow: ShadowToken(y: 2, blur: 6, opacity: 0.22))
+                    .sticker(fill: tagColor, radius: Tokens.Sticker.Radius.pill, border: 3, shadow: ShadowToken(y: 2, blur: 6, opacity: 0.22))
                     .tilted(-5)
                     .padding(.trailing, 18)
                     .offset(y: -16)

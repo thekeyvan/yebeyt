@@ -19,6 +19,7 @@ struct ChallengeAcceptScreen: View {
     private struct Inner: View {
         @Environment(AppModel.self) private var app
         @Environment(GameDeck.self) private var deck
+        @Environment(Library.self) private var library
         @State private var accept: ChallengeAccept
         @State private var playing = false
 
@@ -32,7 +33,11 @@ struct ChallengeAcceptScreen: View {
                 case .loading: GameLoadingView()
                 case .failed(let line): failure(line)
                 case .ready(let challenge):
-                    if playing { play(challenge) } else { board(challenge) }
+                    if let items = ChallengeAccept.couplets(for: challenge, deck: deck, poets: Set(library.poets.map(\.slug))) {
+                        if playing { play(challenge, items) } else { board(challenge) }
+                    } else {
+                        failure(PlayCopy.challengeNotOpened)  // never a round made of other couplets
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -51,17 +56,11 @@ struct ChallengeAcceptScreen: View {
             .padding(.horizontal, 18).padding(.top, 8)
         }
 
-        /// The ten couplets of the challenge, found in the game deck by their keys.
-        private func couplets(_ challenge: Challenge) -> [GameCouplet] {
-            let byKey = Dictionary(deck.couplets.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            return challenge.items.compactMap { byKey[$0] }
-        }
-
-        @ViewBuilder private func play(_ challenge: Challenge) -> some View {
+        @ViewBuilder private func play(_ challenge: Challenge, _ items: [GameCouplet]) -> some View {
             let answer = ChallengeAnswer(accept: accept, challenge: challenge)
             switch challenge.game {
-            case .jigsaw: JigsawScreen(start: .items(couplets(challenge)), answering: answer)
-            case .poet: QuizScreen(start: .poetItems(couplets(challenge)), answering: answer)
+            case .jigsaw: JigsawScreen(start: .items(items), answering: answer)
+            case .poet: QuizScreen(start: .poetItems(items), answering: answer)
             }
         }
 
@@ -143,7 +142,7 @@ struct ChallengeEndScreen: View {
     @State private var name = ""
     @State private var line: String?
 
-    private enum Phase { case starting, naming, sending, done }
+    private enum Phase: Equatable { case starting, naming, sending, done, failed(String) }
 
     private var mine: Int { summary.right }
     private var theirs: Int { answering.challenge.score }
@@ -151,7 +150,11 @@ struct ChallengeEndScreen: View {
 
     var body: some View {
         RoundEndScreen(summary: decorated) {
-            if phase == .naming || phase == .sending { nameCard }
+            switch phase {
+            case .naming, .sending: nameCard
+            case .failed(let line): retryCard(line)
+            case .starting, .done: EmptyView()
+            }
         }
         .task { await start() }
     }
@@ -166,18 +169,31 @@ struct ChallengeEndScreen: View {
         return shown
     }
 
+    /// With an account the result goes at once; a guest is asked for a name first.
     private func start() async {
         guard phase == .starting else { return }
-        if answering.accept.asksName { phase = .naming; return }
-        phase = .sending
-        line = await answering.accept.post(score: mine, seconds: seconds, name: nil)
-        phase = line == nil ? .done : .naming
+        if answering.accept.asksName { phase = .naming } else { await send() }
     }
 
+    /// Sends the result once at a time. A guest whose send failed is back at the name (with the line); a signed-in player
+    /// has no name to give and gets a retry.
     private func send() async {
+        guard phase != .sending, phase != .done else { return }
         phase = .sending
-        line = await answering.accept.post(score: mine, seconds: seconds, name: name)
-        phase = line == nil ? .done : .naming
+        line = await answering.accept.post(score: mine, seconds: seconds, name: answering.accept.asksName ? name : nil)
+        if let line { phase = answering.accept.asksName ? .naming : .failed(line) } else { phase = .done }
+    }
+
+    private func retryCard(_ line: String) -> some View {
+        VStack(spacing: 10) {
+            Text(line).font(.ui(13)).foregroundStyle(Tokens.Colors.fire).accessibilityIdentifier("challengeError")
+            Button("دوباره") { Task { await send() } }
+                .buttonStyle(GameBigButtonStyle(height: 56, border: 4, fontSize: 21))
+                .accessibilityIdentifier("challengeResultRetry")
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 26).fill(Tokens.Colors.white).shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 6, x: 0, y: 3))
     }
 
     private var nameCard: some View {

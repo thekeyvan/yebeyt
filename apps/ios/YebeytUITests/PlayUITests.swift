@@ -65,6 +65,25 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(element(app, "lobby").waitForExistence(timeout: 10))
     }
 
+    @MainActor func testTheCatalogsMoshCardOpensTheLobbyWithMoshPicked() {
+        let app = launch(["-beytRoute", "games-catalog"])
+        let card = app.buttons["catalog-mosh"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10))
+        card.tap()
+        XCTAssertTrue(element(app, "lobby").waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["lobbyGame-mosh"].isSelected)
+        XCTAssertFalse(app.buttons["lobbyGame-duel"].isSelected)
+    }
+
+    @MainActor func testAGuestTappingTheCatalogsDuelCardSeesTheGate() {
+        let app = launch(["-beytRoute", "games-catalog"], signedIn: false)
+        let card = app.buttons["catalog-duel"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10))
+        card.tap()
+        XCTAssertTrue(app.staticTexts["gateTitle"].waitForExistence(timeout: 10))
+        XCTAssertFalse(element(app, "lobby").exists)
+    }
+
     // MARK: PlayMosh
 
     @MainActor func testPickingASuggestionPlaysItAndTheAnswerArrivesLive() {

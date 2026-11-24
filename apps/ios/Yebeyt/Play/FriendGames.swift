@@ -15,6 +15,10 @@ final class FriendGames {
     /// A line to show for a moment over the tabs (a guest answered my challenge).
     @ObservationIgnored var toast: (@MainActor (String) -> Void)?
     @ObservationIgnored private let now: @MainActor () -> Date
+    /// A counter that orders what happens here: a read (or a move's answer) that was asked for before a live event came is older
+    /// than that event, and must not put the game back.
+    @ObservationIgnored private var tick = 0
+    @ObservationIgnored private var touched: [String: Int] = [:]
 
     init(session: Session, now: @escaping @MainActor () -> Date = { .now }) {
         self.session = session
@@ -38,16 +42,18 @@ final class FriendGames {
     // MARK: Reading
 
     func refreshMine() async {
+        let ticket = nextTick()
         guard let list = try? await session.authorized({ try await self.session.api.myGames(token: $0) }) else { return }
         mineIDs = list.map(\.id)
-        for game in list { store(game) }
+        for game in list { store(game, asked: ticket) }
     }
 
     /// One game with its couplets or rounds. Nothing changes when it can't be read.
     @discardableResult
     func load(_ id: String) async -> FriendGame? {
+        let ticket = nextTick()
         if let game = try? await session.authorized({ try await self.session.api.game(id: id, token: $0) }) {
-            store(game)
+            store(game, asked: ticket)
         }
         return games[id]
     }
@@ -70,8 +76,9 @@ final class FriendGames {
     /// «بزن بریم»: takes the seat by the game's id. Returns the line to show when it failed.
     func join(_ id: String) async -> String? {
         do {
+            let ticket = nextTick()
             let game = try await session.authorized { try await self.session.api.joinGame(id: id, token: $0) }
-            store(game)
+            store(game, asked: ticket)
             return nil
         } catch let error as APIError {
             return PlayCopy.gameError(error)
@@ -84,10 +91,11 @@ final class FriendGames {
     func play(_ candidate: MoshCandidate, in id: String) async -> String? {
         let letter = games[id].flatMap { MoshState(game: $0, me: me ?? "").requiredLetter }
         do {
+            let ticket = nextTick()
             let game = try await session.authorized {
                 try await self.session.api.playMove(gameId: id, key: candidate.key, m1: candidate.couplet.m1, m2: candidate.couplet.m2, token: $0)
             }
-            store(game)
+            store(game, asked: ticket)
             return nil
         } catch let error as APIError {
             if error.code == .turnOver || error.code == .notYourTurn || error.code == .gameNotActive { await load(id) }  // the game moved on
@@ -100,8 +108,9 @@ final class FriendGames {
     /// «کم آوردم»: the other player wins.
     func resign(_ id: String) async -> String? {
         do {
+            let ticket = nextTick()
             let game = try await session.authorized { try await self.session.api.resign(gameId: id, token: $0) }
-            store(game)
+            store(game, asked: ticket)
             return nil
         } catch let error as APIError {
             if error.code == .gameNotActive { await load(id) }
@@ -129,12 +138,21 @@ final class FriendGames {
     func answer(_ option: Int, in id: String) async {
         guard var state = duel(id), state.choose(option), let round = state.question?.round else { return }
         duels[id] = state
-        _ = await sendLive?(LiveEvent.duelAnswerFrame(gameId: id, round: round, option: option))
+        let sent = await sendLive?(LiveEvent.duelAnswerFrame(gameId: id, round: round, option: option)) ?? false
+        guard !sent, var again = duels[id], again.chosen == option, again.question?.round == round else { return }
+        again.undoChoice()  // the answer did not leave the phone: the choice is taken back and can be made again
+        duels[id] = again
+        toast?(PlayCopy.answerNotSent)
     }
 
     // MARK: Events
 
     func handle(_ event: LiveEvent) {
+        switch event {
+        case .gameStarted(let game): touched[game.id] = nextTick()
+        case .gameMove(let id, _, _), .gameTurn(let id, _, _), .gameEnded(let id, _, _, _, _): touched[id] = nextTick()
+        default: break
+        }
         switch event {
         case .gameStarted(let game):
             store(game)
@@ -180,7 +198,13 @@ final class FriendGames {
     }
 
     /// Keeps what a list or an event brought, with the couplets and rounds the game already had when the new one has none.
-    private func store(_ game: FriendGame) {
+    private func nextTick() -> Int {
+        tick += 1
+        return tick
+    }
+
+    private func store(_ game: FriendGame, asked ticket: Int? = nil) {
+        if let ticket, (touched[game.id] ?? 0) > ticket { return }  // an event came after this was asked: it is the older word
         var merged = game
         if let old = games[game.id] {
             if game.moves.isEmpty { merged.moves = old.moves }

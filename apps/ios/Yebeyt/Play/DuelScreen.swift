@@ -90,6 +90,7 @@ struct DuelScreen: View {
                     .overlay(Capsule().strokeBorder(Tokens.Colors.white, lineWidth: 3))
                     .shadow(color: Tokens.Colors.ink.opacity(0.18), radius: 4, x: 0, y: 2)
                     .accessibilityLabel("زمان")
+                    .accessibilityValue(PersianDigits.clock(state.secondsLeft(now: now)))
                     .accessibilityIdentifier("duelTime")
             }
         }
@@ -157,7 +158,7 @@ struct DuelScreen: View {
         let couplet = GameCouplet(poem: "", index: 0, m1: question.m1, m2: question.m2 ?? "", meaning: nil, poetSlug: "", poetName: question.poet ?? "", bookTitle: "")
         return Group {
             switch question.kind {
-            case .second: QuizCoupletCard(couplet: couplet, secondShown: false, tag: question.poet)
+            case .second: QuizCoupletCard(couplet: couplet, secondShown: false, tag: question.poet, tagColor: Tokens.Colors.ink)
             case .poet: QuizCoupletCard(couplet: couplet)
             case .book: QuizCoupletCard(couplet: couplet, chip: library.poets.first { $0.name == question.poet })
             }

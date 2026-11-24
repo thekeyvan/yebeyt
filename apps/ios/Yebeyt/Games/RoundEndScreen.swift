@@ -5,6 +5,7 @@ import SwiftUI
 struct RoundEndScreen<Card: View>: View {
     @Environment(AppModel.self) private var app
     @Environment(Session.self) private var session
+    @Environment(GameDeck.self) private var deck
     let summary: RoundSummary
     let card: Card
 
@@ -13,7 +14,7 @@ struct RoundEndScreen<Card: View>: View {
         self.card = card()
     }
 
-    private var offer: ChallengeOffer? { session.isSignedIn ? summary.offer : nil }
+    private var offer: ChallengeOffer? { session.isSignedIn ? summary.offer.flatMap { $0.isInDeck(deck) ? $0 : nil } : nil }
 
     var body: some View {
         ScrollView {

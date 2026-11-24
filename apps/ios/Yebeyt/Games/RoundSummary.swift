@@ -50,6 +50,9 @@ struct ChallengeOffer: Equatable {
 
     static let itemCount = 10
 
+    /// The server takes only couplets of the game deck: a round with one from a poem the reader had open is no challenge.
+    func isInDeck(_ deck: GameDeck) -> Bool { items.allSatisfy(deck.keys.contains) }
+
     /// The offer of a round of `couplets`; nil unless there are exactly ten.
     init?(game: ChallengeGame, couplets: [GameCouplet], score: Int, seconds: Int) {
         guard couplets.count == Self.itemCount, let first = couplets.first else { return nil }
