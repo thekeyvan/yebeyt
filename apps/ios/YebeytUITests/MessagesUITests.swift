@@ -49,6 +49,29 @@ final class MessagesUITests: XCTestCase {
         XCTAssertFalse((composer.value as? String ?? "").contains("salam"))  // the field is empty again
     }
 
+    @MainActor func testTheRequestsRowOpensTheRequestsAndAcceptingOneLowersTheCount() {
+        let app = launch(["-beytRoute", "inbox"])
+        let row = element(app, "requestsRow")
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        XCTAssertTrue(row.label.contains("درخواست‌های دوستی") && row.label.contains("۲"))
+        row.tap()
+
+        XCTAssertTrue(app.buttons["accept-aryan"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["reject-bardia"].exists)
+        XCTAssertTrue(app.buttons["cancel-paria"].exists, "what I sent is in its own section")
+        app.buttons["accept-aryan"].tap()
+        let gone = NSPredicate(format: "exists == false")
+        expectation(for: gone, evaluatedWith: app.buttons["accept-aryan"])
+        waitForExpectations(timeout: 10)
+
+        app.buttons["reject-bardia"].tap()
+        expectation(for: gone, evaluatedWith: app.buttons["reject-bardia"])
+        waitForExpectations(timeout: 10)
+        app.buttons["back"].tap()
+        expectation(for: gone, evaluatedWith: element(app, "requestsRow"))
+        waitForExpectations(timeout: 10)
+    }
+
     @MainActor func testTheComposeButtonFindsAPersonAndOpensTheirChat() {
         let app = launch(["-beytRoute", "inbox"])
         let compose = element(app, "inboxCompose")

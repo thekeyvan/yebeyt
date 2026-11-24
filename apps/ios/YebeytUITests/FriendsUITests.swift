@@ -18,7 +18,7 @@ final class FriendsUITests: XCTestCase {
         app.descendants(matching: .any)[identifier]
     }
 
-    @MainActor func testHomeLeadsToFindingAFriendAndFollowingThem() {
+    @MainActor func testHomeLeadsToFindingAPersonAndAskingThemToBeFriends() {
         let app = launch(["-beytTab", "home"])
         let find = app.buttons["پیدا کردن دوست"]
         XCTAssertTrue(find.waitForExistence(timeout: 10))
@@ -27,15 +27,53 @@ final class FriendsUITests: XCTestCase {
         let field = app.textFields.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 10))
         field.tap()
-        field.typeText("ki")
+        field.typeText("ra")
 
-        let follow = app.buttons["follow-kian_k"]
-        XCTAssertTrue(follow.waitForExistence(timeout: 10))
-        XCTAssertEqual(follow.label, "دنبال کن")
-        follow.tap()
-        let following = NSPredicate(format: "label == %@", "دنبالش می‌کنی")
-        expectation(for: following, evaluatedWith: follow)
+        let ask = app.buttons["friend-raha"]
+        XCTAssertTrue(ask.waitForExistence(timeout: 10))
+        XCTAssertEqual(ask.label, "درخواست دوستی")
+        ask.tap()
+        let sent = NSPredicate(format: "label == %@", "درخواست فرستادی")
+        expectation(for: sent, evaluatedWith: ask)
         waitForExpectations(timeout: 10)
+
+        ask.tap()  // a tap on it cancels, with no question
+        let again = NSPredicate(format: "label == %@", "درخواست دوستی")
+        expectation(for: again, evaluatedWith: ask)
+        waitForExpectations(timeout: 10)
+    }
+
+    @MainActor func testAPersonsPageShowsTheButtonsOfTheirFriendship() {
+        let none = launch(["-beytRoute", "person:raha"])
+        XCTAssertTrue(none.buttons["person-send"].waitForExistence(timeout: 10))
+        XCTAssertEqual(none.buttons["person-send"].label, "درخواست دوستی")
+        none.terminate()
+
+        let incoming = launch(["-beytRoute", "person:aryan"])
+        XCTAssertTrue(incoming.buttons["person-accept"].waitForExistence(timeout: 10))
+        XCTAssertEqual(incoming.buttons["person-reject"].label, "رد")
+        incoming.buttons["person-accept"].tap()
+        XCTAssertTrue(element(incoming, "personFriendChip").waitForExistence(timeout: 10))
+        XCTAssertFalse(incoming.buttons["person-accept"].exists)
+    }
+
+    @MainActor func testRemovingAFriendAsksFirst() {
+        let app = launch(["-beytRoute", "person:kian_k"])
+        XCTAssertTrue(element(app, "personFriendChip").waitForExistence(timeout: 10))
+        app.buttons["personMenu"].tap()
+        app.buttons["حذف از دوستا"].tap()
+        XCTAssertTrue(app.staticTexts["unfriendTitle"].waitForExistence(timeout: 10))
+        XCTAssertEqual(plain(app.staticTexts["unfriendTitle"].label), "کیان از دوستات حذف بشه؟")
+        app.buttons["unfriendCancel"].tap()
+        XCTAssertTrue(element(app, "personFriendChip").waitForExistence(timeout: 10), "«نه» keeps the friend")
+
+        app.buttons["personMenu"].tap()
+        app.buttons["حذف از دوستا"].tap()
+        let confirm = app.buttons["unfriendConfirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        confirm.tap()
+        XCTAssertTrue(app.buttons["person-send"].waitForExistence(timeout: 10))
+        XCTAssertFalse(element(app, "personFriendChip").exists)
     }
 
     @MainActor func testTheLeaderboardHasThreeTabs() {
@@ -64,7 +102,7 @@ final class FriendsUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["blockTitle"].waitForExistence(timeout: 10))
         XCTAssertEqual(plain(app.staticTexts["blockTitle"].label), "سارا بلاک بشه؟")
-        XCTAssertTrue(app.staticTexts["دیگه نمی‌تونه بهت پیام بده یا دنبالت کنه."].exists)
+        XCTAssertTrue(app.staticTexts["دیگه نمی‌تونه بهت پیام بده یا درخواست دوستی بفرسته."].exists)
         app.buttons["blockCancel"].tap()
         XCTAssertTrue(element(app, "personName").waitForExistence(timeout: 10), "«نه» stays on the page")
 
