@@ -4,7 +4,7 @@ import { dailyResults, privacySettings, scoreEvents, SOLO_GAMES, users } from ".
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { joinLeague, leagueOf, nextTierOf } from "../leagues.js";
-import { friendIdsOf, shortPersonSchema } from "../people.js";
+import { friendIds, shortPersonSchema } from "../people.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
 import { GAME_CAPS, streakOf, totalPointsOf, weekPointsOf } from "../scores.js";
@@ -159,7 +159,7 @@ export function scoreRoutes(deps: Deps) {
       tags: ["scores"],
       summary: "How my friends did in a day's puzzle",
       description:
-        "Friends (people who follow each other) who reported that day, solved first, then by fewer tries, up to 100. A friend whose `dailyVisibility` is `me` is left out, " +
+        "Friends who reported that day, solved first, then by fewer tries, up to 100. A friend whose `dailyVisibility` is `me` is left out, " +
         "and not counted. `solvedCount` is how many of the listed friends solved it.",
       security,
       request: { params: z.object({ date: dateSchema }) },
@@ -186,7 +186,7 @@ export function scoreRoutes(deps: Deps) {
         .where(
           and(
             eq(dailyResults.date, date),
-            sql`${dailyResults.userId} in ${friendIdsOf(c.get("userId"))}`,
+            sql`${dailyResults.userId} in ${friendIds(c.get("userId"))}`,
             sql`coalesce(${privacySettings.dailyVisibility}, 'friends') <> 'me'`,
           ),
         )

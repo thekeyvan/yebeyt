@@ -4,7 +4,7 @@ import { unionAll } from "drizzle-orm/pg-core";
 import { dailyResults, reactions, users } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { errorResponse } from "../errors.js";
-import { friendIdsOf, shortPersonSchema } from "../people.js";
+import { friendIds, shortPersonSchema } from "../people.js";
 import { newRouter } from "../router.js";
 import { coupletKeySchema } from "../schemas.js";
 
@@ -49,7 +49,7 @@ export function feedRoutes(deps: Deps) {
       tags: ["feed"],
       summary: "What my friends did: the home «دوستات» feed",
       description:
-        "Newest first, 30 a page, from friends only (people who follow each other). A friend's likes and reposts are shown only when their `keptVisibility` is `friends` (the switch that also hides their divan). " +
+        "Newest first, 30 a page, from friends only. A friend's likes and reposts are shown only when their `keptVisibility` is `friends` (the switch that also hides their divan). " +
         "Their solved daily puzzles are shown only when their `dailyVisibility` is `friends`. Taking back a like, or ending the friendship, removes the item.",
       security,
       request: { query: z.object({ cursor: cursorSchema.optional() }) },
@@ -63,7 +63,7 @@ export function feedRoutes(deps: Deps) {
       const me = c.get("userId");
       const given = c.req.valid("query").cursor;
       const cursor = given ? parseCursor(given)! : null;
-      const friends = friendIdsOf(me);
+      const friends = friendIds(me);
 
       // Both kinds of item come out as the same columns. `tie` is compared as bytes ("C"), so the order is the same everywhere.
       const tieOf = (expr: SQL) => sql<string>`(${expr}) collate "C"`;

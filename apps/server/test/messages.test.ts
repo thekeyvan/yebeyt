@@ -14,8 +14,7 @@ type Msg = { id: string; conversationId: string; kind: string; fromMe: boolean; 
 type Page = { items: Msg[]; nextBefore: string | null; otherReadMessageId: string | null };
 
 const befriend = async (a: User, b: User) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+  await h.befriend(a, b);
 };
 const pair = async () => {
   const ali = await h.signUp("ali");
@@ -99,7 +98,7 @@ describe("POST /v1/conversations/{id}/messages", () => {
 
   it("re-checks blocks and «بهم پیام بده» on every send", async () => {
     const { ali, sara, id } = await pair();
-    await h.request("/v1/follows/ali", { method: "DELETE", token: sara.token });
+    await h.request("/v1/friends/ali", { method: "DELETE", token: sara.token });
     const closed = await text(ali, id, "hi");
     expect(closed.status).toBe(403);
     expect(await closed.json()).toEqual({ error: "messages_closed" });
@@ -114,7 +113,7 @@ describe("POST /v1/conversations/{id}/messages", () => {
   it("lets a person answer someone who wrote to them, even when «بهم پیام بده» would refuse", async () => {
     const { ali, sara, id } = await pair();
     await text(sara, id, "first"); // sara wrote while they were friends
-    await h.request("/v1/follows/ali", { method: "DELETE", token: sara.token });
+    await h.request("/v1/friends/ali", { method: "DELETE", token: sara.token });
     // ali takes messages from friends only and sara is no friend; sara has written, but ali has not.
     expect((await text(sara, id, "again")).status).toBe(403);
     expect((await text(ali, id, "reply")).status).toBe(201); // ali answers sara, whose setting would refuse a stranger

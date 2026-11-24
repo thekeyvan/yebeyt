@@ -13,8 +13,7 @@ const score = (token: string, points: number) =>
   h.request("/v1/scores", { method: "POST", token, json: { roundId: randomUUID(), game: "poet", points, playedAt: h.clock.time.toISOString() } });
 type User = { token: string; username: string };
 const befriend = async (a: User, b: User) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+  await h.befriend(a, b);
 };
 
 describe("GET /v1/users/{username}", () => {
@@ -34,23 +33,24 @@ describe("GET /v1/users/{username}", () => {
     const res = await profile(ali.token, "SARA");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
-      username: "sara", displayName: "سارا", avatar, friendsCount: 0, isFollowing: false, followsYou: false, isFriend: false, canMessage: false, league: null, weekPoints: null,
+      username: "sara", displayName: "سارا", avatar, friendsCount: 0, friendship: "none", isFriend: false, canMessage: false, league: null, weekPoints: null,
     });
   });
 
-  it("counts friends (mutual follows only) and shows how we follow each other", async () => {
+  it("counts friends (accepted only) and shows where we stand", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara");
     const reza = await h.signUp("reza");
     const nima = await h.signUp("nima");
     await befriend(sara, reza);
     await befriend(sara, nima);
-    await h.request("/v1/follows/sara", { method: "PUT", token: ali.token }); // one way
+    await h.request("/v1/friend-requests/sara", { method: "POST", token: ali.token }); // pending
     const seen = await (await profile(ali.token, "sara")).json();
-    expect(seen).toMatchObject({ friendsCount: 2, isFollowing: true, followsYou: false, isFriend: false });
-    await h.request("/v1/follows/ali", { method: "PUT", token: sara.token });
-    expect(await (await profile(ali.token, "sara")).json()).toMatchObject({ friendsCount: 3, isFriend: true, followsYou: true });
-    expect(await (await profile(sara.token, "ali")).json()).toMatchObject({ friendsCount: 1, isFollowing: true, followsYou: true });
+    expect(seen).toMatchObject({ friendsCount: 2, friendship: "requested", isFriend: false });
+    expect(await (await profile(sara.token, "ali")).json()).toMatchObject({ friendship: "incoming", isFriend: false });
+    await h.request("/v1/friend-requests/ali/accept", { method: "POST", token: sara.token });
+    expect(await (await profile(ali.token, "sara")).json()).toMatchObject({ friendsCount: 3, friendship: "friends", isFriend: true });
+    expect(await (await profile(sara.token, "ali")).json()).toMatchObject({ friendsCount: 1, friendship: "friends", isFriend: true });
   });
 
   describe("canMessage", () => {
@@ -77,8 +77,8 @@ describe("GET /v1/users/{username}", () => {
       await befriend(ali, sara);
       const id = ((await (await open(sara, "ali")).json()) as { id: string }).id;
       await write(sara, id, "salam");
-      await h.request("/v1/follows/ali", { method: "DELETE", token: sara.token });
-      await h.request("/v1/follows/sara", { method: "DELETE", token: ali.token });
+      await h.request("/v1/friends/ali", { method: "DELETE", token: sara.token });
+      await h.request("/v1/friends/sara", { method: "DELETE", token: ali.token });
       expect(await can(ali, "sara")).toBe(true); // sara wrote here; ali answers even though sara takes friends only
       expect(await can(sara, "ali")).toBe(false); // ali has not written, and takes friends' messages only
     });
@@ -169,17 +169,17 @@ describe("GET /v1/users/search", () => {
     expect((await h.request("/v1/users/search", { token: me.token })).status).toBe(400);
   });
 
-  it("returns at most 20, with the names, avatar and follow state", async () => {
+  it("returns at most 20, with the names, avatar and friendship state", async () => {
     const me = await h.signUp("zed");
     for (let i = 0; i < 25; i++) await h.signUp(`pal${String(i).padStart(2, "0")}`);
     const sara = await h.signUp("palsara", { displayName: "سارا" });
     await befriend(me, sara);
-    await h.request("/v1/follows/pal00", { method: "PUT", token: me.token });
+    await h.request("/v1/friend-requests/pal00", { method: "POST", token: me.token });
     const { items } = (await (await search(me.token, "pal")).json()) as { items: Record<string, unknown>[] };
     expect(items).toHaveLength(20);
-    expect(items[0]).toEqual({ username: "pal00", displayName: null, avatar: null, isFollowing: true, isFriend: false });
+    expect(items[0]).toEqual({ username: "pal00", displayName: null, avatar: null, friendship: "requested", isFriend: false });
     const found = ((await (await search(me.token, "palsa")).json()) as { items: unknown[] }).items;
-    expect(found).toEqual([{ username: "palsara", displayName: "سارا", avatar: null, isFollowing: true, isFriend: true }]);
+    expect(found).toEqual([{ username: "palsara", displayName: "سارا", avatar: null, friendship: "friends", isFriend: true }]);
   });
 
   it("does not take a profile for the search: a user named like it is unknown", async () => {
@@ -195,7 +195,7 @@ describe("GET /v1/users/search", () => {
     h.logs.length = 0;
     await profile(me.token, "secretname");
     await search(me.token, "secret");
-    await h.request("/v1/follows/secretname", { method: "PUT", token: me.token });
+    await h.request("/v1/friend-requests/secretname", { method: "POST", token: me.token });
     expect(h.logs.join("\n")).not.toContain("secret");
     expect(h.logs.some((l) => l.startsWith("GET /v1/users/:username 200 "))).toBe(true);
   });

@@ -155,19 +155,34 @@ export const feedbackAttachments = pgTable(
 
 const userRef = (name: string) => uuid(name).notNull().references(() => users.id, { onDelete: "cascade" });
 
-/** `followerId` follows `followeeId`. Two people who follow each other are friends. */
-export const follows = pgTable(
-  "follows",
+/** Accepted friends. One row per pair, kept in order (`userLow` < `userHigh`). */
+export const friendships = pgTable(
+  "friendships",
   {
-    followerId: userRef("follower_id"),
-    followeeId: userRef("followee_id"),
+    userLow: userRef("user_low"),
+    userHigh: userRef("user_high"),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
   (t) => [
-    primaryKey({ columns: [t.followerId, t.followeeId] }),
-    check("follows_not_self", sql`${t.followerId} <> ${t.followeeId}`),
-    index("follows_follower_created").on(t.followerId, t.createdAt, t.followeeId),
-    index("follows_followee_created").on(t.followeeId, t.createdAt, t.followerId),
+    primaryKey({ columns: [t.userLow, t.userHigh] }),
+    check("friendships_order", sql`${t.userLow} < ${t.userHigh}`),
+    index("friendships_high").on(t.userHigh),
+  ],
+);
+
+/** `fromId` asked `toId` to be friends and waits for an answer. A request goes away when it is accepted, rejected, cancelled or blocked. */
+export const friendRequests = pgTable(
+  "friend_requests",
+  {
+    fromId: userRef("from_id"),
+    toId: userRef("to_id"),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.fromId, t.toId] }),
+    check("friend_requests_not_self", sql`${t.fromId} <> ${t.toId}`),
+    index("friend_requests_to_created").on(t.toId, t.createdAt, t.fromId),
+    index("friend_requests_from_created").on(t.fromId, t.createdAt, t.toId),
   ],
 );
 
@@ -270,7 +285,7 @@ export const reactions = pgTable(
   ],
 );
 
-/** `blockerId` blocked `blockedId`: neither can follow, message or share a divan with the other, and they do not see each other's profile. */
+/** `blockerId` blocked `blockedId`: neither can send a friend request, message or share a divan with the other, and they do not see each other's profile. */
 export const blocks = pgTable(
   "blocks",
   {

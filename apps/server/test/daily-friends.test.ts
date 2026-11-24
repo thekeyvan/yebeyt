@@ -8,8 +8,7 @@ beforeEach(async () => {
 
 type User = { token: string; username: string };
 const befriend = async (a: User, b: User) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+  await h.befriend(a, b);
 };
 const daily = (u: User, solved: boolean, tries: number, date = "2026-06-01") =>
   h.request("/v1/daily", { method: "POST", token: u.token, json: { date, solved, tries } });
@@ -57,12 +56,12 @@ describe("GET /v1/daily/{date}/friends", () => {
     expect((await friendsOf(ali, "2026-05-31")).solvedCount).toBe(1);
   });
 
-  it("leaves out people I follow who do not follow me back, and people who follow me only", async () => {
+  it("leaves out people whose request is still open, in either direction", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara");
     const reza = await h.signUp("reza");
-    await h.request("/v1/follows/sara", { method: "PUT", token: ali.token });
-    await h.request("/v1/follows/ali", { method: "PUT", token: reza.token });
+    await h.request("/v1/friend-requests/sara", { method: "POST", token: ali.token });
+    await h.request("/v1/friend-requests/ali", { method: "POST", token: reza.token });
     await daily(sara, true, 1);
     await daily(reza, true, 1);
     expect(await friendsOf(ali)).toEqual({ solvedCount: 0, friends: [] });

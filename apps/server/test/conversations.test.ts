@@ -8,8 +8,7 @@ beforeEach(async () => {
 
 type User = { token: string; id: string; username: string };
 const befriend = async (a: User, b: User) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+  await h.befriend(a, b);
 };
 const open = async (from: User, username: string) => h.request("/v1/conversations", { method: "POST", token: from.token, json: { username } });
 const openId = async (from: User, username: string) => ((await (await open(from, username)).json()) as { id: string }).id;
@@ -50,7 +49,7 @@ describe("POST /v1/conversations", () => {
     await befriend(ali, sara);
     const id = await openId(ali, "sara");
     await send(sara, id, "salam");
-    await h.request("/v1/follows/ali", { method: "DELETE", token: sara.token }); // no longer friends; ali takes messages from friends only
+    await h.request("/v1/friends/ali", { method: "DELETE", token: sara.token }); // no longer friends; ali takes messages from friends only
     expect((await open(ali, "sara")).status).toBe(200); // sara wrote here, so ali may answer
     expect(await openId(ali, "sara")).toBe(id);
     expect((await open(sara, "ali")).status).toBe(403); // ali has not written

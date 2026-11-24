@@ -40,7 +40,7 @@ export function meRoutes(deps: Deps) {
       path: "/v1/me",
       tags: ["me"],
       summary: "Delete the account and everything stored for it",
-      description: "Also removes its blocks, chats with their messages (the other person loses the chat), shared divans, challenges with all their results, and its results on other people's challenges. Waiting games it made go; its active games end with the other player as winner (and the other keeps the finished game). Revokes the Apple token when there is one. If Apple cannot be reached the account is kept (502) so the call can be repeated.",
+      description: "Also removes its friendships and friend requests, its blocks, chats with their messages (the other person loses the chat), shared divans, challenges with all their results, and its results on other people's challenges. Waiting games it made go; its active games end with the other player as winner (and the other keeps the finished game). Revokes the Apple token when there is one. If Apple cannot be reached the account is kept (502) so the call can be repeated.",
       security,
       responses: {
         204: { description: "Deleted." },
@@ -56,7 +56,7 @@ export function meRoutes(deps: Deps) {
         .where(and(eq(identities.userId, userId), isNotNull(identities.appleRefreshToken)));
       for (const { token } of apple) if (token) await revokeAppleToken(deps, token);
       await leaveGames(deps, userId);
-      await db.delete(users).where(eq(users.id, userId)); // sessions, identities, progress, divan, privacy settings, player rows, challenges and results go with it
+      await db.delete(users).where(eq(users.id, userId)); // sessions, identities, progress, divan, privacy settings, friendships and friend requests, player rows, challenges and results go with it
       return c.body(null, 204);
     },
   );

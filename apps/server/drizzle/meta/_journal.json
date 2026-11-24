@@ -78,6 +78,13 @@
       "when": 1795482291855,
       "tag": "0010_oval_menace",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795507297451,
+      "tag": "0011_careful_dreadnoughts",
+      "breakpoints": true
     }
   ]
 }

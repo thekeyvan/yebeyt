@@ -10,8 +10,7 @@ type User = { token: string; username: string };
 type Item = { type: string; user: { username: string; displayName: string | null; avatar: unknown }; key?: string; date?: string; tries?: number; at: string };
 const tick = (seconds = 1) => (h.clock.time = new Date(h.clock.time.getTime() + seconds * 1000));
 const befriend = async (a: User, b: User) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+  await h.befriend(a, b);
 };
 const react = (u: User, kind: "like" | "repost", key: string, method = "PUT") => h.request(`/v1/reactions/${kind}?key=${encodeURIComponent(key)}`, { method, token: u.token });
 const daily = (u: User, solved: boolean, tries: number, date = "2026-06-01") => h.request("/v1/daily", { method: "POST", token: u.token, json: { date, solved, tries } });
@@ -60,13 +59,13 @@ describe("GET /v1/feed", () => {
     expect(items[2]!.key).toBe("/saadi/ghazal/sh1#4");
   });
 
-  it("leaves out my own activity, strangers, and people who do not follow me back", async () => {
+  it("leaves out my own activity, strangers, and people whose request is still open", async () => {
     const ali = await h.signUp("ali");
     const stranger = await h.signUp("zed");
-    const oneWay = await h.signUp("nima"); // I follow them, they do not follow me
-    const fan = await h.signUp("fan"); // they follow me, I do not follow them
-    await h.request("/v1/follows/nima", { method: "PUT", token: ali.token });
-    await h.request("/v1/follows/ali", { method: "PUT", token: fan.token });
+    const oneWay = await h.signUp("nima"); // I asked them, they have not answered
+    const fan = await h.signUp("fan"); // they asked me, I have not answered
+    await h.request("/v1/friend-requests/nima", { method: "POST", token: ali.token });
+    await h.request("/v1/friend-requests/ali", { method: "POST", token: fan.token });
     for (const u of [ali, stranger, oneWay, fan]) {
       await react(u, "like", "/a/b#1");
       await daily(u, true, 1);
@@ -82,7 +81,7 @@ describe("GET /v1/feed", () => {
     await react(sara, "like", "/a/b#2");
     await react(sara, "like", "/a/b#2", "DELETE");
     expect((await feed(ali)).items.map((i) => i.key)).toEqual(["/a/b#1"]);
-    await h.request("/v1/follows/ali", { method: "DELETE", token: sara.token });
+    await h.request("/v1/friends/ali", { method: "DELETE", token: sara.token });
     expect((await feed(ali)).items).toEqual([]);
   });
 

@@ -3,7 +3,7 @@ import { and, eq, inArray, or, sql } from "drizzle-orm";
 import type { Db } from "./db/index.js";
 import { conversationReads, conversations, messages, privacySettings } from "./db/schema.js";
 import type { Deps } from "./deps.js";
-import { relationOf } from "./people.js";
+import { areFriends } from "./people.js";
 import { PRIVACY_DEFAULTS } from "./routes/privacy.js";
 import { coupletKeySchema } from "./schemas.js";
 import { isBlocked, orderedPair } from "./social.js";
@@ -84,7 +84,7 @@ export async function mayMessage(db: Db, from: string, to: string, conversationI
   }
   const [row] = await db.select({ from: privacySettings.messagesFrom }).from(privacySettings).where(eq(privacySettings.userId, to));
   if ((row?.from ?? PRIVACY_DEFAULTS.messagesFrom) === "all") return true;
-  return (await relationOf(db, from, to)).isFriend;
+  return areFriends(db, from, to);
 }
 
 /** May `from` start or go on writing to `to` now: the same rule as sending (for a chat that exists, the reply rule too). Never to oneself. */

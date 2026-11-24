@@ -9,8 +9,7 @@ beforeEach(async () => {
 
 type User = { token: string; id: string; username: string };
 const befriend = async (a: User, b: User) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+  await h.befriend(a, b);
 };
 
 describe("DELETE /v1/me with messages", () => {

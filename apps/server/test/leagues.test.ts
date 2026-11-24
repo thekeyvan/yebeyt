@@ -76,10 +76,10 @@ describe("joining a league", () => {
     const friend = await h.signUp("friend", { displayName: "دوست" });
     const open = await h.signUp("open");
     const stranger = await h.signUp("stranger", { displayName: "غریبه" });
-    const oneWay = await h.signUp("oneway"); // follows me only: still a stranger
-    await h.request("/v1/follows/friend", { method: "PUT", token: ali.token });
-    await h.request("/v1/follows/ali", { method: "PUT", token: friend.token });
-    await h.request("/v1/follows/ali", { method: "PUT", token: oneWay.token });
+    const oneWay = await h.signUp("oneway"); // asked me only: still a stranger
+    await h.request("/v1/friend-requests/friend", { method: "POST", token: ali.token });
+    await h.request("/v1/friend-requests/ali", { method: "POST", token: friend.token });
+    await h.request("/v1/friend-requests/ali", { method: "POST", token: oneWay.token });
     await allowGlobal(open.token);
     await h.request("/v1/me/avatar", { method: "PUT", token: stranger.token, json: { face: "f1", eyes: "e1", hair: "h1", mouth: "m1", accessory: "a1", background: "b1" } });
     for (const [u, points] of [[ali, 10], [friend, 20], [open, 30], [stranger, 40], [oneWay, 50]] as const) await score(u.token, points);

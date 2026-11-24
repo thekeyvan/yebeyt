@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { conversations, messages, users } from "../db/schema.js";
+import { conversations, friendRequests, messages, users } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { findConversationOf, getOrCreateConversation, mayMessage, messageView, showingOnline, unreadCounts } from "../messaging.js";
@@ -149,18 +149,22 @@ export function conversationRoutes(deps: Deps) {
       method: "get",
       path: "/v1/me/unread",
       tags: ["messages"],
-      summary: "How many unread messages I have, for the tab badge",
-      description: "The other people's messages after the last one I read, in all chats that nobody blocked. System lines and deleted messages do not count.",
+      summary: "How many unread messages and friend requests I have, for the tab badge",
+      description: "The other people's messages after the last one I read, in all chats that nobody blocked. System lines and deleted messages do not count. `friendRequests` is how many friend requests wait for my answer.",
       security,
       responses: {
-        200: { description: "The total.", content: { "application/json": { schema: z.object({ total: z.number().int() }).openapi("Unread") } } },
+        200: { description: "The total.", content: { "application/json": { schema: z.object({ total: z.number().int(), friendRequests: z.number().int() }).openapi("Unread") } } },
         401: errorResponse("Not signed in."),
         403: errorResponse("username_required: set a username first."),
       },
     }),
     async (c) => {
-      const counts = await unreadCounts(db, c.get("userId"));
-      return c.json({ total: [...counts.values()].reduce((a, b) => a + b, 0) }, 200);
+      const me = c.get("userId");
+      const [counts, [requests]] = await Promise.all([
+        unreadCounts(db, me),
+        db.select({ n: sql<number>`count(*)::int` }).from(friendRequests).where(eq(friendRequests.toId, me)),
+      ]);
+      return c.json({ total: [...counts.values()].reduce((a, b) => a + b, 0), friendRequests: requests!.n }, 200);
     },
   );
 

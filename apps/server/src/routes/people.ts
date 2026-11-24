@@ -1,11 +1,11 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import { and, asc, eq, ne, sql } from "drizzle-orm";
-import { follows, privacySettings, users } from "../db/schema.js";
+import { and, asc, eq, ne, or, sql } from "drizzle-orm";
+import { friendships, privacySettings, users } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { leagueOf } from "../leagues.js";
 import { canMessage } from "../messaging.js";
-import { findByUsername, relationOf, shortPersonSchema } from "../people.js";
+import { findByUsername, friendshipOf, friendshipSchema, friendshipSql, shortPersonSchema } from "../people.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
 import { isBlocked, notBlockedWith } from "../social.js";
@@ -21,16 +21,15 @@ const SEARCH_MAX_RESULTS = 20;
 const profileSchema = shortPersonSchema
   .extend({
     friendsCount: z.number().int(),
-    isFollowing: z.boolean(),
-    followsYou: z.boolean(),
-    isFriend: z.boolean(),
+    friendship: friendshipSchema,
+    isFriend: z.boolean().openapi({ description: "`friendship` is `friends`." }),
     canMessage: z.boolean().openapi({ description: "I may write to them now: nobody blocked the other, and their «بهم پیام بده» lets me (or they already wrote to me in our chat). Never for myself." }),
     league: z.object({ tier: z.number().int().min(0).max(4) }).nullable().openapi({ description: "This week's tier; null before their first score of the week, and for a stranger who keeps off the global leaderboard (same rule as `weekPoints`)." }),
     weekPoints: z.number().int().nullable().openapi({ description: "Only for a friend, for yourself, or someone who allows the global leaderboard; else null." }),
   })
   .openapi("PublicProfile");
 
-const foundSchema = shortPersonSchema.extend({ isFollowing: z.boolean(), isFriend: z.boolean() }).openapi("FoundPerson");
+const foundSchema = shortPersonSchema.extend({ friendship: friendshipSchema, isFriend: z.boolean() }).openapi("FoundPerson");
 const searchSchema = z.object({ items: z.array(foundSchema).max(SEARCH_MAX_RESULTS) }).openapi("UserSearch");
 
 /** Escapes `\`, `%` and `_` so the text matches itself in a LIKE pattern (`_` is a valid username character). */
@@ -68,15 +67,14 @@ export function peopleRoutes(deps: Deps) {
           username: users.username,
           displayName: users.displayName,
           avatar: users.avatar,
-          isFollowing: sql<boolean>`exists (select 1 from follows f where f.follower_id = ${userId} and f.followee_id = ${users.id})`,
-          followsYou: sql<boolean>`exists (select 1 from follows f where f.follower_id = ${users.id} and f.followee_id = ${userId})`,
+          friendship: friendshipSql(userId, users.id),
         })
         .from(users)
         .where(and(sql`${users.username} like ${`${likeEscape(q)}%`}`, ne(users.id, userId), notBlockedWith(userId, users.id)))
         .orderBy(asc(users.username))
         .limit(SEARCH_MAX_RESULTS);
       return c.json(
-        { items: rows.map((r) => ({ username: r.username!, displayName: r.displayName, avatar: r.avatar, isFollowing: r.isFollowing, isFriend: r.isFollowing && r.followsYou })) },
+        { items: rows.map((r) => ({ username: r.username!, displayName: r.displayName, avatar: r.avatar, friendship: r.friendship, isFriend: r.friendship === "friends" })) },
         200,
       );
     },
@@ -89,7 +87,7 @@ export function peopleRoutes(deps: Deps) {
       tags: ["friends"],
       summary: "A person's public profile",
       description:
-        "Name, avatar, how many friends they have, how we follow each other. Their league tier and points this week are given only to a friend, to themselves " +
+        "Name, avatar, how many friends they have, whether we are friends or a request is open (`friendship`). Their league tier and points this week are given only to a friend, to themselves " +
         "and when they allow the global leaderboard.",
       security,
       request: { params: z.object({ username: usernameSchema }) },
@@ -105,30 +103,26 @@ export function peopleRoutes(deps: Deps) {
       const person = await findByUsername(db, c.req.valid("param").username);
       if (!person || (await isBlocked(db, me, person.id))) throw new ApiError(404, "not_found");
       const week = weekOf(deps.now());
-      const [relation, [privacy], [count], league, mayWrite] = await Promise.all([
-        relationOf(db, me, person.id),
+      const [friendship, [privacy], [count], league, mayWrite] = await Promise.all([
+        friendshipOf(db, me, person.id),
         db.select({ inGlobal: privacySettings.inGlobalLeaderboard }).from(privacySettings).where(eq(privacySettings.userId, person.id)),
         db
           .select({ n: sql<number>`count(*)::int` })
-          .from(follows)
-          .where(
-            and(
-              eq(follows.followerId, person.id),
-              sql`exists (select 1 from follows b where b.follower_id = ${follows.followeeId} and b.followee_id = ${follows.followerId})`,
-            ),
-          ),
+          .from(friendships)
+          .where(or(eq(friendships.userLow, person.id), eq(friendships.userHigh, person.id))),
         leagueOf(db, person.id, week),
         canMessage(db, me, person.id),
       ]);
       // Tier and points follow one rule: a friend, yourself, or someone who allows the global leaderboard.
-      const sharesPoints = relation.isFriend || person.id === me || privacy?.inGlobal === true;
+      const sharesPoints = friendship === "friends" || person.id === me || privacy?.inGlobal === true;
       return c.json(
         {
           username: person.username!,
           displayName: person.displayName,
           avatar: person.avatar,
           friendsCount: count!.n,
-          ...relation,
+          friendship,
+          isFriend: friendship === "friends",
           canMessage: mayWrite,
           league: league && sharesPoints ? { tier: league.tier } : null,
           weekPoints: sharesPoints ? await weekPointsOf(db, person.id, week) : null,

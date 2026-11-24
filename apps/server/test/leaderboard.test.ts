@@ -11,8 +11,7 @@ type Row = { rank: number; username: string | null; points: number; isMe: boolea
 const score = (token: string, points: number) =>
   h.request("/v1/scores", { method: "POST", token, json: { roundId: randomUUID(), game: "poet", points, playedAt: h.clock.time.toISOString() } });
 const befriend = async (a: { token: string; username: string }, b: { token: string; username: string }) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+  await h.befriend(a, b);
 };
 const friends = async (token: string) => {
   const res = await h.request("/v1/leaderboard/friends", { token });
@@ -35,7 +34,7 @@ describe("friends leaderboard", () => {
     const oneWay = await h.signUp("nima");
     await befriend(ali, sara);
     await befriend(ali, reza);
-    await h.request("/v1/follows/ali", { method: "PUT", token: oneWay.token }); // follows me, I do not follow back
+    await h.request("/v1/friend-requests/ali", { method: "POST", token: oneWay.token }); // asked me, I have not answered
     await score(ali.token, 100);
     await score(sara.token, 300);
     await score(stranger.token, 900);

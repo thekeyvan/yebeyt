@@ -7,11 +7,6 @@ beforeEach(async () => {
   h = await makeHarness();
 });
 
-const befriend = async (a: { token: string }, b: { token: string; username: string }, a2: { username: string }) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a2.username}`, { method: "PUT", token: b.token });
-};
-
 describe("blocks", () => {
   it("needs a sign-in and a username", async () => {
     expect((await h.request("/v1/blocks/sara", { method: "PUT" })).status).toBe(401);
@@ -57,17 +52,17 @@ describe("blocks", () => {
     expect(second.nextCursor).toBeNull();
   });
 
-  it("removes follows both ways and stops new ones", async () => {
+  it("removes the friendship both ways and stops new requests", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara");
-    await befriend(ali, sara, ali);
+    await h.befriend(ali, sara);
     await h.request("/v1/blocks/sara", { method: "PUT", token: ali.token });
-    expect(((await (await h.request("/v1/me/following", { token: ali.token })).json()) as { items: unknown[] }).items).toEqual([]);
-    expect(((await (await h.request("/v1/me/following", { token: sara.token })).json()) as { items: unknown[] }).items).toEqual([]);
-    expect((await h.request("/v1/follows/sara", { method: "PUT", token: ali.token })).status).toBe(404);
-    expect((await h.request("/v1/follows/ali", { method: "PUT", token: sara.token })).status).toBe(404);
+    expect(((await (await h.request("/v1/me/friends", { token: ali.token })).json()) as { items: unknown[] }).items).toEqual([]);
+    expect(((await (await h.request("/v1/me/friends", { token: sara.token })).json()) as { items: unknown[] }).items).toEqual([]);
+    expect((await h.request("/v1/friend-requests/sara", { method: "POST", token: ali.token })).status).toBe(404);
+    expect((await h.request("/v1/friend-requests/ali", { method: "POST", token: sara.token })).status).toBe(404);
     await h.request("/v1/blocks/sara", { method: "DELETE", token: ali.token });
-    expect((await h.request("/v1/follows/ali", { method: "PUT", token: sara.token })).status).toBe(200);
+    expect((await h.request("/v1/friend-requests/ali", { method: "POST", token: sara.token })).status).toBe(200);
   });
 
   it("hides the two from each other's profile and search", async () => {

@@ -15,7 +15,7 @@ import { divanRoutes } from "./routes/divan.js";
 import { feedRoutes } from "./routes/feed.js";
 import { feedbackRoutes, type UploadBudgets } from "./routes/feedback.js";
 import { feedbackAdminRoutes } from "./routes/feedbackAdmin.js";
-import { followRoutes } from "./routes/follows.js";
+import { friendRoutes } from "./routes/friends.js";
 import { gameRoutes } from "./routes/games.js";
 import { healthRoutes } from "./routes/health.js";
 import { leaderboardRoutes } from "./routes/leaderboards.js";
@@ -62,14 +62,14 @@ export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
   app.use("/v1/me", user);
   app.use("/v1/me/*", user);
   app.use("/v1/usernames/*", user);
-  for (const path of ["/v1/follows/*", "/v1/users/*", "/v1/scores", "/v1/daily", "/v1/daily/*", "/v1/leaderboard/*", "/v1/reactions/*", "/v1/feed"]) app.use(path, user);
+  for (const path of ["/v1/friend-requests/*", "/v1/friends/*", "/v1/users/*", "/v1/scores", "/v1/daily", "/v1/daily/*", "/v1/leaderboard/*", "/v1/reactions/*", "/v1/feed"]) app.use(path, user);
   // Messages, blocks, reports, shared divans and games with friends are for people with a username.
   const messaging = ["/v1/blocks/*", "/v1/reports", "/v1/conversations", "/v1/conversations/*", "/v1/messages/*", "/v1/shared-divans", "/v1/shared-divans/*", "/v1/games", "/v1/games/*"];
   for (const path of messaging) app.use(path, user);
   const named = requireUsername(deps);
   // Making a challenge needs a username too; looking one up and answering one do not need an account (routes/challenges.ts).
   app.use("/v1/challenges", user);
-  for (const path of [...messaging, "/v1/me/blocks", "/v1/me/unread", "/v1/me/games", "/v1/me/challenges", "/v1/challenges"]) app.use(path, named);
+  for (const path of [...messaging, "/v1/friend-requests/*", "/v1/friends/*", "/v1/me/blocks", "/v1/me/friend-requests", "/v1/me/unread", "/v1/me/games", "/v1/me/challenges", "/v1/challenges"]) app.use(path, named);
   // The first request of a new week closes the leagues of the weeks before it (see src/leagues.ts), before anything reads tiers or standings.
   const closeWeeks = createWeekCloser(deps);
   const afterClose = createMiddleware(async (_c, next) => {
@@ -84,7 +84,7 @@ export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
   app.route("/", progressRoutes(deps));
   app.route("/", divanRoutes(deps));
   app.route("/", feedRoutes(deps));
-  app.route("/", followRoutes(deps));
+  app.route("/", friendRoutes(deps));
   app.route("/", blockRoutes(deps));
   app.route("/", reportRoutes(deps));
   app.route("/", conversationRoutes(deps));

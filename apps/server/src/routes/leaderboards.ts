@@ -4,7 +4,7 @@ import { leagueMembers, privacySettings, scoreEvents, users } from "../db/schema
 import type { Deps } from "../deps.js";
 import { errorResponse } from "../errors.js";
 import { DEMOTE_COUNT, leagueOf, nextTierOf, PROMOTE_COUNT } from "../leagues.js";
-import { friendIdsOf, PAGE } from "../people.js";
+import { friendIds, PAGE } from "../people.js";
 import { newRouter } from "../router.js";
 import { weekTotals } from "../scores.js";
 import { avatarSchema } from "../schemas.js";
@@ -80,7 +80,7 @@ export function leaderboardRoutes(deps: Deps) {
         const totals = weekTotals(db, current, sql`${scoreEvents.userId} in (select user_id from league_members where group_id = ${mine.groupId})`);
         const points = sql<number>`coalesce(${totals.points}, 0)`;
         // A stranger who is not on the global list shows as «یه نفر»: the points count, the person stays unnamed.
-        const hidden = sql<boolean>`(${users.id} <> ${userId} and not coalesce(${privacySettings.inGlobalLeaderboard}, false) and ${users.id} not in ${friendIdsOf(userId)})`;
+        const hidden = sql<boolean>`(${users.id} <> ${userId} and not coalesce(${privacySettings.inGlobalLeaderboard}, false) and ${users.id} not in ${friendIds(userId)})`;
         const found = await db
           .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar, points, hidden })
           .from(leagueMembers)
@@ -119,15 +119,15 @@ export function leaderboardRoutes(deps: Deps) {
       path: "/v1/leaderboard/friends",
       tags: ["leaderboard"],
       summary: "This week's points: me and my friends",
-      description: "Friends are people who follow each other. Friends with no score are listed with 0. Best first, then by username; up to 100.",
+      description: "Friends with no score are listed with 0. Best first, then by username; up to 100.",
       security,
       responses: responses(friendsSchema, "The standings."),
     }),
     async (c) => {
       const userId = c.get("userId");
       const current = weekOf(deps.now());
-      const circle = sql`(${users.id} = ${userId} or ${users.id} in ${friendIdsOf(userId)})`;
-      const totals = weekTotals(db, current, sql`(${scoreEvents.userId} = ${userId} or ${scoreEvents.userId} in ${friendIdsOf(userId)})`);
+      const circle = sql`(${users.id} = ${userId} or ${users.id} in ${friendIds(userId)})`;
+      const totals = weekTotals(db, current, sql`(${scoreEvents.userId} = ${userId} or ${scoreEvents.userId} in ${friendIds(userId)})`);
       const points = sql<number>`coalesce(${totals.points}, 0)`;
       const found = await db
         .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar, points })

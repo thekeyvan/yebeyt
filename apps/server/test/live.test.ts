@@ -60,8 +60,7 @@ async function live(user: User, options?: Parameters<typeof connect>[0]) {
 }
 
 const befriend = async (a: User, b: User) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+  await h.befriend(a, b);
 };
 const chat = async (a: User, b: User) => {
   await befriend(a, b);

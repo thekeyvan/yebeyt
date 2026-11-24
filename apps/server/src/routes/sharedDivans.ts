@@ -4,7 +4,7 @@ import { messages, sharedDivanItems, sharedDivanLikes, sharedDivans, users } fro
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { getOrCreateConversation, NOTE_MAX, publishMessage } from "../messaging.js";
-import { findByUsername, PAGE, parseTimeCursor, relationOf, shortPersonSchema, timeCursor, timeCursorSchema } from "../people.js";
+import { areFriends, findByUsername, PAGE, parseTimeCursor, shortPersonSchema, timeCursor, timeCursorSchema } from "../people.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
 import { coupletKeySchema, usernameSchema } from "../schemas.js";
@@ -103,7 +103,7 @@ export function sharedDivanRoutes(deps: Deps) {
       const other = await findByUsername(db, c.req.valid("json").username);
       if (!other || (await isBlocked(db, me, other.id))) throw new ApiError(404, "not_found");
       if (other.id === me) throw new ApiError(400, "invalid_request");
-      if (!(await relationOf(db, me, other.id)).isFriend) throw new ApiError(403, "forbidden");
+      if (!(await areFriends(db, me, other.id))) throw new ApiError(403, "forbidden");
       const pair = orderedPair(me, other.id);
       await db.insert(sharedDivans).values({ ...pair, createdAt: deps.now() }).onConflictDoNothing();
       const [divan] = await db.select({ id: sharedDivans.id }).from(sharedDivans).where(and(eq(sharedDivans.userLow, pair.userLow), eq(sharedDivans.userHigh, pair.userHigh)));
@@ -235,7 +235,7 @@ export function sharedDivanRoutes(deps: Deps) {
       const me = c.get("userId");
       if (!limiter.take(me)) throw new ApiError(429, "rate_limited");
       const divan = await member(c.req.valid("param").id, me);
-      if (!(await relationOf(db, me, divan.otherId)).isFriend) throw new ApiError(403, "forbidden");
+      if (!(await areFriends(db, me, divan.otherId))) throw new ApiError(403, "forbidden");
       const { key, note } = c.req.valid("json");
       const [row] = await db
         .insert(sharedDivanItems)

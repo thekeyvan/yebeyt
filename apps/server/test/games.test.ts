@@ -44,8 +44,7 @@ beforeEach(async () => {
 const post = (user: User | undefined, path: string, json?: unknown) => h.request(path, { method: "POST", token: user?.token, json });
 const get = (user: User | undefined, path: string) => h.request(path, { token: user?.token });
 const befriend = async (a: User, b: User) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+  await h.befriend(a, b);
 };
 type GameBody = {
   id: string; kind: string; turnSeconds: number; status: string; code: string; winner: string | null; endReason: string | null;

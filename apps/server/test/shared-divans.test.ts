@@ -15,8 +15,7 @@ type Counts = { total: number; mine: number; theirs: number };
 type ItemPage = { items: Item[]; nextCursor: string | null; counts: Counts };
 
 const befriend = async (a: User, b: User) => {
-  await h.request(`/v1/follows/${b.username}`, { method: "PUT", token: a.token });
-  await h.request(`/v1/follows/${a.username}`, { method: "PUT", token: b.token });
+  await h.befriend(a, b);
 };
 const pair = async () => {
   const ali = await h.signUp("ali");
@@ -52,9 +51,9 @@ describe("POST /v1/shared-divans", () => {
     const sara = await h.signUp("sara", { displayName: "Sara" });
     const open = (u: User, username: string) => h.request("/v1/shared-divans", { method: "POST", token: u.token, json: { username } });
     expect((await open(ali, "sara")).status).toBe(403);
-    await h.request("/v1/follows/sara", { method: "PUT", token: ali.token });
+    await h.request("/v1/friend-requests/sara", { method: "POST", token: ali.token });
     expect((await open(ali, "sara")).status).toBe(403); // not a friend yet
-    await h.request("/v1/follows/ali", { method: "PUT", token: sara.token });
+    await h.request("/v1/friend-requests/ali", { method: "POST", token: sara.token });
     const first = await open(ali, "Sara");
     expect(first.status).toBe(200);
     const body = (await first.json()) as { id: string };
@@ -138,7 +137,7 @@ describe("items", () => {
     expect((await add(omid, id, B)).status).toBe(404);
     expect((await items(omid, id)).items).toBeUndefined();
     expect((await h.request(`/v1/shared-divans/${crypto.randomUUID()}/items`, { token: ali.token })).status).toBe(404);
-    await h.request("/v1/follows/ali", { method: "DELETE", token: sara.token });
+    await h.request("/v1/friends/ali", { method: "DELETE", token: sara.token });
     const res = await add(ali, id, B);
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: "forbidden" });

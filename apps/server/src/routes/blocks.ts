@@ -1,12 +1,13 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { and, desc, eq, isNotNull, lt, or, sql } from "drizzle-orm";
-import { blocks, follows, users } from "../db/schema.js";
+import { blocks, friendRequests, friendships, users } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { findByUsername, PAGE, parseTimeCursor, shortPersonSchema, timeCursor, timeCursorSchema } from "../people.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
 import { usernameSchema } from "../schemas.js";
+import { orderedPair } from "../social.js";
 
 const security = [{ bearerAuth: [] }];
 const pageSchema = z
@@ -42,7 +43,7 @@ export function blockRoutes(deps: Deps) {
       tags: ["safety"],
       summary: "Block someone",
       description:
-        "Idempotent. Removes the follows between the two, both ways. A blocked pair cannot follow, message or share a divan with each other (and cannot invite each other to games), " +
+        "Idempotent. Removes the friendship and the friend requests between the two. A blocked pair cannot send friend requests, message or share a divan with each other (and cannot invite each other to games), " +
         "and each is hidden from the other's profile lookup (404) and search. The blocked person is not told.",
       security,
       request,
@@ -53,7 +54,9 @@ export function blockRoutes(deps: Deps) {
       const other = await target(userId, c.req.valid("param").username);
       await db.transaction(async (tx) => {
         await tx.insert(blocks).values({ blockerId: userId, blockedId: other.id, createdAt: deps.now() }).onConflictDoNothing();
-        await tx.delete(follows).where(or(and(eq(follows.followerId, userId), eq(follows.followeeId, other.id)), and(eq(follows.followerId, other.id), eq(follows.followeeId, userId))));
+        const { userLow, userHigh } = orderedPair(userId, other.id);
+        await tx.delete(friendships).where(and(eq(friendships.userLow, userLow), eq(friendships.userHigh, userHigh)));
+        await tx.delete(friendRequests).where(or(and(eq(friendRequests.fromId, userId), eq(friendRequests.toId, other.id)), and(eq(friendRequests.fromId, other.id), eq(friendRequests.toId, userId))));
       });
       return c.body(null, 204);
     },
@@ -65,7 +68,7 @@ export function blockRoutes(deps: Deps) {
       path: "/v1/blocks/{username}",
       tags: ["safety"],
       summary: "Unblock someone",
-      description: "Idempotent. The follows removed by the block do not come back.",
+      description: "Idempotent. The friendship and requests removed by the block do not come back.",
       security,
       request,
       responses,

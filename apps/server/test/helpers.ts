@@ -131,7 +131,14 @@ export async function makeHarness(uploadBudgets?: UploadBudgets) {
     return { token: session.accessToken, id: session.user.id, username: sub };
   };
 
-  return { app, db, deps, clock, logs, fetchMock, appleToken, googleToken, request, signIn, signUp };
+  /** Makes two signed-up users friends: `a` asks, `b` accepts. */
+  const befriend = async (a: { token: string; username: string }, b: { token: string; username: string }) => {
+    const sent = await request(`/v1/friend-requests/${b.username}`, { method: "POST", token: a.token });
+    const accepted = await request(`/v1/friend-requests/${a.username}/accept`, { method: "POST", token: b.token });
+    if (sent.status !== 200 || accepted.status !== 200) throw new Error(`befriend failed: ${sent.status} ${accepted.status}`);
+  };
+
+  return { app, db, deps, clock, logs, fetchMock, appleToken, googleToken, request, signIn, signUp, befriend };
 }
 
 const HEADERS = {
