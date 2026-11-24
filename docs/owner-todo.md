@@ -15,6 +15,10 @@ Only what is still open. These need accounts or devices the agents don't have he
 - On the OAuth consent screen (Branding) set the home page https://yebeyt.com/en, privacy https://yebeyt.com/en/privacy, terms https://yebeyt.com/en/terms.
 - Once Google sign-in works on a phone, shut down the old project `beyt-515410` (IAM & Admin → Settings → Shut down).
 
+## 2b. Cloudflare (cleanup, any time)
+
+- The old 1.0 site's Pages project «yebeyt» (Workers & Pages) no longer serves anything; delete it.
+
 ## 3. Test on a real phone
 
 These can't be tested in the simulator here (build from Xcode onto the phone):
@@ -39,8 +43,12 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 5. **Feedback storage:** screenshots and recordings are kept in Postgres for now (screenshot ≤3 MB, recording ≤25 MB). If many arrive, move them to a Railway bucket. OK?
 6. **Reading feedback:** there is no admin screen yet; feedback is read through the admin API (`GET /v1/admin/feedback` with `ADMIN_TOKEN`). Should a simple page come before the admin dashboard?
 7. **Scores come from the phone,** so a determined cheater could fake them. The server caps points per round, and the daily and onboarding points count once. Good enough for now?
+8. **Friend requests copy** (written by the builder): the empty requests screen says «درخواستی نداری.»; the block sheet's second line says «دیگه نمی‌تونه بهت پیام بده یا درخواست دوستی بفرسته.». OK?
+9. **English home page** (https://yebeyt.com/en): tagline "Every couplet, a game."; intro "A new couplet every day, games with poetry, and mosha'ere with your friends." The reviewer suggests "mosha'ere (poetry duels)" so English readers understand it. OK, or other wording?
 
-## 6. App Store Connect: the privacy label for feedback
+## 6. App Store Connect: the privacy label (don't fill it in yet)
+
+This table covers only feedback. Accounts, the divan sync, friends, messages and game scores also send data, and those rows are still missing. The lead will finish the full table before the first upload; fill in the label then, all at once.
 
 The app has a privacy manifest (`apps/ios/Yebeyt/PrivacyInfo.xcprivacy`): no tracking, UserDefaults (reason CA92.1, the app's own settings), and the data that feedback sends. In App Store Connect → the app → App Privacy → Data Types, tick (for the lead to review; Apple's names):
 
