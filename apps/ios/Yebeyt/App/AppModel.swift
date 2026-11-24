@@ -5,6 +5,9 @@ import Observation
 enum Tab: String, CaseIterable, Sendable {
     case home, explore, games, messages, me
 
+    /// The place in the bar, from the first tab.
+    var index: Int { Tab.allCases.firstIndex(of: self) ?? 0 }
+
     var title: String {
         switch self {
         case .home: "خونه"
@@ -18,7 +21,11 @@ enum Tab: String, CaseIterable, Sendable {
 
 @MainActor @Observable
 final class AppModel {
-    private(set) var selectedTab: Tab
+    private(set) var selectedTab: Tab {
+        didSet { if selectedTab != oldValue { previousTab = oldValue } }
+    }
+    /// The tab that was open before this one: the new page slides in from the side of its tab.
+    private(set) var previousTab: Tab
     /// The badge of the «پیام‌ها» tab: the unread messages plus the incoming friend requests.
     var unreadCount: Int
     /// How many of `unreadCount` are friend requests.
@@ -76,6 +83,7 @@ final class AppModel {
         gamesPath: [Destination] = [], mePath: [Destination] = [], messagesPath: [Destination] = [], game: GameRoute? = nil
     ) {
         selectedTab = tab
+        previousTab = tab
         self.unreadCount = unreadCount
         self.reader = reader
         self.homePath = homePath

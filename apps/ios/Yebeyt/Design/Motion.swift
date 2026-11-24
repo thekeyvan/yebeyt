@@ -36,6 +36,8 @@ enum Motion {
     struct Arrival: Equatable, Sendable {
         var dy: Double
         var scale: Double
+        /// Points sideways (the screen's left is negative); 0 for most.
+        var dx: Double = 0
     }
 
     /// A toast drops in from above, a little smaller (only fades under Reduce Motion), and simply fades when it goes.
@@ -53,7 +55,71 @@ enum Motion {
     }
 
     private static func arrive(_ arrival: Arrival) -> AnyTransition {
-        .offset(y: arrival.dy).combined(with: .scale(scale: arrival.scale)).combined(with: .opacity)
+        .offset(x: arrival.dx, y: arrival.dy).combined(with: .scale(scale: arrival.scale)).combined(with: .opacity)
+    }
+
+    // MARK: Sheets, covers, menus, rows and tabs
+
+    /// A sheet or cover drops back down quickly (no overshoot); it rises with `bouncy`.
+    static let drop = Animation.spring(response: 0.25, dampingFraction: 1)
+
+    /// Under Reduce Motion nothing rises, slides or scales: it crossfades.
+    static func rises(_ variant: Variant) -> Bool { variant == .full }
+
+    /// A menu, a popover or a card that appears: a little smaller, growing from where it belongs.
+    static func menuArrival(_ variant: Variant) -> Arrival { variant == .full ? Arrival(dy: 0, scale: 0.9) : Arrival(dy: 0, scale: 1) }
+
+    /// A list row that is added or taken away: a little smaller and 12 points lower.
+    static func rowArrival(_ variant: Variant) -> Arrival { variant == .full ? Arrival(dy: 12, scale: 0.9) : Arrival(dy: 0, scale: 1) }
+
+    /// A full-screen cover rises from the bottom a little smaller than it ends.
+    static let coverScale = 0.96
+
+    /// How far the incoming tab page slides.
+    static let tabSlide = 16.0
+
+    /// The tab's page slides in from the side its tab is on: `rightToLeft` is the layout, where the first tab is at the
+    /// right, so a tab after the open one is at the left. `dx` is in screen directions. Plain fade under Reduce Motion.
+    static func tabArrival(from old: Int, to new: Int, rightToLeft: Bool, _ variant: Variant) -> Arrival {
+        guard variant == .full, old != new else { return Arrival(dy: 0, scale: 1) }
+        let towardEnd = new > old
+        let toTheRight = towardEnd != rightToLeft
+        return Arrival(dy: 0, scale: 1, dx: toTheRight ? tabSlide : -tabSlide)
+    }
+
+    /// A sheet or overlay: rises from the bottom with `bouncy`, drops quickly; a crossfade under Reduce Motion.
+    static func sheet(_ variant: Variant) -> AnyTransition {
+        guard rises(variant) else { return .opacity }
+        return .asymmetric(insertion: .move(edge: .bottom).animation(bouncy), removal: .move(edge: .bottom).animation(drop))
+    }
+
+    /// The dimmed background behind a sheet fades in and out (also under Reduce Motion).
+    static var scrim: AnyTransition { .opacity }
+
+    /// A full-screen cover (the reader): rises with a spring and a slight scale, drops quickly.
+    static func cover(_ variant: Variant) -> AnyTransition {
+        guard rises(variant) else { return .opacity }
+        let rising = AnyTransition.move(edge: .bottom).combined(with: .scale(scale: coverScale, anchor: .bottom))
+        return .asymmetric(insertion: rising.animation(bouncy), removal: rising.animation(drop))
+    }
+
+    /// A menu or card from its origin: scales up from 0.9 with `bouncy`, goes away quickly.
+    static func menu(_ variant: Variant, anchor: UnitPoint = .center) -> AnyTransition {
+        guard rises(variant) else { return .opacity }
+        let scaled = AnyTransition.scale(scale: menuArrival(variant).scale, anchor: anchor).combined(with: .opacity)
+        return .asymmetric(insertion: scaled.animation(bouncy), removal: scaled.animation(drop))
+    }
+
+    /// A list row added or taken away: scale and slide with `bouncy`.
+    static func row(_ variant: Variant) -> AnyTransition {
+        guard rises(variant) else { return .opacity }
+        return arrive(rowArrival(variant)).animation(bouncy)
+    }
+
+    /// The page of a tab slides in a little with `bouncy`; the page that leaves fades out quickly.
+    static func tab(_ arrival: Arrival, _ variant: Variant) -> AnyTransition {
+        guard rises(variant) else { return .opacity }
+        return .asymmetric(insertion: arrive(arrival).animation(bouncy), removal: .opacity.animation(drop))
     }
 
     // MARK: Thrown card

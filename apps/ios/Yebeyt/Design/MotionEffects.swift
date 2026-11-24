@@ -37,6 +37,12 @@ extension View {
         modifier(ArrivalTransition(toast: true))
     }
 
+    /// A transition of the vocabulary (`Motion.sheet`, `.cover`, `.menu`, `.row`, `.tab`), with the variant for the person's
+    /// Reduce Motion setting: it crossfades only when that is on.
+    func motionTransition(_ make: @escaping (Motion.Variant) -> AnyTransition) -> some View {
+        modifier(VariantTransition(make: make))
+    }
+
     /// The next card of the deck springs in (only fades under Reduce Motion).
     func dealTransition() -> some View {
         modifier(ArrivalTransition(toast: false))
@@ -100,6 +106,15 @@ private struct PressSquish: ViewModifier {
         content
             .scaleEffect(pressed ? Motion.pressedScale(variant) : 1)
             .animation(Motion.pressAnimation(variant), value: pressed)
+    }
+}
+
+private struct VariantTransition: ViewModifier {
+    let make: (Motion.Variant) -> AnyTransition
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content.transition(make(Motion.variant(reduceMotion: reduceMotion)))
     }
 }
 

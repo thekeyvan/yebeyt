@@ -217,4 +217,63 @@ struct MotionTests {
         #expect(CountUp.text(0) == "۰")
         #expect(CountUp.text(359.6) == "۳۶۰")
     }
+
+    // MARK: Sheets, covers, menus, rows, tabs
+
+    @Test func sheetsAndCoversOnlyRiseWithFullMotion() {
+        #expect(Motion.rises(.full))
+        #expect(!Motion.rises(.reduced))
+    }
+
+    @Test func menusAndRowsScaleInFromSmallAndCrossfadeUnderReduceMotion() {
+        #expect(Motion.menuArrival(.full) == Motion.Arrival(dy: 0, scale: 0.9))
+        #expect(Motion.menuArrival(.reduced) == Motion.Arrival(dy: 0, scale: 1))
+        #expect(Motion.rowArrival(.full) == Motion.Arrival(dy: 12, scale: 0.9))
+        #expect(Motion.rowArrival(.reduced) == Motion.Arrival(dy: 0, scale: 1))
+    }
+
+    @Test func theTabPageSlidesInFromTheSideOfItsTab() {
+        // Right-to-left: the first tab (خونه) is at the right, so کاوش is at the left and the page comes from the left.
+        #expect(Motion.tabArrival(from: 0, to: 1, rightToLeft: true, .full).dx == -16)
+        #expect(Motion.tabArrival(from: 3, to: 1, rightToLeft: true, .full).dx == 16)
+        #expect(Motion.tabArrival(from: 0, to: 1, rightToLeft: false, .full).dx == 16)
+        #expect(Motion.tabArrival(from: 4, to: 2, rightToLeft: false, .full).dx == -16)
+        #expect(Motion.tabArrival(from: 2, to: 2, rightToLeft: true, .full).dx == 0)
+    }
+
+    @Test func theTabPageOnlyFadesUnderReduceMotion() {
+        #expect(Motion.tabArrival(from: 0, to: 4, rightToLeft: true, .reduced) == Motion.Arrival(dy: 0, scale: 1))
+    }
+
+    @Test func tabsAreNumberedInTheBarOrder() {
+        #expect(Tab.allCases.map(\.index) == [0, 1, 2, 3, 4])
+    }
+
+    // MARK: Drag to dismiss
+
+    @Test func aDragPastAThirdOfTheHeightDismisses() {
+        #expect(SheetDrag.shouldDismiss(translation: 130, velocity: 0, height: 400))
+        #expect(SheetDrag.shouldDismiss(translation: 120, velocity: 0, height: 400))
+        #expect(!SheetDrag.shouldDismiss(translation: 119, velocity: 0, height: 400))
+    }
+
+    @Test func aFlickDownDismissesAtAnyDistance() {
+        #expect(SheetDrag.shouldDismiss(translation: 20, velocity: 900, height: 400))
+        #expect(!SheetDrag.shouldDismiss(translation: 20, velocity: 300, height: 400))
+    }
+
+    @Test func aDragUpNeverDismisses() {
+        #expect(!SheetDrag.shouldDismiss(translation: -200, velocity: 1500, height: 400))
+        #expect(!SheetDrag.shouldDismiss(translation: 0, velocity: 1500, height: 400))
+        #expect(!SheetDrag.shouldDismiss(translation: 200, velocity: 0, height: 0))
+    }
+
+    @Test func theSheetFollowsTheFingerDownAndStretchesLessAndLessUp() {
+        #expect(SheetDrag.offset(for: 75) == 75)
+        #expect(SheetDrag.offset(for: 0) == 0)
+        let small = SheetDrag.offset(for: -20)
+        let big = SheetDrag.offset(for: -400)
+        #expect(small < 0 && small > -20)
+        #expect(big < small && big > -SheetDrag.stretch - 0.001)
+    }
 }
