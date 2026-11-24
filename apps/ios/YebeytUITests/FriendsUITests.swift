@@ -115,6 +115,11 @@ final class FriendsUITests: XCTestCase {
         let items = app.descendants(matching: .any).matching(identifier: "feedItem")
         XCTAssertTrue(items.firstMatch.waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["کیان یه بیت به اشتراک گذاشت"].exists)
+        let like = app.buttons["feedLike"].firstMatch
+        XCTAssertTrue(like.waitForExistence(timeout: 10))
+        XCTAssertFalse(like.isSelected)
+        like.tap()
+        XCTAssertTrue(like.isSelected, "a liked couplet is announced as selected")
     }
 
     @MainActor func testAGuestsHomeShowsNoFriendsSection() {

@@ -127,11 +127,17 @@ final class FriendsListModel: FollowList {
         await fetch(cursor: nil)
     }
 
-    func loadMore() async {
-        guard let cursor = nextCursor, !isLoadingMore else { return }
+    /// The next page; when everything on it is hidden (blocked), the one after it is asked for too.
+    func loadMore(hiding blocked: BlockedPeople) async {
+        guard !isLoadingMore else { return }
         isLoadingMore = true
         defer { isLoadingMore = false }
-        await fetch(cursor: cursor)
+        while let cursor = nextCursor {
+            let before = people.count
+            await fetch(cursor: cursor)
+            if nextCursor == cursor { return }  // it failed
+            if !blocked.visible(Array(people.dropFirst(before))).isEmpty { return }
+        }
     }
 
     private func fetch(cursor: String?) async {

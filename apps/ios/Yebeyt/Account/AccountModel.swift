@@ -125,7 +125,7 @@ final class AccountModel {
             session.apply(signedIn)
             self.provider = provider
             providerName = result.name
-            await carryOverProgress()
+            if stats.claim(for: signedIn.user.id) { await carryOverProgress() }  // another account's points are not carried over
             return .signedIn(needsUsername: signedIn.user.username == nil)
         } catch SignInError.canceled {
             return .canceled

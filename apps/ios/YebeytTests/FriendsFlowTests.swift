@@ -60,10 +60,12 @@ struct FeedModelTests {
                 : .json(200, #"{"items":[\#(first)],"nextCursor":"next"}"#)
         }
         defer { env.cleanUp() }
+        await env.session.restore()
+        let nobody = BlockedPeople(session: env.session)
         let feed = FeedModel(session: env.session)
         await feed.refresh()
         #expect(feed.entries.count == 1 && feed.hasMore)
-        await feed.loadMore()
+        await feed.loadMore(hiding: nobody)
         #expect(feed.entries.count == 2 && !feed.hasMore)
         await feed.refresh()
         #expect(feed.entries.count == 1)
@@ -175,10 +177,12 @@ struct PeopleSearchTests {
                 : .json(200, #"{"items":[{"username":"b","displayName":null,"avatar":null,"isFriend":true}],"nextCursor":null}"#)
         }
         defer { env.cleanUp() }
+        await env.session.restore()
+        let nobody = BlockedPeople(session: env.session)
         let friends = FriendsListModel(session: env.session)
         await friends.load()
         #expect(friends.people.map(\.username) == ["a"] && friends.hasMore && friends.people[0].followed)
-        await friends.loadMore()
+        await friends.loadMore(hiding: nobody)
         #expect(friends.people.map(\.username) == ["a", "b"] && !friends.hasMore)
     }
 }

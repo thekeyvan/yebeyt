@@ -48,11 +48,12 @@ private struct FriendsScreenBody: View {
                 .accessibilityIdentifier("noFriends")
         case .loaded:
             PeopleCard {
-                ForEach(blocked.visible(model.people), id: \.username) { person in
+                let visible = blocked.visible(model.people)
+                ForEach(visible, id: \.username) { person in
                     PersonRow(person: person, busy: model.pending.contains(person.username)) {
                         Task { toast = await model.toggleFollow(person.username) }
                     }
-                    .onAppear { if person.username == model.people.last?.username { Task { await model.loadMore() } } }
+                    .onAppear { if person.username == visible.last?.username { Task { await model.loadMore(hiding: blocked) } } }
                 }
             }
         }

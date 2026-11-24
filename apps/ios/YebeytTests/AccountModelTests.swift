@@ -211,6 +211,26 @@ struct AccountModelTests {
         #expect(sent.json["bestByGame"] as? [String: Int] == ["daily": 100, "jigsaw": 215])
     }
 
+    @Test func theFirstAccountToSignInOwnsThePointsOnThePhoneAndAnotherGetsNone() async {
+        let stats = GameStats(defaults: GameFixtures.defaults())
+        stats.award(70)
+        let first = fixture(credentials: .google(), username: "ali", stats: stats)
+        defer { first.keychain.delete() }
+        _ = await first.account.signIn(with: .google)
+        #expect(stats.owner == "00000000-0000-0000-0000-000000000009")
+        #expect(first.stub.requests(to: "/v1/me/progress").count == 1)
+
+        stats.claim(for: "someone-else")  // not the owner: nothing changes
+        #expect(stats.owner == "00000000-0000-0000-0000-000000000009")
+        let other = GameStats(defaults: GameFixtures.defaults())
+        other.award(70)
+        #expect(other.claim(for: "a") && !other.claim(for: "b"))
+        let second = fixture(credentials: .google(), username: "ali", stats: other)
+        defer { second.keychain.delete() }
+        _ = await second.account.signIn(with: .google)  // the stub signs in as user …09, not "a"
+        #expect(second.stub.requests(to: "/v1/me/progress").isEmpty)
+    }
+
     @Test func aGuestWithNothingSendsNothing() async {
         let f = fixture(credentials: .google(), username: "ali")
         defer { f.keychain.delete() }

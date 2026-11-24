@@ -21,7 +21,7 @@ struct YebeytApp: App {
     @State private var reactionsSync: ReactionsSync
     @State private var scoreSync: ScoreSync
     @State private var myStats: MyStats
-    @State private var blocked = BlockedPeople()
+    @State private var blocked: BlockedPeople
     #if DEBUG
     private let showsStickers: Bool
     #endif
@@ -90,6 +90,7 @@ struct YebeytApp: App {
         stats.finishedDailyHandler = { day, solved, tries, points in scores.reportDaily(on: day, solved: solved, tries: tries, points: points) }
         _scoreSync = State(initialValue: scores)
         _myStats = State(initialValue: myStats)
+        _blocked = State(initialValue: BlockedPeople(session: accounts.session))
         #if DEBUG
         if options.seedDivan { marks.seedDivan() }
         #endif

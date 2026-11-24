@@ -35,12 +35,17 @@ final class FeedModel {
         await loadCounts(for: page.items)
     }
 
-    func loadMore() async {
-        guard let cursor = nextCursor, let page = await fetch(cursor: cursor) else { return }
-        let known = Set(entries.map(\.id))
-        entries += page.items.map(Self.entry).filter { !known.contains($0.id) }
-        nextCursor = page.nextCursor
-        await loadCounts(for: page.items)
+    /// The next page. When everything on it is hidden (the people on it were blocked), the page after it is asked for too, so
+    /// the list does not stop short of rows that are not on screen.
+    func loadMore(hiding blocked: BlockedPeople) async {
+        while let cursor = nextCursor, let page = await fetch(cursor: cursor) {
+            let known = Set(entries.map(\.id))
+            let added = page.items.map(Self.entry).filter { !known.contains($0.id) }
+            entries += added
+            nextCursor = page.nextCursor
+            await loadCounts(for: page.items)
+            if !blocked.visible(added).isEmpty { return }
+        }
     }
 
     /// The counts of the couplets of a page, in one call (the server takes 50 keys; a page has 30 items).

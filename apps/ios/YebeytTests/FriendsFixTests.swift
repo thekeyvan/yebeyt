@@ -118,8 +118,11 @@ struct FriendsFixTests {
         #expect(FeedModel.shown(0, serverMine: true, localMine: false) == 0)
     }
 
-    @Test func aBlockedPersonLeavesEveryLoadedListAtOnce() {
-        let blocked = BlockedPeople()
+    @Test func aBlockedPersonLeavesEveryLoadedListAtOnce() async {
+        let env = SignedInStub()
+        defer { env.cleanUp() }
+        await env.session.restore()
+        let blocked = BlockedPeople(session: env.session)
         let people = [FoundPerson(username: "a", displayName: nil, avatar: nil, isFollowing: false, isFriend: false), FoundPerson(username: "b", displayName: nil, avatar: nil, isFollowing: true, isFriend: true)]
         let entry = { (user: String) in
             FeedModel.Entry(id: user, item: FeedItem(type: .like, user: PersonShort(username: user, displayName: nil, avatar: nil), key: "/a/b#0", date: nil, tries: nil, at: "2026-11-24T08:00:00.000Z"))
@@ -128,6 +131,77 @@ struct FriendsFixTests {
         blocked.add("a")
         #expect(blocked.visible(people).map(\.username) == ["b"])
         #expect(blocked.visible([entry("a"), entry("b")]).map(\.id) == ["b"])
+    }
+
+    @Test func blocksBelongToTheAccountThatMadeThemAndGoWithTheSignOut() async {
+        let env = SignedInStub()
+        defer { env.cleanUp() }
+        await env.session.restore()
+        let blocked = BlockedPeople(session: env.session)
+        blocked.add("a")
+        #expect(blocked.usernames == ["a"])
+        env.session.apply(APISession(accessToken: "a2", refreshToken: "r2", user: APIUser(
+            id: "00000000-0000-0000-0000-000000000002", username: "second", displayName: nil, usernameChangedAt: nil,
+            createdAt: "2026-11-23T08:00:00.000Z", providers: [.google]
+        )))
+        #expect(blocked.usernames.isEmpty, "another account sees none of them")
+        await env.session.signOut()
+        blocked.add("b")  // nobody is signed in: nothing is kept
+        #expect(blocked.usernames.isEmpty)
+    }
+
+    @Test func theFeedKeepsAskingWhenAWholePageIsBlocked() async {
+        func item(_ user: String, _ n: Int) -> String {
+            #"{"type":"daily","user":{"username":"\#(user)","displayName":null,"avatar":null},"date":"2026-11-24","tries":1,"at":"2026-11-24T08:00:0\#(n).000Z"}"#
+        }
+        let (first, second, third) = (item("ok", 1), item("bad", 2) + "," + item("bad", 3), item("ok2", 4))
+        let env = SignedInStub { request in
+            if request.query.contains("cursor=p2") { .json(200, #"{"items":[\#(second)],"nextCursor":"p3"}"#) }
+            else if request.query.contains("cursor=p3") { .json(200, #"{"items":[\#(third)],"nextCursor":null}"#) }
+            else { .json(200, #"{"items":[\#(first)],"nextCursor":"p2"}"#) }
+        }
+        defer { env.cleanUp() }
+        await env.session.restore()
+        let blocked = BlockedPeople(session: env.session)
+        blocked.add("bad")
+        let feed = FeedModel(session: env.session)
+        await feed.refresh()
+        await feed.loadMore(hiding: blocked)
+        #expect(blocked.visible(feed.entries).map(\.item.user.username) == ["ok", "ok2"])
+        #expect(!feed.hasMore)
+    }
+
+    @Test func theFriendsListKeepsAskingWhenAWholePageIsBlocked() async {
+        func person(_ name: String) -> String { #"{"username":"\#(name)","displayName":null,"avatar":null,"isFriend":true}"# }
+        let (a, b, c) = (person("a"), person("bad"), person("c"))
+        let env = SignedInStub { request in
+            if request.query.contains("cursor=p2") { .json(200, #"{"items":[\#(b)],"nextCursor":"p3"}"#) }
+            else if request.query.contains("cursor=p3") { .json(200, #"{"items":[\#(c)],"nextCursor":null}"#) }
+            else { .json(200, #"{"items":[\#(a)],"nextCursor":"p2"}"#) }
+        }
+        defer { env.cleanUp() }
+        await env.session.restore()
+        let blocked = BlockedPeople(session: env.session)
+        blocked.add("bad")
+        let friends = FriendsListModel(session: env.session)
+        await friends.load()
+        await friends.loadMore(hiding: blocked)
+        #expect(blocked.visible(friends.people).map(\.username) == ["a", "c"])
+        #expect(!friends.hasMore)
+    }
+
+    @Test func pointsCarriedToAnotherAccountAreNotCountedForThisOne() async {
+        let stats = GameStats(defaults: UserDefaults(suiteName: "yebeyt-tests-\(UUID().uuidString)")!)
+        stats.award(900)
+        let env = SignedInStub { _ in .json(200, #"{"totalPoints":300,"weekPoints":300,"streakDays":2,"league":{"tier":0}}"#) }
+        defer { env.cleanUp() }
+        await env.session.restore()
+        let mine = MyStats(local: stats, session: env.session)
+        #expect(mine.points == 900)  // nobody's yet: these are the signed-in person's own
+        _ = stats.claim(for: "someone-else")
+        #expect(mine.points == 0, "until the server answers, another account's points are not shown")
+        await mine.refresh()
+        #expect(mine.points == 300 && mine.streak == 2)
     }
 
     @Test func myRowFarDownTheGlobalListComesLastAfterAGap() {

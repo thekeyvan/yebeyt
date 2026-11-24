@@ -13,10 +13,13 @@ final class GameStats {
     }
 
     static let defaultsKey = "games.stats"
+    static let ownerKey = "games.stats.owner"
 
     private var saved: Saved
     /// The Tehran day the app shows; `refreshToday()` moves it at midnight.
     private(set) var today: TehranDay
+    /// The account these points were carried over to; nil while they are a guest's, or from before accounts knew.
+    private(set) var owner: String?
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let now: () -> Date
 
@@ -24,10 +27,21 @@ final class GameStats {
         self.defaults = defaults
         self.now = now
         today = TehranDay(date: now())
+        owner = defaults.string(forKey: Self.ownerKey)
         saved = defaults.data(forKey: Self.defaultsKey).flatMap { try? JSONDecoder().decode(Saved.self, from: $0) } ?? Saved()
     }
 
     var points: Int { saved.points }
+
+    /// A person signs in: the points on the phone go to the first account that does, and stay that account's. Returns
+    /// whether they are `userID`'s.
+    func claim(for userID: String) -> Bool {
+        if owner == nil {
+            owner = userID
+            defaults.set(userID, forKey: Self.ownerKey)
+        }
+        return owner == userID
+    }
 
     /// The days in a row the daily puzzle was solved, up to today. A day not played yet doesn't break it
     /// until the day is over.

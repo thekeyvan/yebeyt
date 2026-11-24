@@ -2,7 +2,8 @@ import Foundation
 import Observation
 
 /// The points and the streak shown on the بازی tab and on Profile: for a signed-in person the server's (`/v1/me/stats`)
-/// once it has answered, but never less than the phone's own (points from before the account, rounds not sent yet). Also how many friends solved today's puzzle.
+/// once it has answered, but never less than the phone's own (points from before the account, rounds not sent yet) when
+/// those are this account's: points carried over to another account are not counted for this one. Also how many friends solved today's puzzle.
 @MainActor @Observable
 final class MyStats {
     private(set) var remote: RemoteStats?
@@ -17,8 +18,11 @@ final class MyStats {
         self.session = session
     }
 
-    var points: Int { session.isSignedIn ? max(remote?.totalPoints ?? 0, local.points) : local.points }
-    var streak: Int { session.isSignedIn ? max(remote?.streakDays ?? 0, local.streak) : local.streak }
+    /// The phone's points are the signed-in account's own (or nobody's yet).
+    private var localIsMine: Bool { local.owner == nil || local.owner == session.user?.id }
+
+    var points: Int { session.isSignedIn ? max(remote?.totalPoints ?? 0, localIsMine ? local.points : 0) : local.points }
+    var streak: Int { session.isSignedIn ? max(remote?.streakDays ?? 0, localIsMine ? local.streak : 0) : local.streak }
 
     /// «۳ تا از دوستات حلش کردن», only when someone did.
     var friendsLine: String? {
