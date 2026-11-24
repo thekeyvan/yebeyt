@@ -104,9 +104,12 @@ final class PlayUITests: XCTestCase {
         let field = app.textFields["moshField"]
         XCTAssertTrue(field.waitForExistence(timeout: 10))
         field.tap()
-        field.typeText("دلم میخواد یه بیت بگم\n")
-        XCTAssertTrue(app.staticTexts["این بیت رو پیدا نکردیم"].waitForExistence(timeout: 20))
-        XCTAssertFalse(element(app, "moshMove-3").exists)
+        let typed = "دلم میخواد یه بیت بگم"
+        field.typeText(typed + "\n")
+        // The toast is gone after 2.5 s, which a slow run can pass inside typeText: check what lasts. A sent couplet would
+        // clear the field and add a move.
+        XCTAssertFalse(element(app, "moshMove-3").waitForExistence(timeout: 3))
+        XCTAssertEqual(field.value as? String, typed)
     }
 
     @MainActor func testGivingUpAsksOnceAndEndsTheGame() {
