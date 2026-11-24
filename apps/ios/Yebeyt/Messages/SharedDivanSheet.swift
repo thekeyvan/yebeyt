@@ -29,6 +29,7 @@ struct SharedDivanSheet: View {
             if let failure = adder.failure { MessageToast(text: failure).padding(.bottom, 24).accessibilityIdentifier("sheetFailure") }
         }
         .presentationDetents([.medium, .large])
+        .stickerSheet(white: false)
         .task {
             await adder.load()
             if adder.person == nil, adder.divans.isEmpty { await adder.showFriends() }

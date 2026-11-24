@@ -31,7 +31,7 @@ final class FeedbackSheetPresenter: NSObject, FeedbackPresenting, UIAdaptivePres
         controller.presentationController?.delegate = self
         if let sheet = controller.sheetPresentationController {
             sheet.preferredCornerRadius = 30
-            sheet.prefersGrabberVisible = false
+            sheet.prefersGrabberVisible = true
             sheet.prefersScrollingExpandsWhenScrolledToEdge = false
             if center.stage == .choices {
                 sheet.detents = [.custom(identifier: .init("choices")) { context in min(520, context.maximumDetentValue) }]

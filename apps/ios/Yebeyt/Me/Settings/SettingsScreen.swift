@@ -69,10 +69,6 @@ struct SettingsScreen: View {
         }
         .sheet(isPresented: $textOpen) {
             TextSheet { textOpen = false }
-                .presentationDetents([.large])
-                .presentationBackground(Tokens.Colors.white)
-                .presentationDragIndicator(.hidden)
-                .environment(\.layoutDirection, .rightToLeft)
         }
         .sheet(isPresented: $confirmingDelete) { DeleteAccountSheet(isPresented: $confirmingDelete) }
         .sheet(isPresented: $askingSignOut, onDismiss: {

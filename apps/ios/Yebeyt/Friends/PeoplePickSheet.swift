@@ -42,6 +42,7 @@ struct PeoplePickSheet: View {
             .dottedPaper()
             .toast($toast)
             .presentationDetents([.large])
+            .stickerSheet(white: false)
             .task { focused = true }
         }
 

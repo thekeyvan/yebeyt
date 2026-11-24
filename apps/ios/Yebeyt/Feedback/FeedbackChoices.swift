@@ -47,7 +47,6 @@ struct FeedbackChoices: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Capsule().fill(Tokens.Colors.ring).frame(width: 40, height: 5).frame(maxWidth: .infinity)
             VStack(alignment: .leading, spacing: 6) {
                 Text("می‌خوای چیزی بگی؟").font(.title(26)).foregroundStyle(Tokens.Colors.ink)
                     .accessibilityAddTraits(.isHeader)
@@ -66,7 +65,7 @@ struct FeedbackChoices: View {
                 .accessibilityIdentifier("feedbackShakeNote")
         }
         .padding(.horizontal, 20)
-        .padding(.top, 10)
+        .padding(.top, 26)
         .padding(.bottom, 8)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Tokens.Colors.white.ignoresSafeArea())

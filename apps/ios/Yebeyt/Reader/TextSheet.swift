@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The «آ» sheet: size, font, weight, hemistich layout, line spacing and theme. Every change applies at once
-/// to the reader behind it and is kept on the phone.
+/// The «آ» sheet, a native sheet as tall as its content: size, font, weight, hemistich layout, line spacing and theme.
+/// Every change applies at once to the reader behind it and is kept on the phone.
 struct TextSheet: View {
     @Environment(TextSettingsStore.self) private var store
     let close: () -> Void
@@ -10,7 +10,6 @@ struct TextSheet: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Capsule().fill(Tokens.Colors.ring).frame(width: 40, height: 5)
             HStack {
                 Text("متن").font(.title(22)).foregroundStyle(Tokens.Colors.ink)
                 Spacer()
@@ -25,14 +24,11 @@ struct TextSheet: View {
             spacingRow
             themeRow
         }
-        .padding(EdgeInsets(top: 10, leading: 20, bottom: 28, trailing: 20))
+        .padding(EdgeInsets(top: 28, leading: 20, bottom: 28, trailing: 20))
         .frame(maxWidth: .infinity)
-        .background {
-            UnevenRoundedRectangle(topLeadingRadius: 30, topTrailingRadius: 30)
-                .fill(Tokens.Colors.white)
-                .shadow(color: Tokens.Colors.ink.opacity(0.16), radius: 12, x: 0, y: -6)
-                .ignoresSafeArea(edges: .bottom)
-        }
+        .fitsSheetHeight()
+        .stickerSheet()
+        .environment(\.layoutDirection, .rightToLeft)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("تنظیم متن")
     }

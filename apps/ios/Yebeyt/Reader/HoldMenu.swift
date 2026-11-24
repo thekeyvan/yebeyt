@@ -39,6 +39,8 @@ struct HoldMenu: View {
     /// The board puts the lifted couplet 258pt below the top of the screen (844pt tall).
     private static let boardTop: CGFloat = 258
     private static let bottomMargin: CGFloat = 24
+    /// Where the menu grows from: the lifted couplet, a third of the way down.
+    static let origin = UnitPoint(x: 0.5, y: 0.35)
 
     @State private var menuHeight: CGFloat = 0
 

@@ -32,12 +32,11 @@ struct ReaderView: View {
             theme.background.ignoresSafeArea()
             page(theme)
                 .blur(radius: model.holdIndex == nil ? 0 : 3)
-                .accessibilityHidden(model.holdIndex != nil || model.textSheetOpen)
+                .accessibilityHidden(model.holdIndex != nil)
             if model.phase == .loaded, model.mode == .couplet { rail(theme) }
-            if model.textSheetOpen { textSheet }
             if let index = model.holdIndex, let held = model.held(index) {
                 HoldMenu(
-                    held: held, dismiss: { withAnimation(.snappy) { model.holdIndex = nil } },
+                    held: held, dismiss: { withAnimation(Motion.bouncy) { model.holdIndex = nil } },
                     share: { model.shareCouplet(index) },
                     openCouplet: { withMeaning in withAnimation(.snappy) { model.openCouplet(index, withMeaning: withMeaning) } },
                     playWithCouplet: { index in app.startGame { playWithCouplet(index) } },
@@ -47,13 +46,17 @@ struct ReaderView: View {
                     },
                     offerUndo: { model.showToast($0, undo: $1) }
                 )
-                .transition(.opacity)
+                .motionTransition { Motion.menu($0, anchor: HoldMenu.origin) }
             }
         }
         .overlay(alignment: .bottom) { toast }
-        .animation(.snappy, value: model.holdIndex)
-        .animation(.snappy, value: model.textSheetOpen)
+        .animation(Motion.bouncy, value: model.holdIndex)
         .animation(Motion.bouncy, value: model.toast)
+        .sheet(isPresented: $model.textSheetOpen) {
+            // The page behind stays lit and live: every change of the text shows on it at once.
+            TextSheet { model.textSheetOpen = false }
+                .presentationBackgroundInteraction(.enabled)
+        }
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
         .sharedDivanSheet(item: $sharedTarget) { model.showToast($0) }
         .leaveGameQuestion(app)
@@ -129,20 +132,6 @@ struct ReaderView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity)
-    }
-
-    private var textSheet: some View {
-        ZStack(alignment: .bottom) {
-            Tokens.Colors.ink.opacity(0.12)
-                .ignoresSafeArea()
-                .onTapGesture { model.textSheetOpen = false }
-                .accessibilityHidden(true)
-            TextSheet { model.textSheetOpen = false }
-                .transition(.move(edge: .bottom))
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(.isModal)
-        .accessibilityAction(.escape) { model.textSheetOpen = false }
     }
 
     @ViewBuilder private var toast: some View {

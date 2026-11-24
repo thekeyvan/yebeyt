@@ -43,6 +43,7 @@ struct CoupletPickerSheet: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .dottedPaper()
         .presentationDetents([.large])
+        .stickerSheet(white: false)
         .task { await loadDivan() }
         .task(id: query) { await search() }
     }
