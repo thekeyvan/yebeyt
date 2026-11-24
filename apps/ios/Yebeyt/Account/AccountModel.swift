@@ -3,7 +3,7 @@ import Observation
 
 /// What needs an account: the first use of it shows the account gate.
 enum AccountFeature: String, Sendable {
-    case likes, messages, invite, profile
+    case likes, messages, invite, profile, leaderboard
 
     /// Fits «برای … یه حساب لازمه».
     var title: String {
@@ -12,6 +12,7 @@ enum AccountFeature: String, Sendable {
         case .messages: "پیام دادن به دوستات"
         case .invite: "دعوت دوستات"
         case .profile: "همگام کردن دیوان و امتیازهات"
+        case .leaderboard: "دیدن رده‌بندی"
         }
     }
 }

@@ -1,0 +1,120 @@
+import SwiftUI
+
+/// Someone's face in a list: a circle with a white border and a soft shadow. A person who hasn't chosen one has the
+/// board's face; a hidden stranger (`plain`) is a bare circle.
+struct FaceCircle: View {
+    var parts: AvatarParts?
+    var size: CGFloat = 40
+    var plain = false
+
+    var body: some View {
+        Group {
+            if plain {
+                Tokens.Colors.ring
+            } else {
+                AvatarView(parts: parts ?? .standard)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .overlay(Circle().strokeBorder(Tokens.Colors.white, lineWidth: 3))
+        .shadow(color: Tokens.Colors.ink.opacity(0.22), radius: 2.5, x: 0, y: 1)
+        .accessibilityHidden(true)
+    }
+}
+
+/// «دنبال کن» (lapis) or «دنبالش می‌کنی» (grey).
+struct FollowButton: View {
+    let following: Bool
+    var busy = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(following ? "دنبالش می‌کنی" : "دنبال کن")
+                .font(.ui(13, weight: .bold))
+                .foregroundStyle(following ? Tokens.Colors.muted : Tokens.Colors.white)
+                .padding(.horizontal, 18)
+                .frame(height: 38)
+                .background(Capsule().fill(following ? Tokens.Colors.trackLight : Tokens.Colors.lapis))
+                .opacity(busy ? 0.6 : 1)
+        }
+        .buttonStyle(.plain)
+        .disabled(busy)
+    }
+}
+
+/// A person in a list (search, friends): face, name, @username and the follow button. In a stack, the row opens
+/// the person's page; in onboarding (`opens: false`) it doesn't.
+struct PersonRow: View {
+    let person: FoundPerson
+    var busy = false
+    var opens = true
+    let toggle: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            if opens {
+                NavigationLink(value: Destination.person(person.username)) { identity }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("person-\(person.username)")
+            } else {
+                identity
+            }
+            FollowButton(following: person.followed, busy: busy, action: toggle)
+                .accessibilityIdentifier("follow-\(person.username)")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private var identity: some View {
+        HStack(spacing: 12) {
+            FaceCircle(parts: person.avatar, size: 48)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(person.short.name).font(.ui(15, weight: .bold)).foregroundStyle(Tokens.Colors.ink).lineLimit(1)
+                Text("@\(person.username)").font(.ui(12)).foregroundStyle(Tokens.Colors.muted).lineLimit(1)
+                    .environment(\.layoutDirection, .leftToRight)
+            }
+            Spacer(minLength: 0)
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// The white card the rows of people sit in.
+struct PeopleCard<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 0) { content }
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity)
+            .background { RoundedRectangle(cornerRadius: 24).fill(Tokens.Colors.white).shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 11, x: 0, y: 6) }
+    }
+}
+
+extension View {
+    /// A short black pill at the bottom for a message («گزارشت رسید»); it goes by itself.
+    func toast(_ message: Binding<String?>) -> some View {
+        overlay(alignment: .bottom) {
+            if let text = message.wrappedValue {
+                Text(text)
+                    .font(.ui(13, weight: .medium))
+                    .foregroundStyle(Tokens.Colors.white)
+                    .padding(.horizontal, 16).padding(.vertical, 9)
+                    .background(Capsule().fill(Tokens.Colors.ink))
+                    .padding(.bottom, 96)
+                    .transition(.opacity)
+                    .accessibilityIdentifier("toast")
+            }
+        }
+        .animation(.snappy, value: message.wrappedValue)
+        .task(id: message.wrappedValue) {
+            guard message.wrappedValue != nil else { return }
+            try? await Task.sleep(for: .seconds(2.5))
+            if !Task.isCancelled { message.wrappedValue = nil }
+        }
+    }
+}

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// OnbFriends: the invite link to send. (The board's contacts card and friends list wait for friends to exist:
-/// accounts have no phone numbers.)
+/// OnbFriends: the invite link to send, and a search for people by username under it. (The board's contacts card can't
+/// exist: accounts have no phone numbers.)
 struct OnbFriendsView: View {
     @Environment(OnboardingModel.self) private var onboarding
     @Environment(AccountModel.self) private var account
@@ -20,8 +20,15 @@ struct OnbFriendsView: View {
             }
             OnbHeading(title: "دوستات رو پیدا کن", text: "شعر با رفیق قشنگ‌تره. هر کی رو پیدا کنی، بیت‌هایی که به اشتراک می‌ذاره توی خونه‌ت میاد.")
                 .frame(maxWidth: .infinity, alignment: .leading)
-            inviteCard
-            Spacer(minLength: 0)
+            ScrollView {
+                VStack(spacing: 16) {
+                    inviteCard
+                    OnboardingPeopleSearch()
+                }
+                .padding(.vertical, 4)
+            }
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
             Button("بریم خونه") { onboarding.finish() }
                 .buttonStyle(OnbButtonStyle())
                 .accessibilityIdentifier("onbHome")

@@ -25,6 +25,14 @@ struct DestinationView: View {
             AllPoetsScreen()
         case .gamesCatalog:
             GamesCatalogScreen()
+        case .people:
+            PeopleScreen()
+        case .person(let username):
+            PersonScreen(username: username)
+        case .leaderboard:
+            LeaderboardScreen()
+        case .friends:
+            FriendsScreen()
         case .divan:
             DivanScreen()
         case .privacy:

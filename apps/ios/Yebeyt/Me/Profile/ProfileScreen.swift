@@ -34,6 +34,7 @@ struct ProfileScreen: View {
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task(id: firstKept.map(\.key)) { await divan.load(firstKept, using: poetry) }
+        .task(id: session.user?.username) { await myStats.refreshFriendsCount() }
     }
 
     // MARK: Top
@@ -82,9 +83,17 @@ struct ProfileScreen: View {
                     .accessibilityIdentifier("profileName")
                 if session.isSignedIn {
                     if let username = session.user?.username {
-                        Text("@\(username)").font(.ui(13)).foregroundStyle(Tokens.Colors.muted)
-                            .environment(\.layoutDirection, .leftToRight)
-                            .accessibilityIdentifier("profileUsername")
+                        HStack(spacing: 4) {
+                            Text("@\(username)").environment(\.layoutDirection, .leftToRight)
+                                .accessibilityIdentifier("profileUsername")
+                            if let friends = myStats.friendsCount {
+                                Text("·")
+                                Button { model.mePath.append(.friends) } label: { Text("\(PersianDigits.string(friends)) دوست") }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("profileFriends")
+                            }
+                        }
+                        .font(.ui(13)).foregroundStyle(Tokens.Colors.muted)
                     }
                 } else {
                     signInButton

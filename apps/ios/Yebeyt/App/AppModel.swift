@@ -22,6 +22,8 @@ final class AppModel {
     var unreadCount: Int
     /// The poem on screen in the full-screen reader, nil when it is closed.
     var reader: ReaderRoute?
+    /// The screens pushed on the خونه tab: finding friends and a person's page.
+    var homePath: [Destination]
     /// The screens pushed on the کاوش tab: the library, a book, a poet, search.
     var explorePath: [Destination]
     /// The screens pushed on the بازی tab: the catalog.
@@ -40,12 +42,13 @@ final class AppModel {
     #endif
 
     init(
-        tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil, explorePath: [Destination] = [],
+        tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil, homePath: [Destination] = [], explorePath: [Destination] = [],
         gamesPath: [Destination] = [], mePath: [Destination] = [], game: GameRoute? = nil
     ) {
         selectedTab = tab
         self.unreadCount = unreadCount
         self.reader = reader
+        self.homePath = homePath
         self.explorePath = explorePath
         self.gamesPath = gamesPath
         self.mePath = mePath
@@ -54,6 +57,7 @@ final class AppModel {
 
     /// Tapping the tab you are on goes back to its first screen.
     func select(_ tab: Tab) {
+        if tab == selectedTab, tab == .home { homePath = [] }
         if tab == selectedTab, tab == .explore { explorePath = [] }
         if tab == selectedTab, tab == .games { gamesPath = [] }
         if tab == selectedTab, tab == .me { mePath = [] }

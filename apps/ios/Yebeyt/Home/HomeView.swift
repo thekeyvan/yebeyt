@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The home tab: the date, «بیتِ امروز» and its card. The friends' section stays hidden until friends exist.
+/// The home tab: the date, «بیتِ امروز» and its card, and for a signed-in person «دوستات».
 struct HomeView: View {
     @Environment(AppModel.self) private var app
     @Environment(PoetryStore.self) private var poetry
@@ -27,6 +27,7 @@ struct HomeView: View {
                         reject: { Task { await home.reject(poetry: poetry, library: library) } }
                     )
                 }
+                FriendsFeedSection()
             }
             .padding(.horizontal, 18)
             .padding(.top, 8)

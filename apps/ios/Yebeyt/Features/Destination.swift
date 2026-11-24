@@ -15,6 +15,14 @@ enum Destination: Hashable, Sendable {
     case allPoets
     /// «همه‌ی بازی‌ها», pushed on the بازی tab.
     case gamesCatalog
+    /// «پیدا کردن دوست», pushed on the خونه tab.
+    case people
+    /// Another person's page, by username.
+    case person(String)
+    /// رده‌بندی, pushed on the بازی tab.
+    case leaderboard
+    /// My friends, pushed on the من tab.
+    case friends
     // Pushed on the من tab:
     case divan
     case privacy

@@ -45,7 +45,7 @@ struct AccountGateSheet: View {
                 .accessibilityHidden(true)
         case .messages, .invite:
             GameIcon(kind: .mosh, size: 54)
-        case .profile:
+        case .profile, .leaderboard:
             Circle().fill(Tokens.Colors.lapis)
                 .overlay { AvatarView(parts: .standard).padding(5) }
                 .overlay(Circle().strokeBorder(Tokens.Colors.white, lineWidth: 4))

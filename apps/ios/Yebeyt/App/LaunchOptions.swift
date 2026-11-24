@@ -11,7 +11,9 @@ import Foundation
 /// `-beytStub 1` makes گوش کن use canned recitations (no network, no sound).
 /// With `poem:` the reader opens, and `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`,
 /// `-beytMeaning 1` and `-beytHold <n>` set its state. The من routes `-beytRoute me|divan|privacy|avatar|invite|settings|badges`
-/// open the من tab, with that screen pushed (`me` is the profile), and `-beytSeedDivan 1` first keeps some sample couplets. `-beytFresh 1` first forgets what the phone has kept
+/// open the من tab, with that screen pushed (`me` is the profile), `-beytRoute friends` pushes my friends there, and `-beytSeedDivan 1`
+/// first keeps some sample couplets. `-beytRoute people|person:<username>` open the خونه tab with that screen pushed and `-beytRoute leaderboard`
+/// the بازی tab with رده‌بندی (they want `-beytSignedIn 1`). `-beytFresh 1` first forgets what the phone has kept
 /// (reading progress, marks, follows, rejected couplets, game stats). Values that don't parse are ignored.
 struct LaunchOptions {
     enum Route: Equatable {
@@ -41,6 +43,10 @@ struct LaunchOptions {
         case invite
         case settings
         case badges
+        case people
+        case person(String)
+        case leaderboard
+        case friends
 
         init?(_ text: String) {
             let (name, value) = text.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
@@ -66,6 +72,10 @@ struct LaunchOptions {
             case ("invite", nil): self = .invite
             case ("settings", nil): self = .settings
             case ("badges", nil): self = .badges
+            case ("people", nil): self = .people
+            case ("leaderboard", nil): self = .leaderboard
+            case ("friends", nil): self = .friends
+            case ("person", let username?) where !username.isEmpty: self = .person(username)
             case ("poem", let path?) where Self.isPath(path): self = .poem(path)
             case ("book", let path?) where Self.isPath(path): self = .book(path)
             case ("section", let path?) where Self.isPath(path): self = .section(path)
@@ -81,7 +91,7 @@ struct LaunchOptions {
         /// The route opens something on the من tab.
         var isMe: Bool {
             switch self {
-            case .me, .divan, .privacy, .avatar, .invite, .settings, .badges: true
+            case .me, .divan, .privacy, .avatar, .invite, .settings, .badges, .friends: true
             default: false
             }
         }
@@ -89,7 +99,7 @@ struct LaunchOptions {
         /// The route opens something on the بازی tab.
         var isGames: Bool {
             switch self {
-            case .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen: true
+            case .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen, .leaderboard: true
             default: false
             }
         }
@@ -154,7 +164,7 @@ struct LaunchOptions {
         case .book(let path): return library.book(path: path).map { [.library, .book($0.id)] } ?? []
         case .section(let path): return library.section(path: path).map { [.library, .book($0.book.id), .section(book: $0.book.id, section: $0.section.id)] } ?? []
         case .stickers, .poem, .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen, nil: return []
-        case .me, .divan, .privacy, .avatar, .invite, .settings, .badges: return []
+        case .me, .divan, .privacy, .avatar, .invite, .settings, .badges, .friends, .people, .person, .leaderboard: return []
         }
     }
 
@@ -167,12 +177,28 @@ struct LaunchOptions {
         case .invite: [.invite]
         case .settings: [.settings]
         case .badges: [.badges]
+        case .friends: [.friends]
+        default: []
+        }
+    }
+
+    /// The screens a friends route pushes on the خونه tab.
+    var homePath: [Destination] {
+        switch route {
+        case .people: [.people]
+        case .person(let username): [.person(username)]
         default: []
         }
     }
 
     /// The screens a games route pushes on the بازی tab.
-    var gamesPath: [Destination] { route == .gamesCatalog ? [.gamesCatalog] : [] }
+    var gamesPath: [Destination] {
+        switch route {
+        case .gamesCatalog: [.gamesCatalog]
+        case .leaderboard: [.leaderboard]
+        default: []
+        }
+    }
 
     /// The game a games route opens.
     var game: GameRoute? {

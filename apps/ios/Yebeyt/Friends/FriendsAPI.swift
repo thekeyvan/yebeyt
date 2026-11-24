@@ -68,8 +68,8 @@ extension API {
         try await call("GET", "/v1/leaderboard/friends", token: token)
     }
 
-    func globalStandings(token: String) async throws -> GlobalStandings {
-        try await call("GET", "/v1/leaderboard/global", token: token)
+    func globalStandings(cursor: String?, token: String) async throws -> GlobalStandings {
+        try await call("GET", "/v1/leaderboard/global", query: cursor.map { [URLQueryItem(name: "cursor", value: $0)] } ?? [], token: token)
     }
 
     func feed(cursor: String?, token: String) async throws -> Feed {

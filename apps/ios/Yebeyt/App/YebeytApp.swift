@@ -57,7 +57,7 @@ struct YebeytApp: App {
         let screens = options.destinations(in: library)
         let model = AppModel(
             tab: options.tab ?? (options.route?.isMe == true ? .me : options.route.map(\.isGames) == true ? .games : screens.isEmpty ? .home : .explore),
-            unreadCount: options.unread ?? 0, reader: options.reader, explorePath: screens, gamesPath: options.gamesPath,
+            unreadCount: options.unread ?? 0, reader: options.reader, homePath: options.homePath, explorePath: screens, gamesPath: options.gamesPath,
             mePath: options.mePath, game: options.game
         )
         model.autoplay = options.autoplay
