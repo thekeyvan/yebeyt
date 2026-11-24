@@ -42,9 +42,16 @@ final class ReaderModel {
     private(set) var reachedEnd = false
 
     @ObservationIgnored private var toastTask: Task<Void, Never>?
+    @ObservationIgnored private let makeEngine: MakeRecitationEngine
+    @ObservationIgnored private let fetchTiming: @Sendable (URL) async throws -> Data
 
-    init(route: ReaderRoute) {
+    init(
+        route: ReaderRoute, makeEngine: @escaping MakeRecitationEngine = AVRecitationEngine.make,
+        fetchTiming: @escaping @Sendable (URL) async throws -> Data = { try await URLSession.shared.data(from: $0).0 }
+    ) {
         self.route = route
+        self.makeEngine = makeEngine
+        self.fetchTiming = fetchTiming
         mode = route.mode
         index = route.couplet
         textSheetOpen = route.textSheet
@@ -73,6 +80,7 @@ final class ReaderModel {
             let player = RecitationPlayer(
                 couplets: poem.couplets, title: content.title, artist: content.poet,
                 fetchRecitations: { [poemId = poem.id] in try await store.recitations(poemId: poemId) },
+                fetchTiming: fetchTiming, makeEngine: makeEngine,
                 onFailure: { [weak self] in self?.showToast("خوانش باز نشد") }
             )
             self.player = player
@@ -93,12 +101,29 @@ final class ReaderModel {
 
     // MARK: Couplet mode
 
-    /// Moves to a couplet; the meaning card closes, as it belongs to the couplet it was opened on.
+    /// The user moved to a couplet (a swipe or page): the meaning card closes, as it belongs to the couplet it was
+    /// opened on, and a recitation that is playing or paused goes to where that couplet starts.
     func go(to newIndex: Int) {
         let clamped = CoupletPaging.clamp(newIndex, count: couplets.count)
         guard clamped != index else { return }
         index = clamped
         closeMeaning()
+        player?.seek(toCouplet: clamped)
+    }
+
+    /// The recitation reached a couplet and the page follows it. Unlike `go(to:)` it never seeks: the audio is
+    /// already there, and seeking would loop.
+    func follow(_ couplet: Int) {
+        let clamped = CoupletPaging.clamp(couplet, count: couplets.count)
+        guard clamped != index else { return }
+        index = clamped
+        closeMeaning()
+    }
+
+    /// The play button: starts the recitation at the couplet being shown (the page, or the top of the list), or
+    /// pauses and resumes it.
+    func togglePlayback() {
+        player?.toggle(startingAt: actionIndex)
     }
 
     /// Couplet mode at a couplet, from the whole-poem list or the lifted couplet's menu.
@@ -108,6 +133,7 @@ final class ReaderModel {
         index = CoupletPaging.clamp(target, count: couplets.count)
         meaningExpanded = false
         meaningOpen = withMeaning && hasMeaning(index)
+        player?.seek(toCouplet: index)
     }
 
     /// The whole-poem list shows its last couplet: the poem is read.

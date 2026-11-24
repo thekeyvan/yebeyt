@@ -24,16 +24,19 @@ final class RecitationPlayer {
     @ObservationIgnored private let fetchRecitations: @Sendable () async throws -> [Recitation]
     @ObservationIgnored private let fetchTiming: @Sendable (URL) async throws -> Data
     @ObservationIgnored private let onFailure: @MainActor () -> Void
+    @ObservationIgnored private let makeEngine: MakeRecitationEngine
 
     @ObservationIgnored private var recitations: [Recitation]?
     /// Set for a game clip: only this part of the audio is played.
     @ObservationIgnored private var clip: ListenClip?
     @ObservationIgnored private var timing: RecitationTiming?
-    @ObservationIgnored private var player: AVPlayer?
-    @ObservationIgnored private var timeObserver: Any?
-    @ObservationIgnored private var statusObserver: NSKeyValueObservation?
-    @ObservationIgnored private var controlObserver: NSKeyValueObservation?
-    @ObservationIgnored private var endObserver: (any NSObjectProtocol)?
+    @ObservationIgnored private var engine: (any RecitationEngine)?
+    /// The couplet a start from idle begins at, kept up to date when the reader moves while the audio loads.
+    @ObservationIgnored private var wantedCouplet: Int?
+    /// Where the audio goes once its item is ready (a clip's start, or the couplet a start begins at); nil when it plays from 0.
+    @ObservationIgnored private var pendingStart: Double?
+    /// Seeks under way. Until they are done the position is not where the audio is going, so it does not move `activeCouplet`.
+    @ObservationIgnored private var seeksInFlight = 0
     @ObservationIgnored private var startTask: Task<Void, Never>?
     /// Counts starts and cancels, so a load that was cancelled and finishes late can tell it is stale and does nothing.
     @ObservationIgnored private var generation = 0
@@ -43,8 +46,11 @@ final class RecitationPlayer {
 
     /// گوش کن: plays only the clip (the first hemistich of a couplet), from its start to its end. The recitations are
     /// already known, so nothing is fetched; «خوانش باز نشد» comes from `onFailure` as in the reader.
-    convenience init(clip: ListenClip, title: String, onFailure: @escaping @MainActor () -> Void) {
-        self.init(couplets: [], title: title, artist: "", fetchRecitations: { [] }, onFailure: onFailure)
+    convenience init(
+        clip: ListenClip, title: String, makeEngine: @escaping MakeRecitationEngine = AVRecitationEngine.make,
+        onFailure: @escaping @MainActor () -> Void
+    ) {
+        self.init(couplets: [], title: title, artist: "", fetchRecitations: { [] }, makeEngine: makeEngine, onFailure: onFailure)
         self.clip = clip
     }
 
@@ -52,6 +58,7 @@ final class RecitationPlayer {
         couplets: [Couplet], title: String, artist: String,
         fetchRecitations: @escaping @Sendable () async throws -> [Recitation],
         fetchTiming: @escaping @Sendable (URL) async throws -> Data = { try await URLSession.shared.data(from: $0).0 },
+        makeEngine: @escaping MakeRecitationEngine = AVRecitationEngine.make,
         onFailure: @escaping @MainActor () -> Void
     ) {
         self.couplets = couplets
@@ -59,6 +66,7 @@ final class RecitationPlayer {
         self.artist = artist
         self.fetchRecitations = fetchRecitations
         self.fetchTiming = fetchTiming
+        self.makeEngine = makeEngine
         self.onFailure = onFailure
     }
 
@@ -70,14 +78,16 @@ final class RecitationPlayer {
         isAvailable = !list.isEmpty
     }
 
-    func toggle() {
+    /// Play / pause. From idle it starts at `couplet` when the recitation has timing (from the beginning otherwise);
+    /// a resume after a pause continues where the audio paused, whatever `couplet` is.
+    func toggle(startingAt couplet: Int? = nil) {
         switch state {
         case .playing:
-            player?.pause()
+            engine?.pause()
             state = .paused
             publishNowPlaying()
         case .paused:
-            player?.play()
+            engine?.play()
             state = .playing
             publishNowPlaying()
         case .loading:
@@ -86,9 +96,43 @@ final class RecitationPlayer {
             state = .idle
         case .idle:
             generation += 1
+            wantedCouplet = couplet
             state = .loading  // at once, so a second tap before the task runs cancels instead of starting another
             let current = generation
             startTask = Task { await start(current) }
+        }
+    }
+
+    /// The reader moved to another couplet by the user's hand: the audio goes to where that couplet starts and keeps
+    /// playing or staying paused. Does nothing when idle or when the recitation has no timing. Never called for the
+    /// reader following the audio (`activeCouplet`), which would loop.
+    func seek(toCouplet couplet: Int) {
+        switch state {
+        case .idle:
+            return
+        case .loading:
+            wantedCouplet = couplet
+        case .playing, .paused:
+            guard let engine, let seconds = timing?.start(ofCouplet: couplet, in: couplets) else { return }
+            activeCouplet = couplet
+            if pendingStart != nil {
+                pendingStart = seconds  // the item is not ready yet: it will seek there
+            } else {
+                move(engine, to: seconds)
+            }
+        }
+    }
+
+    private func move(_ engine: any RecitationEngine, to seconds: Double) {
+        seeksInFlight += 1
+        let started = generation
+        Task { @MainActor in
+            let done = await engine.seek(to: seconds)
+            guard self.engine === engine else { return }
+            self.seeksInFlight -= 1
+            guard done, started == self.generation else { return }
+            if self.state == .playing { engine.play() }
+            self.publishNowPlaying()
         }
     }
 
@@ -128,7 +172,9 @@ final class RecitationPlayer {
             }
             try Task.checkCancellation()
             guard current == generation else { return }
-            begin(recitation.mp3Url)
+            // Couplet 0 starts the poem from the beginning, as an untimed recitation does.
+            let start = wantedCouplet.flatMap { $0 > 0 ? timing?.start(ofCouplet: $0, in: couplets) : nil }
+            begin(recitation.mp3Url, at: start)
         } catch {
             // Stopped while loading, or a newer start took over: nothing went wrong, so no «خوانش باز نشد».
             guard current == generation else { return }
@@ -140,63 +186,48 @@ final class RecitationPlayer {
         }
     }
 
-    private func begin(_ url: URL) {
+    private func begin(_ url: URL, at start: Double? = nil) {
         teardown()  // never two players at once
         Self.sessionQueue.sync {
             try? AVAudioSession.sharedInstance().setCategory(.playback)
             try? AVAudioSession.sharedInstance().setActive(true)
         }
-        let item: AVPlayerItem
-        if let clip {
-            // Precise timing, so the seek lands on the clip's start; the item ends at the clip's end, exactly, and
-            // the end notification below finishes the clip.
-            item = AVPlayerItem(asset: AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]))
-            item.forwardPlaybackEndTime = CMTime(seconds: clip.end, preferredTimescale: 600)
-            position = clip.start
-        } else {
-            item = AVPlayerItem(url: url)
-        }
-        let player = AVPlayer(playerItem: item)
-        self.player = player
+        if let clip { position = clip.start }
+        pendingStart = clip?.start ?? start
         let current = generation
-        statusObserver = item.observe(\.status) { [weak self] item, _ in
-            switch item.status {
-            case .failed: Task { @MainActor in self?.fail() }
-            case .readyToPlay: Task { @MainActor in self?.startClipPlayback(generation: current) }
-            default: break
-            }
-        }
-        endObserver = NotificationCenter.default.addObserver(forName: AVPlayerItem.didPlayToEndTimeNotification, object: item, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.finish() }
-        }
-        // The system can pause the audio itself (a call, Siri, headphones unplugged) and resume it; follow it.
-        controlObserver = player.observe(\.timeControlStatus) { [weak self] _, _ in
-            Task { @MainActor in self?.timeControlChanged() }
-        }
-        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: clip == nil ? 0.25 : 0.1, preferredTimescale: 600), queue: .main) { [weak self] time in
-            MainActor.assumeIsolated { self?.tick(time.seconds) }
-        }
-        // A clip waits for the item to be ready, seeks, and plays only when the seek is done (see `startClipPlayback`).
-        if clip == nil { player.play() }
+        let engine = makeEngine(url, clip, RecitationEngineEvents(
+            tick: { [weak self] in self?.tick($0) },
+            ended: { [weak self] in self?.finish() },
+            failed: { [weak self] in self?.fail() },
+            ready: { [weak self] in self?.startPlayback(generation: current) },
+            // The system can pause the audio itself (a call, Siri, headphones unplugged) and resume it; follow it.
+            timeControl: { [weak self] in self?.timeControlChanged($0) }
+        ))
+        self.engine = engine
+        // A clip, or a start part-way in, waits for the item to be ready, seeks, and plays only when the seek is done
+        // (see `startPlayback`).
+        if pendingStart == nil { engine.play() }
         state = .playing
         registerRemoteCommands()
         publishNowPlaying()
     }
 
-    /// The item of a clip is ready: seek to the clip's start, then play.
-    private func startClipPlayback(generation started: Int) {
-        guard let clip, let player else { return }
+    /// The item is ready: seek to where it starts (the clip's start, or the couplet), then play.
+    private func startPlayback(generation started: Int) {
+        guard let engine, let start = pendingStart else { return }
+        pendingStart = nil
+        seeksInFlight += 1
         Task { @MainActor in
-            await ClipStart.run(AVClipTransport(player: player), at: clip.start, stillWanted: { [weak self] in
+            await ClipStart.run(engine, at: start, stillWanted: { [weak self] in
                 guard let self else { return false }
-                return ClipStart.shouldPlay(generation: self.generation, started: started, samePlayer: self.player === player, state: self.state)
+                return ClipStart.shouldPlay(generation: self.generation, started: started, samePlayer: self.engine === engine, state: self.state)
             })
+            if self.engine === engine { self.seeksInFlight -= 1 }
         }
     }
 
-    private func timeControlChanged() {
-        guard let player else { return }
-        switch (player.timeControlStatus, state) {
+    private func timeControlChanged(_ status: AVPlayer.TimeControlStatus) {
+        switch (status, state) {
         case (.paused, .playing):
             state = .paused
             publishNowPlaying()
@@ -211,7 +242,8 @@ final class RecitationPlayer {
     private func tick(_ seconds: Double) {
         guard seconds.isFinite else { return }
         if clip != nil { position = seconds }
-        guard let timing else { return }
+        // While the audio is still going to where it was asked to, its position says nothing about the reader.
+        guard let timing, pendingStart == nil, seeksInFlight == 0 else { return }
         let couplet = timing.couplet(at: seconds, in: couplets)
         if couplet != activeCouplet { activeCouplet = couplet }
     }
@@ -231,15 +263,11 @@ final class RecitationPlayer {
     }
 
     private func teardown() {
-        if let timeObserver { player?.removeTimeObserver(timeObserver) }
-        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
-        timeObserver = nil
-        endObserver = nil
-        statusObserver = nil
-        controlObserver = nil
-        if player != nil {
-            player?.pause()
-            player = nil
+        pendingStart = nil
+        seeksInFlight = 0
+        if let engine {
+            engine.stop()
+            self.engine = nil
             Self.sessionQueue.async {
                 try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
             }
@@ -271,11 +299,11 @@ final class RecitationPlayer {
     }
 
     private func publishNowPlaying() {
-        guard let player else { return }
+        guard let engine else { return }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = [
             MPMediaItemPropertyTitle: title,
             MPMediaItemPropertyArtist: artist,
-            MPNowPlayingInfoPropertyElapsedPlaybackTime: player.currentTime().seconds.isFinite ? player.currentTime().seconds : 0,
+            MPNowPlayingInfoPropertyElapsedPlaybackTime: engine.seconds,
             MPNowPlayingInfoPropertyPlaybackRate: state == .playing ? 1.0 : 0.0,
         ]
     }

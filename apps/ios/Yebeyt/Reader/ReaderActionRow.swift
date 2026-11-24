@@ -3,13 +3,12 @@ import SwiftUI
 /// The play / pause button of a couplet: lapis with two bars while playing, light lapis with a triangle when not.
 struct PlayToggle: View {
     let player: RecitationPlayer
+    let toggle: () -> Void
     var diameter: CGFloat = 34
 
     var body: some View {
         let on = player.isPlaying
-        Button {
-            player.toggle()
-        } label: {
+        Button(action: toggle) {
             ZStack {
                 Circle().fill(on ? Tokens.Colors.lapis : Tokens.Colors.lapisTint)
                 if on {
@@ -42,7 +41,7 @@ struct ReaderActionRow: View {
     var body: some View {
         let theme = text.settings.theme
         HStack(spacing: 0) {
-            if let player = model.player, player.isAvailable { PlayToggle(player: player) }
+            if let player = model.player, player.isAvailable { PlayToggle(player: player) { model.togglePlayback() } }
             let liked = marks.contains(.liked, poemPath: model.path, couplet: couplet)
             button("پسند", on: liked) {
                 account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: model.path, couplet: couplet) }

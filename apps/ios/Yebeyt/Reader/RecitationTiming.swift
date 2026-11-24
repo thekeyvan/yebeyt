@@ -39,6 +39,14 @@ struct RecitationTiming: Equatable, Sendable {
         return couplets.count - 1
     }
 
+    /// The seconds a couplet starts being read: the start of its first verse (a single-line couplet is one verse).
+    /// The inverse of `couplet(at:in:)`. Nil when the couplet is not in the text or its verse has no timing.
+    func start(ofCouplet index: Int, in couplets: [Couplet]) -> Double? {
+        guard couplets.indices.contains(index) else { return nil }
+        let verse = couplets[..<index].reduce(0) { $0 + ($1.m2.isEmpty ? 1 : 2) }
+        return starts.first { $0.verse == verse }.map { Double($0.milliseconds) / 1000 }
+    }
+
     /// The seconds the first hemistich of a couplet is read: from the start of its verse to the start of the next
     /// verse. Nil when the couplet has no second hemistich, or either verse has no timing.
     func firstHemistich(ofCouplet index: Int, in couplets: [Couplet]) -> ClosedRange<Double>? {

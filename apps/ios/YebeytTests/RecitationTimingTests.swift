@@ -74,6 +74,38 @@ struct RecitationTimingTests {
         #expect(timing.couplet(at: 45, in: ghazal) == 1)
     }
 
+    @Test func aCoupletStartsWhereItsFirstVerseDoes() throws {
+        let timing = try timing()
+        #expect(timing.start(ofCouplet: 0, in: ghazal) == 0)
+        #expect(timing.start(ofCouplet: 1, in: ghazal) == 15.486)  // verse 2
+        #expect(timing.start(ofCouplet: 2, in: ghazal) == 29.886)  // verse 4
+    }
+
+    @Test func theStartOfASingleLineCoupletCountsOneVerse() throws {
+        let mixed = [Couplet(m1: "نثر", m2: ""), Couplet(m1: "الف", m2: "ب"), Couplet(m1: "پ", m2: "ت")]
+        let timing = try timing()
+        #expect(timing.start(ofCouplet: 0, in: mixed) == 0)
+        #expect(timing.start(ofCouplet: 1, in: mixed) == 7.386)  // verse 1
+        #expect(timing.start(ofCouplet: 2, in: mixed) == 21.036)  // verse 3
+    }
+
+    @Test func aCoupletPastTheEndOrWithoutATimingHasNoStart() throws {
+        let timing = try timing()
+        #expect(timing.start(ofCouplet: 3, in: ghazal) == nil)  // verse 6: the file ends at verse 5
+        #expect(timing.start(ofCouplet: 4, in: ghazal) == nil)  // not in the text
+        #expect(timing.start(ofCouplet: 9, in: ghazal) == nil)
+        #expect(timing.start(ofCouplet: -1, in: ghazal) == nil)
+        #expect(timing.start(ofCouplet: 0, in: []) == nil)
+    }
+
+    @Test func startAndCoupletAtAreInverse() throws {
+        let timing = try timing()
+        for index in 0..<3 {
+            let start = try #require(timing.start(ofCouplet: index, in: ghazal))
+            #expect(timing.couplet(at: start, in: ghazal) == index)
+        }
+    }
+
     @Test func aFileWithoutTimingsIsRejected() {
         #expect(throws: RecitationTiming.ParseError.self) { try RecitationTiming(xml: Data("<A/>".utf8)) }
         #expect(throws: RecitationTiming.ParseError.self) { try RecitationTiming(xml: Data("not xml".utf8)) }

@@ -11,9 +11,10 @@ struct ReaderModelTests {
         try PoetryStore(bundle: Fixtures.appBundle, session: StubURLProtocol.session(), cacheDirectory: cache)
     }
 
-    private func loaded(_ route: ReaderRoute, recitations: Bool = true) async throws -> ReaderModel {
+    private func loaded(_ route: ReaderRoute, recitations: Bool = true, engines: FakeEngines? = nil) async throws -> ReaderModel {
         StubURLProtocol.reset(recitations ? [Self.recitationsURL: (200, try Fixtures.data("recitations"))] : [:])
-        let model = ReaderModel(route: route)
+        let timing = try Fixtures.data("timing-2130-ff", extension: "xml")
+        let model = engines.map { ReaderModel(route: route, makeEngine: $0.make, fetchTiming: { _ in timing }) } ?? ReaderModel(route: route)
         await model.load(using: try makeStore())
         return model
     }
@@ -128,5 +129,93 @@ struct ReaderModelTests {
         for _ in 0..<200 where model.toast == nil { try await Task.sleep(for: .milliseconds(10)) }
         #expect(model.toast == "خوانش باز نشد")
         #expect(model.player?.state == .idle)
+    }
+
+    // MARK: Playing follows the couplet
+
+    private func settle(until done: () -> Bool) async throws {
+        for _ in 0..<200 where !done() { try await Task.sleep(for: .milliseconds(10)) }
+    }
+
+    /// Presses play and lets the audio become ready; the engine it plays through.
+    private func play(_ model: ReaderModel, _ engines: FakeEngines) async throws -> FakeEngine {
+        model.togglePlayback()
+        try await settle { engines.last != nil }
+        let engine = try #require(engines.last)
+        engine.events.ready()
+        try await settle { engine.isPlaying }
+        return engine
+    }
+
+    @Test func playStartsAtTheCoupletOnThePage() async throws {
+        let engines = FakeEngines()
+        let model = try await loaded(ReaderRoute(path: "/hafez/ghazal/sh3", couplet: 2), engines: engines)
+        let engine = try await play(model, engines)
+        #expect(engine.seeks == [29.886])
+    }
+
+    @Test func playInTheWholePoemStartsAtTheCoupletAtTheTop() async throws {
+        let engines = FakeEngines()
+        let model = try await loaded(ReaderRoute(path: "/hafez/ghazal/sh3", mode: .scroll), engines: engines)
+        model.topIndex = 1
+        let engine = try await play(model, engines)
+        #expect(engine.seeks == [15.486])
+    }
+
+    @Test func pagingToAnotherCoupletSeeksTheAudioAndKeepsItPlaying() async throws {
+        let engines = FakeEngines()
+        let model = try await loaded(ReaderRoute(path: "/hafez/ghazal/sh3"), engines: engines)
+        let engine = try await play(model, engines)
+        model.go(to: 2)
+        try await settle { engine.seeks == [29.886] }
+        #expect(engine.seeks == [29.886])
+        #expect(engine.isPlaying)
+        #expect(model.index == 2)
+    }
+
+    @Test func pagingWhilePausedSeeksAndStaysPaused() async throws {
+        let engines = FakeEngines()
+        let model = try await loaded(ReaderRoute(path: "/hafez/ghazal/sh3"), engines: engines)
+        let engine = try await play(model, engines)
+        model.player?.toggle()
+        model.go(to: 1)
+        try await settle { engine.seeks == [15.486] }
+        #expect(engine.seeks == [15.486])
+        #expect(!engine.isPlaying)
+        #expect(model.player?.state == .paused)
+    }
+
+    @Test func tappingACoupletInTheWholePoemSeeksToIt() async throws {
+        let engines = FakeEngines()
+        let model = try await loaded(ReaderRoute(path: "/hafez/ghazal/sh3", mode: .scroll), engines: engines)
+        let engine = try await play(model, engines)
+        model.openCouplet(2)
+        try await settle { engine.seeks == [29.886] }
+        #expect(engine.seeks == [29.886])
+        #expect(model.mode == .couplet)
+    }
+
+    @Test func scrollingTheWholePoemDoesNotSeek() async throws {
+        let engines = FakeEngines()
+        let model = try await loaded(ReaderRoute(path: "/hafez/ghazal/sh3", mode: .scroll), engines: engines)
+        let engine = try await play(model, engines)
+        model.topIndex = 2
+        model.setMode(.couplet)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(engine.seeks.isEmpty)
+        #expect(model.index == 2)
+    }
+
+    @Test func theReaderFollowingTheAudioDoesNotSeek() async throws {
+        let engines = FakeEngines()
+        let model = try await loaded(ReaderRoute(path: "/hafez/ghazal/sh3"), engines: engines)
+        let engine = try await play(model, engines)
+        engine.events.tick(16)  // the audio reaches the second couplet
+        #expect(model.player?.activeCouplet == 1)
+        model.follow(1)
+        #expect(model.index == 1)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(engine.seeks.isEmpty, "a seek here would send the audio back to the start of the couplet it is in")
+        #expect(engine.isPlaying)
     }
 }

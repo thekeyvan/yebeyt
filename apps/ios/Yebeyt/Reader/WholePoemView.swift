@@ -101,7 +101,7 @@ struct WholePoemView: View {
 
     private func readButton(_ player: RecitationPlayer) -> some View {
         Button {
-            player.toggle()
+            model.togglePlayback()
         } label: {
             HStack(spacing: 8) {
                 if player.isPlaying {

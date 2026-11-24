@@ -1,4 +1,5 @@
 import Foundation
+import MediaPlayer
 import os
 import Testing
 @testable import Yebeyt
@@ -97,6 +98,7 @@ struct RecitationPlayerTests {
             throw URLError(.notConnectedToInternet)
         }
         player.toggle()  // load 1
+        try await settle(player) { calls.withLock { $0 } == 1 }  // it is under way before it is cancelled: the calls are numbered in order
         player.toggle()  // cancel it
         player.toggle()  // load 2, which fails
         try await settle(player) { failures.count > 0 }
@@ -105,5 +107,164 @@ struct RecitationPlayerTests {
         #expect(failures.count == 1)
         #expect(player.isAvailable)
         #expect(player.state == .idle)
+    }
+
+    // MARK: Where the recitation starts and follows
+
+    private let ghazal = (0..<4).map { Couplet(m1: "الف\($0)", m2: "ب\($0)") }
+    private let engines = FakeEngines()
+
+    /// A player over four couplets whose recitation (the fixture's first, or `untimed`: the last) has Ganjoor's timing:
+    /// couplets 0, 1 and 2 start at 0, 15.486 and 29.886 seconds.
+    private func timedPlayer(untimed: Bool = false, loadingTiming: Duration = .zero) throws -> RecitationPlayer {
+        let all = try JSONDecoder().decode([Recitation].self, from: Fixtures.data("recitations"))
+        let list = [untimed ? all[2] : all[0]]
+        let xml = try Fixtures.data("timing-2130-ff", extension: "xml")
+        return RecitationPlayer(
+            couplets: ghazal, title: "غزل ۳", artist: "حافظ",
+            fetchRecitations: { list }, fetchTiming: { _ in try await Task.sleep(for: loadingTiming); return xml },
+            makeEngine: engines.make, onFailure: { [failures] in failures.count += 1 }
+        )
+    }
+
+    /// Presses play at `couplet` and lets the audio become ready.
+    private func play(_ player: RecitationPlayer, at couplet: Int) async throws -> FakeEngine {
+        player.toggle(startingAt: couplet)
+        try await settle(player) { engines.last != nil }
+        let engine = try #require(engines.last)
+        engine.events.ready()
+        try await settle(player) { engine.isPlaying }
+        return engine
+    }
+
+    @Test func playStartsAtTheCoupletThatIsShown() async throws {
+        let player = try timedPlayer()
+        let engine = try await play(player, at: 2)
+        #expect(engine.seeks == [29.886])
+        #expect(engine.isPlaying)
+        #expect(player.state == .playing)
+    }
+
+    @Test func nothingPlaysBeforeTheSeekToTheStartIsDone() async throws {
+        let player = try timedPlayer()
+        player.toggle(startingAt: 2)
+        try await settle(player) { engines.last != nil }
+        let engine = try #require(engines.last)
+        #expect(!engine.isPlaying, "playing first would begin at the wrong place")
+        engine.events.tick(0)  // the position before the seek is not the reader's couplet
+        #expect(player.activeCouplet == nil)
+        engine.answersSeeksAtOnce = false
+        engine.events.ready()
+        try await settle(player) { !engine.seeks.isEmpty }
+        engine.events.tick(0)
+        #expect(!engine.isPlaying)
+        #expect(player.activeCouplet == nil)
+        engine.finishSeeks()
+        try await settle(player) { engine.isPlaying }
+        engine.events.tick(30)
+        #expect(player.activeCouplet == 2)
+    }
+
+    @Test func theFirstCoupletStartsFromTheBeginning() async throws {
+        let player = try timedPlayer()
+        player.toggle(startingAt: 0)
+        try await settle(player) { engines.last?.isPlaying == true }
+        #expect(engines.last?.seeks == [])
+    }
+
+    @Test func withoutTimingItStartsFromTheBeginning() async throws {
+        let player = try timedPlayer(untimed: true)
+        player.toggle(startingAt: 2)
+        try await settle(player) { engines.last?.isPlaying == true }
+        #expect(engines.last?.seeks == [])
+        #expect(player.state == .playing)
+        player.seek(toCouplet: 1)  // nothing to seek by
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(engines.last?.seeks == [])
+    }
+
+    @Test func aResumeAfterAPauseContinuesWhereItPaused() async throws {
+        let player = try timedPlayer()
+        let engine = try await play(player, at: 2)
+        player.toggle(startingAt: 0)  // pause
+        #expect(player.state == .paused)
+        #expect(!engine.isPlaying)
+        player.toggle(startingAt: 3)  // resume: the couplet shown is not where it goes
+        #expect(player.state == .playing)
+        #expect(engine.isPlaying)
+        #expect(engine.seeks == [29.886])
+        #expect(engines.made.count == 1)
+    }
+
+    @Test func movingToAnotherCoupletSeeksToItsStartAndKeepsPlaying() async throws {
+        let player = try timedPlayer()
+        let engine = try await play(player, at: 2)
+        player.seek(toCouplet: 1)
+        try await settle(player) { engine.seeks.count == 2 }
+        #expect(engine.seeks == [29.886, 15.486])
+        #expect(engine.isPlaying)
+        #expect(player.state == .playing)
+        #expect(player.activeCouplet == 1)
+    }
+
+    @Test func movingWhilePausedSeeksAndStaysPaused() async throws {
+        let player = try timedPlayer()
+        let engine = try await play(player, at: 2)
+        player.toggle()  // pause
+        player.seek(toCouplet: 0)
+        try await settle(player) { engine.seeks.count == 2 }
+        #expect(engine.seeks == [29.886, 0])
+        #expect(!engine.isPlaying)
+        #expect(player.state == .paused)
+        player.toggle()  // play again: from the couplet it was moved to
+        #expect(engine.isPlaying)
+        #expect(engine.seeks == [29.886, 0])
+    }
+
+    @Test func aPositionFromBeforeTheSeekDoesNotMoveTheReaderBack() async throws {
+        let player = try timedPlayer()
+        let engine = try await play(player, at: 0)
+        engine.answersSeeksAtOnce = false
+        player.seek(toCouplet: 2)
+        try await settle(player) { engine.seeks.count == 1 }
+        engine.events.tick(1)  // still the first couplet's audio
+        #expect(player.activeCouplet == 2)
+        engine.finishSeeks()
+        try await settle(player) { player.state == .playing }
+        try await Task.sleep(for: .milliseconds(20))
+        engine.events.tick(30)
+        #expect(player.activeCouplet == 2)
+        engine.events.tick(15.5)  // now the audio is what moves it
+        #expect(player.activeCouplet == 1)
+    }
+
+    @Test func movingWhileItLoadsChangesWhereItStarts() async throws {
+        let player = try timedPlayer(loadingTiming: .milliseconds(100))
+        player.toggle(startingAt: 1)
+        #expect(player.state == .loading)
+        player.seek(toCouplet: 2)
+        try await settle(player) { engines.last != nil }
+        let engine = try #require(engines.last)
+        engine.events.ready()
+        try await settle(player) { engine.isPlaying }
+        #expect(engine.seeks == [29.886])
+    }
+
+    @Test func movingWhenNothingPlaysDoesNothing() async throws {
+        let player = try timedPlayer()
+        player.seek(toCouplet: 2)
+        #expect(player.activeCouplet == nil)
+        #expect(engines.made.isEmpty)
+    }
+
+    @Test func theLockScreenShowsTheTimeAfterASeek() async throws {
+        let player = try timedPlayer()
+        let engine = try await play(player, at: 0)
+        player.seek(toCouplet: 2)
+        try await settle(player) { engine.seeks == [29.886] }
+        try await Task.sleep(for: .milliseconds(20))
+        let info = MPNowPlayingInfoCenter.default().nowPlayingInfo
+        #expect(info?[MPNowPlayingInfoPropertyElapsedPlaybackTime] as? Double == 29.886)
+        player.stop()
     }
 }

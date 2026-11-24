@@ -101,7 +101,7 @@ struct ReaderView: View {
         case .couplet:
             CoupletModeView(model: model)
                 .onChange(of: model.player?.activeCouplet) { _, active in
-                    if let active { withAnimation(.snappy) { model.go(to: active) } }
+                    if let active { withAnimation(.snappy) { model.follow(active) } }
                 }
         case .scroll:
             WholePoemView(model: model)
