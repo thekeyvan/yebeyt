@@ -118,16 +118,25 @@ struct API: Sendable {
 
     // MARK: Plumbing
 
-    private func call<Answer: Decodable>(_ method: String, _ path: String, query: [URLQueryItem] = [], token: String? = nil) async throws -> Answer {
+    func call<Answer: Decodable>(_ method: String, _ path: String, query: [URLQueryItem] = [], token: String? = nil) async throws -> Answer {
         try decode(await data(for: request(method, path, query: query, body: nil, token: token)))
     }
 
-    private func call<Answer: Decodable>(_ method: String, _ path: String, body: some Encodable, token: String? = nil) async throws -> Answer {
+    func call<Answer: Decodable>(_ method: String, _ path: String, body: some Encodable, token: String? = nil) async throws -> Answer {
         try decode(await data(for: request(method, path, query: [], body: JSONEncoder().encode(body), token: token)))
     }
 
     private func callWithoutAnswer(_ method: String, _ path: String, body: some Encodable) async throws {
         _ = try await data(for: request(method, path, query: [], body: JSONEncoder().encode(body), token: nil))
+    }
+
+    /// A call whose answer is empty (204) or not needed.
+    func send(_ method: String, _ path: String, query: [URLQueryItem] = [], token: String) async throws {
+        _ = try await data(for: request(method, path, query: query, body: nil, token: token))
+    }
+
+    func send(_ method: String, _ path: String, body: some Encodable, token: String) async throws {
+        _ = try await data(for: request(method, path, query: [], body: JSONEncoder().encode(body), token: token))
     }
 
     private func decode<Answer: Decodable>(_ data: Data) throws -> Answer {

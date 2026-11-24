@@ -22,6 +22,7 @@ enum APIErrorCode: String, Sendable {
     case busy
     case alreadyUploaded = "already_uploaded"
     case uploadTimeout = "upload_timeout"
+    case messagesClosed = "messages_closed"
 }
 
 /// What went wrong with a call to the server.
