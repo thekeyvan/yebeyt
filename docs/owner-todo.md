@@ -54,4 +54,5 @@ These can't be tested in the simulator here:
 13. **Notifications:** «تا فردا» games and messages need push notifications. That needs an APNs key (Apple Developer → Keys → a key with Apple Push Notifications). Please create one and put it in Railway as `APNS_KEY` (with its key id as `APNS_KEY_ID`), or tell the lead to do without push for now.
 14. **Scores come from the phone,** so a determined cheater could fake them. The server caps points per round, and the daily and onboarding points count once. Good enough for now?
 15. **Privacy policy (slice 9, the new website):** a reported message keeps a copy of its text for moderation, even if its sender later deletes their account. The policy needs a line about that (and about feedback, see the feedback section).
+16. **Another person's page** has no board; for now it is the Profile layout without the private parts, plus «دنبال کن», «پیام بده», and «بلاک» / «گزارش». Want a board for it?
 

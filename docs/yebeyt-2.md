@@ -158,4 +158,10 @@ The owner asked the lead to keep going alone. These were not settled on a board 
   - بازی رودررو: live, five rounds, eight seconds each, one question per round from the game deck (مصراع دوم, حدس شاعر or از کدوم کتاب); the first right answer wins the round. Both players must be online; afterwards both see the couplets with their meanings.
   - جورچین and حدس شاعر with a friend are challenges: the same ten couplets, scores side by side («۸ از ۱۰»). A challenge has a four-character code (`yebeyt.com/c/<code>`); anyone can play it without an account and leaves a name at the end.
   - Game invitations arrive as a message in the chat.
+- **Friends in the app, decisions for slice 8a:**
+  - «پیدا کردن دوست» (home) opens a people search by username, with «دنبال کن» on each row; OnbFriends shows the same search under the invite card.
+  - Another person's page (no board) uses the Profile layout without the private parts: face, name, @username, friends count, league, «دنبال کن» / «دنبالش می‌کنی», «پیام بده» (when allowed), and the ⋯ menu with «بلاک» and «گزارش».
+  - The friends sections hidden until now appear for signed-in users: «دوستات» on home (the feed), «۳ تا از دوستات حلش کردن» on the daily card, the leaderboard link on the بازی tab, the greeting «سلام <name>!», the friends count on Profile.
+  - Scores and the daily result are sent to the server after each round when signed in (queued while offline). Likes and reposts sync with the server; signing out then clears them like the rest of the account's data.
+  - Joining a game always goes by its id from the invite, never by the code in an old message.
 
