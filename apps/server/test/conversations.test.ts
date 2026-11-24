@@ -44,6 +44,18 @@ describe("POST /v1/conversations", () => {
     expect((await open(ali, "sara")).status).toBe(200);
   });
 
+  it("opens a chat where the other person already wrote, whatever their setting says", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    await befriend(ali, sara);
+    const id = await openId(ali, "sara");
+    await send(sara, id, "salam");
+    await h.request("/v1/follows/ali", { method: "DELETE", token: sara.token }); // no longer friends; ali takes messages from friends only
+    expect((await open(ali, "sara")).status).toBe(200); // sara wrote here, so ali may answer
+    expect(await openId(ali, "sara")).toBe(id);
+    expect((await open(sara, "ali")).status).toBe(403); // ali has not written
+  });
+
   it("returns the same conversation for the pair, whoever asks", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara", { displayName: "Sara" });

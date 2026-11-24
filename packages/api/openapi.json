@@ -3689,7 +3689,7 @@
           "messages"
         ],
         "summary": "Open the chat with someone (made if it does not exist)",
-        "description": "Allowed when the other person takes messages from everyone («بهم پیام بده: همه»), or from friends and we are friends; otherwise 403 messages_closed. If either of us blocked the other, the person is not found (404). The chat shows in the list once it has a message.",
+        "description": "Allowed when the other person takes messages from everyone («بهم پیام بده: همه»), or from friends and we are friends, or already wrote to me in this chat; otherwise 403 messages_closed. If either of us blocked the other, the person is not found (404). The chat shows in the list once it has a message.",
         "security": [
           {
             "bearerAuth": []

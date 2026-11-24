@@ -168,7 +168,7 @@ describe("GET /v1/live", () => {
     await toAli.quiet();
   });
 
-  it("tells watchers I went offline when I turn «آنلاین» off while connected", async () => {
+  it("tells watchers I went offline when I turn «آنلاین» off while connected, and online when I turn it on", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara");
     await talk(ali, sara);
@@ -177,6 +177,8 @@ describe("GET /v1/live", () => {
     expect(await toAli.next()).toEqual({ type: "presence", username: "sara", online: true });
     await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { showOnline: false } });
     expect(await toAli.next()).toEqual({ type: "presence", username: "sara", online: false });
+    await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { showOnline: true } });
+    expect(await toAli.next()).toEqual({ type: "presence", username: "sara", online: true });
   });
 
   it("closes the socket when the access token expires", async () => {

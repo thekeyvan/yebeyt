@@ -80,8 +80,8 @@ export function privacyRoutes(deps: Deps) {
           .insert(privacySettings)
           .values({ ...PRIVACY_DEFAULTS, ...patch, userId })
           .onConflictDoUpdate({ target: privacySettings.userId, set: patch });
-        // Turning «آنلاین» off while connected: the people who saw them online are told they went offline.
-        if (patch.showOnline === false && deps.hub.isOnline(userId)) await announcePresence(deps, userId, false, true);
+        // Turning «آنلاین» off or on while connected: the people they chat with are told they went offline or online.
+        if (patch.showOnline !== undefined && deps.hub.isOnline(userId)) await announcePresence(deps, userId, patch.showOnline, !patch.showOnline);
       }
       return c.json(await load(userId), 200);
     },

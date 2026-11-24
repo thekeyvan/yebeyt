@@ -57,14 +57,19 @@ export async function findConversation(db: Db, id: string, userId: string) {
   return row ? { id: row.id, otherId: row.userLow === userId ? row.userHigh : row.userLow } : undefined;
 }
 
-export async function getOrCreateConversation(db: Db, a: string, b: string): Promise<string> {
+/** The id of the chat of two people, if they have one. */
+export async function findConversationOf(db: Db, a: string, b: string): Promise<string | undefined> {
   const pair = orderedPair(a, b);
-  await db.insert(conversations).values(pair).onConflictDoNothing();
   const [row] = await db
     .select({ id: conversations.id })
     .from(conversations)
     .where(and(eq(conversations.userLow, pair.userLow), eq(conversations.userHigh, pair.userHigh)));
-  return row!.id;
+  return row?.id;
+}
+
+export async function getOrCreateConversation(db: Db, a: string, b: string): Promise<string> {
+  await db.insert(conversations).values(orderedPair(a, b)).onConflictDoNothing();
+  return (await findConversationOf(db, a, b))!;
 }
 
 /**

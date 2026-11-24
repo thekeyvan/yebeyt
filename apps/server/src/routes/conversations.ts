@@ -4,7 +4,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { conversations, messages, users } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
-import { getOrCreateConversation, mayMessage, messageView, showingOnline, unreadCounts } from "../messaging.js";
+import { findConversationOf, getOrCreateConversation, mayMessage, messageView, showingOnline, unreadCounts } from "../messaging.js";
 import { findByUsername, PAGE, parseTimeCursor, shortPersonSchema, timeCursor, timeCursorSchema } from "../people.js";
 import { newRouter } from "../router.js";
 import { isBlocked, notBlockedWith } from "../social.js";
@@ -42,7 +42,7 @@ export function conversationRoutes(deps: Deps) {
       tags: ["messages"],
       summary: "Open the chat with someone (made if it does not exist)",
       description:
-        "Allowed when the other person takes messages from everyone («بهم پیام بده: همه»), or from friends and we are friends; otherwise 403 messages_closed. " +
+        "Allowed when the other person takes messages from everyone («بهم پیام بده: همه»), or from friends and we are friends, or already wrote to me in this chat; otherwise 403 messages_closed. " +
         "If either of us blocked the other, the person is not found (404). The chat shows in the list once it has a message.",
       security,
       request: { body: { required: true, content: { "application/json": { schema: z.object({ username: usernameSchema }).openapi("OpenConversationRequest") } } } },
@@ -59,8 +59,9 @@ export function conversationRoutes(deps: Deps) {
       const other = await findByUsername(db, c.req.valid("json").username);
       if (!other || (await isBlocked(db, me, other.id))) throw new ApiError(404, "not_found");
       if (other.id === me) throw new ApiError(400, "invalid_request");
-      if (!(await mayMessage(db, me, other.id))) throw new ApiError(403, "messages_closed");
-      const id = await getOrCreateConversation(db, me, other.id);
+      const existing = await findConversationOf(db, me, other.id);
+      if (!(await mayMessage(db, me, other.id, existing))) throw new ApiError(403, "messages_closed");
+      const id = existing ?? (await getOrCreateConversation(db, me, other.id));
       const online = (await showingOnline(db, [other.id])).has(other.id) ? deps.hub.isOnline(other.id) : null;
       return c.json({ id, other: { username: other.username!, displayName: other.displayName, avatar: other.avatar, online } }, 200);
     },
