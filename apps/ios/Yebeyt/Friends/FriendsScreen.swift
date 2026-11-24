@@ -12,6 +12,7 @@ struct FriendsScreen: View {
 private struct FriendsScreenBody: View {
     @State private var model: FriendsListModel
     @State private var toast: String?
+    @Environment(BlockedPeople.self) private var blocked
 
     init(session: Session) {
         _model = State(initialValue: FriendsListModel(session: session))
@@ -19,7 +20,7 @@ private struct FriendsScreenBody: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            LazyVStack(alignment: .leading, spacing: 14) {
                 ScreenHeader(title: "دوستا")
                 content
             }
@@ -40,14 +41,14 @@ private struct FriendsScreenBody: View {
             ProgressView().frame(maxWidth: .infinity).padding(.top, 24)
         case .failed(let message):
             Text(message).font(.ui(13)).foregroundStyle(Tokens.Colors.muted).frame(maxWidth: .infinity).padding(.top, 24)
-        case .loaded where model.people.isEmpty:
+        case .loaded where blocked.visible(model.people).isEmpty:
             Text("هنوز دوستی نداری. از «پیدا کردن دوست» شروع کن.")
                 .font(.ui(14)).foregroundStyle(Tokens.Colors.muted).multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity).padding(.top, 32)
                 .accessibilityIdentifier("noFriends")
         case .loaded:
             PeopleCard {
-                ForEach(model.people, id: \.username) { person in
+                ForEach(blocked.visible(model.people), id: \.username) { person in
                     PersonRow(person: person, busy: model.pending.contains(person.username)) {
                         Task { toast = await model.toggleFollow(person.username) }
                     }

@@ -38,15 +38,18 @@ struct LeaderboardEntry: Equatable, Identifiable, Sendable {
     var opensPerson: String? { isMe || isHidden ? nil : username }
 }
 
-/// A line of the list: a row, or the green «این ۵ نفر می‌رن لیگ بالاتر» band between the ranks that move up and the rest.
+/// A line of the list: a row, the green «این ۵ نفر می‌رن لیگ بالاتر» band between the ranks that move up and the rest, or
+/// a «…» for the ranks left out between the list and my own row.
 enum LeaderboardItem: Equatable, Identifiable, Sendable {
     case entry(LeaderboardEntry)
     case promoteBand(Int)
+    case gap
 
     var id: String {
         switch self {
         case .entry(let entry): "row-\(entry.rank)"
         case .promoteBand: "band"
+        case .gap: "gap"
         }
     }
 }
@@ -71,12 +74,17 @@ enum LeaderboardLayout {
         standings.rows.allSatisfy(\.isMe)
     }
 
-    /// The global list. When I keep off it (`inGlobal` is false) only my own row is shown (when I have a rank).
+    /// The global list. When I keep off it (`inGlobal` is false) only my own row is shown (when I have a rank). When my rank
+    /// is further down than the rows loaded, my row comes last, after a «…».
     static func global(_ standings: GlobalStandings, inGlobal: Bool) -> [LeaderboardItem] {
         guard inGlobal else { return standings.me.map { [.entry(LeaderboardEntry($0))] } ?? [] }
-        var rows = standings.rows
-        if let me = standings.me, !rows.contains(where: \.isMe) { rows.append(me) }
-        return rows.map { .entry(LeaderboardEntry($0)) }
+        var items = standings.rows.map { LeaderboardItem.entry(LeaderboardEntry($0)) }
+        if let me = standings.me, !standings.rows.contains(where: \.isMe) {
+            // My own rank, even when it is on a page not loaded: a «…» shows that ranks are missing before it.
+            if let last = standings.rows.last, me.rank > last.rank + 1 { items.append(.gap) }
+            items.append(.entry(LeaderboardEntry(me)))
+        }
+        return items
     }
 
     /// «۳ روز مونده تا آخر هفته»: whole days left, a started day counts; never less than one.

@@ -3,17 +3,30 @@ import Foundation
 /// The words of a feed item (Calm): «کیان یه بیت به اشتراک گذاشت» over «یک ساعت پیش».
 enum FeedText {
     /// The line about what the friend did, without their name.
-    static func action(_ item: FeedItem) -> String {
+    static func action(_ item: FeedItem, now: Date = .now) -> String {
         switch item.type {
         case .repost: "یه بیت به اشتراک گذاشت"
         case .like: "یه بیت پسندید"
-        case .daily: "معمای امروز رو با \(PersianDigits.string(item.tries ?? 1)) فرصت حل کرد"
+        case .daily: "معمای \(dailyDay(item.date, now: now)) رو با \(PersianDigits.string(item.tries ?? 1)) فرصت حل کرد"
         }
     }
 
     /// «کیان یه بیت به اشتراک گذاشت», for VoiceOver and tests.
-    static func headline(_ item: FeedItem) -> String {
-        "\(item.user.name) \(action(item))"
+    static func headline(_ item: FeedItem, now: Date = .now) -> String {
+        "\(item.user.name) \(action(item, now: now))"
+    }
+
+    /// The day of a daily result: «امروز», «دیروز», else the date «۲۴ آبان» (the server takes results of up to two days ago).
+    static func dailyDay(_ date: String?, now: Date = .now) -> String {
+        let today = TehranDay(date: now)
+        guard let date, let day = TehranDay(key: date) else { return "امروز" }
+        if day == today { return "امروز" }
+        return day == today.previous ? "دیروز" : day.shortLine
+    }
+
+    /// «تو هم» is for today's puzzle only.
+    static func isTodaysDaily(_ item: FeedItem, now: Date = .now) -> Bool {
+        item.type == .daily && TehranDay(key: item.date ?? "") == TehranDay(date: now)
     }
 
     /// The poem path and the 0-based couplet of a couplet key «/hafez/ghazal/sh3#1».

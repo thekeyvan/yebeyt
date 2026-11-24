@@ -5,29 +5,41 @@ import Observation
 /// could not be sent (no network, a server error) stays on the phone as «unsent», one entry per couplet and kind with
 /// the last state, and goes on the next sync. A sync (when someone signs in, when the app comes to the front, when
 /// signing out) sends what is unsent and then pulls the server's list: the server's wins, except for couplets still
-/// unsent. A guest's changes are not kept.
+/// unsent. A guest's changes are not kept. Each change knows whose it is: one of another account is dropped. The
+/// first pull for an account sends the likes on the phone that the server lacks only when they were made while
+/// signed in as that same account; otherwise the server's list replaces them (they may be another person's).
 @MainActor @Observable
 final class ReactionsSync {
     struct Change: Codable, Equatable, Sendable {
         var key: String
         var kind: ReactionKind
         var on: Bool
+        /// The account it was made for (nil: not known, the next sync takes it).
+        var userId: String?
     }
 
     static let unsentKey = "reader.reactions.unsent"
+    static let ownerKey = "reader.reactions.owner"
+    static let pulledKey = "reader.reactions.pulled"
 
     private(set) var unsent: [Change]
     @ObservationIgnored private let marks: ReaderMarks
     @ObservationIgnored private let session: Session
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var running: Task<Void, Never>?
+    /// The account that last liked or reposted something on this phone while signed in.
+    @ObservationIgnored private var owner: String?
+    /// The account the server's list was last pulled for.
+    @ObservationIgnored private var pulledFor: String?
 
     init(marks: ReaderMarks, session: Session, defaults: UserDefaults = .standard) {
         self.marks = marks
         self.session = session
         self.defaults = defaults
         unsent = defaults.data(forKey: Self.unsentKey).flatMap { try? JSONDecoder().decode([Change].self, from: $0) } ?? []
-        marks.reactionDidChange = { [weak self] key, kind, on in self?.record(Change(key: key, kind: kind, on: on)) }
+        owner = defaults.string(forKey: Self.ownerKey)
+        pulledFor = defaults.string(forKey: Self.pulledKey)
+        marks.reactionDidChange = { [weak self] key, kind, on in self?.record(key: key, kind: kind, on: on) }
     }
 
     var hasUnsent: Bool { !unsent.isEmpty }
@@ -48,6 +60,10 @@ final class ReactionsSync {
         if let running { return await running.value }
         let task = Task { @MainActor [self] in
             defer { running = nil }
+            if session.user == nil { await session.restore() }
+            guard let me = session.user?.id else { return }  // who is signed in is not known (no network): try later
+            unsent.removeAll { $0.userId != nil && $0.userId != me }
+            save()
             while let change = unsent.first {
                 do {
                     let api = session.api
@@ -73,11 +89,18 @@ final class ReactionsSync {
     /// Forgets what is unsent (the account is gone from this phone).
     func clear() {
         unsent = []
-        defaults.removeObject(forKey: Self.unsentKey)
+        owner = nil
+        pulledFor = nil
+        [Self.unsentKey, Self.ownerKey, Self.pulledKey].forEach(defaults.removeObject(forKey:))
     }
 
-    private func record(_ change: Change) {
+    private func record(key: String, kind: ReactionKind, on: Bool) {
         guard session.isSignedIn else { return }
+        let change = Change(key: key, kind: kind, on: on, userId: session.user?.id)
+        if let id = change.userId {
+            owner = id
+            defaults.set(id, forKey: Self.ownerKey)
+        }
         unsent.removeAll { $0.key == change.key && $0.kind == change.kind }
         unsent.append(change)
         save()
@@ -97,11 +120,22 @@ final class ReactionsSync {
                 return false
             }
         } while cursor != nil
-        guard session.isSignedIn else { return false }
+        guard session.isSignedIn, let me = session.user?.id else { return false }
+        let sendOwn = pulledFor != me && owner == me
         for kind in ReactionKind.allCases {
-            let waiting = Set(unsent.filter { $0.kind == kind }.map(\.key))
-            marks.apply(server: Set(items.filter { $0.kind == kind }.map(\.key)), as: kind == .like ? .liked : .reposted, keeping: waiting)
+            let mark: ReaderMarks.Mark = kind == .like ? .liked : .reposted
+            let server = Set(items.filter { $0.kind == kind }.map(\.key))
+            if sendOwn {
+                for key in marks.keys(mark).subtracting(server).subtracting(unsent.filter { $0.kind == kind }.map(\.key)).sorted() {
+                    unsent.append(Change(key: key, kind: kind, on: true, userId: me))
+                }
+            }
+            marks.apply(server: server, as: mark, keeping: Set(unsent.filter { $0.kind == kind }.map(\.key)))
         }
+        pulledFor = me
+        defaults.set(me, forKey: Self.pulledKey)
+        save()
+        if sendOwn, hasUnsent { await flush() }
         return true
     }
 

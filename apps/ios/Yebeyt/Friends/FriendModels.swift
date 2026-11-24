@@ -53,6 +53,8 @@ struct PublicProfile: Codable, Equatable, Sendable {
     var isFollowing: Bool
     var followsYou: Bool
     var isFriend: Bool
+    /// I may write to them now.
+    var canMessage: Bool
     var league: League?
     var weekPoints: Int?
 
@@ -134,6 +136,14 @@ struct DailyFriends: Codable, Equatable, Sendable {
 
 enum ReactionKind: String, Codable, CaseIterable, Sendable {
     case like, repost
+}
+
+/// `ReactionCounts`: everyone's likes and reposts of a couplet, and whether I made mine.
+struct ReactionCounts: Codable, Equatable, Sendable {
+    var likes: Int
+    var reposts: Int
+    var likedByMe: Bool
+    var repostedByMe: Bool
 }
 
 /// `MyReactions`.

@@ -21,6 +21,7 @@ struct YebeytApp: App {
     @State private var reactionsSync: ReactionsSync
     @State private var scoreSync: ScoreSync
     @State private var myStats: MyStats
+    @State private var blocked = BlockedPeople()
     #if DEBUG
     private let showsStickers: Bool
     #endif
@@ -114,6 +115,7 @@ struct YebeytApp: App {
                 .environment(reactionsSync)
                 .environment(scoreSync)
                 .environment(myStats)
+                .environment(blocked)
                 .environment(accounts.session)
                 .environment(accounts.account)
                 .environment(accounts.pictures)

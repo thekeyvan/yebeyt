@@ -27,6 +27,11 @@ extension API {
         try await send(on ? "PUT" : "DELETE", "/v1/reactions/\(kind.rawValue)", query: [URLQueryItem(name: "key", value: key)], token: token)
     }
 
+    /// Counts of up to 50 couplets (the keys go comma separated, the `#` percent-encoded).
+    func reactionCounts(keys: [String], token: String) async throws -> [String: ReactionCounts] {
+        try await call("GET", "/v1/reactions/counts", query: [URLQueryItem(name: "keys", value: keys.joined(separator: ","))], token: token)
+    }
+
     func myReactions(cursor: String?, token: String) async throws -> MyReactions {
         try await call("GET", "/v1/me/reactions", query: cursor.map { [URLQueryItem(name: "cursor", value: $0)] } ?? [], token: token)
     }

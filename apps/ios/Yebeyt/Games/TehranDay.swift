@@ -57,6 +57,9 @@ struct TehranDay: Hashable, Comparable, Codable, Sendable {
     /// «دوشنبه ۲ آذر».
     var line: String { PersianDate.line(for: noon, timeZone: Self.zone) }
 
+    /// «۲۴ آبان»
+    var shortLine: String { PersianDate.short(for: noon, timeZone: Self.zone) }
+
     /// The day and month for the date sticker: «۱» over «آذر».
     var stickerParts: (day: String, month: String) {
         var calendar = Calendar(identifier: .persian)

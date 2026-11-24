@@ -1,8 +1,8 @@
 import Foundation
 import Observation
 
-/// The points and the streak shown on the بازی tab and on Profile: the server's (`/v1/me/stats`) for a signed-in
-/// person once it has answered, else the phone's own. Also how many friends solved today's puzzle.
+/// The points and the streak shown on the بازی tab and on Profile: for a signed-in person the server's (`/v1/me/stats`)
+/// once it has answered, but never less than the phone's own (points from before the account, rounds not sent yet). Also how many friends solved today's puzzle.
 @MainActor @Observable
 final class MyStats {
     private(set) var remote: RemoteStats?
@@ -17,8 +17,8 @@ final class MyStats {
         self.session = session
     }
 
-    var points: Int { session.isSignedIn ? remote?.totalPoints ?? local.points : local.points }
-    var streak: Int { session.isSignedIn ? remote?.streakDays ?? local.streak : local.streak }
+    var points: Int { session.isSignedIn ? max(remote?.totalPoints ?? 0, local.points) : local.points }
+    var streak: Int { session.isSignedIn ? max(remote?.streakDays ?? 0, local.streak) : local.streak }
 
     /// «۳ تا از دوستات حلش کردن», only when someone did.
     var friendsLine: String? {

@@ -23,7 +23,7 @@ private struct LeaderboardScreenBody: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            LazyVStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 12) {
                     BackButton()
                     Text("رده‌بندی").font(.title(32)).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
@@ -97,8 +97,13 @@ private struct LeaderboardScreenBody: View {
     @ViewBuilder private var global: some View {
         if let standings = model.global {
             let inGlobal = privacy.settings.inGlobalLeaderboard
-            BoardCard(items: LeaderboardLayout.global(standings, inGlobal: inGlobal)) {
-                if inGlobal, model.hasMoreGlobal { Task { await model.loadMoreGlobal() } }
+            let items = LeaderboardLayout.global(standings, inGlobal: inGlobal)
+            if inGlobal, items.isEmpty {
+                note("این هفته هنوز کسی امتیاز نگرفته", id: "globalEmpty")
+            } else {
+                BoardCard(items: items) {
+                    if inGlobal, model.hasMoreGlobal { Task { await model.loadMoreGlobal() } }
+                }
             }
             if !inGlobal {
                 note("اسمت توی رده‌بندی همه نیست", id: "globalHidden")
@@ -167,12 +172,17 @@ private struct BoardCard: View {
     var reachedEnd: () -> Void = {}
 
     var body: some View {
-        VStack(spacing: 0) {
+        // Lazy, so the next page of the global list is asked for only when its last row scrolls into view.
+        LazyVStack(spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 switch item {
                 case .entry(let entry):
                     BoardRow(entry: entry, last: index == items.count - 1)
                         .onAppear { if index == items.count - 1 { reachedEnd() } }
+                case .gap:
+                    Text("…").font(.ui(18, weight: .bold)).foregroundStyle(Tokens.Colors.muted)
+                        .frame(maxWidth: .infinity).frame(height: 28)
+                        .accessibilityHidden(true)
                 case .promoteBand(let count):
                     HStack(spacing: 6) {
                         LineIcon(shape: SVGShape(d: "M12 19V5M5 12l7-7 7 7"), size: 12, lineWidth: 2.8, fill: nil)

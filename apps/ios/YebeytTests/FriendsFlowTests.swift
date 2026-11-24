@@ -13,7 +13,14 @@ struct FeedTextTests {
         let daily = FeedItem(type: .daily, user: PersonShort(username: "sara", displayName: nil, avatar: nil), key: nil, date: "2026-11-24", tries: 3, at: "2026-11-24T08:00:00.000Z")
         #expect(FeedText.headline(repost) == "کیان یه بیت به اشتراک گذاشت")
         #expect(FeedText.headline(like) == "کیان یه بیت پسندید")
-        #expect(FeedText.headline(daily) == "sara معمای امروز رو با ۳ فرصت حل کرد")
+        let now = ServerTime.date(from: "2026-11-24T09:00:00.000Z")!
+        #expect(FeedText.headline(daily, now: now) == "sara معمای امروز رو با ۳ فرصت حل کرد")
+        var yesterday = daily
+        yesterday.date = "2026-11-23"
+        #expect(FeedText.headline(yesterday, now: now) == "sara معمای دیروز رو با ۳ فرصت حل کرد")
+        yesterday.date = "2026-11-22"
+        #expect(FeedText.headline(yesterday, now: now) == "sara معمای \(TehranDay(key: "2026-11-22")!.shortLine) رو با ۳ فرصت حل کرد")
+        #expect(FeedText.isTodaysDaily(daily, now: now) && !FeedText.isTodaysDaily(yesterday, now: now) && !FeedText.isTodaysDaily(repost, now: now))
     }
 
     @Test func timesAreRelativeInPersian() {
@@ -180,7 +187,7 @@ struct PeopleSearchTests {
 
 @MainActor
 struct PersonModelTests {
-    private let profile = #"{"username":"sara","displayName":"سارا","avatar":null,"friendsCount":12,"isFollowing":false,"followsYou":true,"isFriend":false,"league":{"tier":2},"weekPoints":300}"#
+    private let profile = #"{"username":"sara","displayName":"سارا","avatar":null,"friendsCount":12,"isFollowing":false,"followsYou":true,"isFriend":false,"canMessage":false,"league":{"tier":2},"weekPoints":300}"#
 
     private func model(_ routes: @escaping @Sendable (StubServer.Request) -> StubServer.Response) -> (PersonModel, SignedInStub) {
         let env = SignedInStub(routes)
@@ -205,7 +212,7 @@ struct PersonModelTests {
 
     @Test func followingMakesFriendsAndShowsTheMessageButton() async {
         let before = profile
-        let after = profile.replacingOccurrences(of: #""isFollowing":false"#, with: #""isFollowing":true"#).replacingOccurrences(of: #""isFriend":false"#, with: #""isFriend":true"#)
+        let after = profile.replacingOccurrences(of: #""isFollowing":false"#, with: #""isFollowing":true"#).replacingOccurrences(of: #""isFriend":false"#, with: #""isFriend":true"#).replacingOccurrences(of: #""canMessage":false"#, with: #""canMessage":true"#)
         let (person, env) = model { _ in .json(200, before) }
         defer { env.cleanUp() }
         await person.load()
@@ -246,6 +253,21 @@ struct PersonModelTests {
         _ = await person.report(.spam, note: "   ")
         let call = try #require(env.stub.requests(to: "/v1/reports").first)
         #expect(call.json["note"] == nil && call.json["reason"] as? String == "spam")
+    }
+
+    @Test func theMessageButtonFollowsTheServersAnswerNotFriendship() async {
+        let allowed = profile.replacingOccurrences(of: #""canMessage":false"#, with: #""canMessage":true"#)
+        let (person, env) = model { _ in .json(200, allowed) }
+        defer { env.cleanUp() }
+        await person.load()
+        #expect(person.profile?.isFriend == false && person.canMessage)
+    }
+
+    @Test func aReportNoteIsClippedToFiveHundredCodePointsLikeTheServerCounts() {
+        let long = String(repeating: "👨‍👩‍👧", count: 200)  // 200 graphemes of 5 code points
+        #expect(long.count == 200 && long.unicodeScalars.count == 1000)
+        #expect(PersonModel.clipped(long).unicodeScalars.count == 500)
+        #expect(PersonModel.clipped("کوتاه") == "کوتاه")
     }
 
     @Test func theReasonsAreTheThreeOnTheBoard() {
@@ -298,7 +320,7 @@ struct MyStatsTests {
     }
 
     @Test func myFriendsCountComesFromMyOwnProfile() async {
-        let env = SignedInStub { _ in .json(200, #"{"username":"niloofar","displayName":null,"avatar":null,"friendsCount":12,"isFollowing":false,"followsYou":false,"isFriend":false,"league":null,"weekPoints":null}"#) }
+        let env = SignedInStub { _ in .json(200, #"{"username":"niloofar","displayName":null,"avatar":null,"friendsCount":12,"isFollowing":false,"followsYou":false,"isFriend":false,"canMessage":false,"league":null,"weekPoints":null}"#) }
         defer { env.cleanUp() }
         await env.session.restore()
         let stats = MyStats(local: local(), session: env.session)

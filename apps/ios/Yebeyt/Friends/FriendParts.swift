@@ -83,12 +83,12 @@ struct PersonRow: View {
     }
 }
 
-/// The white card the rows of people sit in.
+/// The white card the rows of people sit in (lazy, so a long list loads its next page only when the end comes into view).
 struct PeopleCard<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(spacing: 0) { content }
+        LazyVStack(spacing: 0) { content }
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
             .background { RoundedRectangle(cornerRadius: 24).fill(Tokens.Colors.white).shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 11, x: 0, y: 6) }

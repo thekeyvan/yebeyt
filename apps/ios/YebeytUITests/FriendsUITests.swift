@@ -124,4 +124,33 @@ final class FriendsUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["بیتِ امروز"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["پیدا کردن دوست"].exists)
     }
+
+    // MARK: Pages load one at a time
+
+    /// The fake server's friends count for me is the friends pages it served (plus 100 for each page of the feed after
+    /// the first), so a list that asked for more pages than it showed would be seen here.
+    @MainActor private func servedCount(_ app: XCUIApplication) -> String {
+        app.buttons["من"].tap()
+        let friends = app.buttons["profileFriends"]
+        XCTAssertTrue(friends.waitForExistence(timeout: 10))
+        return plain(friends.label)
+    }
+
+    @MainActor func testTheFriendsListAsksForItsNextPageOnlyWhenTheEndComesIntoView() {
+        let app = launch(["-beytRoute", "friends"])
+        XCTAssertTrue(element(app, "person-sara.ghazal").waitForExistence(timeout: 10))
+        app.buttons["back"].tap()
+        XCTAssertEqual(servedCount(app), "۱ دوست", "only the first page was asked for")
+
+        app.buttons["profileFriends"].tap()
+        let last = element(app, "person-friend77")
+        for _ in 0..<30 where !last.exists { app.swipeUp() }
+        XCTAssertTrue(last.waitForExistence(timeout: 10), "scrolling to the end brought the second page")
+    }
+
+    @MainActor func testTheHomeFeedAsksForItsNextPageOnlyWhenTheEndComesIntoView() {
+        let app = launch(["-beytTab", "home"])
+        XCTAssertTrue(element(app, "feedItem").firstMatch.waitForExistence(timeout: 10))
+        XCTAssertEqual(servedCount(app), "۰ دوست", "the second page of the feed was not asked for")
+    }
 }

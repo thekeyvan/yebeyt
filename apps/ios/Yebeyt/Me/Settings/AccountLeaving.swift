@@ -41,8 +41,8 @@ struct AccountSignOut {
             let reactionsSent = await data.reactions.syncNow()
             await data.privacy.flush()
             await data.avatar.flush()
-            await data.scores.flush()  // a round that cannot go is not worth a warning: it is only a few points
-            guard divanSent, reactionsSent, !data.privacy.hasUnsentChanges, !data.avatar.isUnsent else { return .unsynced }
+            await data.scores.flush()
+            guard divanSent, reactionsSent, !data.scores.hasUnsent, !data.privacy.hasUnsentChanges, !data.avatar.isUnsent else { return .unsynced }
         }
         await divanSync.stop()
         await data.reactions.stop()

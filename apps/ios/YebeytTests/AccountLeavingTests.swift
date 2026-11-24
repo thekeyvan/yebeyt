@@ -257,6 +257,25 @@ struct AccountLeavingTests {
         expectNothingLeft(f)
     }
 
+    @Test func unsentScoresAlsoHoldBackSigningOutAndGoWhenInsistedOn() async {
+        let f = fixture()
+        defer { f.keychain.delete() }
+        f.stub.respond { request in request.path == "/v1/scores" ? .offline : f.server.handle(request) }
+        f.data.scores.report(.poet, points: 40)
+        #expect(await f.signOut.signOut() == .unsynced)
+        #expect(f.session.isSignedIn && f.data.scores.hasUnsent)
+        #expect(await f.signOut.signOut(force: true) == .done)
+        #expect(!f.data.scores.hasUnsent)
+    }
+
+    @Test func scoresThatReachTheServerDoNotHoldBackSigningOut() async {
+        let f = fixture()
+        defer { f.keychain.delete() }
+        f.data.scores.report(.poet, points: 40)
+        #expect(await f.signOut.signOut() == .done)
+        #expect(f.stub.requests(to: "/v1/scores").count == 1)
+    }
+
     @Test func unsentPrivacyOrFaceAlsoHoldsBackSigningOut() async {
         let f = fixture()
         defer { f.keychain.delete() }

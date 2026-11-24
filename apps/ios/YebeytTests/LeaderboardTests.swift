@@ -64,7 +64,7 @@ struct LeaderboardLayoutTests {
 
     @Test func whenIAmOnTheGlobalListMyRankIsAddedIfItIsOnAnotherPage() {
         let standings = GlobalStandings(week: "w", rows: [row(1, "آرین", points: 900)], me: row(80, "من", points: 120, me: true), nextCursor: "c")
-        #expect(LeaderboardLayout.global(standings, inGlobal: true).count == 2)
+        #expect(LeaderboardLayout.global(standings, inGlobal: true).count == 3)  // the row, a gap, mine
         let onPage = GlobalStandings(week: "w", rows: [row(1, "من", points: 900, me: true)], me: row(1, "من", points: 900, me: true), nextCursor: nil)
         #expect(LeaderboardLayout.global(onPage, inGlobal: true).count == 1)
     }

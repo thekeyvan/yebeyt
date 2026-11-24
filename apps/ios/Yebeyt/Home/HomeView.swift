@@ -11,7 +11,7 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            LazyVStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(PersianDate.line(for: .now)).font(.ui(13)).foregroundStyle(Tokens.Colors.muted)
                     Text("بیتِ امروز").font(.title(32)).foregroundStyle(Tokens.Colors.ink)

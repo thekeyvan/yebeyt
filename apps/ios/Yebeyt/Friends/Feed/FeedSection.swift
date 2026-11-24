@@ -11,6 +11,7 @@ struct FriendsFeedSection: View {
 
 private struct FeedSectionBody: View {
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(BlockedPeople.self) private var blocked
     @State private var feed: FeedModel
 
     init(session: Session) {
@@ -18,11 +19,12 @@ private struct FeedSectionBody: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        // Lazy, so the next page is asked for only when the last card scrolls into view.
+        LazyVStack(alignment: .leading, spacing: 10) {
             SectionHeading(title: "دوستات", link: "پیدا کردن دوست", destination: .people)
                 .padding(.top, 4)
-            ForEach(feed.entries) { entry in
-                FeedCard(item: entry.item)
+            ForEach(blocked.visible(feed.entries)) { entry in
+                FeedCard(item: entry.item, counts: entry.item.key.flatMap { feed.counts[$0] })
                     .onAppear { if entry.id == feed.entries.last?.id { Task { await feed.loadMore() } } }
             }
         }
@@ -33,26 +35,45 @@ private struct FeedSectionBody: View {
     }
 }
 
-/// One thing a friend did: their face, «کیان یه بیت به اشتراک گذاشت» over how long ago, and the couplet (tap to read it),
-/// or the day's puzzle they solved with «تو هم».
+/// A couplet loaded for a card.
+private struct ShownCouplet {
+    var couplet: Couplet
+    var poet: String
+    var title: String
+}
+
+/// One thing a friend did: their face, «کیان یه بیت به اشتراک گذاشت» over how long ago, and for a couplet the couplet
+/// (tap to read it) with ♥ and repost counts, send and keep; for the day's puzzle «تو هم» when it is today's.
 private struct FeedCard: View {
     @Environment(AppModel.self) private var app
+    @Environment(Library.self) private var library
+    @Environment(PoetryStore.self) private var poetry
+    @Environment(ReaderMarks.self) private var marks
+    @Environment(AccountModel.self) private var account
     let item: FeedItem
+    let counts: ReactionCounts?
+    @State private var shown: ShownCouplet?
+
+    private var route: ReaderRoute? { item.key.flatMap(FeedText.coupletRoute(of:)) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
-            if let key = item.key { CoupletBox(key: key) }
+            if let shown { couplet(shown) }
+            if route != nil { actions }
         }
-        .padding(EdgeInsets(top: 12, leading: 14, bottom: item.key == nil ? 12 : 14, trailing: 14))
+        .padding(EdgeInsets(top: 12, leading: 14, bottom: route == nil ? 12 : 6, trailing: 14))
         .background {
             RoundedRectangle(cornerRadius: 22).fill(Tokens.Colors.white)
                 .shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 6, x: 0, y: 3)
         }
-        .contentShape(Rectangle())
-        .onTapGesture { if let key = item.key, let route = FeedText.coupletRoute(of: key) { app.openReader(route) } }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("feedItem")
+        .task(id: item.key) {
+            guard let route, let poem = try? await poetry.poem(path: route.path), poem.couplets.indices.contains(route.couplet) else { return }
+            let slug = route.path.split(separator: "/").first.map(String.init) ?? ""
+            shown = ShownCouplet(couplet: poem.couplets[route.couplet], poet: library.poet(slug: slug)?.name ?? "", title: ReaderText.shortTitle(poem.title))
+        }
     }
 
     private var header: some View {
@@ -65,7 +86,7 @@ private struct FeedCard: View {
                 Text(FeedText.relativeTime(item.at)).font(.ui(12)).foregroundStyle(Tokens.Colors.muted)
             }
             Spacer(minLength: 0)
-            if item.type == .daily {
+            if FeedText.isTodaysDaily(item) {
                 Button { app.play(.daily) } label: {
                     Text("تو هم").font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.lapis)
                 }
@@ -73,40 +94,76 @@ private struct FeedCard: View {
             }
         }
     }
-}
 
-/// The couplet of a like or a repost, on the board's soft box with the poet under it. It loads from the poem; until then
-/// (or when the poem can't be loaded) only the line above it shows.
-private struct CoupletBox: View {
-    @Environment(PoetryStore.self) private var poetry
-    @Environment(Library.self) private var library
-    let key: String
-    @State private var couplet: Couplet?
-
-    var body: some View {
-        ZStack {  // a view even when empty, so the task below runs
-            if let couplet {
-                VStack(spacing: 0) {
-                    Text(couplet.m1).font(.poem(18))
-                    if !couplet.m2.isEmpty { Text(couplet.m2).font(.poem(18)) }
-                    Text(poetName).font(.ui(12)).foregroundStyle(Tokens.Colors.muted).padding(.top, 2)
-                }
-                .foregroundStyle(Tokens.Colors.ink)
-                .multilineTextAlignment(.center)
-                .lineSpacing(6)
-                .frame(maxWidth: .infinity)
-                .padding(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
-                .background(RoundedRectangle(cornerRadius: 16).fill(Tokens.Colors.boardPaper))
+    /// The couplet on the board's soft box with the poet under it; tap to read it.
+    private func couplet(_ shown: ShownCouplet) -> some View {
+        Button { if let route { app.openReader(route) } } label: {
+            VStack(spacing: 0) {
+                Text(shown.couplet.m1).font(.poem(18))
+                if !shown.couplet.m2.isEmpty { Text(shown.couplet.m2).font(.poem(18)) }
+                Text(shown.poet).font(.ui(12)).foregroundStyle(Tokens.Colors.muted).padding(.top, 2)
             }
+            .foregroundStyle(Tokens.Colors.ink)
+            .multilineTextAlignment(.center)
+            .lineSpacing(6)
+            .frame(maxWidth: .infinity)
+            .padding(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
+            .background(RoundedRectangle(cornerRadius: 16).fill(Tokens.Colors.boardPaper))
+            .contentShape(Rectangle())
         }
-        .task(id: key) {
-            guard let route = FeedText.coupletRoute(of: key), let poem = try? await poetry.poem(path: route.path), poem.couplets.indices.contains(route.couplet) else { return }
-            couplet = poem.couplets[route.couplet]
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("feedCouplet")
+    }
+
+    // MARK: Actions
+
+    /// ♥ and repost with their counts, send; keep at the other end.
+    @ViewBuilder private var actions: some View {
+        if let route {
+            let liked = marks.contains(.liked, poemPath: route.path, couplet: route.couplet)
+            let reposted = marks.contains(.reposted, poemPath: route.path, couplet: route.couplet)
+            let kept = marks.contains(.kept, poemPath: route.path, couplet: route.couplet)
+            HStack {
+                HStack(spacing: 14) {
+                    action("پسند این بیت", count: counts.map { FeedModel.shown($0.likes, serverMine: $0.likedByMe, localMine: liked) }, id: "feedLike") {
+                        LineIcon(shape: HeartIcon(), size: 20, lineWidth: 2.2, fill: liked ? Tokens.Colors.magenta : nil)
+                            .foregroundStyle(liked ? Tokens.Colors.magenta : Tokens.Colors.ink)
+                    } tap: {
+                        account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: route.path, couplet: route.couplet) }
+                    }
+                    action("بازنشر این بیت", count: counts.map { FeedModel.shown($0.reposts, serverMine: $0.repostedByMe, localMine: reposted) }, id: "feedRepost") {
+                        LineIcon(shape: RepostIcon(), size: 20, lineWidth: 2.2, fill: nil)
+                            .foregroundStyle(reposted ? Tokens.Colors.lapis : Tokens.Colors.ink)
+                    } tap: {
+                        account.require(.likes, needed: !reposted) { marks.toggle(.reposted, poemPath: route.path, couplet: route.couplet) }
+                    }
+                    action("بفرست این بیت", count: nil, id: "feedSend") {
+                        LineIcon(shape: MessagesIcon(), size: 20, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.ink)
+                    } tap: {
+                        if let shown { app.share = ReaderModel.Share(text: ReaderText.shareText(shown.couplet, poet: shown.poet, title: shown.title)) }
+                    }
+                }
+                Spacer(minLength: 0)
+                action("نگه داشتن این بیت", count: nil, id: "feedKeep") {
+                    LineIcon(shape: BookmarkIcon(), size: 20, lineWidth: 2.2, fill: kept ? Tokens.Colors.ink : nil).foregroundStyle(Tokens.Colors.ink)
+                } tap: {
+                    marks.toggle(.kept, poemPath: route.path, couplet: route.couplet)
+                }
+            }
         }
     }
 
-    private var poetName: String {
-        let slug = FeedText.coupletRoute(of: key)?.path.split(separator: "/").first.map(String.init) ?? ""
-        return library.poet(slug: slug)?.name ?? ""
+    private func action(_ label: String, count: Int?, id: String, @ViewBuilder icon: () -> some View, tap: @escaping () -> Void) -> some View {
+        Button(action: tap) {
+            HStack(spacing: 4) {
+                icon()
+                if let count, count > 0 { Text(PersianDigits.string(count)).font(.ui(12, weight: .bold)) }
+            }
+            .padding(4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityIdentifier(id)
     }
 }

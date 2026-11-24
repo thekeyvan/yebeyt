@@ -50,6 +50,7 @@ struct PeopleSearchSection: View {
     let opens: Bool
     @Binding var toast: String?
     var focus: FocusState<Bool>.Binding?
+    @Environment(BlockedPeople.self) private var blocked
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -65,15 +66,15 @@ struct PeopleSearchSection: View {
         switch model.phase {
         case .idle:
             EmptyView()
-        case .loading where model.people.isEmpty:
+        case .loading where blocked.visible(model.people).isEmpty:
             ProgressView().frame(maxWidth: .infinity).padding(.top, 24)
         case .failed(let message):
             Text(message).font(.ui(13)).foregroundStyle(Tokens.Colors.muted).frame(maxWidth: .infinity).padding(.top, 24)
-        case .loaded where model.people.isEmpty:
+        case .loaded where blocked.visible(model.people).isEmpty:
             NothingFound()
         default:
             PeopleCard {
-                ForEach(model.people, id: \.username) { person in
+                ForEach(blocked.visible(model.people), id: \.username) { person in
                     PersonRow(person: person, busy: model.pending.contains(person.username), opens: opens) {
                         Task { toast = await model.toggleFollow(person.username) }
                     }

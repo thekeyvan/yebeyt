@@ -5,7 +5,8 @@ import Observation
 /// counts twice, and the daily puzzle's result for the day. What could not be sent (no network, a server error, a
 /// limit) waits in a queue on the phone and goes on the next flush: right away, when the app comes to the front and
 /// after a sign-in. A 409 is the round already counted; any other refusal means the server will never take it, so
-/// both leave the queue. A guest's rounds are not kept (the onboarding round is, as the account step follows).
+/// both leave the queue. A guest's rounds are not kept (the onboarding round is, as the account step follows). Each
+/// entry knows whose round it is: one of another account is dropped, never sent as the signed-in person's.
 @MainActor @Observable
 final class ScoreSync {
     enum Item: Codable, Equatable, Sendable {
@@ -13,9 +14,15 @@ final class ScoreSync {
         case daily(DailyRequest)
     }
 
+    /// A round waiting to go; `userId` is the account it was played for (nil: not known, the next sign-in takes it).
+    struct Entry: Codable, Equatable, Sendable {
+        var userId: String?
+        var item: Item
+    }
+
     static let defaultsKey = "scores.unsent"
 
-    private(set) var queue: [Item]
+    private(set) var queue: [Entry]
     /// Told after a flush sent something, so the points shown can be fetched again.
     @ObservationIgnored var didSend: (@MainActor () -> Void)?
     @ObservationIgnored private let session: Session
@@ -27,7 +34,7 @@ final class ScoreSync {
         self.session = session
         self.defaults = defaults
         self.now = now
-        queue = defaults.data(forKey: Self.defaultsKey).flatMap { try? JSONDecoder().decode([Item].self, from: $0) } ?? []
+        queue = defaults.data(forKey: Self.defaultsKey).flatMap { try? JSONDecoder().decode([Entry].self, from: $0) } ?? []
     }
 
     var hasUnsent: Bool { !queue.isEmpty }
@@ -59,17 +66,21 @@ final class ScoreSync {
         if let running { return await running.value }
         let task = Task { @MainActor [self] in
             defer { running = nil }
+            if session.user == nil { await session.restore() }
+            guard let me = session.user?.id else { return }  // who is signed in is not known (no network): try later
+            queue.removeAll { $0.userId != nil && $0.userId != me }
+            save()
             var sent = false
-            while let item = queue.first {
+            while let entry = queue.first {
                 do {
-                    try await send(item)
+                    try await send(entry.item)
                     sent = true
                 } catch let error as APIError where error.isFinal {
                     // 409: already counted. Any other refusal is final too.
                 } catch {
                     break
                 }
-                queue.removeAll { $0 == item }
+                queue.removeAll { $0 == entry }
                 save()
             }
             if sent { didSend?() }
@@ -84,7 +95,7 @@ final class ScoreSync {
     }
 
     private func enqueue(_ item: Item) {
-        if !queue.contains(item) { queue.append(item) }
+        if !queue.contains(where: { $0.item == item }) { queue.append(Entry(userId: session.user?.id, item: item)) }
         save()
         Task { await flush() }
     }

@@ -14,6 +14,7 @@ struct PersonScreen: View {
 private struct PersonScreenBody: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
+    @Environment(BlockedPeople.self) private var blocked
     @State private var model: PersonModel
     @State private var confirmingBlock = false
     @State private var reporting = false
@@ -50,7 +51,10 @@ private struct PersonScreenBody: View {
         .task { await model.load() }
         .sheet(isPresented: $confirmingBlock) {
             BlockSheet(name: model.name, isPresented: $confirmingBlock) {
-                if await model.block() { dismiss() }
+                if await model.block() {
+                    blocked.add(model.username)
+                    dismiss()
+                }
             }
         }
         .sheet(isPresented: $reporting) {

@@ -45,8 +45,15 @@ final class PersonModel {
 
     var name: String { profile?.short.name ?? username }
 
-    /// «پیام بده» shows for friends, who can always write to each other.
-    var canMessage: Bool { profile?.isFriend == true }
+    /// «پیام بده» shows when the server says I may write to them.
+    var canMessage: Bool { profile?.canMessage == true }
+
+    /// The server takes 500 code points (not graphemes or UTF-16 units) of the note.
+    static let noteLimit = 500
+
+    static func clipped(_ note: String) -> String {
+        String(String.UnicodeScalarView(note.unicodeScalars.prefix(noteLimit)))
+    }
 
     func load() async {
         let api = session.api
@@ -97,7 +104,7 @@ final class PersonModel {
     func report(_ reason: Reason, note: String) async -> Bool {
         let api = session.api
         let text = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        let request = ReportRequest(username: username, reason: reason.wire, note: text.isEmpty ? nil : String(text.prefix(500)))
+        let request = ReportRequest(username: username, reason: reason.wire, note: text.isEmpty ? nil : Self.clipped(text))
         do {
             try await session.authorized { try await api.report(request, token: $0) }
             toast = "گزارشت رسید"
