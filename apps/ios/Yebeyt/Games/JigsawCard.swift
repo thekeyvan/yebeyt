@@ -124,7 +124,8 @@ private struct LooseSticker: View {
     var body: some View {
         let held = inHand || drag != nil
         WordSticker(word: sticker.word, status: held ? .held : .onSheet, size: 24)
-            .offset(x: drag?.width ?? 0, y: (drag?.height ?? 0) - (held ? 14 : 0))
+            .offset(y: held ? -14 : 0)
+            .offset(dragged: drag ?? .zero)
             .zIndex(drag == nil ? 0 : 10)
             .contentShape(Rectangle())
             .onTapGesture { select(sticker) }

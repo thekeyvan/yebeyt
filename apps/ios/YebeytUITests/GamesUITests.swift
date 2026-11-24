@@ -107,6 +107,28 @@ final class GamesUITests: XCTestCase {
         XCTAssertTrue(buttons(app, startingWith: "slot-", value: word).count >= 1, "the dragged sticker sits in the slot")
     }
 
+    /// The finger's place is what counts: a sticker let go on the rightmost, then on the leftmost empty slot, lands in
+    /// that very slot. (A UI test can't see the sticker while it is still in the finger, so that it follows the finger
+    /// is covered by `DragOffsetTests` and was checked on a recording.)
+    @MainActor func testAStickerLetGoOnTheLeftmostAndRightmostSlotLandsThere() {
+        let app = launch(["-beytRoute", "jigsaw"])
+        XCTAssertTrue(app.descendants(matching: .any)["jigsawCard"].waitForExistence(timeout: 10))
+        let empty = buttons(app, startingWith: "slot-", value: "خالی")
+        XCTAssertGreaterThanOrEqual(empty.count, 2)
+
+        for edge in ["rightmost", "leftmost"] {
+            let slots = empty.allElementsBoundByIndex
+            let target = (edge == "rightmost" ? slots.max { $0.frame.midX < $1.frame.midX } : slots.min { $0.frame.midX < $1.frame.midX })!
+            let id = target.identifier
+            let sticker = buttons(app, startingWith: "sticker-").element(boundBy: 0)
+            let word = sticker.label
+            let from = sticker.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let to = target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            from.press(forDuration: 0.1, thenDragTo: to)
+            XCTAssertEqual(app.buttons[id].value as? String, word, "the \(edge) slot (\(id)) holds the sticker let go on it")
+        }
+    }
+
     /// Right-to-left: the first word is the rightmost of its row (a hemistich reads from the right).
     @MainActor func testWordsFlowFromTheRightInTheDailyCardAndTheJigsawSlots() {
         let app = launch(["-beytTab", "games"])
