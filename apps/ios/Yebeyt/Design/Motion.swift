@@ -157,7 +157,10 @@ struct CountUp: View, Animatable {
         set { value = newValue }
     }
 
+    var prefix = ""
+    var suffix = ""
+
     static func text(_ value: Double) -> String { PersianDigits.string(Int(value.rounded())) }
 
-    var body: some View { Text(Self.text(value)) }
+    var body: some View { Text(prefix + Self.text(value) + suffix) }
 }

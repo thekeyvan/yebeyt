@@ -32,7 +32,7 @@ struct DailyScreen: View {
                 AnswerSheet(
                     couplet: session.puzzle.couplet, right: session.game.outcome == .solved,
                     detail: session.game.outcome == .solved ? "+\(PersianDigits.string(session.game.points))" : nil,
-                    buttonTitle: "برگرد", buttonIdentifier: "dailyBack", next: { app.closeGame() }
+                    buttonTitle: "برگرد", buttonIdentifier: "dailyBack", next: { app.closeGame() }, celebrates: true
                 )
                 .transition(.opacity)
             }

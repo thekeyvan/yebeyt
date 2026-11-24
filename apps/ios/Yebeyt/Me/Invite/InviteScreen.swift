@@ -37,7 +37,7 @@ struct InviteScreen: View {
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .overlay(alignment: .bottom) { toastView }
-        .animation(.snappy, value: toast)
+        .animation(Motion.bouncy, value: toast)
         .task { await session.restore() }
     }
 
@@ -158,7 +158,7 @@ struct InviteScreen: View {
                 .padding(.horizontal, 16).padding(.vertical, 9)
                 .background(Capsule().fill(Tokens.Colors.ink))
                 .padding(.bottom, 24)
-                .transition(.opacity)
+                .transition(Motion.toast)
                 .accessibilityIdentifier("toast")
         }
     }

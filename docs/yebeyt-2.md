@@ -39,6 +39,17 @@ The full rules are on the `StickerSystem` board. In short:
 - Icons are our own (the app's line icons and the game icons in `design/canvas/gameicons.py`: round stickers, white border, one colour per game). No SF Symbols in the visible design.
 - Tabs: خونه · کاوش · بازی · پیام‌ها · من.
 
+**Motion.** The owner asked for livelier, Duolingo-like animation (24 Nov). One vocabulary in `apps/ios/Yebeyt/Design/Motion.swift` (numbers and the pure burst generator) and `MotionEffects.swift` (the views), all under 0.5 s and never blocking a tap:
+- `bouncy`: spring, response 0.35, damping 0.55 (visible overshoot). Toasts drop in with it (`Motion.toast`); the next deck card springs in with it.
+- `pop`: scale 1 → 1.35 → 0.9 → 1.05 → 1 over 0.45 s; stickers also wiggle ±8°. Turning a mark off pops smaller (1.15, 0.3 s, no wiggle, no burst).
+- `press`: every sticker button squishes to 0.92 while pressed and springs back (response 0.3, damping 0.5): `PressStyle` (`.buttonStyle(.press)`) and `pressSquish` inside the sticker button styles.
+- `burst`: 6–8 dots, short dashes and small squares in the sticker colours fly out from the control and fade in 0.6 s (radius 34 pt; 74 pt for a result). No crescents or stars.
+- `shake`: a wrong answer shakes ±14 pt over 0.45 s.
+- Haptics (`.sensoryFeedback`): medium impact on keep and like (not on taking them off), success on a right answer and on a finished game, error on a wrong answer, selection on a tab change.
+- Used on: keep and like/repost everywhere (reader row, hold menu, whole-poem bar, home card, feed, shared divan, answer sheet): pop, wiggle, burst, impact; «رد کن» on home throws the card off to the left with a tilt (it springs back if there is no other card) and the next springs in; the answer sheet's verdict badge pops with a burst and a success tap (bigger for the daily puzzle) or shakes with an error tap; the right option pops and a wrong chosen one shakes; matched معنی‌یاب cards pop; right daily letters pop; the score sticker pops and the end-of-round score and points count up with a big burst on the score; the selected tab's icon pops.
+- **Reduce Motion** (`Motion.variant(reduceMotion:)`): no burst, no wiggle, no shake and no thrown card (it fades); a pop becomes a 0.2 s scale to 1.05; the press squish shrinks to 0.97 without overshoot; the count-up jumps; haptics stay.
+- «نگه دار» on the home card keeps in place (it does not throw the card away), so the bookmark pops and bursts instead.
+
 ## Decisions by area
 
 **Accounts (row ۱).** No account is needed to read, browse, search, open a fal, listen, play solo games or keep couplets on the phone. Scores, the leaderboard, streaks, games with friends, messages and sync ask for an account when first used (`AccountGate`: a sheet over the current screen; progress made as a guest carries over). Sign-in is Apple or Google only, plus «فعلاً بدون حساب». After sign-in the user picks a username: `a-z 0-9 _ .`, 3–20 characters, live availability check, suggestions, can be changed every 30 days. Onboarding: welcome → taste (poets and moods) → a 30-second jigsaw → account → username → find friends.

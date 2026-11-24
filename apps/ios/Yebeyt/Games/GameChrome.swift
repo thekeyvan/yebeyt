@@ -121,6 +121,8 @@ struct ScoreSticker: View {
             .padding(.vertical, 3)
             .sticker(fill: Tokens.Colors.amber, radius: Tokens.Sticker.Radius.pill, border: 4, shadow: ShadowToken(y: 3, blur: 8, opacity: 0.22))
             .contentTransition(.numericText())
+            .popOn(points)
+            .animation(Motion.bouncy, value: points)
     }
 }
 

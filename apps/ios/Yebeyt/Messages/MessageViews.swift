@@ -58,7 +58,7 @@ struct MessageToast: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 9)
             .background(Capsule().fill(Tokens.Colors.ink))
-            .transition(.opacity)
+            .transition(Motion.toast)
             .accessibilityAddTraits(.isStaticText)
             // VoiceOver can't see it come and go: it is said aloud.
             .onChange(of: text, initial: true) { _, line in AccessibilityNotification.Announcement(line).post() }
@@ -78,6 +78,6 @@ extension View {
                     }
             }
         }
-        .animation(.snappy, value: text.wrappedValue)
+        .animation(Motion.bouncy, value: text.wrappedValue)
     }
 }

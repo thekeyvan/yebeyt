@@ -51,7 +51,7 @@ struct ReaderView: View {
         .overlay(alignment: .bottom) { toast }
         .animation(.snappy, value: model.holdIndex)
         .animation(.snappy, value: model.textSheetOpen)
-        .animation(.snappy, value: model.toast)
+        .animation(Motion.bouncy, value: model.toast)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
         .sharedDivanSheet(item: $sharedTarget) { model.showToast($0) }
         .background { Color.clear.accountPrompt(host: true) }
@@ -151,7 +151,7 @@ struct ReaderView: View {
                 .padding(.vertical, 9)
                 .background(Capsule().fill(Tokens.Colors.ink))
                 .padding(.bottom, 96)
-                .transition(.opacity)
+                .transition(Motion.toast)
         }
     }
 }

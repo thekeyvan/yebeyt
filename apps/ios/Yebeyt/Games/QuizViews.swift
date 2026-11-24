@@ -43,6 +43,11 @@ private struct VerdictBadge: View {
 }
 
 extension View {
+    /// The right option pops, a wrong chosen one shakes (the taps are the answer sheet's verdict).
+    func answerMotion(_ state: OptionState) -> some View {
+        popWhen(state == .right, wiggle: true).shakeWhen(state == .wrong)
+    }
+
     /// The badge of the right (✓) or the wrong chosen option (×), at the physical left.
     @ViewBuilder func verdictBadge(_ state: OptionState) -> some View {
         switch state {
@@ -141,8 +146,9 @@ struct PoetOptionCard: View {
             .verdictBadge(state)
             .shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 5, x: 0, y: 3)
             .opacity(state.opacity)
+            .answerMotion(state)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .allowsHitTesting(state == .idle || state == .selected)
         .accessibilityHidden(state == .removed)
         .accessibilityLabel(name)
@@ -170,8 +176,9 @@ struct HemistichOptionRow: View {
                 .verdictBadge(state)
                 .shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 5, x: 0, y: 3)
                 .opacity(state.opacity)
+                .answerMotion(state)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .allowsHitTesting(state == .idle || state == .selected)
         .accessibilityHidden(state == .removed)
         .accessibilityAddTraits(chosen ? .isSelected : [])
@@ -220,8 +227,9 @@ struct BookOptionTile: View {
             .frame(maxWidth: .infinity)
             .opacity(state.opacity)
             .tilted(state == .wrong ? -3 : 0)
+            .answerMotion(state)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .allowsHitTesting(state == .idle || state == .selected)
         .accessibilityHidden(state == .removed)
         .accessibilityLabel(title)

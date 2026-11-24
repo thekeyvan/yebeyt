@@ -14,6 +14,8 @@ struct AnswerSheet: View {
     let buttonTitle: String
     let buttonIdentifier: String
     let next: () -> Void
+    /// A finished game or puzzle: the burst is bigger.
+    var celebrates = false
     @State private var share: ReaderModel.Share?
     @State private var aiToastShown = false
     @State private var aiToastTask: Task<Void, Never>?
@@ -41,7 +43,7 @@ struct AnswerSheet: View {
         }
         .padding(EdgeInsets(top: 12, leading: 20, bottom: 30, trailing: 20))
         .overlay(alignment: .top) {
-            if aiToastShown { AIToast().offset(y: -52).transition(.opacity) }
+            if aiToastShown { AIToast().offset(y: -52).transition(Motion.toast) }
         }
         .frame(maxWidth: .infinity)
         .background {
@@ -64,6 +66,7 @@ struct AnswerSheet: View {
                 }
             }
             .frame(width: 46, height: 46)
+            .verdictMotion(right: right, burst: celebrates ? .big : .small)
             .tilted(-8)
             VStack(alignment: .leading, spacing: 0) {
                 Text(title ?? (right ? "درست چسبوندی!" : "این یکی نشد")).font(.title(26)).foregroundStyle(Tokens.Colors.ink)
@@ -76,7 +79,7 @@ struct AnswerSheet: View {
 
     /// The sparkle was tapped: say where the meaning comes from, for a moment (a second tap starts the moment again).
     private func explainAI() {
-        withAnimation(.snappy) { aiToastShown = true }
+        withAnimation(Motion.bouncy) { aiToastShown = true }
         aiToastTask?.cancel()
         aiToastTask = Task {
             try? await Task.sleep(for: .seconds(2.5))

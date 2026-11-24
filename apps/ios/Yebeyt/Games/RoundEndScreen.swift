@@ -8,6 +8,8 @@ struct RoundEndScreen<Card: View>: View {
     @Environment(GameDeck.self) private var deck
     let summary: RoundSummary
     let card: Card
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var counted = false
 
     init(summary: RoundSummary, @ViewBuilder card: () -> Card) {
         self.summary = summary
@@ -34,6 +36,9 @@ struct RoundEndScreen<Card: View>: View {
         }
         .scrollIndicators(.hidden)
         .accessibilityIdentifier("roundEnd")
+        .task {
+            if reduceMotion { counted = true } else { withAnimation(.easeOut(duration: 0.5)) { counted = true } }
+        }
     }
 
     private var topBar: some View {
@@ -44,11 +49,12 @@ struct RoundEndScreen<Card: View>: View {
             .accessibilityIdentifier("roundEndBack")
             Spacer()
             if summary.showsPoints {
-                Text("+\(PersianDigits.string(summary.points)) امتیاز")
+                CountUp(value: counted ? Double(summary.points) : 0, prefix: "+", suffix: " امتیاز")
                     .font(.title(16)).foregroundStyle(Tokens.Colors.ink)
                     .padding(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
                     .padding(.bottom, 2)
                     .sticker(fill: Tokens.Colors.amber, radius: Tokens.Sticker.Radius.pill, border: 3, shadow: ShadowToken(y: 2, blur: 6, opacity: 0.18))
+                    .accessibilityLabel("+\(PersianDigits.string(summary.points)) امتیاز")
                     .accessibilityIdentifier("roundEndPoints")
             }
         }
@@ -57,14 +63,16 @@ struct RoundEndScreen<Card: View>: View {
     private var scoreRow: some View {
         HStack(spacing: 16) {
             VStack(spacing: 0) {
-                Text(PersianDigits.string(summary.right)).font(.title(40)).frame(height: 40).padding(.top, 6)
+                CountUp(value: counted ? Double(summary.right) : 0).font(.title(40)).frame(height: 40).padding(.top, 6)
                 Text("از \(PersianDigits.string(summary.total))").font(.ui(12, weight: .bold))
             }
             .foregroundStyle(Tokens.Colors.white)
             .frame(width: 86, height: 86)
             .sticker(fill: Tokens.Colors.lapis, radius: 48, border: 5, shadow: ShadowToken(y: 6, blur: 16, opacity: 0.3))
+            .verdictMotion(right: true, burst: .big)
             .tilted(-6)
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(PersianDigits.string(summary.right)) از \(PersianDigits.string(summary.total))")
             .accessibilityIdentifier("roundEndScore")
             VStack(alignment: .leading, spacing: 4) {
                 Text(summary.title).font(.title(28)).foregroundStyle(Tokens.Colors.ink)

@@ -46,7 +46,7 @@ struct QuizScreen: View {
             }
         }
         .overlay(alignment: .bottom) { toastView }
-        .animation(.snappy, value: toast)
+        .animation(Motion.bouncy, value: toast)
         .task { await begin() }
         .onChange(of: scenePhase) { _, phase in session?.isPaused = phase != .active }
         .onDisappear { audio.stop() }
@@ -103,7 +103,7 @@ struct QuizScreen: View {
                 .padding(.horizontal, 16).padding(.vertical, 9)
                 .background(Capsule().fill(Tokens.Colors.ink))
                 .padding(.bottom, 96)
-                .transition(.opacity)
+                .transition(Motion.toast)
                 .accessibilityIdentifier("toast")
         }
     }

@@ -14,12 +14,12 @@ struct FeedbackToastView: View {
                     .padding(.horizontal, 16).padding(.vertical, 9)
                     .background(Capsule().fill(Tokens.Colors.ink))
                     .padding(.bottom, 96)
-                    .transition(.opacity)
+                    .transition(Motion.toast)
                     .accessibilityIdentifier("feedbackToast")
             }
         }
         .frame(maxWidth: .infinity)
-        .animation(.snappy, value: center.toast)
+        .animation(Motion.bouncy, value: center.toast)
         .environment(\.layoutDirection, .rightToLeft)
         .environment(\.locale, Locale(identifier: "fa_IR"))
         .font(.ui(16))

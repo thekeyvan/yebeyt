@@ -24,7 +24,7 @@ struct DailyGrid: View {
         let marks = game.marks
         if row < game.tries.count {
             let mark = marks[row][column]
-            return cell(String(game.tries[row][column]), fill: color(mark), border: color(mark), text: mark == .grey ? Tokens.Colors.muted : Tokens.Colors.ink)
+            return cell(String(game.tries[row][column]), fill: color(mark), border: color(mark), text: mark == .grey ? Tokens.Colors.muted : Tokens.Colors.ink, pops: mark == .green)
         }
         guard row == game.tries.count, game.outcome == .playing else { return cell("", fill: .white, border: Tokens.Colors.ring) }
         let letter = game.entry[column]
@@ -36,7 +36,7 @@ struct DailyGrid: View {
         )
     }
 
-    private func cell(_ letter: String, fill: Color, border: Color, text: Color = Tokens.Colors.ink, halo: Bool = false) -> some View {
+    private func cell(_ letter: String, fill: Color, border: Color, text: Color = Tokens.Colors.ink, halo: Bool = false, pops: Bool = false) -> some View {
         Text(letter)
             .font(.ui(22, weight: .bold))
             .foregroundStyle(text)
@@ -46,6 +46,7 @@ struct DailyGrid: View {
                 RoundedRectangle(cornerRadius: 12).strokeBorder(border, lineWidth: 3)
             }
             .background { if halo { RoundedRectangle(cornerRadius: 15).fill(Color(hex: 0xD6D8FF)).padding(-3) } }
+            .popWhen(pops, wiggle: true)
     }
 
     private func color(_ mark: LetterMark) -> Color {
@@ -95,7 +96,7 @@ struct DailyKeyboard: View {
                         .frame(width: 80, height: 42)
                         .sticker(fill: .white, radius: 12, border: 3, shadow: Tokens.Sticker.Shadow.wordOnSheet)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.press)
                 .accessibilityIdentifier("erase")
             }
         }
@@ -122,7 +123,7 @@ struct DailyKeyboard: View {
                 .frame(width: used ? 40 : 34, height: used ? 48 : 42)
                 .sticker(fill: fill, radius: 12, border: used ? 0 : 3, shadow: used ? ShadowToken(y: 0, blur: 0, opacity: 0) : Tokens.Sticker.Shadow.wordOnSheet)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .accessibilityLabel(String(letter))
         .accessibilityValue(mark == .grey ? "تو کلمه نیست" : mark == .green ? "سر جاشه" : mark == .yellow ? "جای دیگه‌ست" : "")
         .accessibilityIdentifier("key-\(letter)")
