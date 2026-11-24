@@ -20,7 +20,7 @@ final class PoetPictures {
     @ObservationIgnored private var saved: [PoetPictureEntry] = []
     @ObservationIgnored private var lastAsked: Date?
     @ObservationIgnored private var shownVersions: [String: String] = [:]
-    @ObservationIgnored private var downloads: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored private var downloads: [String: (version: String, task: Task<Void, Never>)] = [:]
     @ObservationIgnored private let api: API
     @ObservationIgnored private let directory: URL
     @ObservationIgnored private let now: () -> Date
@@ -63,14 +63,19 @@ final class PoetPictures {
     /// happens for a poet without a picture.
     func load(slug: String) async {
         guard let entry = saved.first(where: { $0.slug == slug }), shownVersions[slug] != entry.version else { return }
-        if let running = downloads[slug] { return await running.value }
+        if let running = downloads[slug] {
+            await running.task.value
+            // A download of an older version does not give this one: ask again once it is done.
+            if running.version != entry.version { await load(slug: slug) }
+            return
+        }
         let task = Task { [self] in
             defer { downloads[slug] = nil }
             guard let image = await image(for: entry) else { return }
             images[slug] = image
             shownVersions[slug] = entry.version
         }
-        downloads[slug] = task
+        downloads[slug] = (entry.version, task)
         await task.value
     }
 

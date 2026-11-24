@@ -87,6 +87,42 @@ struct PoetPicturesTests {
         #expect(FileManager.default.fileExists(atPath: folder.appending(path: "hafez-bbb.img").path))
     }
 
+    @Test func aFailedAskCountsTowardTheMinute() async {
+        let clock = Clock()
+        let stub = server(["hafez": "aaa"], offline: true)
+        let pictures = pictures(stub, in: directory(), clock: clock)
+        await pictures.refreshList()
+        clock.advance(seconds: 30)
+        await pictures.refreshList()
+        #expect(stub.requests(to: "/v1/poets/pictures").count == 1)
+        clock.advance(seconds: 31)
+        await pictures.refreshList()
+        #expect(stub.requests(to: "/v1/poets/pictures").count == 2)
+    }
+
+    @Test func aNewVersionListedDuringTheOldDownloadEndsUpShown() async {
+        let folder = directory()
+        let clock = Clock()
+        let listed = Listed(["hafez": "aaa"])
+        let stub = server(listed)
+        let pictures = pictures(stub, in: folder, clock: clock)
+        await pictures.refreshList()
+        stub.delay = 0.5
+        let slow = Task { await pictures.load(slug: "hafez") }  // the old picture is on its way
+        try? await Task.sleep(for: .milliseconds(100))  // the request is out; the stub answers after its delay
+
+        listed.versions = ["hafez": "bbb"]
+        clock.advance(seconds: 61)
+        stub.delay = 0
+        await pictures.refreshList()
+        await pictures.load(slug: "hafez")  // the circle asks again when the version changes
+        await slow.value
+        #expect(stub.requests(to: "/v1/poets/hafez/picture").map(\.query) == ["v=aaa", "v=bbb"])
+        #expect(pictures.images["hafez"]?.pngData() == UIImage(data: png(.green))?.pngData())
+        #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "hafez-aaa.img").path))
+        #expect(FileManager.default.fileExists(atPath: folder.appending(path: "hafez-bbb.img").path))
+    }
+
     @Test func aFreshLaunchAsksAgainAndTheSavedListShowsUntilTheAnswerComes() async {
         let folder = directory()
         await pictures(server(["hafez": "aaa"]), in: folder).refreshList()
