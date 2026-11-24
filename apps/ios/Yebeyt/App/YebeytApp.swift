@@ -18,6 +18,9 @@ struct YebeytApp: App {
     @State private var avatar: AvatarStore
     @State private var privacy: PrivacyStore
     @State private var divanSync: DivanSync
+    @State private var reactionsSync: ReactionsSync
+    @State private var scoreSync: ScoreSync
+    @State private var myStats: MyStats
     #if DEBUG
     private let showsStickers: Bool
     #endif
@@ -74,6 +77,16 @@ struct YebeytApp: App {
         _avatar = State(initialValue: AvatarStore(session: accounts.session))
         _privacy = State(initialValue: PrivacyStore(session: accounts.session))
         _divanSync = State(initialValue: DivanSync(marks: marks, session: accounts.session))
+        _reactionsSync = State(initialValue: ReactionsSync(marks: marks, session: accounts.session))
+        let scores = ScoreSync(session: accounts.session)
+        let myStats = MyStats(local: stats, session: accounts.session)
+        scores.didSend = { Task { await myStats.refresh() } }
+        stats.finishedRoundHandler = { kind, points in
+            if let game = ScoreGame(kind) { scores.report(game, points: points) }
+        }
+        stats.finishedDailyHandler = { day, solved, tries, points in scores.reportDaily(on: day, solved: solved, tries: tries, points: points) }
+        _scoreSync = State(initialValue: scores)
+        _myStats = State(initialValue: myStats)
         #if DEBUG
         if options.seedDivan { marks.seedDivan() }
         #endif
@@ -96,6 +109,9 @@ struct YebeytApp: App {
                 .environment(avatar)
                 .environment(privacy)
                 .environment(divanSync)
+                .environment(reactionsSync)
+                .environment(scoreSync)
+                .environment(myStats)
                 .environment(accounts.session)
                 .environment(accounts.account)
                 .environment(accounts.pictures)

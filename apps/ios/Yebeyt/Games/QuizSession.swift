@@ -60,6 +60,7 @@ final class QuizSession {
         guard !finished else { return }
         finished = true
         stats.raiseBest(round.kind, to: round.points)
+        stats.finishRound(of: round.kind, points: round.points)
         stats.recordRoundEnd(of: round.kind, right: round.rightCount, questions: round.questions.count)
     }
 }

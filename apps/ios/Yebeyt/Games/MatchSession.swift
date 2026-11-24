@@ -31,5 +31,6 @@ final class MatchSession {
         guard !finished else { return }
         finished = true
         stats.raiseBest(.match, to: round.points)
+        stats.finishRound(of: .match, points: round.points)
     }
 }

@@ -71,6 +71,16 @@ final class GameStats {
         roundHandler?(game, right, questions)
     }
 
+    /// Told when a round of a solo game is over, with its points (for the server).
+    @ObservationIgnored var finishedRoundHandler: (@MainActor (GameKind, Int) -> Void)?
+
+    func finishRound(of game: GameKind, points: Int) {
+        finishedRoundHandler?(game, points)
+    }
+
+    /// Told when a day's puzzle is over, solved or out of tries: the day, whether it was solved, the tries it took and its points.
+    @ObservationIgnored var finishedDailyHandler: (@MainActor (TehranDay, Bool, Int, Int) -> Void)?
+
     func daily(on day: TehranDay) -> DailyRecord? { saved.daily[day.number] }
 
     /// The app came back: after Tehran midnight it is a new day.
@@ -86,7 +96,8 @@ final class GameStats {
 
     /// Keeps a day's puzzle. The moment it is first solved, its points are added and the day counts for the streak.
     func record(_ record: DailyRecord, on day: TehranDay) {
-        let wasSolved = saved.daily[day.number]?.outcome == .solved
+        let before = saved.daily[day.number]?.outcome ?? .playing
+        let wasSolved = before == .solved
         saved.daily[day.number] = record
         if record.outcome == .solved, !wasSolved {
             saved.points += record.points
@@ -94,6 +105,9 @@ final class GameStats {
             raiseBest(.daily, to: record.points)
         }
         persist()
+        if before == .playing, record.outcome != .playing {
+            finishedDailyHandler?(day, record.outcome == .solved, record.tries.count, record.points)
+        }
     }
 
     /// Points earned in a round, as they come.

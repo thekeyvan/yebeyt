@@ -6,6 +6,7 @@ struct GamesView: View {
     @Environment(AppModel.self) private var app
     @Environment(GameDeck.self) private var deck
     @Environment(GameStats.self) private var stats
+    @Environment(MyStats.self) private var myStats
 
     var body: some View {
         ScrollView {
@@ -34,8 +35,8 @@ struct GamesView: View {
             Text("بازی").font(.title(40)).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)
             HStack(spacing: 6) {
-                StickerBadge(kind: .streak(stats.streak)).accessibilityLabel("رشته‌ی \(PersianDigits.string(stats.streak)) روزه")
-                StickerBadge(kind: .points(stats.points)).accessibilityLabel("امتیاز \(PersianDigits.grouped(stats.points))")
+                StickerBadge(kind: .streak(myStats.streak)).accessibilityLabel("رشته‌ی \(PersianDigits.string(myStats.streak)) روزه")
+                StickerBadge(kind: .points(myStats.points)).accessibilityLabel("امتیاز \(PersianDigits.grouped(myStats.points))")
             }
             .padding(.bottom, 6)
         }

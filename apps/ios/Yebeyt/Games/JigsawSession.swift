@@ -54,5 +54,6 @@ final class JigsawSession {
         finished = true
         stats.award(round.timeBonus)
         stats.raiseBest(.jigsaw, to: round.totalPoints)
+        stats.finishRound(of: .jigsaw, points: round.totalPoints)
     }
 }

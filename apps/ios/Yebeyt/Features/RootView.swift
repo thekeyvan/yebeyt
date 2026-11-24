@@ -6,6 +6,9 @@ struct RootView: View {
     @Environment(GameStats.self) private var stats
     @Environment(Session.self) private var session
     @Environment(DivanSync.self) private var divanSync
+    @Environment(ReactionsSync.self) private var reactionsSync
+    @Environment(ScoreSync.self) private var scoreSync
+    @Environment(MyStats.self) private var myStats
     @Environment(PrivacyStore.self) private var privacy
     @Environment(AvatarStore.self) private var avatar
     @Environment(\.scenePhase) private var scenePhase
@@ -49,15 +52,21 @@ struct RootView: View {
                 stats.refreshToday()
                 Task {
                     await divanSync.syncNow()
+                    await reactionsSync.syncNow()
                     await privacy.flush()
+                    await scoreSync.flush()
+                    await myStats.refresh()
                 }
             }
         }
-        // The divan and unsent privacy changes sync when the app starts signed in and right after a sign-in; the avatar is matched with the
-        // server's once the user is known.
+        // The divan, the likes and reposts, unsent privacy changes and unsent scores sync when the app starts signed in and right
+        // after a sign-in; the avatar is matched with the server's once the user is known.
         .task(id: session.isSignedIn) {
             await divanSync.syncNow()
+            await reactionsSync.syncNow()
             await privacy.flush()
+            await scoreSync.flush()
+            await myStats.refresh()
         }
         .task(id: session.user?.id) { await avatar.reconcile(with: session.user) }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }
