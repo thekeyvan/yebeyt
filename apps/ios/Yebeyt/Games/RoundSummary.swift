@@ -23,6 +23,11 @@ struct RoundSummary {
     var showsMeanings = false
     /// What a challenge made from this round is, when the round can be one.
     var offer: ChallengeOffer?
+    /// A game against someone: whether I won it. Nil for a solo round.
+    var won: Bool?
+
+    /// Worth a burst: a game won, or a solo round with at least half right.
+    var celebrates: Bool { won ?? (right * 2 >= total) }
 }
 
 extension RoundSummary {

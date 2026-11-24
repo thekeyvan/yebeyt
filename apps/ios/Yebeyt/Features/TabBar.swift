@@ -5,6 +5,8 @@ struct TabBar: View {
     @Environment(AccountModel.self) private var account
     @Environment(AvatarStore.self) private var avatar
     let model: AppModel
+    /// Taps on a tab other than the open one: the selection tap is the person's, not a switch the app made.
+    @State private var tabTaps = 0
 
     /// Bottom gap 18 + bar height 70: what pages must keep clear.
     static let footprint: CGFloat = 88
@@ -16,7 +18,7 @@ struct TabBar: View {
             }
         }
         .frame(height: 64)
-        .sensoryFeedback(.selection, trigger: model.selectedTab)
+        .sensoryFeedback(.selection, trigger: tabTaps)
         .padding(.top, 6)
         .background {
             RoundedRectangle(cornerRadius: Tokens.Sticker.Radius.tabBar)
@@ -33,6 +35,7 @@ struct TabBar: View {
     private func item(_ tab: Tab) -> some View {
         let on = model.selectedTab == tab
         return Button {
+            if !on { tabTaps += 1 }
             if tab == .messages {
                 account.require(.messages) { model.select(tab) }
             } else {

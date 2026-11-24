@@ -82,11 +82,10 @@ struct WholePoemView: View {
         HStack(spacing: 8) {
             if let player = model.player, player.isAvailable { readButton(player) }
             let kept = marks.contains(.kept, poemPath: model.path, couplet: model.topIndex)
-            round("نگه دار") {
+            round("نگه دار", on: kept, id: model.topIndex) {
                 marks.toggle(.kept, poemPath: model.path, couplet: model.topIndex)
             } icon: {
                 LineIcon(shape: BookmarkIcon(), size: 20, lineWidth: 2.2, fill: kept ? Tokens.Colors.ink : nil)
-                    .markMotion(on: kept, id: model.topIndex)
             }
             round("بفرست") {
                 model.shareCouplet(model.topIndex)
@@ -124,9 +123,10 @@ struct WholePoemView: View {
         .buttonStyle(.plain)
     }
 
-    private func round(_ label: String, action: @escaping () -> Void, @ViewBuilder icon: () -> some View) -> some View {
-        Button(action: action) {
+    private func round(_ label: String, on: Bool = false, id: AnyHashable = 0, action: @escaping () -> Void, @ViewBuilder icon: @escaping () -> some View) -> some View {
+        MarkButton(action: action) { taps in
             icon()
+                .markMotion(on: on, id: id, taps: taps)
                 .foregroundStyle(Tokens.Colors.ink)
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(Tokens.Colors.paper))

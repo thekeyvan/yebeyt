@@ -37,7 +37,7 @@ struct RoundEndScreen<Card: View>: View {
         .scrollIndicators(.hidden)
         .accessibilityIdentifier("roundEnd")
         .task {
-            if reduceMotion { counted = true } else { withAnimation(.easeOut(duration: 0.5)) { counted = true } }
+            withAnimation(Motion.countUp(Motion.variant(reduceMotion: reduceMotion))) { counted = true }
         }
     }
 
@@ -69,7 +69,7 @@ struct RoundEndScreen<Card: View>: View {
             .foregroundStyle(Tokens.Colors.white)
             .frame(width: 86, height: 86)
             .sticker(fill: Tokens.Colors.lapis, radius: 48, border: 5, shadow: ShadowToken(y: 6, blur: 16, opacity: 0.3))
-            .verdictMotion(right: true, burst: .big)
+            .celebrateOnAppear(summary.celebrates)
             .tilted(-6)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(PersianDigits.string(summary.right)) از \(PersianDigits.string(summary.total))")

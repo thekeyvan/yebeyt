@@ -163,8 +163,11 @@ struct ChallengeEndScreen: View {
     private var decorated: RoundSummary {
         var shown = summary
         shown.offer = nil  // answering a challenge is not making one
+        shown.won = false  // nothing to celebrate before the result is in
         guard phase == .done else { return shown }
-        shown.title = PlayCopy.title(ChallengeAccept.outcome(mine: mine, theirs: theirs), other: creator)
+        let outcome = ChallengeAccept.outcome(mine: mine, theirs: theirs)
+        shown.won = outcome == .won
+        shown.title = PlayCopy.title(outcome, other: creator)
         shown.subtitle = PlayCopy.scores(mine: mine, name: creator, theirs: theirs)
         return shown
     }

@@ -94,7 +94,8 @@ struct MatchBoard: View {
         }
         .coordinateSpace(name: Self.space)
         .backgroundPreferenceValue(CardFrames.self) { frames in curves(frames) }
-        .sensoryFeedback(.success, trigger: round.matched.count) { old, new in new > old }
+        // Not on a question's last pair: the answer sheet's tap follows it.
+        .sensoryFeedback(.success, trigger: round.matched.count) { old, new in new > old && new < round.current.words.count }
         .sensoryFeedback(.error, trigger: shakes.values.reduce(0, +))
     }
 

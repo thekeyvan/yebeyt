@@ -43,7 +43,7 @@ struct AnswerSheet: View {
         }
         .padding(EdgeInsets(top: 12, leading: 20, bottom: 30, trailing: 20))
         .overlay(alignment: .top) {
-            if aiToastShown { AIToast().offset(y: -52).transition(Motion.toast) }
+            if aiToastShown { AIToast().offset(y: -52).toastTransition() }
         }
         .frame(maxWidth: .infinity)
         .background {
@@ -114,9 +114,9 @@ struct AnswerSheet: View {
     }
 
     private func action(_ title: String, _ icon: some Shape, fill: Bool = false, id: String, perform: @escaping () -> Void) -> some View {
-        Button(action: perform) {
+        MarkButton(action: perform) { taps in
             VStack(spacing: 4) {
-                LineIcon(shape: icon, size: 22, lineWidth: 2.2, fill: fill ? Tokens.Colors.ink : nil).markMotion(on: fill)
+                LineIcon(shape: icon, size: 22, lineWidth: 2.2, fill: fill ? Tokens.Colors.ink : nil).markMotion(on: fill, taps: taps)
                 Text(title).font(.ui(13, weight: .medium))
             }
             .foregroundStyle(Tokens.Colors.ink)

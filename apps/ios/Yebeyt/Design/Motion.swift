@@ -19,18 +19,58 @@ enum Motion {
     /// A card thrown off the deck.
     static let throwAway = Animation.spring(response: 0.32, dampingFraction: 0.72)
 
-    static let pressedScale = 0.92
+    /// How far a pressed button squishes (barely, and without a spring, under Reduce Motion).
+    static func pressedScale(_ variant: Variant) -> Double { variant == .full ? 0.92 : 0.97 }
+
+    static func pressAnimation(_ variant: Variant) -> Animation { variant == .full ? press : .easeOut(duration: 0.1) }
+
     /// How long a burst lives: its pieces have faded by then.
     static let burstDuration = 0.6
 
-    /// A toast drops in from above, a little smaller, and simply fades when it goes.
-    static var toast: AnyTransition {
-        .asymmetric(insertion: .offset(y: -28).combined(with: .scale(scale: 0.9)).combined(with: .opacity), removal: .opacity)
+    /// The end-of-round numbers counting up; under Reduce Motion they jump (no animation).
+    static func countUp(_ variant: Variant) -> Animation? { variant == .full ? .easeOut(duration: 0.5) : nil }
+
+    // MARK: Arrivals
+
+    /// Where a view comes from: `dy` points above and `scale` of its size, fading in. 0 and 1 is a plain fade.
+    struct Arrival: Equatable, Sendable {
+        var dy: Double
+        var scale: Double
     }
 
+    /// A toast drops in from above, a little smaller (only fades under Reduce Motion), and simply fades when it goes.
+    static func toastArrival(_ variant: Variant) -> Arrival { variant == .full ? Arrival(dy: -28, scale: 0.9) : Arrival(dy: 0, scale: 1) }
+
     /// The next card of the deck springs in, a little smaller; the thrown one is already gone.
-    static var deal: AnyTransition {
-        .asymmetric(insertion: .scale(scale: 0.8).combined(with: .opacity), removal: .identity)
+    static func dealArrival(_ variant: Variant) -> Arrival { variant == .full ? Arrival(dy: 0, scale: 0.8) : Arrival(dy: 0, scale: 1) }
+
+    static func toast(_ variant: Variant) -> AnyTransition {
+        .asymmetric(insertion: arrive(toastArrival(variant)), removal: .opacity)
+    }
+
+    static func deal(_ variant: Variant) -> AnyTransition {
+        .asymmetric(insertion: arrive(dealArrival(variant)), removal: .identity)
+    }
+
+    private static func arrive(_ arrival: Arrival) -> AnyTransition {
+        .offset(y: arrival.dy).combined(with: .scale(scale: arrival.scale)).combined(with: .opacity)
+    }
+
+    // MARK: Thrown card
+
+    /// How a card on the deck sits: the tilt (degrees), where it is (points) and its opacity.
+    struct ThrowPose: Equatable, Sendable {
+        var rotation: Double
+        var dx: Double
+        var dy: Double
+        var opacity: Double
+
+        static let resting = ThrowPose(rotation: 0, dx: 0, dy: 0, opacity: 1)
+
+        /// Flung off to the side, tilted; with Reduce Motion it stays and fades.
+        static func thrown(_ variant: Variant) -> ThrowPose {
+            variant == .full ? ThrowPose(rotation: -18, dx: -480, dy: -30, opacity: 1) : ThrowPose(rotation: 0, dx: 0, dy: 0, opacity: 0)
+        }
     }
 
     // MARK: Pop
@@ -74,11 +114,39 @@ enum Motion {
 
     // MARK: Shake
 
-    /// A wrong answer: side to side (points), stronger than the first shake, over 0.45 s.
-    static let shake = [
-        Step(value: 14, duration: 0.05), Step(value: -14, duration: 0.09), Step(value: 10, duration: 0.09),
-        Step(value: -6, duration: 0.09), Step(value: 3, duration: 0.08), Step(value: 0, duration: 0.05),
-    ]
+    /// A wrong answer: side to side (points), stronger than the first shake, over 0.45 s. Still under Reduce Motion.
+    static func shake(_ variant: Variant) -> [Step] {
+        switch variant {
+        case .full:
+            [Step(value: 14, duration: 0.05), Step(value: -14, duration: 0.09), Step(value: 10, duration: 0.09),
+             Step(value: -6, duration: 0.09), Step(value: 3, duration: 0.08), Step(value: 0, duration: 0.05)]
+        case .reduced:
+            [Step(value: 0, duration: 0.05)]
+        }
+    }
+
+    // MARK: A like or a keep
+
+    /// What a mark's state change does. Only a change right after a tap on its own control gets the burst and the tap;
+    /// one that comes from elsewhere (a sync, the same couplet in another view) at most pops small.
+    struct MarkOutcome: Equatable, Sendable {
+        var pop: Pop
+        var burst: Bool
+        var haptic: Bool
+    }
+
+    /// How long after a tap on the control its state change still counts as the tap's (a like waits for the server).
+    static let tapWindow = 1.0
+
+    static func isOwnTap(lastTapAt: Date?, now: Date) -> Bool {
+        lastTapAt.map { now.timeIntervalSince($0) <= tapWindow } ?? false
+    }
+
+    /// `tapped`: see `isOwnTap`.
+    static func markOutcome(turnedOn: Bool, tapped: Bool, variant: Variant) -> MarkOutcome {
+        guard tapped, turnedOn else { return MarkOutcome(pop: .turningOff(variant), burst: false, haptic: false) }
+        return MarkOutcome(pop: .turningOn(variant), burst: bursts(variant), haptic: true)
+    }
 }
 
 /// The burst of small sticker-coloured pieces that flies out of a control on a success: dots, short dashes and small

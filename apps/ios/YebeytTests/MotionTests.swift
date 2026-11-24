@@ -46,13 +46,80 @@ struct MotionTests {
     @Test func everyMotionStaysWithinHalfASecond() {
         #expect(Motion.Pop.turningOn(.full, wiggle: true).duration <= 0.5)
         #expect(Motion.burstDuration <= 0.6)
-        #expect(Motion.pressedScale == 0.92)
+        #expect(Motion.pressedScale(.full) == 0.92)
     }
 
     @Test func theWrongAnswerShakeIsStrongShortAndEndsStill() {
-        #expect(Motion.shake.reduce(0) { $0 + $1.duration } <= 0.5)
-        #expect(Motion.shake.map(\.value).max() ?? 0 > 9)
-        #expect(Motion.shake.last?.value == 0)
+        let shake = Motion.shake(.full)
+        #expect(shake.reduce(0) { $0 + $1.duration } <= 0.5)
+        #expect(shake.map(\.value).max() ?? 0 > 9)
+        #expect(shake.last?.value == 0)
+    }
+
+    // MARK: Reduce Motion picks the values
+
+    @Test func reduceMotionDoesNotShakeSquishHardOrThrow() {
+        #expect(Motion.shake(.reduced).allSatisfy { $0.value == 0 })
+        #expect(Motion.pressedScale(.reduced) == 0.97)
+        #expect(Motion.pressAnimation(.reduced) != Motion.pressAnimation(.full))
+        #expect(Motion.ThrowPose.thrown(.full).dx != 0 && Motion.ThrowPose.thrown(.full).rotation != 0 && Motion.ThrowPose.thrown(.full).opacity == 1)
+        #expect(Motion.ThrowPose.thrown(.reduced) == Motion.ThrowPose(rotation: 0, dx: 0, dy: 0, opacity: 0))
+        #expect(Motion.ThrowPose.resting == Motion.ThrowPose(rotation: 0, dx: 0, dy: 0, opacity: 1))
+    }
+
+    @Test func toastsAndDealtCardsOnlyFadeUnderReduceMotion() {
+        #expect(Motion.toastArrival(.full) == Motion.Arrival(dy: -28, scale: 0.9))
+        #expect(Motion.toastArrival(.reduced) == Motion.Arrival(dy: 0, scale: 1))
+        #expect(Motion.dealArrival(.full) == Motion.Arrival(dy: 0, scale: 0.8))
+        #expect(Motion.dealArrival(.reduced) == Motion.Arrival(dy: 0, scale: 1))
+    }
+
+    @Test func countingUpJumpsUnderReduceMotion() {
+        #expect(Motion.countUp(.full) != nil)
+        #expect(Motion.countUp(.reduced) == nil)
+    }
+
+    // MARK: A like or a keep
+
+    @Test func aTappedMarkBurstsAndTapsOnlyWhenItTurnsOn() {
+        let on = Motion.markOutcome(turnedOn: true, tapped: true, variant: .full)
+        #expect(on.burst && on.haptic)
+        #expect(on.pop == .turningOn(.full))
+        let off = Motion.markOutcome(turnedOn: false, tapped: true, variant: .full)
+        #expect(!off.burst && !off.haptic)
+        #expect(off.pop == .turningOff(.full))
+    }
+
+    @Test func aStateChangeWithoutATapOnlyPopsSmall() {
+        for turnedOn in [true, false] {
+            let outcome = Motion.markOutcome(turnedOn: turnedOn, tapped: false, variant: .full)
+            #expect(!outcome.burst && !outcome.haptic)
+            #expect(outcome.pop == .turningOff(.full))
+        }
+    }
+
+    @Test func aChangeCountsAsTheTapsForAMomentOnly() {
+        let now = Date.now
+        #expect(Motion.isOwnTap(lastTapAt: now.addingTimeInterval(-0.3), now: now))
+        #expect(!Motion.isOwnTap(lastTapAt: now.addingTimeInterval(-5), now: now))
+        #expect(!Motion.isOwnTap(lastTapAt: nil, now: now))
+    }
+
+    @Test func reduceMotionKeepsTheTapButNotTheBurst() {
+        let outcome = Motion.markOutcome(turnedOn: true, tapped: true, variant: .reduced)
+        #expect(!outcome.burst && outcome.haptic)
+    }
+
+    // MARK: Celebrating a round
+
+    @Test func aRoundIsCelebratedWhenWonOrAtLeastHalfRight() {
+        func summary(right: Int, total: Int = 10, won: Bool? = nil) -> RoundSummary {
+            RoundSummary(points: 0, right: right, total: total, subtitle: "", rows: [], won: won)
+        }
+        #expect(summary(right: 5).celebrates)
+        #expect(!summary(right: 4).celebrates)
+        #expect(summary(right: 0, won: true).celebrates)
+        #expect(!summary(right: 9, won: false).celebrates)
     }
 
     // MARK: Burst

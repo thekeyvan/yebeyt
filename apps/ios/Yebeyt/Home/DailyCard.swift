@@ -69,9 +69,9 @@ struct DailyCard: View {
         }
     }
 
-    private func iconButton(_ label: String, on: Bool, action: @escaping () -> Void, @ViewBuilder icon: () -> some View) -> some View {
-        Button(action: action) {
-            icon().markMotion(on: on).padding(4).contentShape(Rectangle())
+    private func iconButton(_ label: String, on: Bool, action: @escaping () -> Void, @ViewBuilder icon: @escaping () -> some View) -> some View {
+        MarkButton(action: action) { taps in
+            icon().markMotion(on: on, taps: taps).padding(4).contentShape(Rectangle())
         }
         .buttonStyle(.press)
         .accessibilityLabel(label)
@@ -92,11 +92,11 @@ struct DailyCard: View {
             }
             .buttonStyle(.press)
             .accessibilityIdentifier("reject")
-            Button {
+            MarkButton {
                 marks.toggle(.kept, poemPath: pick.path, couplet: pick.index)
-            } label: {
+            } label: { taps in
                 HStack(spacing: 6) {
-                    LineIcon(shape: BookmarkIcon(), size: 18, lineWidth: 2.4, fill: kept ? Tokens.Colors.white : nil).markMotion(on: kept)
+                    LineIcon(shape: BookmarkIcon(), size: 18, lineWidth: 2.4, fill: kept ? Tokens.Colors.white : nil).markMotion(on: kept, taps: taps)
                     Text("نگه دار").font(.ui(15, weight: .bold))
                 }
                 .foregroundStyle(Tokens.Colors.white)

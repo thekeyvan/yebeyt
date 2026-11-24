@@ -3,9 +3,11 @@ import SwiftUI
 /// The views of the motion vocabulary (`Motion.swift`).
 extension View {
     /// A like or a keep: turning on pops with a wiggle, flies a burst and taps medium; turning off only pops a little.
+    /// A like or a keep: `taps` is the count of the control's own taps (`MarkButton` gives it). Only a change that comes
+    /// with a tap bursts and taps; one from elsewhere (a sync, the same couplet in another view) at most pops small.
     /// `id` says which thing the mark is on: when it changes (a page scrolled to another couplet) nothing pops.
-    func markMotion(on: Bool, id: AnyHashable = 0) -> some View {
-        modifier(MarkMotion(on: on, id: id))
+    func markMotion(on: Bool, id: AnyHashable = 0, taps: Int) -> some View {
+        modifier(MarkMotion(on: on, id: id, taps: taps))
     }
 
     /// Pops (and, when asked, bursts and gives `feedback`) when `condition` turns true: a tab's icon, a right answer.
@@ -21,6 +23,21 @@ extension View {
     /// Pops each time `value` changes: a score that went up.
     func popOn(_ value: some Equatable) -> some View {
         modifier(ValuePop(value: value))
+    }
+
+    /// The end of a round, when it appears: a win pops with a big burst and a success tap, anything else only pops.
+    func celebrateOnAppear(_ celebrates: Bool) -> some View {
+        modifier(AppearCelebration(celebrates: celebrates))
+    }
+
+    /// Toasts drop in (only fade under Reduce Motion).
+    func toastTransition() -> some View {
+        modifier(ArrivalTransition(toast: true))
+    }
+
+    /// The next card of the deck springs in (only fades under Reduce Motion).
+    func dealTransition() -> some View {
+        modifier(ArrivalTransition(toast: false))
     }
 
     /// The verdict of an answer, when it appears: right pops with a burst and a success tap, wrong shakes with an error tap.
@@ -55,14 +72,41 @@ extension ButtonStyle where Self == PressStyle {
     static var press: PressStyle { PressStyle() }
 }
 
+/// A button that counts its own taps, for `markMotion`: the label gets the count.
+struct MarkButton<Label: View>: View {
+    let action: () -> Void
+    @ViewBuilder let label: (Int) -> Label
+    @State private var taps = 0
+
+    var body: some View {
+        Button {
+            taps += 1
+            action()
+        } label: {
+            label(taps)
+        }
+    }
+}
+
 private struct PressSquish: ViewModifier {
     let pressed: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
+        let variant = Motion.variant(reduceMotion: reduceMotion)
         content
-            .scaleEffect(pressed ? (reduceMotion ? 0.97 : Motion.pressedScale) : 1)
-            .animation(reduceMotion ? .easeOut(duration: 0.1) : Motion.press, value: pressed)
+            .scaleEffect(pressed ? Motion.pressedScale(variant) : 1)
+            .animation(Motion.pressAnimation(variant), value: pressed)
+    }
+}
+
+private struct ArrivalTransition: ViewModifier {
+    let toast: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        let variant = Motion.variant(reduceMotion: reduceMotion)
+        content.transition(toast ? Motion.toast(variant) : Motion.deal(variant))
     }
 }
 
@@ -100,11 +144,12 @@ private struct ShakeEffect: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
+        let steps = Motion.shake(Motion.variant(reduceMotion: reduceMotion))
         content.keyframeAnimator(initialValue: 0.0, trigger: trigger) { view, offset in
-            view.offset(x: reduceMotion ? 0 : offset)
+            view.offset(x: offset)
         } keyframes: { _ in
             KeyframeTrack {
-                for step in Motion.shake { LinearKeyframe(step.value, duration: step.duration) }
+                for step in steps { LinearKeyframe(step.value, duration: step.duration) }
             }
         }
     }
@@ -115,10 +160,11 @@ private struct ThrownEffect: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
+        let pose = thrown ? Motion.ThrowPose.thrown(Motion.variant(reduceMotion: reduceMotion)) : .resting
         content
-            .tilted(thrown && !reduceMotion ? -18 : 0)
-            .offset(x: thrown && !reduceMotion ? -480 : 0, y: thrown && !reduceMotion ? -30 : 0)
-            .opacity(thrown && reduceMotion ? 0 : 1)
+            .tilted(pose.rotation)
+            .offset(x: pose.dx, y: pose.dy)
+            .opacity(pose.opacity)
     }
 }
 
@@ -127,11 +173,15 @@ private struct ThrownEffect: ViewModifier {
 private struct BurstEffect: ViewModifier {
     let trigger: Int
     let style: Burst.Style
+    /// Mixed into the seed, so two controls' bursts don't look the same.
+    @State private var salt = UInt64.random(in: .min ... .max)
 
     func body(content: Content) -> some View {
+        let pieces = trigger == 0 ? [] : Burst.pieces(style, seed: salt &+ UInt64(trigger))
         content.overlay {
             Color.clear.keyframeAnimator(initialValue: 0.0, trigger: trigger) { _, progress in
-                BurstLayer(pieces: Burst.pieces(style, seed: UInt64(trigger)), progress: progress)
+                // Mounted only while it flies.
+                if progress > 0, progress < 1 { BurstLayer(pieces: pieces, progress: progress) }
             } keyframes: { _ in
                 KeyframeTrack { LinearKeyframe(1.0, duration: Motion.burstDuration) }
             }
@@ -188,27 +238,34 @@ private struct MarkMotion: ViewModifier {
     struct Snapshot: Equatable {
         var on: Bool
         var id: AnyHashable
+        var taps: Int
     }
 
     let on: Bool
     let id: AnyHashable
+    let taps: Int
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pops = 0
     @State private var bursts = 0
-    @State private var turnedOn = false
+    @State private var haptics = 0
+    @State private var pop = Motion.Pop.turningOff(.full)
+    @State private var lastTapAt: Date?
 
     func body(content: Content) -> some View {
         let variant = Motion.variant(reduceMotion: reduceMotion)
         content
-            .modifier(PopEffect(trigger: pops, pop: turnedOn ? .turningOn(variant) : .turningOff(variant)))
+            .modifier(PopEffect(trigger: pops, pop: pop))
             .modifier(BurstEffect(trigger: bursts, style: .small))
-            .onChange(of: Snapshot(on: on, id: id)) { old, new in
+            .onChange(of: Snapshot(on: on, id: id, taps: taps)) { old, new in
+                if new.taps != old.taps { lastTapAt = .now }
                 guard old.id == new.id, old.on != new.on else { return }
-                turnedOn = new.on
+                let outcome = Motion.markOutcome(turnedOn: new.on, tapped: Motion.isOwnTap(lastTapAt: lastTapAt, now: .now), variant: variant)
+                pop = outcome.pop
                 pops += 1
-                if new.on, Motion.bursts(variant) { bursts += 1 }
+                if outcome.burst { bursts += 1 }
+                if outcome.haptic { haptics += 1 }
             }
-            .sensoryFeedback(.impact(weight: .medium), trigger: pops) { _, _ in turnedOn }
+            .sensoryFeedback(.impact(weight: .medium), trigger: haptics)
     }
 }
 
@@ -243,6 +300,31 @@ private struct AppearReaction: ViewModifier {
                 content.popWhen(appeared, wiggle: true, burst: burst, feedback: .success)
             } else {
                 content.shakeWhen(appeared, feedback: .error)
+            }
+        }
+        .task { appeared = true }
+    }
+}
+
+private struct AppearCelebration: ViewModifier {
+    let celebrates: Bool
+
+    /// A new identity when the result changes (a challenge's result comes in after the screen), so it celebrates then.
+    func body(content: Content) -> some View {
+        content.modifier(Celebrating(celebrates: celebrates)).id(celebrates)
+    }
+}
+
+private struct Celebrating: ViewModifier {
+    let celebrates: Bool
+    @State private var appeared = false
+
+    func body(content: Content) -> some View {
+        Group {
+            if celebrates {
+                content.popWhen(appeared, wiggle: true, burst: .big, feedback: .success)
+            } else {
+                content.popWhen(appeared)
             }
         }
         .task { appeared = true }

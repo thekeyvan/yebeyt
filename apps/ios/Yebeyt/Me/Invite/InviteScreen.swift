@@ -158,7 +158,7 @@ struct InviteScreen: View {
                 .padding(.horizontal, 16).padding(.vertical, 9)
                 .background(Capsule().fill(Tokens.Colors.ink))
                 .padding(.bottom, 24)
-                .transition(Motion.toast)
+                .toastTransition()
                 .accessibilityIdentifier("toast")
         }
     }

@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var share: ReaderModel.Share?
     /// True while a thrown card is being replaced: only then does the next card spring in (never on launch).
     @State private var dealing = false
+    @State private var dealReset: Task<Void, Never>?
 
     var body: some View {
         ScrollView {
@@ -28,14 +29,14 @@ struct HomeView: View {
                                 share = ReaderModel.Share(text: ReaderText.shareText(pick.couplet, poet: pick.poet, title: pick.title))
                             },
                             reject: {
+                                dealReset?.cancel()
                                 dealing = true
                                 await home.reject(poetry: poetry, library: library)
-                                try? await Task.sleep(for: .seconds(0.6))
-                                dealing = false
+                                endDealing()  // without waiting: the next «رد کن» works at once
                             }
                         )
                         .id(pick.id)
-                        .transition(Motion.deal)
+                        .dealTransition()
                     }
                 }
                 .animation(dealing ? Motion.bouncy : nil, value: home.pick?.id)
@@ -53,5 +54,13 @@ struct HomeView: View {
             if phase == .active { Task { await home.refresh(today: DailyPick.dayNumber(for: .now), poetry: poetry, library: library) } }
         }
         .sheet(item: $share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
+    }
+
+    /// Lets the next card's spring finish before `dealing` is switched off, in the background.
+    private func endDealing() {
+        dealReset = Task {
+            try? await Task.sleep(for: .seconds(0.6))
+            if !Task.isCancelled { dealing = false }
+        }
     }
 }

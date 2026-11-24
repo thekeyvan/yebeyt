@@ -147,7 +147,7 @@ extension DuelState {
         }
         return RoundSummary(
             points: 0, right: myScore, total: Self.roundCount, subtitle: PlayCopy.scores(mine: myScore, name: otherName, theirs: theirScore), rows: rows,
-            title: title, showsPoints: false, showsMeanings: true
+            title: title, showsPoints: false, showsMeanings: true, won: ending.winner == me
         )
     }
 }

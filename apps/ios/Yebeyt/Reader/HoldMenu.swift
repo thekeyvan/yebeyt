@@ -139,10 +139,10 @@ struct HoldMenu: View {
         }
     }
 
-    private func round(_ label: String, on: Bool, @ViewBuilder icon: () -> some View, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    private func round(_ label: String, on: Bool, @ViewBuilder icon: @escaping () -> some View, action: @escaping () -> Void) -> some View {
+        MarkButton(action: action) { taps in
             icon()
-                .markMotion(on: on)
+                .markMotion(on: on, taps: taps)
                 .frame(width: 52, height: 52)
                 .background(Circle().fill(Tokens.Colors.paper))
         }

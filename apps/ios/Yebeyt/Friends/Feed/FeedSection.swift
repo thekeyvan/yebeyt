@@ -157,10 +157,10 @@ private struct FeedCard: View {
     }
 
     /// An icon with its count, in `color` (magenta ♥ and lapis repost when on, as on the Calm board; ink otherwise).
-    private func action(_ label: String, on: Bool, count: Int?, color: Color, id: String, @ViewBuilder icon: () -> some View, tap: @escaping () -> Void) -> some View {
-        Button(action: tap) {
+    private func action(_ label: String, on: Bool, count: Int?, color: Color, id: String, @ViewBuilder icon: @escaping () -> some View, tap: @escaping () -> Void) -> some View {
+        MarkButton(action: tap) { taps in
             HStack(spacing: 4) {
-                icon().markMotion(on: on)
+                icon().markMotion(on: on, taps: taps)
                 if let count, count > 0 { Text(PersianDigits.string(count)).font(.ui(12, weight: .bold)) }
             }
             .foregroundStyle(color)

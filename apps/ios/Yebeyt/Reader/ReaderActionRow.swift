@@ -71,9 +71,9 @@ struct ReaderActionRow: View {
         }
     }
 
-    private func button(_ label: String, on: Bool, action: @escaping () -> Void, @ViewBuilder icon: () -> some View) -> some View {
-        Button(action: action) {
-            icon().markMotion(on: on, id: "\(model.path)#\(couplet)").frame(width: 43, height: 44).contentShape(Rectangle())
+    private func button(_ label: String, on: Bool, action: @escaping () -> Void, @ViewBuilder icon: @escaping () -> some View) -> some View {
+        MarkButton(action: action) { taps in
+            icon().markMotion(on: on, id: "\(model.path)#\(couplet)", taps: taps).frame(width: 43, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.press)
         .accessibilityLabel(label)

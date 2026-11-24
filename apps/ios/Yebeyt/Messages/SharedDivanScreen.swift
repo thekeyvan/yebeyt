@@ -238,12 +238,12 @@ private struct SharedDivanCard: View {
         HStack {
             Text(resolved?.source ?? "").font(.ui(12)).foregroundStyle(Color(hex: 0x8A8698))
             Spacer(minLength: 8)
-            Button(action: like) {
+            MarkButton(action: like) { taps in
                 HStack(spacing: 4) {
                     let any = item.likedByMe || item.likedByThem
                     LineIcon(shape: HeartIcon(), size: 18, lineWidth: 2, fill: any ? Tokens.Colors.magenta : nil)
                         .foregroundStyle(any ? Tokens.Colors.magenta : Tokens.Colors.ink)
-                        .markMotion(on: item.likedByMe)
+                        .markMotion(on: item.likedByMe, taps: taps)
                     Text(likeText).font(.ui(12)).foregroundStyle(Tokens.Colors.muted)
                 }
                 .padding(.vertical, 4)
