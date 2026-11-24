@@ -35,7 +35,7 @@ struct MessagesLaunchOptions {
         live = (values["beytLive"] as? Int) == 1 || (values["beytLive"] as? String) == "1"
         divanSheet = (values["beytDivanSheet"] as? Int) == 1 || (values["beytDivanSheet"] as? String) == "1"
         let account = AccountLaunchOptions(values)
-        stubbed = account.signedIn || account.feedbackStub
+        stubbed = account.signedIn || account.feedbackStub || account.playStub
     }
 
     static var fromProcess: MessagesLaunchOptions {
@@ -78,12 +78,16 @@ struct DebugLiveSockets: LiveSocketFactory {
 private final class DebugLiveSocket: LiveSocket, @unchecked Sendable {
     private let continuation: AsyncStream<String>.Continuation
     private var frames: AsyncStream<String>.AsyncIterator
+    /// The رودررو that `-beytRoute duel` plays out over this socket.
+    private let script: DuelScript?
 
     init(sendsEvents: Bool) {
         let (stream, continuation) = AsyncStream<String>.makeStream()
         self.continuation = continuation
         frames = stream.makeAsyncIterator()
         continuation.yield(#"{"type":"ready"}"#)
+        PlayStub.connect { continuation.yield($0) }
+        script = PlayLaunchOptions.fromProcess.route == .duel ? DuelScript { continuation.yield($0) } : nil
         if sendsEvents {
             Task {
                 try? await Task.sleep(for: .seconds(1.5))
@@ -92,7 +96,9 @@ private final class DebugLiveSocket: LiveSocket, @unchecked Sendable {
         }
     }
 
-    func send(_ text: String) async throws {}
+    func send(_ text: String) async throws {
+        script?.answer(text)
+    }
 
     func receive() async throws -> String {
         guard let frame = await frames.next() else { throw LiveClosed(code: nil) }

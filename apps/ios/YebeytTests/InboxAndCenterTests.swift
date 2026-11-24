@@ -114,7 +114,8 @@ struct InboxAndCenterTests {
         #expect(line(.couplet, fromMe: true) == "تو: یه بیت فرستادی")
         #expect(line(.game, event: "game_invite") == "دعوتت کرد به بازی")
         #expect(line(.game, fromMe: true, event: "game_invite") == "تو: به بازی دعوتش کردی")
-        #expect(line(.game, event: "challenge_result") == "")  // a result is not an invitation
+        #expect(line(.game, event: "challenge_result") == "توی چالشت بازی کرد")
+        #expect(line(.game, fromMe: true, event: "challenge_result") == "تو: توی چالش بازی کردی")
         #expect(line(.game) == "")
         #expect(line(.system, event: "divan_add") == "یه بیت به دیوان مشترک اضافه کرد")
         #expect(line(.text, deleted: true) == "این پیام پاک شد")
@@ -123,7 +124,8 @@ struct InboxAndCenterTests {
     @Test func aSystemLineIsReadByItsEventAndOthersShowNothing() {
         func last(_ event: String?) -> ConversationLast { ConversationLast(kind: .system, at: MessageClock.now, fromMe: false, event: event) }
         #expect(InboxModel.preview(last("divan_add")) == "یه بیت به دیوان مشترک اضافه کرد")
-        #expect(InboxModel.preview(last("game_ended")) == "")
+        #expect(InboxModel.preview(last("game_ended")) == "بازی تموم شد")
+        #expect(InboxModel.preview(last("something_new")) == "")
         #expect(InboxModel.preview(last(nil)) == "")  // an event this app doesn't know is not guessed
     }
 
@@ -141,7 +143,7 @@ struct InboxAndCenterTests {
         let line = try MessageJSON.decoded(MessageJSON.message(id: "s1", conversation: "c2", kind: "system", payload: #"{"event":"game_ended","kind":"mosh"}"#))
         model.apply(.message(line), viewing: [])
         #expect(model.rows[0].last.event == "game_ended")
-        #expect(InboxModel.preview(model.rows[0].last) == "")
+        #expect(InboxModel.preview(model.rows[0].last) == "بازی تموم شد")
         #expect(model.rows[0].unread == 0)  // a system line is never unread
     }
 

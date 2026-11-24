@@ -1,13 +1,14 @@
 import SwiftUI
 
 /// The بازی tab (GamesE): the greeting for a signed-in person, the streak and points (the points open رده‌بندی),
-/// today's puzzle with «۳ تا از دوستات حلش کردن», and the games. The مشاعره card and «+ بازی با دوست» stay hidden
-/// until games with friends exist.
+/// today's puzzle with «۳ تا از دوستات حلش کردن», the مشاعره card for a signed-in person (the game waiting for their
+/// answer, and «با یه دوست»), and the games with «+ بازی با دوست».
 struct GamesView: View {
     @Environment(AppModel.self) private var app
     @Environment(GameDeck.self) private var deck
     @Environment(GameStats.self) private var stats
     @Environment(MyStats.self) private var myStats
+    @Environment(FriendGames.self) private var friendGames
     @Environment(Session.self) private var session
     @Environment(AccountModel.self) private var account
 
@@ -20,6 +21,13 @@ struct GamesView: View {
                         puzzle: puzzle, day: stats.today, finished: (stats.daily(on: stats.today)?.outcome ?? .playing) != .playing,
                         friendsLine: myStats.friendsLine, open: { app.play(.daily) }
                     )
+                }
+                if session.isSignedIn {
+                    MoshCard(
+                        urgent: friendGames.urgentMosh.flatMap { game in friendGames.me.map { MoshState(game: game, me: $0) } },
+                        open: { app.play(.mosh($0)) }, withFriend: { app.play(.lobby(LobbyStart())) }
+                    )
+                    .padding(.top, 10)
                 }
                 gamesHeading
                 grid
@@ -34,6 +42,7 @@ struct GamesView: View {
         .task(id: "\(session.isSignedIn)|\(stats.today.number)") {
             await myStats.refresh()
             await myStats.refreshFriends(on: stats.today)
+            if session.isSignedIn { await friendGames.refreshMine() }
         }
     }
 
@@ -69,10 +78,19 @@ struct GamesView: View {
         HStack {
             Text("بازی‌ها").font(.title(24)).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
             Spacer()
-            NavigationLink(value: Destination.gamesCatalog) {
-                Text("همه‌ی بازی‌ها").font(.ui(14, weight: .medium)).foregroundStyle(Tokens.Colors.lapis)
+            HStack(spacing: 12) {
+                Button { account.require(.games) { app.play(.lobby(LobbyStart())) } } label: {
+                    Text("+ بازی با دوست").font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.white)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(Capsule().fill(Tokens.Colors.lapis).shadow(color: Tokens.Colors.lapis.opacity(0.25), radius: 4, x: 0, y: 2))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("newFriendGame")
+                NavigationLink(value: Destination.gamesCatalog) {
+                    Text("همه‌ی بازی‌ها").font(.ui(14, weight: .medium)).foregroundStyle(Tokens.Colors.lapis)
+                }
+                .accessibilityIdentifier("allGames")
             }
-            .accessibilityIdentifier("allGames")
         }
     }
 

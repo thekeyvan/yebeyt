@@ -207,6 +207,8 @@ private struct ChatContent: View {
                 )
             case .game:
                 GameCardView(message: message, other: chat.other)
+            case .system where message.payload?.event == "game_ended":
+                GameCardView(message: message, other: chat.other)
             case .system:
                 DivanLineView(message: message, other: chat.other) { model.messagesPath.append(.sharedDivan(chat.other.username)) }
             }
@@ -247,7 +249,7 @@ private struct ChatContent: View {
         .padding(.bottom, keyboardUp ? 10 : 26)
     }
 
-    /// «بیت بفرست» works now; the games wait for slice 8c and are dimmed.
+    /// «بیت بفرست», the two games with this friend (the lobby opens with them chosen) and today's puzzle.
     private var quickActions: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
@@ -257,13 +259,13 @@ private struct ChatContent: View {
                         RoundedRectangle(cornerRadius: 3).fill(Tokens.Colors.fire).frame(width: 8, height: 12)
                     }
                 }
-                chip("مشاعره", enabled: false, id: "quickMosh", action: {}) {
+                chip("مشاعره", enabled: true, id: "quickMosh", action: { model.play(.lobby(LobbyStart(game: .mosh, friend: person))) }) {
                     SVGShape(d: "M4 7h11l-3-3M20 17H9l3 3").stroke(Tokens.Colors.amber, style: StrokeStyle(lineWidth: 2.6 * 16 / 24, lineCap: .round, lineJoin: .round)).frame(width: 16, height: 16)
                 }
-                chip("بازی رودررو", enabled: false, id: "quickDuel", action: {}) {
+                chip("بازی رودررو", enabled: true, id: "quickDuel", action: { model.play(.lobby(LobbyStart(game: .duel, friend: person))) }) {
                     LineIcon(shape: GamesIcon(), size: 16, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.lapis)
                 }
-                chip("معمای امروز", enabled: false, id: "quickDaily", action: {}) {
+                chip("معمای امروز", enabled: true, id: "quickDaily", action: { model.play(.daily) }) {
                     HStack(spacing: 2) {
                         RoundedRectangle(cornerRadius: 2).fill(Tokens.Colors.green).frame(width: 7, height: 9)
                         RoundedRectangle(cornerRadius: 2).fill(Tokens.Colors.amber).frame(width: 7, height: 9)
@@ -276,6 +278,9 @@ private struct ChatContent: View {
         .scrollIndicators(.hidden)
         .scrollClipDisabled()
     }
+
+    /// This chat's person, for the lobby.
+    private var person: PersonShort { PersonShort(username: chat.other.username, displayName: chat.other.displayName, avatar: chat.other.avatar) }
 
     private func chip(_ title: String, enabled: Bool, id: String, action: @escaping () -> Void, @ViewBuilder icon: () -> some View) -> some View {
         Button(action: action) {

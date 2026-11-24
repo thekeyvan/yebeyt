@@ -1,8 +1,8 @@
 import Foundation
 
-/// The one text normalisation used for matching (search, mood words, section search): no diacritics or
-/// tatweel, Arabic ي/ى → ی, ك → ک, ZWNJ → space, آ/أ/إ → ا, ة → ه, Persian and Arabic digits → 0–9,
-/// punctuation → space, lower case, single spaces.
+/// The one text normalisation used for matching (search, mood words, section search, مشاعره): no diacritics or
+/// tatweel, Arabic ي/ى/ئ → ی, ك → ک, ZWNJ → space, آ/أ/إ/ٱ → ا, ة/ۀ → ه, Persian and Arabic digits → 0–9,
+/// punctuation → space, lower case, single spaces. The server's `normalizeText` does the same.
 enum TextNormalizer {
     static func normalize(_ text: String) -> String {
         var result = String.UnicodeScalarView()
@@ -10,13 +10,13 @@ enum TextNormalizer {
             switch scalar.value {
             case 0x064B...0x065F, 0x0670, 0x0640:
                 continue
-            case 0x064A, 0x0649:
+            case 0x064A, 0x0649, 0x0626:
                 result.append("\u{06CC}")
             case 0x0643:
                 result.append("\u{06A9}")
-            case 0x0622, 0x0623, 0x0625:
+            case 0x0622, 0x0623, 0x0625, 0x0671:
                 result.append("\u{0627}")
-            case 0x0629:
+            case 0x0629, 0x06C0:
                 result.append("\u{0647}")
             case 0x200C, 0x200D:
                 result.append(" ")

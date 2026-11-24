@@ -18,6 +18,8 @@ struct AccountLaunchOptions {
     let syncFails: Bool
     /// `-beytFeedback …` or `-beytFeedbackFails …`: the fake server also takes feedback reports and their files.
     let feedbackStub: Bool
+    /// `-beytPlayStub 1`: the fake server answers without a fake sign-in (a guest opens a challenge).
+    let playStub: Bool
     /// `-beytFeedbackFails offline|rate`: sending a report fails as if the phone were offline or the server said 429.
     let feedbackFails: String?
 
@@ -30,6 +32,7 @@ struct AccountLaunchOptions {
         syncFails = Self.flag(values["beytSyncFails"])
         feedbackFails = (values["beytFeedbackFails"] as? String).flatMap { ["offline", "rate"].contains($0) ? $0 : nil }
         feedbackStub = values["beytFeedback"] != nil || feedbackFails != nil
+        playStub = Self.flag(values["beytPlayStub"])
     }
 
     private static func flag(_ value: Any?) -> Bool {
@@ -48,7 +51,7 @@ struct AccountLaunchOptions {
 
     /// The client: the real server, `-beytAPI`, or with `-beytSignedIn` a stand-in on the phone.
     func makeAPI() -> API {
-        if signedIn || feedbackStub {
+        if signedIn || feedbackStub || playStub {
             DebugBackend.failsSync = syncFails
             DebugBackend.feedbackFails = feedbackFails
             let configuration = URLSessionConfiguration.ephemeral
@@ -94,6 +97,7 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
         case (_, "/v1/poets/pictures"): (200, "[]")
         default:
             Self.messagesAnswer(request)
+                ?? Self.playAnswer(request)
                 ?? DebugFriendsBackend.answer(method: request.httpMethod ?? "GET", path: path, query: request.url?.query ?? "")
                 ?? (404, #"{"error":"not_found"}"#)
         }
@@ -108,3 +112,13 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
     private static let userJSON = #"{"id":"00000000-0000-0000-0000-000000000001","username":"niloofar","displayName":null,"usernameChangedAt":null,"createdAt":"2026-11-23T08:00:00.000Z","providers":["apple"]}"#
 }
 #endif
+
+extension DebugBackend {
+    /// The answer for a games or challenges request, nil when the request is about something else.
+    static func playAnswer(_ request: URLRequest) -> (Int, String)? {
+        PlayStub.answer(
+            method: request.httpMethod ?? "GET", path: request.url?.path ?? "", body: bodyOf(request),
+            hasToken: request.value(forHTTPHeaderField: "Authorization") != nil
+        )
+    }
+}

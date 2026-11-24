@@ -78,6 +78,17 @@ final class LiveConnection {
         task = Task { [weak self] in await self?.run() }
     }
 
+    /// Sends a text frame (a player's answer in رودررو); false when the socket is not ready.
+    func send(_ text: String) async -> Bool {
+        guard state == .ready, let socket else { return false }
+        do {
+            try await socket.send(text)
+            return true
+        } catch {
+            return false
+        }
+    }
+
     /// Closes the socket and forgets an eviction: the app went to the background or someone signed out.
     func stop() {
         task?.cancel()

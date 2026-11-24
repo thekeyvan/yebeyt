@@ -112,13 +112,17 @@ final class InboxModel {
         case (.couplet, _):
             body = last.fromMe ? "یه بیت فرستادی" : "یه بیت فرستاد"
         case (.game, _):
-            // Only an invitation is shown; other game lines (a result) wait for slice 8c.
-            guard last.event == "game_invite" else { return "" }
-            body = last.fromMe ? "به بازی دعوتش کردی" : "دعوتت کرد به بازی"
+            switch last.event {
+            case "game_invite": body = last.fromMe ? "به بازی دعوتش کردی" : "دعوتت کرد به بازی"
+            case "challenge_result": body = last.fromMe ? "توی چالش بازی کردی" : "توی چالشت بازی کرد"
+            default: return ""
+            }
         case (.system, _):
-            // Only the shared divan's line is shown; other events (a game that ended) wait for slice 8c.
-            guard last.event == "divan_add" else { return "" }
-            body = last.fromMe ? "یه بیت به دیوان مشترک اضافه کردی" : "یه بیت به دیوان مشترک اضافه کرد"
+            switch last.event {
+            case "divan_add": body = last.fromMe ? "یه بیت به دیوان مشترک اضافه کردی" : "یه بیت به دیوان مشترک اضافه کرد"
+            case "game_ended": body = "بازی تموم شد"
+            default: return ""
+            }
         }
         return last.fromMe ? "تو: \(body)" : body
     }

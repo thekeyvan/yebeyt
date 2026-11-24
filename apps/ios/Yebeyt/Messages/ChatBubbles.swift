@@ -177,43 +177,6 @@ struct CoupletCardView: View {
     }()
 }
 
-/// A game invitation as a line card: «سارا دعوتت کرد به مشاعره», with «بزن بریم» switched off until the games
-/// with friends (slice 8c).
-struct GameCardView: View {
-    let message: ChatMessage
-    let other: ChatPerson
-
-    var body: some View {
-        let mine = message.fromMe
-        let game = MessageCopy.gameName(message.payload?.kind)
-        VStack(alignment: mine ? .trailing : .leading, spacing: 6) {
-            Text(mine ? "تو · \(ChatTime.clock(message.createdAt))" : "\(other.name) · \(ChatTime.clock(message.createdAt))")
-                .font(.ui(12))
-                .foregroundStyle(Tokens.Colors.muted)
-            HStack(spacing: 12) {
-                Text(mine ? "دعوتش کردی به \(game)" : MessageCopy.gameInvite(from: other.name, game: message.payload?.kind))
-                    .font(.ui(13, weight: .bold))
-                    .foregroundStyle(Tokens.Colors.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text("بزن بریم")
-                    .font(.title(16))
-                    .foregroundStyle(Tokens.Colors.white)
-                    .padding(EdgeInsets(top: 7, leading: 13, bottom: 3, trailing: 13))
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Tokens.Colors.lapis))
-                    .opacity(0.4)
-                    .accessibilityHidden(true)
-            }
-            .padding(14)
-            .frame(width: 262)
-            .sticker(fill: Tokens.Colors.white, radius: 22, border: 0, shadow: Tokens.Sticker.Shadow.card)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(mine ? "دعوتش کردی به \(game)" : MessageCopy.gameInvite(from: other.name, game: message.payload?.kind))
-            .accessibilityIdentifier("gameCard-\(message.id)")
-        }
-        .frame(maxWidth: .infinity, alignment: mine ? .trailing : .leading)
-    }
-}
-
 /// «سارا یه بیت به دیوان مشترک اضافه کرد»: tapping it opens the shared divan.
 struct DivanLineView: View {
     let message: ChatMessage

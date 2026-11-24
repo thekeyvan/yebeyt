@@ -24,6 +24,7 @@ struct YebeytApp: App {
     @State private var blocked: BlockedPeople
     @State private var feedback: FeedbackCenter
     @State private var messages: MessagesCenter
+    @State private var friendGames: FriendGames
     @State private var resolver: CoupletResolver
     #if DEBUG
     private let showsStickers: Bool
@@ -120,6 +121,15 @@ struct YebeytApp: App {
         center.onUnread = { appModel.unreadCount = $0 }
         center.show = { appModel.showChat($0) }
         _messages = State(initialValue: center)
+        let games = FriendGames(session: accounts.session)
+        games.sendLive = { [weak center] in await center?.sendLive($0) ?? false }
+        games.toast = { appModel.showToast($0) }
+        center.onLive = { games.handle($0) }
+        center.onLiveReady = { Task { await games.reconnected() } }
+        _friendGames = State(initialValue: games)
+        #if DEBUG
+        PlayLaunchOptions.fromProcess.prepare(app: appModel)
+        #endif
     }
 
     var body: some Scene {
@@ -145,6 +155,7 @@ struct YebeytApp: App {
                 .environment(blocked)
                 .environment(feedback)
                 .environment(messages)
+                .environment(friendGames)
                 .environment(resolver)
                 .environment(accounts.session)
                 .environment(accounts.account)

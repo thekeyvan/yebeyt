@@ -25,7 +25,7 @@ struct InboxScreen: View {
         .task { await inbox.load() }
     }
 
-    /// The title, «بازی با دوست» (the بازی tab, until the games with friends are built) and «پیام تازه».
+    /// The title, «بازی با دوست» (the lobby) and «پیام تازه».
     private var header: some View {
         HStack(spacing: 12) {
             Text("پیام‌ها")
@@ -34,7 +34,7 @@ struct InboxScreen: View {
                 .accessibilityAddTraits(.isHeader)
                 .padding(.top, 4)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            RoundButton(label: "بازی با دوست", action: { model.select(.games) }) {
+            RoundButton(label: "بازی با دوست", action: { model.play(.lobby(LobbyStart())) }) {
                 LineIcon(shape: GamesIcon(), size: 20, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.ink)
             }
             .accessibilityIdentifier("inboxGames")

@@ -372,7 +372,7 @@ struct ChatModelTests {
         #expect(days == ["دیروز", "امروز"])
     }
 
-    @Test func onlyTheDivanLineAndTheGameInvitationAreShown() async {
+    @Test func theDivanLineTheGameLinesAndTheChallengeResultAreShown() async {
         let page = MessageJSON.page([
             MessageJSON.message(id: "m4", kind: "game", payload: #"{"event":"challenge_result","code":"AB12"}"#, at: "2026-11-24T09:04:00Z"),
             MessageJSON.message(id: "m3", kind: "game", payload: #"{"event":"game_invite","kind":"mosh"}"#, at: "2026-11-24T09:03:00Z"),
@@ -384,7 +384,7 @@ struct ChatModelTests {
         let shown = rig.model.entries(now: MessageClock.now, calendar: MessageClock.calendar).compactMap { entry -> String? in
             if case .message(let message) = entry.content { message.id } else { nil }
         }
-        #expect(shown == ["m1", "m3"])
+        #expect(shown == ["m1", "m2", "m3", "m4"])
     }
 
     // MARK: The header

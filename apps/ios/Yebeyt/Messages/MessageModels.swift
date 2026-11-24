@@ -73,12 +73,20 @@ struct ConversationPage: Equatable, Sendable, Decodable {
     var nextCursor: String?
 }
 
-/// What a system or game message carries: `{ event, … }` (`divan_add` has the couplet `key`; a `game_invite` the
-/// game's `kind`).
+/// What a system or game message carries: `{ event, … }`. `divan_add` has the couplet `key`; `game_invite` the game's
+/// `gameId`, `kind` and `code`; `game_ended` the `gameId`, `kind`, `reason` and `by` (the winner's user id, absent for a
+/// draw); `challenge_result` the challenge's `code`, its `game` and the player's `score` and `seconds`.
 struct MessagePayload: Equatable, Sendable, Decodable {
     var event: String
     var key: String?
     var kind: String?
+    var gameId: String?
+    var code: String?
+    var game: String?
+    var score: Int?
+    var seconds: Int?
+    var reason: String?
+    var by: String?
 }
 
 /// `Message`.

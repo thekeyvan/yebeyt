@@ -5,6 +5,10 @@ import SwiftUI
 /// the clock runs: the meaning waits in the sheet.
 struct QuizScreen: View {
     let start: QuizStart
+    /// The friends a challenge made from this round goes to (picked in the lobby).
+    var invite: [String] = []
+    /// Set when the round answers a challenge: its end is the challenge's result.
+    var answering: ChallengeAnswer?
     @Environment(AppModel.self) private var app
     @Environment(PoetryStore.self) private var poetry
     @Environment(Library.self) private var library
@@ -29,7 +33,11 @@ struct QuizScreen: View {
         ZStack {
             if let session {
                 if session.finished {
-                    RoundEndScreen(summary: session.round.summary)
+                    if let answering {
+                        ChallengeEndScreen(answering: answering, summary: session.round.summary, seconds: session.round.answers.reduce(0) { $0 + $1.seconds })
+                    } else {
+                        RoundEndScreen(summary: session.round.summary.inviting(invite))
+                    }
                 } else {
                     play(session)
                 }
@@ -52,6 +60,7 @@ struct QuizScreen: View {
         let round: QuizRound?
         switch start {
         case .poet: round = .poet(deck: deck, poets: library.poets, generator: &generator)
+        case .poetItems(let couplets): round = .poet(couplets: couplets, poets: library.poets, generator: &generator)
         case .misra(let poet): round = .second(deck: deck, only: poet, generator: &generator)
         case .book: round = .book(deck: deck, books: library.books, generator: &generator)
         case .listen:

@@ -20,6 +20,16 @@ struct GameHost: View {
                 QuizScreen(start: start)
             case .match:
                 MatchScreen()
+            case .lobby(let start):
+                LobbyScreen(start: start)
+            case .mosh(let id):
+                MoshScreen(gameID: id)
+            case .duel(let id):
+                DuelScreen(gameID: id)
+            case .challenge(let code):
+                ChallengeAcceptScreen(code: code)
+            case .challengeRound(let game, let invite):
+                if game == .jigsaw { JigsawScreen(start: .deck, invite: invite) } else { QuizScreen(start: .poet, invite: invite) }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

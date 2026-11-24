@@ -13,6 +13,7 @@ struct RootView: View {
     @Environment(AvatarStore.self) private var avatar
     @Environment(FeedbackCenter.self) private var feedback
     @Environment(MessagesCenter.self) private var messages
+    @Environment(FriendGames.self) private var friendGames
     @Environment(\.scenePhase) private var scenePhase
     @State private var keyboardUp = false
 
@@ -81,7 +82,12 @@ struct RootView: View {
             messages.setActive(active)
             if active { await messages.refreshUnread() }
         }
-        .onChange(of: session.isSignedIn) { _, signedIn in if !signedIn { messages.reset() } }
+        .onChange(of: session.isSignedIn) { _, signedIn in
+            if !signedIn {
+                messages.reset()
+                friendGames.reset()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }
         .onChange(of: model.currentScreen, initial: true) { _, screen in FeedbackLog.shared.visit(screen) }
         .accountPrompt(host: model.reader == nil)

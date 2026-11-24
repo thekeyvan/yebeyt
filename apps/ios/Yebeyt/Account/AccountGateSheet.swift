@@ -43,7 +43,7 @@ struct AccountGateSheet: View {
                 .shadow(color: Tokens.Colors.ink.opacity(0.2), radius: 3, x: 0, y: 2)
                 .frame(width: 54, height: 54)
                 .accessibilityHidden(true)
-        case .messages, .invite:
+        case .messages, .invite, .games:
             GameIcon(kind: .mosh, size: 54)
         case .profile, .leaderboard:
             Circle().fill(Tokens.Colors.lapis)
