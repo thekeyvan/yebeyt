@@ -916,6 +916,13 @@
           },
           "fromMe": {
             "type": "boolean"
+          },
+          "event": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A system or game message's `payload.event` (`divan_add`, `game_invite`, …); null for texts, couplets and deleted messages."
           }
         },
         "required": [
@@ -925,7 +932,8 @@
           "note",
           "deleted",
           "at",
-          "fromMe"
+          "fromMe",
+          "event"
         ]
       },
       "Unread": {

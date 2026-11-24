@@ -24,6 +24,7 @@ const lastSchema = z
     deleted: z.boolean(),
     at: z.iso.datetime(),
     fromMe: z.boolean(),
+    event: z.string().nullable().openapi({ description: "A system or game message's `payload.event` (`divan_add`, `game_invite`, …); null for texts, couplets and deleted messages." }),
   })
   .openapi("ConversationLast");
 const itemSchema = z.object({ id: z.uuid(), other: otherSchema, last: lastSchema, unread: z.number().int() }).openapi("ConversationListItem");
@@ -132,7 +133,7 @@ export function conversationRoutes(deps: Deps) {
             return {
               id: r.id,
               other: { username: r.username!, displayName: r.displayName, avatar: r.avatar, online: visible.has(r.otherId) ? deps.hub.isOnline(r.otherId) : null },
-              last: { kind: m.kind, text: m.text, key: m.key, note: m.note, deleted: m.deleted, at: m.createdAt, fromMe: m.fromMe },
+              last: { kind: m.kind, text: m.text, key: m.key, note: m.note, deleted: m.deleted, at: m.createdAt, fromMe: m.fromMe, event: typeof m.payload?.event === "string" ? m.payload.event : null },
               unread: unread.get(r.id) ?? 0,
             };
           }),

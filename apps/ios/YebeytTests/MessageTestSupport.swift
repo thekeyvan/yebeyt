@@ -27,12 +27,12 @@ enum MessageJSON {
     /// A row of the inbox.
     static func row(
         id: String, username: String, name: String? = nil, kind: String = "text", text: String? = "سلام", key: String? = nil, fromMe: Bool = false,
-        unread: Int = 0, at: String = "2026-11-24T09:45:00.000Z", online: String = "null"
+        unread: Int = 0, at: String = "2026-11-24T09:45:00.000Z", online: String = "null", event: String? = nil
     ) -> String {
         func string(_ value: String?) -> String { value.map { "\"\($0)\"" } ?? "null" }
         return """
         {"id":"\(id)","other":{"username":"\(username)","displayName":\(string(name)),"avatar":null,"online":\(online)},\
-        "last":{"kind":"\(kind)","text":\(string(text)),"key":\(string(key)),"note":null,"deleted":false,"at":"\(at)","fromMe":\(fromMe)},"unread":\(unread)}
+        "last":{"kind":"\(kind)","text":\(string(text)),"key":\(string(key)),"note":null,"deleted":false,"at":"\(at)","fromMe":\(fromMe),"event":\(string(event))},"unread":\(unread)}
         """
     }
 

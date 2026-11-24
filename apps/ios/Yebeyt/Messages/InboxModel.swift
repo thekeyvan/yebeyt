@@ -114,9 +114,8 @@ final class InboxModel {
         case (.game, _):
             body = last.fromMe ? "به بازی دعوتش کردی" : "دعوتت کرد به بازی"
         case (.system, _):
-            // The list doesn't name a system line's event: without one it is read as the shared divan's, the only
-            // one the chat shows. Other events (a game that ended) wait for slice 8c and show nothing.
-            guard last.event == nil || last.event == "divan_add" else { return "" }
+            // Only the shared divan's line is shown; other events (a game that ended) wait for slice 8c.
+            guard last.event == "divan_add" else { return "" }
             body = last.fromMe ? "یه بیت به دیوان مشترک اضافه کردی" : "یه بیت به دیوان مشترک اضافه کرد"
         }
         return last.fromMe ? "تو: \(body)" : body

@@ -25,10 +25,10 @@ struct ConversationLast: Equatable, Sendable, Decodable {
     var deleted: Bool
     var at: Date
     var fromMe: Bool
-    /// The event of a system line. The server's list doesn't say it (nil); a live message does.
+    /// The `payload.event` of a system or game line (`divan_add`, `game_invite`, …); nil for the rest.
     var event: String?
 
-    enum CodingKeys: String, CodingKey { case kind, text, key, note, deleted, at, fromMe }
+    enum CodingKeys: String, CodingKey { case kind, text, key, note, deleted, at, fromMe, event }
 
     init(kind: ChatMessage.Kind, text: String? = nil, key: String? = nil, note: String? = nil, deleted: Bool = false, at: Date, fromMe: Bool, event: String? = nil) {
         self.kind = kind
@@ -50,6 +50,7 @@ struct ConversationLast: Equatable, Sendable, Decodable {
         deleted = try values.decode(Bool.self, forKey: .deleted)
         at = try values.decode(APIDate.self, forKey: .at).date
         fromMe = try values.decode(Bool.self, forKey: .fromMe)
+        event = try values.decodeIfPresent(String.self, forKey: .event)
     }
 }
 

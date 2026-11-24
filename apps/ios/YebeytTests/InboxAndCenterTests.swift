@@ -105,15 +105,15 @@ struct InboxAndCenterTests {
 
     @Test func thePreviewLineFollowsTheBoard() {
         let at = MessageClock.now
-        func line(_ kind: ChatMessage.Kind, text: String? = nil, fromMe: Bool = false, deleted: Bool = false) -> String {
-            InboxModel.preview(ConversationLast(kind: kind, text: text, key: kind == .couplet ? "/hafez/ghazal/sh3#0" : nil, deleted: deleted, at: at, fromMe: fromMe))
+        func line(_ kind: ChatMessage.Kind, text: String? = nil, fromMe: Bool = false, deleted: Bool = false, event: String? = nil) -> String {
+            InboxModel.preview(ConversationLast(kind: kind, text: text, key: kind == .couplet ? "/hafez/ghazal/sh3#0" : nil, deleted: deleted, at: at, fromMe: fromMe, event: event))
         }
         #expect(line(.text, text: "فردا معما رو با هم حل کنیم؟", fromMe: true) == "تو: فردا معما رو با هم حل کنیم؟")
         #expect(line(.text, text: "بیت قشنگی بود") == "بیت قشنگی بود")
         #expect(line(.couplet) == "یه بیت فرستاد")
         #expect(line(.couplet, fromMe: true) == "تو: یه بیت فرستادی")
         #expect(line(.game) == "دعوتت کرد به بازی")
-        #expect(line(.system) == "یه بیت به دیوان مشترک اضافه کرد")  // the list doesn't name the event: read as the divan's
+        #expect(line(.system, event: "divan_add") == "یه بیت به دیوان مشترک اضافه کرد")
         #expect(line(.text, deleted: true) == "این پیام پاک شد")
     }
 
@@ -121,6 +121,15 @@ struct InboxAndCenterTests {
         func last(_ event: String?) -> ConversationLast { ConversationLast(kind: .system, at: MessageClock.now, fromMe: false, event: event) }
         #expect(InboxModel.preview(last("divan_add")) == "یه بیت به دیوان مشترک اضافه کرد")
         #expect(InboxModel.preview(last("game_ended")) == "")
+        #expect(InboxModel.preview(last(nil)) == "")  // an event this app doesn't know is not guessed
+    }
+
+    @Test func theEventOfTheLastMessageComesFromTheList() async {
+        let rows = MessageJSON.rows([MessageJSON.row(id: "c1", username: "sara", kind: "system", text: nil, event: "divan_add")])
+        let (model, _) = inbox { _ in .json(200, rows) }
+        await model.load()
+        #expect(model.rows[0].last.event == "divan_add")
+        #expect(InboxModel.preview(model.rows[0].last) == "یه بیت به دیوان مشترک اضافه کرد")
     }
 
     @Test func aLiveSystemLineKeepsItsEventInTheRow() async throws {

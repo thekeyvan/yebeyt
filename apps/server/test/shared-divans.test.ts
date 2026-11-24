@@ -107,8 +107,8 @@ describe("items", () => {
     expect((await items(sara, id)).items[0]).toMatchObject({ id: item.id, addedByMe: false });
 
     // A system line in the chat, made with the chat, from either side.
-    const chat = (await (await h.request("/v1/conversations", { token: sara.token })).json()) as { items: { id: string; last: { kind: string; fromMe: boolean }; unread: number }[] };
-    expect(chat.items[0]).toMatchObject({ last: { kind: "system", fromMe: false }, unread: 0 });
+    const chat = (await (await h.request("/v1/conversations", { token: sara.token })).json()) as { items: { id: string; last: { kind: string; fromMe: boolean; event: string | null }; unread: number }[] };
+    expect(chat.items[0]).toMatchObject({ last: { kind: "system", fromMe: false, event: "divan_add" }, unread: 0 });
     const lines = (await (await h.request(`/v1/conversations/${chat.items[0]!.id}/messages`, { token: ali.token })).json()) as { items: { kind: string; fromMe: boolean; payload: unknown }[] };
     expect(lines.items).toEqual([expect.objectContaining({ kind: "system", fromMe: true, payload: { event: "divan_add", key: A } })]);
 

@@ -62,9 +62,10 @@ enum MessagesStub {
     }
 
     private static func row(_ username: String, kind: String, text: String?, mine: Bool = false, unread: Int, at: String) -> String {
+        let event = kind == "game" ? "\"game_invite\"" : "null"
         let key = kind == "couplet" ? "\"/hafez/ghazal/sh8#4\"" : "null"
         let body = text.map { "\"\($0)\"" } ?? "null"
-        return #"{"id":"c-\#(username)","other":\#(person(username).json),"last":{"kind":"\#(kind)","text":\#(body),"key":\#(key),"note":null,"deleted":false,"at":"\#(at)","fromMe":\#(mine)},"unread":\#(unread)}"#
+        return #"{"id":"c-\#(username)","other":\#(person(username).json),"last":{"kind":"\#(kind)","text":\#(body),"key":\#(key),"note":null,"deleted":false,"at":"\#(at)","fromMe":\#(mine),"event":\#(event)},"unread":\#(unread)}"#
     }
 
     private static var conversations: String {

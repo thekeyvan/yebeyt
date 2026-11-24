@@ -95,7 +95,7 @@ describe("GET /v1/conversations and /v1/me/unread", () => {
     await send(ali, withOmid, "hi omid");
     const { items } = await list(ali);
     expect(items.map((i) => i.other.username)).toEqual(["omid", "sara"]);
-    expect(items[0]).toMatchObject({ id: withOmid, last: { kind: "text", text: "hi omid", fromMe: true }, unread: 0 });
+    expect(items[0]).toMatchObject({ id: withOmid, last: { kind: "text", text: "hi omid", fromMe: true, event: null }, unread: 0 });
     expect(items[1]).toMatchObject({ id: withSara, last: { text: "chetori?", fromMe: false }, unread: 2 });
     expect(((await (await h.request("/v1/me/unread", { token: ali.token })).json()) as { total: number }).total).toBe(2);
     expect(((await (await h.request("/v1/me/unread", { token: sara.token })).json()) as { total: number }).total).toBe(0);
