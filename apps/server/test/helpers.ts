@@ -5,6 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { sql } from "drizzle-orm";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createApp } from "../src/app.js";
 import type { Config } from "../src/config.js";
@@ -14,6 +15,7 @@ import type { Deps } from "../src/deps.js";
 import { createDuels } from "../src/duel.js";
 import { loadGameData } from "../src/gameData.js";
 import { createHub } from "../src/hub.js";
+import { createHouse } from "../src/house.js";
 import type { UploadBudgets } from "../src/routes/feedback.js";
 
 export const BUNDLE_ID = "com.yebeyt.app";
@@ -63,8 +65,17 @@ export function testDb(): Promise<Db> {
   return sharedDb;
 }
 
+/** The statement of the migration that makes «یه بیت»: the same text the database ran when it was set up. */
+export const houseSeedSql = (): string =>
+  readFileSync(fileURLToPath(new URL("../drizzle/0012_lovely_zaran.sql", import.meta.url)), "utf8")
+    .split("--> statement-breakpoint")
+    .map((s) => s.trim())
+    .find((s) => s.startsWith('INSERT INTO "users"'))!;
+
+/** Empties the tables, then puts «یه بیت» back, as a fresh database has it. */
 export async function resetDb(db: Db) {
   await db.execute(sql`truncate users, poet_pictures, feedback, league_groups, league_closures cascade`);
+  await db.execute(sql.raw(houseSeedSql()));
 }
 
 const gameData = loadGameData();
@@ -90,8 +101,17 @@ export async function makeHarness(uploadBudgets?: UploadBudgets) {
     googleKeys: google.keys,
     log: (line) => logs.push(line),
     duels: undefined as never,
+    house: undefined as never,
   };
   deps.duels = createDuels(deps);
+  // «یه بیت» answers when the test lets it: `flushHouse` runs the replies that were scheduled (each with the delay it was given).
+  const houseTimers: { run: () => Promise<void>; ms: number }[] = [];
+  deps.house = createHouse(deps, { later: (run, ms) => houseTimers.push({ run, ms }) });
+  const flushHouse = async () => {
+    const due = houseTimers.splice(0);
+    await Promise.all(due.map((t) => t.run()));
+    return due.map((t) => t.ms);
+  };
   const app = createApp(deps, uploadBudgets);
 
   const nowSec = () => Math.floor(clock.time.getTime() / 1000);
@@ -138,7 +158,7 @@ export async function makeHarness(uploadBudgets?: UploadBudgets) {
     if (sent.status !== 200 || accepted.status !== 200) throw new Error(`befriend failed: ${sent.status} ${accepted.status}`);
   };
 
-  return { app, db, deps, clock, logs, fetchMock, appleToken, googleToken, request, signIn, signUp, befriend };
+  return { app, db, deps, clock, logs, fetchMock, houseTimers, flushHouse, appleToken, googleToken, request, signIn, signUp, befriend };
 }
 
 const HEADERS = {

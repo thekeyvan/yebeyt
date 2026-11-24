@@ -65,6 +65,7 @@ export function friendRoutes(deps: Deps) {
       summary: "Ask someone to be friends",
       description:
         "Idempotent: asking again changes nothing. If they already asked me, this accepts and we are friends; if we are friends, nothing happens. " +
+        "The built-in demo friend «یه بیت» (username `yebeyt`) accepts at once: I get a live `friend.accepted` from it, and the answer is `friends`. " +
         "The receiver gets a live `friend.request` (and the sender of a request I accept, `friend.accepted`). If either of us blocked the other, the person is not found (404). " +
         `A user may send ${REQUESTS_PER_HOUR} new requests an hour (429 rate_limited); repeats and acceptances do not count.`,
       security,
@@ -86,6 +87,10 @@ export function friendRoutes(deps: Deps) {
           await makeFriends(tx, me, other.id);
           return "accepted" as const;
         }
+        if (other.isHouse) {
+          await makeFriends(tx, me, other.id); // «یه بیت» accepts at once, the same way an accept does
+          return "accepted_by_house" as const;
+        }
         if (await requestFrom(tx, me, other.id)) return "requested" as const;
         if (!newRequests.fits(me, 1)) throw new ApiError(429, "rate_limited");
         await tx.insert(friendRequests).values({ fromId: me, toId: other.id, createdAt: deps.now() });
@@ -94,7 +99,8 @@ export function friendRoutes(deps: Deps) {
       });
       if (outcome === "sent") deps.hub.publish(other.id, { type: "friend.request", from: await person(me) });
       if (outcome === "accepted") deps.hub.publish(other.id, { type: "friend.accepted", from: await person(me) });
-      return c.json({ friendship: outcome === "friends" || outcome === "accepted" ? ("friends" as const) : ("requested" as const) }, 200);
+      if (outcome === "accepted_by_house") deps.hub.publish(me, { type: "friend.accepted", from: await person(other.id) });
+      return c.json({ friendship: outcome === "sent" || outcome === "requested" ? ("requested" as const) : ("friends" as const) }, 200);
     },
   );
 

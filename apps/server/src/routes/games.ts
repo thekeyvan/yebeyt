@@ -68,7 +68,7 @@ export function gameRoutes(deps: Deps) {
     const other = await findByUsername(db, username);
     if (!other) return "not_found";
     if (other.id === me) return "yourself";
-    if (await isBlocked(db, me, other.id)) return "not_found";
+    if (other.isHouse || (await isBlocked(db, me, other.id))) return "not_found"; // «یه بیت» takes no games
     const [settings] = await db.select({ from: privacySettings.gameInvitesFrom }).from(privacySettings).where(eq(privacySettings.userId, other.id));
     if ((settings?.from ?? PRIVACY_DEFAULTS.gameInvitesFrom) === "friends" && !(await areFriends(db, me, other.id))) return "friends_only";
     const conversationId = await getOrCreateConversation(db, me, other.id);
@@ -88,7 +88,7 @@ export function gameRoutes(deps: Deps) {
       summary: "Start a game with a friend",
       description:
         "Makes a game that waits for a second player (the first to join takes the seat), with a four-character `code`. Each `invite` becomes a chat message of kind `game` with payload `{gameId, kind, code}` (a chat is made if there is none, whatever their `messagesFrom` says); " +
-        "a person who blocked you or whom you blocked, who has no such username, or who takes game invitations only from friends (`gameInvitesFrom`) when you are not one, is skipped and named in `skipped`. 20 games an hour per user.",
+        "a person who blocked you or whom you blocked, who has no such username, the demo friend «یه بیت» (`yebeyt`, which takes no games), or who takes game invitations only from friends (`gameInvitesFrom`) when you are not one, is skipped and named in `skipped`. 20 games an hour per user.",
       security,
       request: { body: { required: true, content: { "application/json": { schema: createBody } } } },
       responses: {

@@ -30,7 +30,7 @@ describe("POST /v1/auth/google", () => {
     const b = await h.signIn("g-2");
     expect(again.user.id).toBe(a.user.id);
     expect(b.user.id).not.toBe(a.user.id);
-    expect(await h.db.select().from(users)).toHaveLength(2);
+    expect(await h.db.select().from(users).where(eq(users.isHouse, false))).toHaveLength(2);
   });
 
   it("rejects bad tokens with 401 invalid_token", async () => {
@@ -218,7 +218,7 @@ describe("DELETE /v1/me", () => {
     expect(form.get("client_id")).toBe(BUNDLE_ID);
 
     for (const table of ["users", "identities", "sessions", "progress", "divan_items", "privacy_settings"]) {
-      const rows = await h.db.execute(sql.raw(`select count(*)::int as n from ${table}`));
+      const rows = await h.db.execute(sql.raw(`select count(*)::int as n from ${table}${table === "users" ? " where not is_house" : ""}`)); // «یه بیت» stays
       expect((rows as unknown as { rows: { n: number }[] }).rows[0]!.n).toBe(0);
     }
     expect((await h.request("/v1/me", { token: s.accessToken })).status).toBe(401);
@@ -229,7 +229,7 @@ describe("DELETE /v1/me", () => {
     const s = await h.signIn();
     expect((await h.request("/v1/me", { method: "DELETE", token: s.accessToken })).status).toBe(204);
     expect(h.fetchMock).not.toHaveBeenCalled();
-    expect(await h.db.select().from(users)).toHaveLength(0);
+    expect(await h.db.select().from(users).where(eq(users.isHouse, false))).toHaveLength(0);
   });
 
   it("keeps the account when Apple cannot be reached, so it can be retried", async () => {
@@ -247,7 +247,7 @@ describe("DELETE /v1/me", () => {
     const s = await signInApple();
     h.fetchMock.mockResolvedValueOnce(Response.json({ error: "invalid_grant" }, { status: 400 }));
     expect((await h.request("/v1/me", { method: "DELETE", token: s.accessToken })).status).toBe(204);
-    expect(await h.db.select().from(users)).toHaveLength(0);
+    expect(await h.db.select().from(users).where(eq(users.isHouse, false))).toHaveLength(0);
   });
 
   it("keeps the account on any other non-2xx from Apple and logs the status and error code only", async () => {
@@ -261,6 +261,6 @@ describe("DELETE /v1/me", () => {
     expect(h.logs).toContain("apple revoke failed status=400 error=invalid_client");
     expect(h.logs.join("\n")).not.toContain("secret detail");
     expect(h.logs.join("\n")).not.toContain("apple-refresh-1");
-    expect(await h.db.select().from(users)).toHaveLength(1);
+    expect(await h.db.select().from(users).where(eq(users.isHouse, false))).toHaveLength(1);
   });
 });

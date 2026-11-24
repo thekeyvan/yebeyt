@@ -3780,7 +3780,7 @@
           "friends"
         ],
         "summary": "Ask someone to be friends",
-        "description": "Idempotent: asking again changes nothing. If they already asked me, this accepts and we are friends; if we are friends, nothing happens. The receiver gets a live `friend.request` (and the sender of a request I accept, `friend.accepted`). If either of us blocked the other, the person is not found (404). A user may send 30 new requests an hour (429 rate_limited); repeats and acceptances do not count.",
+        "description": "Idempotent: asking again changes nothing. If they already asked me, this accepts and we are friends; if we are friends, nothing happens. The built-in demo friend «یه بیت» (username `yebeyt`) accepts at once: I get a live `friend.accepted` from it, and the answer is `friends`. The receiver gets a live `friend.request` (and the sender of a request I accept, `friend.accepted`). If either of us blocked the other, the person is not found (404). A user may send 30 new requests an hour (429 rate_limited); repeats and acceptances do not count.",
         "security": [
           {
             "bearerAuth": []
@@ -5857,7 +5857,7 @@
           "games"
         ],
         "summary": "Start a game with a friend",
-        "description": "Makes a game that waits for a second player (the first to join takes the seat), with a four-character `code`. Each `invite` becomes a chat message of kind `game` with payload `{gameId, kind, code}` (a chat is made if there is none, whatever their `messagesFrom` says); a person who blocked you or whom you blocked, who has no such username, or who takes game invitations only from friends (`gameInvitesFrom`) when you are not one, is skipped and named in `skipped`. 20 games an hour per user.",
+        "description": "Makes a game that waits for a second player (the first to join takes the seat), with a four-character `code`. Each `invite` becomes a chat message of kind `game` with payload `{gameId, kind, code}` (a chat is made if there is none, whatever their `messagesFrom` says); a person who blocked you or whom you blocked, who has no such username, the demo friend «یه بیت» (`yebeyt`, which takes no games), or who takes game invitations only from friends (`gameInvitesFrom`) when you are not one, is skipped and named in `skipped`. 20 games an hour per user.",
         "security": [
           {
             "bearerAuth": []

@@ -85,6 +85,13 @@
       "when": 1795507297451,
       "tag": "0011_careful_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795527109698,
+      "tag": "0012_lovely_zaran",
+      "breakpoints": true
     }
   ]
 }

@@ -148,6 +148,7 @@ export function messageRoutes(deps: Deps) {
         return c.json(messageView((await existing())!, me), 200);
       }
       publishMessage(deps, [me, conversation.otherId], row!);
+      await deps.house.onMessage(conversation.id, me, conversation.otherId);
       return c.json(messageView(row!, me), 201);
     },
   );

@@ -51,7 +51,7 @@ export const friendshipSql = (me: string, other: SQLWrapper) => sql<Friendship>`
 /** The user with this username (any case), or undefined. */
 export async function findByUsername(db: Db, raw: string) {
   const [row] = await db
-    .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar })
+    .select({ id: users.id, username: users.username, displayName: users.displayName, avatar: users.avatar, isHouse: users.isHouse })
     .from(users)
     .where(eq(users.username, normalizeUsername(raw)));
   return row;

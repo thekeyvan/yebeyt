@@ -33,10 +33,15 @@ export const users = pgTable(
     usernameChangedAt: timestamptz("username_changed_at"),
     displayName: text("display_name"),
     avatar: jsonb("avatar").$type<Avatar>(),
+    /** The built-in demo friend «یه بیت» (src/house.ts): no identity, so nobody signs in as it. At most one user has it. */
+    isHouse: boolean("is_house").notNull().default(false),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
-  // Lets the username search (a prefix match) use an index.
-  (t) => [index("users_username_prefix").using("btree", t.username.op("text_pattern_ops"))],
+  (t) => [
+    // Lets the username search (a prefix match) use an index.
+    index("users_username_prefix").using("btree", t.username.op("text_pattern_ops")),
+    uniqueIndex("users_one_house").on(t.isHouse).where(sql`${t.isHouse}`),
+  ],
 );
 
 /** One sign-in method of a user. `appleRefreshToken` is stored encrypted (see src/crypto.ts). */

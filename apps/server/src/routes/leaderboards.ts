@@ -126,7 +126,7 @@ export function leaderboardRoutes(deps: Deps) {
     async (c) => {
       const userId = c.get("userId");
       const current = weekOf(deps.now());
-      const circle = sql`(${users.id} = ${userId} or ${users.id} in ${friendIds(userId)})`;
+      const circle = sql`(${users.id} = ${userId} or (${users.id} in ${friendIds(userId)} and not ${users.isHouse}))`;
       const totals = weekTotals(db, current, sql`(${scoreEvents.userId} = ${userId} or ${scoreEvents.userId} in ${friendIds(userId)})`);
       const points = sql<number>`coalesce(${totals.points}, 0)`;
       const found = await db
