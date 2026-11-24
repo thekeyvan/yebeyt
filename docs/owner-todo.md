@@ -21,19 +21,7 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 - The lead's decisions in [yebeyt-2.md](yebeyt-2.md) («Decisions the lead made while the owner was away»).
 - `tools/ganjoor/curation.json` (poet bios and book blurbs) and `tools/ganjoor/glossary.json` (word meanings): both written by an agent; please check the Persian.
 
-## 4. Open questions (the lead decided something for now; change anything)
-
-1. **Badges:** ۷ روز, اولین مشاعره, حافظ‌شناس (50 right answers on Hafez), ۱۰۰ بیت (100 couplets read). More badges, other rules?
-2. **Delete account copy:** «حسابت و همه‌ی چیزهایی که جمع کردی پاک می‌شه. مطمئنی؟» — «پاک کن» / «نه».
-3. **Invite texts:** the board has the رفیقانه text; the lead writes شاعرانه and کوتاه. Please read them in the app.
-4. **Divan «موضوع»:** grouped by the mood words (عشق, دلتنگی, امید, بهار, جوونی, دوستی, else بقیه). Other topics?
-5. **Feedback storage:** screenshots and recordings are kept in Postgres for now (screenshot ≤3 MB, recording ≤25 MB). If many arrive, move them to a Railway bucket. OK?
-6. **Reading feedback:** there is no admin screen yet; feedback is read through the admin API (`GET /v1/admin/feedback` with `ADMIN_TOKEN`). Should a simple page come before the admin dashboard?
-7. **Scores come from the phone,** so a determined cheater could fake them. The server caps points per round, and the daily and onboarding points count once. Good enough for now?
-8. **Friend requests copy** (written by the builder): the empty requests screen says «درخواستی نداری.»; the block sheet's second line says «دیگه نمی‌تونه بهت پیام بده یا درخواست دوستی بفرسته.». OK?
-9. **English home page** (https://yebeyt.com/en): tagline "Every couplet, a game."; intro "A new couplet every day, games with poetry, and mosha'ere with your friends." The reviewer suggests "mosha'ere (poetry duels)" so English readers understand it. OK, or other wording?
-
-## 5. App Store Connect: the privacy label (don't fill it in yet)
+## 4. App Store Connect: the privacy label (don't fill it in yet)
 
 This table covers only feedback. Accounts, the divan sync, friends, messages and game scores also send data, and those rows are still missing. The lead will finish the full table before the first upload; fill in the label then, all at once.
 
@@ -60,4 +48,5 @@ Notes:
 - 24 Nov: App Clip ID `com.yebeyt.app.Clip` registered (Associated Domains). App Store Apple ID `6837700208` (the lead turns it on in the website's store buttons when 2.0 is live; until then the id has no store page). The old Pages project is deleted.
 - 24 Nov: App Store Connect Privacy Policy URL https://yebeyt.com/en/privacy and Support URL https://yebeyt.com/en/support; Google consent screen links (/en, /en/privacy, /en/terms) and the App Store id on the Google iOS client.
 - 24 Nov: push key «yebeyt push» (`K95YXBLYY5`) in Railway as `APNS_KEY`, `APNS_KEY_ID`, `APNS_TEAM_ID`.
-- Answered: levels, avatar parts, settings as a plain list, feedback stays anonymous after account deletion, league tiers, push notifications, another person's page in a plain layout, friend requests instead of mutual follows. The privacy policy has the lines about reported messages and feedback.
+- Answered 24 Nov: badges (the four), delete-account copy, the three invite texts, divan topics, feedback in Postgres, feedback read through the admin API until the dashboard, score caps are enough for now, the friend-requests copy; the English home adds "(poetry duels)" after mosha'ere.
+- Answered earlier: levels, avatar parts, settings as a plain list, feedback stays anonymous after account deletion, league tiers, push notifications, another person's page in a plain layout, friend requests instead of mutual follows. The privacy policy has the lines about reported messages and feedback.
