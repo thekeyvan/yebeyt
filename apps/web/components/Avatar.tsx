@@ -110,7 +110,7 @@ function Mouth({ id }: { id: string }) {
 /**
  * A face drawn from the parts the server keeps (`avatar`), in the amber sticker circle: the SVG of the app's AvatarView
  * (apps/ios/Yebeyt/Me/Avatar/AvatarView.swift: a 200×200 box clipped to a circle, the same shapes in the same layers). The
- * standard face for null, and for a face with a part id this page doesn't know, as in the app (lib/avatar.ts).
+ * standard face for null; a part this page doesn't know is drawn as the app does (lib/avatar.ts): its default, or no accessory.
  */
 export function Avatar({ avatar, large = false }: { avatar: Parts | null; large?: boolean }) {
   const clip = useId();

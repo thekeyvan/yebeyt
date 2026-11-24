@@ -21,21 +21,22 @@ export type Look = { skin: string; hair: string; background: string; eyes: Eyes;
 /** The face everyone starts with (the app's `AvatarParts.standard`), which a person without a face shows. */
 const STANDARD: Avatar = { face: "peach", eyes: "round", hair: "dark", mouth: "smile", accessory: "ney", background: "sun" };
 
-const isId = (options: readonly string[] | Record<string, string>, id: string) => (Array.isArray(options) ? options.includes(id) : Object.hasOwn(options, id));
+const pick = <T extends string>(options: readonly T[], id: string): T | undefined => options.find((option) => option === id);
+const colour = (table: Record<string, string>, id: string) => (Object.hasOwn(table, id) ? table[id]! : Object.values(table)[0]!);
 
-/** The app's `AvatarCatalogue.isValid`: every part is an id it knows. */
-const isValid = (a: Avatar) =>
-  isId(SKINS, a.face) && isId(EYES, a.eyes) && isId(HAIRS, a.hair) && isId(MOUTHS, a.mouth) && isId(ACCESSORIES, a.accessory) && isId(BACKGROUNDS, a.background);
-
-/** What to draw for the server's `avatar`: the standard face for null, and, as in the app, for a face with any part id unknown. */
+/**
+ * What to draw for the server's `avatar`, as the app's AvatarView draws another person's face (PersonScreen, FriendParts): the
+ * standard face for null, and part by part otherwise: an id it doesn't know falls to that part's first option (the default),
+ * and an unknown accessory is left out.
+ */
 export function look(avatar: Avatar | null): Look {
-  const parts = avatar && isValid(avatar) ? avatar : STANDARD;
+  const parts = avatar ?? STANDARD;
   return {
-    skin: SKINS[parts.face as keyof typeof SKINS],
-    hair: HAIRS[parts.hair as keyof typeof HAIRS],
-    background: BACKGROUNDS[parts.background as keyof typeof BACKGROUNDS],
-    eyes: parts.eyes as Eyes,
-    mouth: parts.mouth as Mouth,
-    accessory: parts.accessory as Accessory,
+    skin: colour(SKINS, parts.face),
+    hair: colour(HAIRS, parts.hair),
+    background: colour(BACKGROUNDS, parts.background),
+    eyes: pick(EYES, parts.eyes) ?? EYES[0],
+    mouth: pick(MOUTHS, parts.mouth) ?? MOUTHS[0],
+    accessory: pick(ACCESSORIES, parts.accessory) ?? "none",
   };
 }

@@ -59,12 +59,20 @@ describe("Avatar", () => {
     expect(behind.indexOf("#D9A86C")).toBeLessThan(behind.indexOf("M44 210"));
   });
 
-  it("draws the whole standard face, as the app does, when any part id is unknown", () => {
+  it("falls back part by part, as the app draws another person's face: a part's default, and no accessory", () => {
     const chosen = { face: "brown", eyes: "happy", hair: "lapis", mouth: "grin", accessory: "crown", background: "mint" };
-    for (const bad of [{ face: "purple" }, { eyes: "sleepy" }, { hair: "rainbow" }, { mouth: "scream" }, { accessory: "wizard-hat" }, { background: "neon" }, { face: "constructor" }, { hair: "toString" }]) {
-      expect(render({ ...chosen, ...bad }), JSON.stringify(bad)).toBe(render(standard));
-    }
-    expect(render(chosen)).not.toBe(render(standard));
+    const unknown = { face: "purple", eyes: "sleepy", hair: "rainbow", mouth: "scream", accessory: "wizard-hat", background: "neon" };
+    expect(render(unknown)).toBe(render({ ...standard, accessory: "none" }));
+    // one unknown part changes only that part
+    expect(render({ ...chosen, accessory: "wizard-hat" })).toBe(render({ ...chosen, accessory: "none" }));
+    expect(render({ ...chosen, face: "purple" })).toBe(render({ ...chosen, face: "peach" }));
+    expect(render({ ...chosen, eyes: "sleepy" })).toBe(render({ ...chosen, eyes: "round" }));
+    expect(render({ ...chosen, hair: "rainbow" })).toBe(render({ ...chosen, hair: "dark" }));
+    expect(render({ ...chosen, mouth: "scream" })).toBe(render({ ...chosen, mouth: "smile" }));
+    expect(render({ ...chosen, background: "neon" })).toBe(render({ ...chosen, background: "sun" }));
+    expect(render({ ...chosen, accessory: "wizard-hat" })).toContain("#9C6A45"); // the rest stays as chosen
+    // names of the object prototype are not ids
+    expect(render({ ...standard, face: "constructor", hair: "toString" })).toBe(render(standard));
   });
 
   it("gives each face its own clip id, so several on a page don't share one", () => {
