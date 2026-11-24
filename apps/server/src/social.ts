@@ -1,5 +1,4 @@
-import { and, eq, or, type SQL, sql } from "drizzle-orm";
-import type { Column } from "drizzle-orm";
+import { and, eq, or, type SQL, type SQLWrapper, sql } from "drizzle-orm";
 import type { Db } from "./db/index.js";
 import { blocks } from "./db/schema.js";
 
@@ -17,5 +16,5 @@ export async function isBlocked(db: Db, a: string, b: string): Promise<boolean> 
 }
 
 /** A condition: nobody between `me` and the user in `other` has blocked the other. */
-export const notBlockedWith = (me: string, other: Column): SQL =>
+export const notBlockedWith = (me: string, other: SQLWrapper): SQL =>
   sql`not exists (select 1 from blocks bl where (bl.blocker_id = ${me} and bl.blocked_id = ${other}) or (bl.blocker_id = ${other} and bl.blocked_id = ${me}))`;

@@ -11,6 +11,7 @@ import type { Config } from "../src/config.js";
 import type { Db } from "../src/db/index.js";
 import * as schema from "../src/db/schema.js";
 import type { Deps } from "../src/deps.js";
+import { createHub } from "../src/hub.js";
 import type { UploadBudgets } from "../src/routes/feedback.js";
 
 export const BUNDLE_ID = "com.yebeyt.app";
@@ -77,6 +78,7 @@ export async function makeHarness(uploadBudgets?: UploadBudgets) {
   const deps: Deps = {
     config: await testConfig(),
     db,
+    hub: createHub(),
     now: () => clock.time,
     fetch: fetchMock,
     appleKeys: apple.keys,

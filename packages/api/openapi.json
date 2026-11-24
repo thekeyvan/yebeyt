@@ -766,6 +766,352 @@
           "createdAt"
         ]
       },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "other": {
+            "$ref": "#/components/schemas/ChatPerson"
+          }
+        },
+        "required": [
+          "id",
+          "other"
+        ]
+      },
+      "ChatPerson": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PersonShort"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "online": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Connected right now; null when they do not let others see it («آنلاین» off)."
+              }
+            },
+            "required": [
+              "online"
+            ]
+          }
+        ]
+      },
+      "OpenConversationRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "example": "hafez_fan"
+          }
+        },
+        "required": [
+          "username"
+        ]
+      },
+      "ConversationPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConversationListItem"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `cursor` for the next page; null on the last page."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "ConversationListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "other": {
+            "$ref": "#/components/schemas/ChatPerson"
+          },
+          "last": {
+            "$ref": "#/components/schemas/ConversationLast"
+          },
+          "unread": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "other",
+          "last",
+          "unread"
+        ]
+      },
+      "ConversationLast": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "couplet",
+              "system",
+              "game"
+            ]
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A couplet message's couplet key; the app shows its first hemistich."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fromMe": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "text",
+          "key",
+          "note",
+          "deleted",
+          "at",
+          "fromMe"
+        ]
+      },
+      "Unread": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total"
+        ]
+      },
+      "MessagePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "nextBefore": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `before` for older messages; null at the start of the chat."
+          },
+          "otherReadMessageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The last message the other person has read («دیده شد» up to it); null if none."
+          }
+        },
+        "required": [
+          "items",
+          "nextBefore",
+          "otherReadMessageId"
+        ]
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "couplet",
+              "system",
+              "game"
+            ]
+          },
+          "fromMe": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`text` messages only."
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 3,
+            "maxLength": 200,
+            "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+            "example": "/hafez/ghazal/sh3#0",
+            "description": "`couplet` messages only: the couplet to show."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`couplet` messages only: the optional note that came with it."
+          },
+          "payload": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {},
+            "description": "`system` and `game` messages: `{ event, ... }`, e.g. `{ event: \"divan_add\", key }`."
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "The sender deleted it; text, key, note and payload are then null."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "conversationId",
+          "kind",
+          "fromMe",
+          "text",
+          "key",
+          "note",
+          "payload",
+          "deleted",
+          "createdAt"
+        ]
+      },
+      "SendMessageRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "clientId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Made by the phone for each message; sending it again returns the same message, so a retry never doubles it."
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "text"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "clientId",
+              "kind",
+              "text"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "clientId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Made by the phone for each message; sending it again returns the same message, so a retry never doubles it."
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "couplet"
+                ]
+              },
+              "key": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 200,
+                "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+                "example": "/hafez/ghazal/sh3#0",
+                "description": "<poemPath>#<coupletIndex>"
+              },
+              "note": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "clientId",
+              "kind",
+              "key"
+            ]
+          }
+        ]
+      },
+      "MarkReadRequest": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "messageId"
+        ]
+      },
       "UserSearch": {
         "type": "object",
         "properties": {
@@ -3152,6 +3498,555 @@
           },
           "401": {
             "description": "Wrong or missing admin token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Open the chat with someone (made if it does not exist)",
+        "description": "Allowed when the other person takes messages from everyone («بهم پیام بده: همه»), or from friends and we are friends; otherwise 403 messages_closed. If either of us blocked the other, the person is not found (404). The chat shows in the list once it has a message.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenConversationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The chat.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: that is yourself.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required, or messages_closed: they do not take messages from me.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user with that username, or one of us blocked the other.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "My chats with the latest message and the unread count, newest first, 50 a page",
+        "description": "Only chats with at least one message, and not with someone blocked either way.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of chats.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A malformed cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required: set a username first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/unread": {
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "How many unread messages I have, for the tab badge",
+        "description": "The other people's messages after the last one I read, in all chats that nobody blocked. System lines and deleted messages do not count.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The total.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unread"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required: set a username first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{id}/messages": {
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Messages of a chat, newest first",
+        "description": "Only for the two people of the chat. 50 at most per page (`limit`); `before` is the `nextBefore` of the previous page.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "before",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of messages.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A malformed id, cursor or limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required: set a username first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such chat, or I am not in it, or one of us blocked the other.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Send a text or a couplet",
+        "description": "`kind` is `text` (`text`, 1–1000 characters) or `couplet` (`key` and an optional `note` of up to 200). Idempotent per sender and `clientId`: a repeat answers 200 with the first message. Blocks and «بهم پیام بده» are checked on every send (403 messages_closed). 30 messages a minute per user. Both people get a live `message` event.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "This client id was already sent; the first message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required, or messages_closed: blocked, or they do not take messages from me.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such chat, or I am not in it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict: the client id was used for a message in another chat.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many messages (30 a minute per user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{id}/read": {
+      "put": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Mark a chat as read up to a message",
+        "description": "Never moves backwards. The other person gets a live `read` event, which is their «دیده شد».",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkReadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Bad request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required: set a username first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such chat, or I am not in it, or the message is not in it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/messages/{id}": {
+      "delete": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Delete a message I sent",
+        "description": "Idempotent. The message stays in the chat as «deleted»; its text, couplet and note are removed. System lines cannot be deleted.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "400": {
+            "description": "A malformed id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden: not my message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such message, or I am not in its chat.",
             "content": {
               "application/json": {
                 "schema": {

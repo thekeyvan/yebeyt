@@ -20,7 +20,7 @@ const patchSchema = settingsSchema.partial().strict().openapi("PrivacyPatch");
 
 type Settings = z.infer<typeof settingsSchema>;
 
-const DEFAULTS: Settings = {
+export const PRIVACY_DEFAULTS: Settings = {
   keptVisibility: "friends",
   dailyVisibility: "friends",
   showOnline: true,
@@ -42,7 +42,7 @@ export function privacyRoutes(deps: Deps) {
 
   const load = async (userId: string): Promise<Settings> => {
     const [row] = await db.select().from(privacySettings).where(eq(privacySettings.userId, userId));
-    if (!row) return DEFAULTS;
+    if (!row) return PRIVACY_DEFAULTS;
     const { userId: _id, ...settings } = row;
     return settings;
   };
@@ -77,7 +77,7 @@ export function privacyRoutes(deps: Deps) {
       if (Object.keys(patch).length > 0) {
         await db
           .insert(privacySettings)
-          .values({ ...DEFAULTS, ...patch, userId })
+          .values({ ...PRIVACY_DEFAULTS, ...patch, userId })
           .onConflictDoUpdate({ target: privacySettings.userId, set: patch });
       }
       return c.json(await load(userId), 200);

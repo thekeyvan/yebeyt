@@ -4,6 +4,7 @@ import { createApp } from "./app.js";
 import { ConfigError, loadConfig } from "./config.js";
 import { connectAndMigrate } from "./db/connect.js";
 import type { Deps } from "./deps.js";
+import { createHub } from "./hub.js";
 
 async function main() {
   const config = await loadConfig(process.env);
@@ -11,6 +12,7 @@ async function main() {
   const deps: Deps = {
     config,
     db,
+    hub: createHub(),
     now: () => new Date(),
     fetch,
     appleKeys: createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys")),
