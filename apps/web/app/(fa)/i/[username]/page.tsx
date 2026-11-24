@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { LinkPage } from "../../../components/LinkPage";
-import { Missing, Unavailable } from "../../../components/Missing";
-import { getPublicUser } from "../../../lib/api";
-import { inviteView } from "../../../lib/links";
-import { lookup } from "../../../lib/lookup";
-import { lookupMetadata } from "../../../lib/pageMeta";
+import { LinkPage } from "../../../../components/LinkPage";
+import { Missing, Unavailable } from "../../../../components/Missing";
+import { getPublicUser } from "../../../../lib/api";
+import { inviteView } from "../../../../lib/links";
+import { lookup } from "../../../../lib/lookup";
+import { lookupMetadata } from "../../../../lib/pageMeta";
 
 type Props = { params: Promise<{ username: string }> };
 

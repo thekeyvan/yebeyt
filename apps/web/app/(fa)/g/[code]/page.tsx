@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { LinkPage } from "../../../components/LinkPage";
-import { Missing, Unavailable } from "../../../components/Missing";
-import { getPublicGame } from "../../../lib/api";
-import { gameView } from "../../../lib/links";
-import { lookup } from "../../../lib/lookup";
-import { lookupMetadata } from "../../../lib/pageMeta";
+import { LinkPage } from "../../../../components/LinkPage";
+import { Missing, Unavailable } from "../../../../components/Missing";
+import { getPublicGame } from "../../../../lib/api";
+import { gameView } from "../../../../lib/links";
+import { lookup } from "../../../../lib/lookup";
+import { lookupMetadata } from "../../../../lib/pageMeta";
 
 type Props = { params: Promise<{ code: string }> };
 

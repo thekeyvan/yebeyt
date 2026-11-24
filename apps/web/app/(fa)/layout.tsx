@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { SITE_URL } from "../lib/config";
-import "./tokens.css";
-import "./globals.css";
+import { SITE_URL } from "../../lib/config";
+import "../tokens.css";
+import "../globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

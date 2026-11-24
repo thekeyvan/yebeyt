@@ -10,6 +10,11 @@ describe("apple-app-site-association", () => {
     });
   });
 
+  it("claims only the link pages, never the English site", () => {
+    const paths = aasa.applinks.details.flatMap((d) => d.components.map((c) => c["/"]));
+    expect(paths).toEqual(["/c/*", "/i/*", "/g/*"]);
+  });
+
   it("is served as JSON, with no redirect", async () => {
     const res = GET();
     expect(res.status).toBe(200);
