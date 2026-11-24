@@ -36,8 +36,8 @@ function Persian() {
       <h2>با حساب (ورود با اپل یا گوگل)</h2>
       <p>حساب فقط وقتی لازمه که چیزی سرور بخواد: امتیاز و لیگ، دوست‌ها، پیام‌ها، همگام‌سازی دیوان. اگه وارد بشی، این‌ها روی سرور ما ذخیره می‌شه:</p>
       <ul>
-        <li>شناسه‌ای که اپل یا گوگل برای حسابت به ما می‌ده. ایمیلت رو ذخیره نمی‌کنیم و اسمت رو هم از اپل یا گوگل نمی‌خونیم. برای ورود با اپل، یه توکن رمزشده هم نگه می‌داریم که موقع پاک کردن حساب بتونیم ورودت با اپل رو باطل کنیم.</li>
-        <li>نام کاربری، اسمی که برای نمایش انتخاب کردی (اختیاریه) و چهره‌ای که ساختی.</li>
+        <li>شناسه‌ای که اپل یا گوگل برای حسابت به ما می‌ده. ایمیلت رو ذخیره نمی‌کنیم. اپ اسمی رو که اپل یا گوگل بهش می‌ده به‌عنوان پیشنهاد نشونت می‌ده، ولی فقط اسم نمایشی‌ای که خودت نگه می‌داری روی سرور ذخیره می‌شه. برای ورود با اپل، یه توکن رمزشده هم نگه می‌داریم که موقع پاک کردن حساب بتونیم ورودت با اپل رو باطل کنیم.</li>
+        <li>نام کاربری، اسمی که برای نمایش نگه داشتی (اختیاریه) و چهره‌ای که ساختی. این سه تا عمومی‌ان: هر کسی با لینک دعوتِ تو (yebeyt.com/i/…) اون‌ها رو می‌بینه، و روی صفحه‌ی لینک چالش یا بازی‌ای که می‌سازی هم به‌عنوان سازنده نشون داده می‌شن.</li>
         <li>نشانه‌های ورود (فقط یه رمزِ یک‌طرفه‌شده‌ی اون‌ها)، که هر چند وقت یه بار عوض می‌شن.</li>
       </ul>
 
@@ -66,7 +66,7 @@ function Persian() {
 
       <h2>چیزی که با سرویس‌های دیگه رد و بدل می‌شه</h2>
       <ul>
-        <li><b>گنجور</b> (ganjoor.net و داده‌ی عمومی‌ش روی jsDelivr): متن شعرهایی که داخل اپ نیستن و فایل صوتی خوانش‌ها از اونجا میاد. این درخواست‌ها هیچ اطلاعاتی از حسابت ندارن.</li>
+        <li><b>گنجور:</b> متن شعرهایی که داخل اپ نیستن از مخزن عمومی گنجور روی گیت‌هاب (raw.githubusercontent.com) میاد، و فایل صوتی خوانش‌ها از api.ganjoor.net. این درخواست‌ها هیچ اطلاعاتی از حسابت ندارن، ولی اون سرویس‌ها، مثل هر سایتی، آی‌پی و مرورگر درخواست‌دهنده رو می‌بینن.</li>
         <li><b>عکس شاعرها</b> از سرور خودمون میاد و هیچ اطلاعاتی از حسابت همراهش نیست.</li>
         <li><b>اپل و گوگل</b>: فقط وقتی خودت ورود با اون‌ها رو بزنی.</li>
       </ul>
@@ -75,7 +75,7 @@ function Persian() {
       <p>تبلیغی در کار نیست و هیچ ابزار ردیابی یا تحلیل رفتاری نداریم، نه توی اپ و نه توی این سایت. این سایت کوکی هم نمی‌ذاره.</p>
 
       <h2>آی‌پی و لاگ‌ها</h2>
-      <p>سرور ما از هر درخواست فقط روش، آدرسِ بخش، وضعیت و زمانش رو ثبت می‌کنه؛ نه آی‌پی، نه نام کاربری، نه چیزی از محتوا. آی‌پی هیچ‌جا کنار گزارش و بازخورد ذخیره نمی‌شه.</p>
+      <p>سرور ما از هر درخواست فقط روش، آدرسِ بخش، وضعیت و زمانش رو ثبت می‌کنه؛ نه آی‌پی، نه نام کاربری، نه چیزی از محتوا. آی‌پی هیچ‌جا کنار گزارش و بازخورد ذخیره نمی‌شه. میزبان ما (Railway) خودش، برای کارکرد شبکه، آی‌پی و مرورگر بازدیدکننده رو توی لاگ درخواست‌های خودش برای مدت کوتاهی می‌بینه.</p>
 
       <h2>لینک‌ها و کلیپ‌بورد</h2>
       <p>
@@ -87,7 +87,7 @@ function Persian() {
 
       <h2>پاک کردن حساب</h2>
       <p>
-        از اپ: من ← تنظیمات ← پاک کردن حساب. این کار ورودت با اپل رو باطل می‌کنه و اینا رو از سرور پاک می‌کنه: حسابت، دیوان، امتیازها و لیگ، دنبال‌کردن‌ها، پسندها و بازنشرها، بلاک‌ها، چالش‌هات و نتیجه‌هات روی چالش‌های دیگران، دیوان‌های مشترک، و همه‌ی چت‌هایی که توشون بودی با همه‌ی پیام‌هاشون (طرف مقابل هم اون چت رو از دست می‌ده). بازی‌ای که منتظر نفر دوم بود پاک می‌شه و بازی در جریان با برد حریفت تموم می‌شه. چیزهایی که می‌مونن: گزارش‌هایی که دادی یا درباره‌ات دادن، و بازخوردهات؛ بدون اتصال به حسابت.
+        از اپ: من ← تنظیمات ← پاک کردن حساب. این کار ورودت با اپل رو باطل می‌کنه و اینا رو از سرور پاک می‌کنه: حسابت، دیوان، امتیازها و لیگ، دنبال‌کردن‌ها، پسندها و بازنشرها، بلاک‌ها، چالش‌هات و نتیجه‌هات روی چالش‌های دیگران، دیوان‌های مشترک، و همه‌ی چت‌هایی که توشون بودی با همه‌ی پیام‌هاشون (طرف مقابل هم اون چت رو از دست می‌ده). بازی‌ای که منتظر نفر دوم بود پاک می‌شه و بازی در جریان با برد حریفت تموم می‌شه. بازی‌های تموم‌شده برای حریفت می‌مونن، ولی بیت‌هایی که تو گفتی دیگه به تو وصل نیستن. چیزهایی که می‌مونن: گزارش‌هایی که دادی یا درباره‌ات دادن، و بازخوردهات؛ بدون اتصال به حسابت.
       </p>
       <p>
         اگه نمی‌تونی از اپ پاک کنی، به <a href="mailto:hello@yebeyt.com">hello@yebeyt.com</a> ایمیل بزن و نام کاربریت رو بنویس.
@@ -120,8 +120,8 @@ function English() {
       <h2>With an account (Sign in with Apple or Google)</h2>
       <p>An account is needed only for what has a server behind it: points and leagues, friends, messages, syncing your divan. If you sign in, we store this on our server:</p>
       <ul>
-        <li>The identifier Apple or Google gives us for your account. We do not store your email address, and we do not read your name from Apple or Google. For Sign in with Apple we also keep an encrypted token so we can revoke the sign-in when you delete your account.</li>
-        <li>Your username, the display name you chose (optional) and the face you built.</li>
+        <li>The identifier Apple or Google gives us for your account. We do not store your email address. The app shows you the name Apple or Google gives it as a suggestion, but only the display name you keep is stored on our server. For Sign in with Apple we also keep an encrypted token so we can revoke the sign-in when you delete your account.</li>
+        <li>Your username, the display name you kept (optional) and the face you built. These three are public: anyone with your invite link (yebeyt.com/i/…) can see them, and they are shown as the maker on the page of a challenge or game link you create.</li>
         <li>Sign-in tokens (only a one-way hash of them), which are replaced regularly.</li>
       </ul>
 
@@ -150,7 +150,7 @@ function English() {
 
       <h2>What passes through other services</h2>
       <ul>
-        <li><b>Ganjoor</b> (ganjoor.net and its public data on jsDelivr): the text of poems that are not bundled, and the recitation audio. These requests carry no account information.</li>
+        <li><b>Ganjoor:</b> the text of poems that are not bundled comes from Ganjoor&apos;s public repository on GitHub (raw.githubusercontent.com), and the recitation audio from api.ganjoor.net. These requests carry no account information, but those services, like any website, see the IP address and browser of whoever asks.</li>
         <li><b>Poets' pictures</b> come from our own server and carry no account information.</li>
         <li><b>Apple and Google:</b> only when you choose to sign in with them.</li>
       </ul>
@@ -159,7 +159,7 @@ function English() {
       <p>There are no ads and we use no tracking or analytics tools, neither in the app nor on this website. This website sets no cookies.</p>
 
       <h2>IP addresses and logs</h2>
-      <p>For every request our server logs only the method, the route, the status and the time; no IP address, no username, no content. An IP address is never stored with a report or with feedback.</p>
+      <p>For every request our server logs only the method, the route, the status and the time; no IP address, no username, no content. An IP address is never stored with a report or with feedback. Our host (Railway) itself sees the visitor&apos;s IP address and browser in its own request logs for a short time, as part of running the network.</p>
 
       <h2>Links and the clipboard</h2>
       <p>
@@ -171,7 +171,7 @@ function English() {
 
       <h2>Deleting your account</h2>
       <p>
-        In the app: Me → Settings → Delete account. This revokes your Sign in with Apple and deletes from our server: your account, divan, points and league places, follows, likes and reposts, blocks, your challenges and your results on other people's challenges, shared divans, and every chat you were in with all its messages (the other person loses that chat too). A game waiting for a second player is deleted, and a game in progress ends with your opponent as the winner. What stays: reports you filed or that name you, and your feedback; neither is linked to your account any more.
+        In the app: Me → Settings → Delete account. This revokes your Sign in with Apple and deletes from our server: your account, divan, points and league places, follows, likes and reposts, blocks, your challenges and your results on other people's challenges, shared divans, and every chat you were in with all its messages (the other person loses that chat too). A game waiting for a second player is deleted, and a game in progress ends with your opponent as the winner. Finished games stay for your opponent, but the couplets you played are no longer linked to you. What stays: reports you filed or that name you, and your feedback; neither is linked to your account any more.
       </p>
       <p>
         If you cannot delete it from the app, email <a href="mailto:hello@yebeyt.com">hello@yebeyt.com</a> with your username.

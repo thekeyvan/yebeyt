@@ -9,6 +9,8 @@ export const APP_STORE_ID = "";
 export const APP_STORE_URL = APP_STORE_ID ? `https://apps.apple.com/app/id${APP_STORE_ID}` : "https://apps.apple.com/search?term=yebeyt";
 
 export const APP_CLIP_BUNDLE_ID = "com.yebeyt.app.Clip";
+/** TODO(owner): set to true when the App Clip is in App Store Connect; until then the link pages leave out «همین‌جا بازی کن». */
+export const APP_CLIP_READY = false;
 
 /** The backend. Until api.yebeyt.com answers (DNS), the Railway address of the server. */
 export const DEFAULT_API_URL = "https://server-production-98f46b7e.up.railway.app";

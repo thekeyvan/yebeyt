@@ -2,6 +2,6 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "../lib/config";
 
 export default function robots(): MetadataRoute.Robots {
-  // The link pages are for one person each; keep them out of search results.
-  return { rules: { userAgent: "*", allow: "/", disallow: ["/c/", "/i/", "/g/"] }, host: SITE_URL };
+  // The link pages are kept out of search results by their own noindex tag; a crawler must be allowed in to read it.
+  return { rules: { userAgent: "*", allow: "/" }, host: SITE_URL };
 }

@@ -6618,7 +6618,7 @@
             }
           },
           "429": {
-            "description": "rate_limited: 600 lookups a minute for the whole server, both endpoints together.",
+            "description": "rate_limited: 1200 lookups a minute for the whole server, both endpoints together.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6683,7 +6683,7 @@
             }
           },
           "429": {
-            "description": "rate_limited: 600 lookups a minute for the whole server, both endpoints together.",
+            "description": "rate_limited: 1200 lookups a minute for the whole server, both endpoints together.",
             "content": {
               "application/json": {
                 "schema": {

@@ -3,10 +3,11 @@ import { CodeLine } from "./CodeLine";
 import { Face } from "./Face";
 import { SiteFooter } from "./SiteFooter";
 import { StoreButton } from "./StoreButton";
+import { APP_CLIP_READY } from "../lib/config";
 import type { ChallengeView, LinkView } from "../lib/links";
 
 /** The page of /c, /i and /g (the ChallengeWeb board): who sent it, what it is, the two buttons and the code. */
-export function LinkPage({ view }: { view: LinkView | ChallengeView }) {
+export function LinkPage({ view, appClip = APP_CLIP_READY }: { view: LinkView | ChallengeView; appClip?: boolean }) {
   const versus = "mine" in view ? view : null;
   return (
     <div className="page">
@@ -38,10 +39,14 @@ export function LinkPage({ view }: { view: LinkView | ChallengeView }) {
           <h1>{view.heading}</h1>
           <p>{view.description}</p>
         </div>
-        <a className="button primary" href={view.url}>
-          همین‌جا بازی کن
-        </a>
-        <p className="note">بدون نصب؛ چند ثانیه طول می‌کشه</p>
+        {appClip && (
+          <>
+            <a className="button primary" href={view.url}>
+              همین‌جا بازی کن
+            </a>
+            <p className="note">بدون نصب؛ چند ثانیه طول می‌کشه</p>
+          </>
+        )}
         <StoreButton pageUrl={view.url} />
         <p className="after">
           {view.after}

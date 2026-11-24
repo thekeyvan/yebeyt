@@ -20,8 +20,8 @@ export function publicRoutes(deps: Deps) {
   const app = newRouter();
   const { db } = deps;
   // One bucket for the whole server: the callers are anonymous.
-  const lookups = createRateLimiter(600, 60_000, deps.now);
-  const limited = errorResponse("rate_limited: 600 lookups a minute for the whole server, both endpoints together.");
+  const lookups = createRateLimiter(1200, 60_000, deps.now);
+  const limited = errorResponse("rate_limited: 1200 lookups a minute for the whole server, both endpoints together.");
 
   app.openapi(
     createRoute({

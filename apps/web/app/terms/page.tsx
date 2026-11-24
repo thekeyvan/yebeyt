@@ -20,7 +20,7 @@ function Persian() {
       <p className="muted">آخرین به‌روزرسانی: ۳ آذر ۱۴۰۵</p>
       <p>یه بیت رایگانه و برای لذت بردن از شعر فارسی ساخته شده. با استفاده از اپ این‌ها رو می‌پذیری:</p>
       <ul>
-        <li><b>محتوا:</b> شعرها از کتابخانه‌ی آزاد گنجور میان. معنی‌ها (به‌خصوص اون‌هایی که ستاره‌ی کوچیک دارن) با کمک هوش مصنوعی نوشته شدن و ممکنه اشتباه داشته باشن؛ برای کار علمی به منابع معتبر مراجعه کن.</li>
+        <li><b>محتوا:</b> شعرها از کتابخانه‌ی آزاد گنجور میان. معنی‌ها (به‌خصوص اون‌هایی که نشونه‌ی ✦ دارن) با کمک هوش مصنوعی نوشته شدن و ممکنه اشتباه داشته باشن؛ برای کار علمی به منابع معتبر مراجعه کن.</li>
         <li><b>حساب:</b> ساختن حساب اختیاریه. مسئول امنیت حساب اپل یا گوگلِ خودت هستی. هر وقت بخوای می‌تونی حسابت رو از داخل اپ پاک کنی.</li>
         <li><b>چیزی که خودت می‌نویسی:</b> پیام‌ها، یادداشتِ کنار بیت‌ها، اسم نمایشی و نام کاربری مال خودتن و مسئولشون هم خودتی. توهین، آزار، تهدید، تبلیغ و پیام‌های تکراری و مزاحم ممنوعه. از اسم یا عکس یا نام کاربری دیگران هم نمی‌تونی استفاده کنی.</li>
         <li><b>گزارش و برخورد:</b> هر کسی می‌تونه آدم یا پیامی رو بلاک یا گزارش کنه. گزارش‌ها رو بررسی می‌کنیم و می‌تونیم محتوایی رو پاک کنیم، یه حساب رو محدود یا مسدود کنیم، یا نام کاربری‌ای رو پس بگیریم؛ بیشتر وقت‌ها بدون هشدار قبلی، اگه لازم باشه.</li>
@@ -41,7 +41,7 @@ function English() {
       <p className="muted">Last updated: 24 November 2026</p>
       <p>yebeyt is free and made for enjoying Persian poetry. By using the app you agree to the following:</p>
       <ul>
-        <li><b>Content:</b> poems come from Ganjoor&apos;s open library. Meanings (especially those marked with a small sparkle) were written with AI help and may contain mistakes; use authoritative sources for scholarly work.</li>
+        <li><b>Content:</b> poems come from Ganjoor&apos;s open library. Meanings (especially those marked with ✦) were written with AI help and may contain mistakes; use authoritative sources for scholarly work.</li>
         <li><b>Accounts:</b> an account is optional. You are responsible for the security of your Apple or Google account. You can delete your yebeyt account from inside the app at any time.</li>
         <li><b>What you write:</b> messages, notes beside couplets, your display name and username are yours, and you are responsible for them. Abuse, harassment, threats, advertising, and repeated or unwanted messages are not allowed. You may not use another person&apos;s name, picture or username.</li>
         <li><b>Reports and enforcement:</b> anyone can block or report a person or a message. We review reports, and we may remove content, limit or block an account, or take back a username, in most cases without warning if needed.</li>

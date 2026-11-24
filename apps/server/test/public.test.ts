@@ -65,9 +65,9 @@ describe("GET /v1/public/games/{code}", () => {
 });
 
 describe("rate limit", () => {
-  it("lets both lookups together take 600 a minute, then 429, and starts again the next minute", async () => {
+  it("lets both lookups together take 1200 a minute, then 429, and starts again the next minute", async () => {
     await h.signUp("ali");
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 600; i++) {
       expect((await get("/v1/public/users/ali")).status).toBe(200);
       expect((await get("/v1/public/games/ZZZZ")).status).toBe(404);
     }

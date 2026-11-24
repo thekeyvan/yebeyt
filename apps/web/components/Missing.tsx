@@ -1,7 +1,8 @@
 import { Brand } from "./Brand";
 import { SiteFooter } from "./SiteFooter";
+import { UNAVAILABLE_TITLE } from "../lib/pageMeta";
 
-/** The friendly page of a link that leads nowhere. Rendered with status 404 by the pages' not-found files. */
+/** The friendly page of a link that leads nowhere. */
 export function Missing({ title, hint }: { title: string; hint: string }) {
   return (
     <div className="page">
@@ -19,3 +20,6 @@ export function Missing({ title, hint }: { title: string; hint: string }) {
     </div>
   );
 }
+
+/** What a link page shows when the server did not answer. */
+export const Unavailable = () => <Missing title={UNAVAILABLE_TITLE} hint="چند لحظه‌ی دیگه دوباره امتحان کن." />;

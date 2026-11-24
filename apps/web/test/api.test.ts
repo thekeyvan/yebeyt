@@ -46,4 +46,25 @@ describe("the api calls of the link pages", () => {
     expect(await getPublicUser("x".repeat(65))).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("asks for a good answer to be kept for 60 seconds, to spare the server", async () => {
+    const fetchMock = respond(200, {});
+    vi.stubGlobal("fetch", fetchMock);
+    await getChallenge("7KQ2");
+    expect(fetchMock.mock.calls[0]![1]).toMatchObject({ next: { revalidate: 60 } });
+  });
+
+  it("gives up after 5 seconds, so a slow server shows the error page instead of hanging", async () => {
+    const abort = new AbortController();
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(abort.signal);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>((_url, init) => new Promise((_resolve, reject) => init!.signal!.addEventListener("abort", () => reject(new DOMException("timed out", "TimeoutError"))))),
+    );
+    const call = getChallenge("7KQ2");
+    expect(timeout).toHaveBeenCalledWith(5000);
+    abort.abort();
+    await expect(call).rejects.toThrow("timed out");
+    timeout.mockRestore();
+  });
 });
