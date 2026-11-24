@@ -27,6 +27,13 @@ export const ERROR_CODES = [
   "upload_timeout",
   "internal_error",
   "unavailable",
+  "bad_couplet",
+  "wrong_letter",
+  "already_played",
+  "not_your_turn",
+  "turn_over",
+  "game_full",
+  "game_not_active",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

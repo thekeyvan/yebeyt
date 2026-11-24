@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
-import { dailyResults, GAMES, privacySettings, scoreEvents, users } from "../db/schema.js";
+import { dailyResults, privacySettings, scoreEvents, SOLO_GAMES, users } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { joinLeague, leagueOf, nextTierOf } from "../leagues.js";
@@ -20,7 +20,7 @@ const dateSchema = z.string().refine(isRealDate).openapi({ example: "2026-06-01"
 const scoreBodySchema = z
   .strictObject({
     roundId: z.uuid().openapi({ description: "Made by the phone for each round; sending it again does not count twice." }),
-    game: z.enum(GAMES),
+    game: z.enum(SOLO_GAMES),
     points: z.number().int().min(0).max(100_000),
     playedAt: z.iso.datetime({ offset: true }),
   })

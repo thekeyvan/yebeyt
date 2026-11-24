@@ -15,6 +15,7 @@ import { feedRoutes } from "./routes/feed.js";
 import { feedbackRoutes, type UploadBudgets } from "./routes/feedback.js";
 import { feedbackAdminRoutes } from "./routes/feedbackAdmin.js";
 import { followRoutes } from "./routes/follows.js";
+import { gameRoutes } from "./routes/games.js";
 import { healthRoutes } from "./routes/health.js";
 import { leaderboardRoutes } from "./routes/leaderboards.js";
 import { meRoutes } from "./routes/me.js";
@@ -60,11 +61,11 @@ export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
   app.use("/v1/me/*", user);
   app.use("/v1/usernames/*", user);
   for (const path of ["/v1/follows/*", "/v1/users/*", "/v1/scores", "/v1/daily", "/v1/daily/*", "/v1/leaderboard/*", "/v1/reactions/*", "/v1/feed"]) app.use(path, user);
-  // Messages, blocks, reports and shared divans are for people with a username.
-  const messaging = ["/v1/blocks/*", "/v1/reports", "/v1/conversations", "/v1/conversations/*", "/v1/messages/*", "/v1/shared-divans", "/v1/shared-divans/*"];
+  // Messages, blocks, reports, shared divans and games with friends are for people with a username.
+  const messaging = ["/v1/blocks/*", "/v1/reports", "/v1/conversations", "/v1/conversations/*", "/v1/messages/*", "/v1/shared-divans", "/v1/shared-divans/*", "/v1/games", "/v1/games/*"];
   for (const path of messaging) app.use(path, user);
   const named = requireUsername(deps);
-  for (const path of [...messaging, "/v1/me/blocks", "/v1/me/unread"]) app.use(path, named);
+  for (const path of [...messaging, "/v1/me/blocks", "/v1/me/unread", "/v1/me/games"]) app.use(path, named);
   // The first request of a new week closes the leagues of the weeks before it (see src/leagues.ts), before anything reads tiers or standings.
   const closeWeeks = createWeekCloser(deps);
   const afterClose = createMiddleware(async (_c, next) => {
@@ -85,6 +86,7 @@ export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
   app.route("/", conversationRoutes(deps));
   app.route("/", messageRoutes(deps));
   app.route("/", sharedDivanRoutes(deps));
+  app.route("/", gameRoutes(deps));
   app.route("/", peopleRoutes(deps));
   app.route("/", reactionRoutes(deps));
   app.route("/", scoreRoutes(deps));

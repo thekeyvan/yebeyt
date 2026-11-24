@@ -171,7 +171,10 @@ export const follows = pgTable(
   ],
 );
 
-export const GAMES = ["daily", "jigsaw", "poet", "second", "book", "match", "listen", "onboarding"] as const;
+/** The games the phone reports its own rounds of (`POST /v1/scores`). */
+export const SOLO_GAMES = ["daily", "jigsaw", "poet", "second", "book", "match", "listen", "onboarding"] as const;
+/** Every game that scores: the solo ones, and the two with a friend, which the server records itself when the game ends. */
+export const GAMES = [...SOLO_GAMES, "mosh", "duel"] as const;
 export type Game = (typeof GAMES)[number];
 
 /** One finished round, reported by the phone. `id` is the round id the phone made, so a retry cannot count twice. `week` is the Tehran week the server received it in. */
@@ -396,4 +399,71 @@ export const sharedDivanLikes = pgTable(
     userId: userRef("user_id"),
   },
   (t) => [primaryKey({ columns: [t.itemId, t.userId] })],
+);
+
+export const FRIEND_GAME_KINDS = ["mosh", "duel"] as const;
+export type FriendGameKind = (typeof FRIEND_GAME_KINDS)[number];
+
+/** One round of بازی رودررو, kept when the game ends: the deck couplet it asked about and who won the round. */
+export type DuelRound = { round: number; type: "second" | "poet" | "book"; key: string; winnerId: string | null };
+
+/**
+ * A game with a friend: مشاعره (`mosh`, turns of `turnSeconds`) or بازی رودررو (`duel`, live). It waits for a second player,
+ * is active while played and done when it ends (`winnerId` null when nobody won). A turn's deadline is `turnStartedAt` + `turnSeconds`.
+ * `createdBy` and `winnerId` become null when that account is deleted. `rounds` is for a finished duel.
+ */
+export const games = pgTable(
+  "games",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    kind: text("kind", { enum: FRIEND_GAME_KINDS }).notNull(),
+    turnSeconds: integer("turn_seconds").notNull(),
+    status: text("status", { enum: ["waiting", "active", "done"] }).notNull().default("waiting"),
+    code: text("code").notNull().unique(),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+    startedAt: timestamptz("started_at"),
+    turnStartedAt: timestamptz("turn_started_at"),
+    endedAt: timestamptz("ended_at"),
+    winnerId: uuid("winner_id").references(() => users.id, { onDelete: "set null" }),
+    endReason: text("end_reason", { enum: ["timeout", "resigned", "left", "finished"] }),
+    rounds: jsonb("rounds").$type<DuelRound[]>(),
+  },
+  (t) => [
+    check("games_turn_seconds", sql`${t.turnSeconds} in (8, 30, 120, 86400)`),
+    index("games_active_deadline").on(t.status, t.kind),
+  ],
+);
+
+/** The two players of a game; seat 0 is the one who made it. Deleting an account removes its rows. */
+export const gamePlayers = pgTable(
+  "game_players",
+  {
+    gameId: uuid("game_id").notNull().references(() => games.id, { onDelete: "cascade" }),
+    userId: userRef("user_id"),
+    seat: integer("seat").notNull(),
+    score: integer("score").notNull().default(0),
+    joinedAt: timestamptz("joined_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.gameId, t.userId] }),
+    unique("game_players_seat").on(t.gameId, t.seat),
+    check("game_players_seat_range", sql`${t.seat} in (0, 1)`),
+    index("game_players_user").on(t.userId),
+  ],
+);
+
+/** A couplet played in a مشاعره game, in turn order (`n` from 1). `m1` and `m2` are Ganjoor's text for `key`. */
+export const moshMoves = pgTable(
+  "mosh_moves",
+  {
+    gameId: uuid("game_id").notNull().references(() => games.id, { onDelete: "cascade" }),
+    n: integer("n").notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    key: text("key").notNull(),
+    m1: text("m1").notNull(),
+    m2: text("m2").notNull(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.gameId, t.n] }), unique("mosh_moves_key").on(t.gameId, t.key)],
 );

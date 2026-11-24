@@ -12,6 +12,8 @@ export const GAME_CAPS: Record<Game, number> = {
   match: 50,
   listen: 100,
   onboarding: 50,
+  mosh: 400,
+  duel: 150,
 };
 
 /** The points and last score time of some users in one week: one aggregate over the (week, user) index. `who` limits the users. */
