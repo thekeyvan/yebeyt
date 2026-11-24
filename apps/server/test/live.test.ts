@@ -1,5 +1,7 @@
+import { SignJWT } from "jose";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
+import { MAX_SOCKETS_PER_USER } from "../src/hub.js";
 import { startServer, type RunningServer } from "../src/server.js";
 import { makeHarness, type Harness } from "./helpers.js";
 
@@ -66,6 +68,12 @@ const chat = async (a: User, b: User) => {
   const id = ((await (await h.request("/v1/conversations", { method: "POST", token: a.token, json: { username: b.username } })).json()) as { id: string }).id;
   return id;
 };
+/** A friends' chat with one message in it, so the two see each other's presence. */
+const talk = async (a: User, b: User) => {
+  const id = await chat(a, b);
+  await h.request(`/v1/conversations/${id}/messages`, { method: "POST", token: a.token, json: { clientId: crypto.randomUUID(), kind: "text", text: "hi" } });
+  return id;
+};
 
 describe("GET /v1/live", () => {
   it("accepts an access token as the first message and answers ready", async () => {
@@ -107,7 +115,7 @@ describe("GET /v1/live", () => {
     const id = await chat(ali, sara);
     const toSara = await live(sara);
     const toAli = await live(ali);
-    expect(await toSara.next()).toEqual({ type: "presence", username: "ali", online: true });
+    await toSara.quiet(); // a chat with no message yet shows no presence
     await h.request(`/v1/conversations/${id}/messages`, { method: "POST", token: ali.token, json: { clientId: crypto.randomUUID(), kind: "text", text: "salam" } });
     expect(await toSara.next()).toMatchObject({ type: "message", message: { conversationId: id, kind: "text", text: "salam", fromMe: false } });
     expect(await toAli.next()).toMatchObject({ type: "message", message: { text: "salam", fromMe: true } });
@@ -121,13 +129,13 @@ describe("GET /v1/live", () => {
     const sent = (await (await h.request(`/v1/conversations/${id}/messages`, { method: "POST", token: ali.token, json: { clientId: crypto.randomUUID(), kind: "text", text: "hi" } })).json()) as { id: string };
     await toAli.next(); // my own message
     await h.request(`/v1/conversations/${id}/read`, { method: "PUT", token: sara.token, json: { messageId: sent.id } });
-    expect(await toAli.next()).toEqual({ type: "read", conversationId: id, userId: sara.id, messageId: sent.id });
+    expect(await toAli.next()).toEqual({ type: "read", conversationId: id, username: "sara", messageId: sent.id });
   });
 
   it("tells people I chat with when I come online and go offline", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara");
-    await chat(ali, sara);
+    await talk(ali, sara);
     const toAli = await live(ali);
     const first = await live(sara);
     expect(await toAli.next()).toEqual({ type: "presence", username: "sara", online: true });
@@ -143,8 +151,8 @@ describe("GET /v1/live", () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara");
     const omid = await h.signUp("omid");
-    await chat(ali, sara);
-    await chat(ali, omid);
+    await talk(ali, sara);
+    await talk(ali, omid);
     await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { showOnline: false } });
     const stranger = await h.signUp("stranger");
     const toAli = await live(ali);
@@ -158,6 +166,44 @@ describe("GET /v1/live", () => {
     await h.request("/v1/blocks/omid", { method: "PUT", token: ali.token });
     await live(omid);
     await toAli.quiet();
+  });
+
+  it("tells watchers I went offline when I turn «آنلاین» off while connected", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    await talk(ali, sara);
+    const toAli = await live(ali);
+    await live(sara);
+    expect(await toAli.next()).toEqual({ type: "presence", username: "sara", online: true });
+    await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { showOnline: false } });
+    expect(await toAli.next()).toEqual({ type: "presence", username: "sara", online: false });
+  });
+
+  it("closes the socket when the access token expires", async () => {
+    const ali = await h.signUp("ali");
+    const iat = Math.floor(h.clock.time.getTime() / 1000);
+    const short = await new SignJWT({}).setProtectedHeader({ alg: "HS256" }).setSubject(ali.id).setIssuer("yebeyt").setIssuedAt(iat).setExpirationTime(iat + 1).sign(new TextEncoder().encode(h.deps.config.jwtSecret));
+    const c = await live({ ...ali, token: short });
+    expect(await c.closed).toBe(4401);
+    await waitFor(() => !h.deps.hub.isOnline(ali.id));
+  });
+
+  it("closes a frame over 4 KB", async () => {
+    const ali = await h.signUp("ali");
+    const c = connect();
+    await c.opened;
+    c.send({ type: "auth", token: ali.token, padding: "x".repeat(5000) });
+    expect(await c.closed).toBe(1009);
+  });
+
+  it("keeps 5 sockets per user and closes the oldest", async () => {
+    const ali = await h.signUp("ali");
+    const all = [];
+    for (let i = 0; i < MAX_SOCKETS_PER_USER + 1; i++) all.push(await live(ali));
+    expect(await all[0]!.closed).toBe(4409);
+    await new Promise((r) => setTimeout(r, 100));
+    expect(all.slice(1).every((c) => c.ws.readyState === WebSocket.OPEN)).toBe(true);
+    expect(h.deps.hub.isOnline(ali.id)).toBe(true);
   });
 
   it("pings, and drops a socket that does not answer", async () => {

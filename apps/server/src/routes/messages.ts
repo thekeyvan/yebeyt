@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 import { isUniqueViolation } from "../db/index.js";
-import { conversationReads, conversations, messages } from "../db/schema.js";
+import { conversationReads, conversations, messages, users } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { findConversation, MESSAGE_MAX, mayMessage, messageSchema, messageView, NOTE_MAX, publishMessage } from "../messaging.js";
@@ -100,7 +100,7 @@ export function messageRoutes(deps: Deps) {
       summary: "Send a text or a couplet",
       description:
         "`kind` is `text` (`text`, 1–1000 characters) or `couplet` (`key` and an optional `note` of up to 200). Idempotent per sender and `clientId`: a repeat answers 200 with the first message. " +
-        "Blocks and «بهم پیام بده» are checked on every send (403 messages_closed). 30 messages a minute per user. Both people get a live `message` event.",
+        "Blocks and «بهم پیام بده» are checked on every send (403 messages_closed); answering a person who already wrote in the chat is always allowed, unless blocked. 30 messages a minute per user. Both people get a live `message` event.",
       security,
       request: { params: idParam, body: { required: true, content: { "application/json": { schema: sendSchema } } } },
       responses: {
@@ -127,7 +127,7 @@ export function messageRoutes(deps: Deps) {
       };
       const before = await existing();
       if (before) return c.json(messageView(before, me), 200);
-      if (!(await mayMessage(db, me, conversation.otherId))) throw new ApiError(403, "messages_closed");
+      if (!(await mayMessage(db, me, conversation.otherId, conversation.id))) throw new ApiError(403, "messages_closed");
       let row;
       try {
         [row] = await db
@@ -158,7 +158,7 @@ export function messageRoutes(deps: Deps) {
       path: "/v1/conversations/{id}/read",
       tags: ["messages"],
       summary: "Mark a chat as read up to a message",
-      description: "Never moves backwards. The other person gets a live `read` event, which is their «دیده شد».",
+      description: "Never moves backwards. The other person gets a live `read` event (with my username) when the mark moved, which is their «دیده شد».",
       security,
       request: { params: idParam, body: { required: true, content: { "application/json": { schema: z.object({ messageId: z.uuid() }).openapi("MarkReadRequest") } } } },
       responses: {
@@ -178,19 +178,20 @@ export function messageRoutes(deps: Deps) {
         .from(messages)
         .where(and(eq(messages.id, messageId), eq(messages.conversationId, conversation.id)));
       if (!message) throw new ApiError(404, "not_found");
-      const [current] = await db
-        .select({ createdAt: messages.createdAt, id: messages.id })
-        .from(conversationReads)
-        .innerJoin(messages, eq(messages.id, conversationReads.lastReadMessageId))
-        .where(and(eq(conversationReads.conversationId, conversation.id), eq(conversationReads.userId, me)));
-      const newer = !current || message.createdAt > current.createdAt || (message.createdAt.getTime() === current.createdAt.getTime() && message.id > current.id);
-      if (newer) {
-        const values = { lastReadMessageId: message.id, lastReadAt: deps.now() };
-        await db
-          .insert(conversationReads)
-          .values({ conversationId: conversation.id, userId: me, ...values })
-          .onConflictDoUpdate({ target: [conversationReads.conversationId, conversationReads.userId], set: values });
-        deps.hub.publish(conversation.otherId, { type: "read", conversationId: conversation.id, userId: me, messageId: message.id });
+      // The mark only advances: the update applies when the new message is later than the one marked now.
+      const values = { lastReadMessageId: message.id, lastReadAt: deps.now() };
+      const advanced = await db
+        .insert(conversationReads)
+        .values({ conversationId: conversation.id, userId: me, ...values })
+        .onConflictDoUpdate({
+          target: [conversationReads.conversationId, conversationReads.userId],
+          set: values,
+          setWhere: sql`(select (r.created_at, r.id) from messages r where r.id = ${conversationReads.lastReadMessageId}) < (${message.createdAt.toISOString()}::timestamptz, ${message.id}::uuid)`,
+        })
+        .returning({ id: conversationReads.lastReadMessageId });
+      if (advanced.length > 0) {
+        const [reader] = await db.select({ username: users.username }).from(users).where(eq(users.id, me));
+        deps.hub.publish(conversation.otherId, { type: "read", conversationId: conversation.id, username: reader!.username, messageId: message.id });
       }
       return c.body(null, 204);
     },
@@ -202,7 +203,7 @@ export function messageRoutes(deps: Deps) {
       path: "/v1/messages/{id}",
       tags: ["messages"],
       summary: "Delete a message I sent",
-      description: "Idempotent. The message stays in the chat as «deleted»; its text, couplet and note are removed. System lines cannot be deleted.",
+      description: "Idempotent. The message stays in the chat as «deleted»; its text, couplet and note are removed. System lines cannot be deleted. Both people get a live `deleted` event.",
       security,
       request: { params: idParam },
       responses: {
@@ -216,7 +217,7 @@ export function messageRoutes(deps: Deps) {
     async (c) => {
       const me = c.get("userId");
       const [row] = await db
-        .select({ message: messages })
+        .select({ message: messages, otherId: sql<string>`case when ${conversations.userLow} = ${me} then ${conversations.userHigh} else ${conversations.userLow} end` })
         .from(messages)
         .innerJoin(conversations, eq(conversations.id, messages.conversationId))
         .where(and(eq(messages.id, c.req.valid("param").id), or(eq(conversations.userLow, me), eq(conversations.userHigh, me))));
@@ -224,6 +225,9 @@ export function messageRoutes(deps: Deps) {
       if (row.message.senderId !== me) throw new ApiError(403, "forbidden");
       if (!row.message.deletedAt) {
         await db.update(messages).set({ deletedAt: deps.now(), text: null, coupletKey: null, note: null, payload: null }).where(eq(messages.id, row.message.id));
+        const event = { type: "deleted", conversationId: row.message.conversationId, messageId: row.message.id } as const;
+        deps.hub.publish(me, event);
+        deps.hub.publish(row.otherId, event);
       }
       return c.body(null, 204);
     },

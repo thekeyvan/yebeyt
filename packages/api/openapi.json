@@ -684,7 +684,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Null after the reported person deleted their account."
           },
           "reason": {
             "type": "string",
@@ -707,8 +708,12 @@
             ],
             "properties": {
               "id": {
-                "type": "string",
-                "format": "uuid"
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "Null once the message is gone for good (its sender deleted their account)."
               },
               "kind": {
                 "type": "string",
@@ -749,7 +754,7 @@
               "note",
               "deleted"
             ],
-            "description": "The reported message; null when the report is of the person, or the message is gone."
+            "description": "The reported message as it was when reported; null when the report is of the person. `deleted` is true when it has been deleted since."
           },
           "createdAt": {
             "type": "string",
@@ -3966,7 +3971,7 @@
           "messages"
         ],
         "summary": "Send a text or a couplet",
-        "description": "`kind` is `text` (`text`, 1–1000 characters) or `couplet` (`key` and an optional `note` of up to 200). Idempotent per sender and `clientId`: a repeat answers 200 with the first message. Blocks and «بهم پیام بده» are checked on every send (403 messages_closed). 30 messages a minute per user. Both people get a live `message` event.",
+        "description": "`kind` is `text` (`text`, 1–1000 characters) or `couplet` (`key` and an optional `note` of up to 200). Idempotent per sender and `clientId`: a repeat answers 200 with the first message. Blocks and «بهم پیام بده» are checked on every send (403 messages_closed); answering a person who already wrote in the chat is always allowed, unless blocked. 30 messages a minute per user. Both people get a live `message` event.",
         "security": [
           {
             "bearerAuth": []
@@ -4083,7 +4088,7 @@
           "messages"
         ],
         "summary": "Mark a chat as read up to a message",
-        "description": "Never moves backwards. The other person gets a live `read` event, which is their «دیده شد».",
+        "description": "Never moves backwards. The other person gets a live `read` event (with my username) when the mark moved, which is their «دیده شد».",
         "security": [
           {
             "bearerAuth": []
@@ -4163,7 +4168,7 @@
           "messages"
         ],
         "summary": "Delete a message I sent",
-        "description": "Idempotent. The message stays in the chat as «deleted»; its text, couplet and note are removed. System lines cannot be deleted.",
+        "description": "Idempotent. The message stays in the chat as «deleted»; its text, couplet and note are removed. System lines cannot be deleted. Both people get a live `deleted` event.",
         "security": [
           {
             "bearerAuth": []

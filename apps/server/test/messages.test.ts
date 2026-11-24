@@ -111,6 +111,18 @@ describe("POST /v1/conversations/{id}/messages", () => {
     expect((await h.request(`/v1/conversations/${id}/messages`, { token: ali.token })).status).toBe(404);
   });
 
+  it("lets a person answer someone who wrote to them, even when «بهم پیام بده» would refuse", async () => {
+    const { ali, sara, id } = await pair();
+    await text(sara, id, "first"); // sara wrote while they were friends
+    await h.request("/v1/follows/ali", { method: "DELETE", token: sara.token });
+    // ali takes messages from friends only and sara is no friend; sara has written, but ali has not.
+    expect((await text(sara, id, "again")).status).toBe(403);
+    expect((await text(ali, id, "reply")).status).toBe(201); // ali answers sara, whose setting would refuse a stranger
+    expect((await text(sara, id, "thanks")).status).toBe(201); // now ali has written here too
+    await h.request("/v1/blocks/sara", { method: "PUT", token: ali.token });
+    expect((await text(ali, id, "blocked")).status).toBe(403); // a block still stops a reply
+  });
+
   it("limits sending to 30 a minute per user", async () => {
     const { ali, sara, id } = await pair();
     for (let i = 0; i < 30; i++) expect((await text(ali, id, `m${i}`)).status).toBe(201);
@@ -171,11 +183,14 @@ describe("read receipts", () => {
     const res = await h.request(`/v1/conversations/${id}/read`, { method: "PUT", token: sara.token, json: { messageId: ids[1] } });
     expect(res.status).toBe(204);
     expect(await unread(sara)).toBe(1);
-    expect(toAli).toEqual([{ type: "read", conversationId: id, userId: sara.id, messageId: ids[1] }]);
+    expect(toAli).toEqual([{ type: "read", conversationId: id, username: "sara", messageId: ids[1] }]);
     expect((await page(ali, id)).otherReadMessageId).toBe(ids[1]);
     expect((await page(sara, id)).otherReadMessageId).toBeNull();
-    // It never goes back.
+    // It never goes back, and nothing is announced for it.
+    toAli.length = 0;
     await h.request(`/v1/conversations/${id}/read`, { method: "PUT", token: sara.token, json: { messageId: ids[0] } });
+    await h.request(`/v1/conversations/${id}/read`, { method: "PUT", token: sara.token, json: { messageId: ids[1] } });
+    expect(toAli).toEqual([]);
     expect(await unread(sara)).toBe(1);
     expect((await page(ali, id)).otherReadMessageId).toBe(ids[1]);
     await h.request(`/v1/conversations/${id}/read`, { method: "PUT", token: sara.token, json: { messageId: ids[2] } });
@@ -219,6 +234,18 @@ describe("DELETE /v1/messages/{id}", () => {
     expect((await h.request(`/v1/messages/${system!.id}`, { method: "DELETE", token: ali.token })).status).toBe(403);
   });
 
+  it("tells both people live, once", async () => {
+    const { ali, sara, id } = await pair();
+    const sent = (await (await text(ali, id, "oops")).json()) as Msg;
+    const toAli = listen(ali);
+    const toSara = listen(sara);
+    await h.request(`/v1/messages/${sent.id}`, { method: "DELETE", token: ali.token });
+    await h.request(`/v1/messages/${sent.id}`, { method: "DELETE", token: ali.token });
+    const event = { type: "deleted", conversationId: id, messageId: sent.id };
+    expect(toAli).toEqual([event]);
+    expect(toSara).toEqual([event]);
+  });
+
   it("takes a deleted message out of the unread count", async () => {
     const { ali, sara, id } = await pair();
     const sent = (await (await text(ali, id, "hi")).json()) as Msg;
@@ -240,5 +267,14 @@ describe("reporting a message", () => {
     const list = (await (await h.request("/v1/admin/reports", { headers: { authorization: "Bearer admin-token-for-tests" } })).json()) as { items: { message: unknown }[] };
     expect(list.items).toHaveLength(1);
     expect(list.items[0]!.message).toEqual({ id: sent.id, kind: "text", text: "rude words", key: null, note: null, deleted: false });
+  });
+
+  it("keeps what the message said when its sender deletes it afterwards", async () => {
+    const { ali, sara, id } = await pair();
+    const sent = (await (await post(sara, id, { clientId: crypto.randomUUID(), kind: "couplet", key: "/a/b#1", note: "look" })).json()) as Msg;
+    await h.request("/v1/reports", { method: "POST", token: ali.token, json: { username: "sara", messageId: sent.id, reason: "abuse" } });
+    await h.request(`/v1/messages/${sent.id}`, { method: "DELETE", token: sara.token });
+    const list = (await (await h.request("/v1/admin/reports", { headers: { authorization: "Bearer admin-token-for-tests" } })).json()) as { items: { message: unknown }[] };
+    expect(list.items[0]!.message).toEqual({ id: sent.id, kind: "couplet", text: null, key: "/a/b#1", note: "look", deleted: true });
   });
 });

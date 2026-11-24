@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { privacySettings } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { errorResponse } from "../errors.js";
+import { announcePresence } from "../presence.js";
 import { newRouter } from "../router.js";
 
 const settingsSchema = z
@@ -79,6 +80,8 @@ export function privacyRoutes(deps: Deps) {
           .insert(privacySettings)
           .values({ ...PRIVACY_DEFAULTS, ...patch, userId })
           .onConflictDoUpdate({ target: privacySettings.userId, set: patch });
+        // Turning «آنلاین» off while connected: the people who saw them online are told they went offline.
+        if (patch.showOnline === false && deps.hub.isOnline(userId)) await announcePresence(deps, userId, false, true);
       }
       return c.json(await load(userId), 200);
     },

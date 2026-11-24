@@ -220,7 +220,7 @@ export function sharedDivanRoutes(deps: Deps) {
         "Only while we are friends. Puts a system line `{ event: \"divan_add\", key }` in our chat (made if there is none; it ignores «بهم پیام بده» because we are friends), " +
         "and both of us get live `message` and `divan` events. Adding a couplet that is already there answers 200 with the item that is there, and adds nothing. 60 a minute per user.",
       security,
-      request: { params: idParam, body: { required: true, content: { "application/json": { schema: z.object({ key: coupletKeySchema, note: z.string().min(1).max(NOTE_MAX).optional() }).openapi("AddSharedDivanItemRequest") } } } },
+      request: { params: idParam, body: { required: true, content: { "application/json": { schema: z.object({ key: coupletKeySchema, note: z.string().trim().min(1).max(NOTE_MAX).optional() }).openapi("AddSharedDivanItemRequest") } } } },
       responses: {
         200: { description: "Already in the divan.", content: { "application/json": { schema: itemSchema } } },
         201: { description: "Added.", content: { "application/json": { schema: itemSchema } } },

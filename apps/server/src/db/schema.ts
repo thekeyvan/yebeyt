@@ -333,24 +333,31 @@ export const conversationReads = pgTable(
     lastReadMessageId: uuid("last_read_message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
     lastReadAt: timestamptz("last_read_at").notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.conversationId, t.userId] })],
+  (t) => [primaryKey({ columns: [t.conversationId, t.userId] }), index("conversation_reads_message").on(t.lastReadMessageId)],
 );
 
 export const REPORT_REASONS = ["spam", "abuse", "other"] as const;
 
-/** A report of a person, or of one of their messages. It stays when the reporter's account is deleted. */
+/**
+ * A report of a person, or of one of their messages. It stays when either account is deleted (the id then becomes null).
+ * The `message*` columns copy the message when it is reported, so it can still be read after the sender deletes it.
+ */
 export const reports = pgTable(
   "reports",
   {
     id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
     reporterId: uuid("reporter_id").references(() => users.id, { onDelete: "set null" }),
-    targetUserId: userRef("target_user_id"),
+    targetUserId: uuid("target_user_id").references(() => users.id, { onDelete: "set null" }),
     messageId: uuid("message_id").references(() => messages.id, { onDelete: "set null" }),
+    messageKind: text("message_kind", { enum: ["text", "couplet", "system", "game"] }),
+    messageText: text("message_text"),
+    messageKey: text("message_key"),
+    messageNote: text("message_note"),
     reason: text("reason", { enum: REPORT_REASONS }).notNull(),
     note: text("note"),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
-  (t) => [check("reports_note_length", sql`char_length(${t.note}) <= 500`), index("reports_created").on(t.createdAt.desc(), t.id.desc())],
+  (t) => [check("reports_note_length", sql`char_length(${t.note}) <= 500`), index("reports_created").on(t.createdAt.desc(), t.id.desc()), index("reports_message").on(t.messageId)],
 );
 
 /** A divan two friends keep together. `userLow` is the smaller id of the two. */

@@ -24,13 +24,13 @@ const itemSchema = z
   .object({
     id: z.uuid(),
     reporter: z.string().nullable().openapi({ description: "Null after the reporter deleted their account." }),
-    target: z.string().nullable(),
+    target: z.string().nullable().openapi({ description: "Null after the reported person deleted their account." }),
     reason: reasonSchema,
     note: z.string().nullable(),
     message: z
-      .object({ id: z.uuid(), kind: z.enum(["text", "couplet", "system", "game"]), text: z.string().nullable(), key: z.string().nullable(), note: z.string().nullable(), deleted: z.boolean() })
+      .object({ id: z.uuid().nullable().openapi({ description: "Null once the message is gone for good (its sender deleted their account)." }), kind: z.enum(["text", "couplet", "system", "game"]), text: z.string().nullable(), key: z.string().nullable(), note: z.string().nullable(), deleted: z.boolean() })
       .nullable()
-      .openapi({ description: "The reported message; null when the report is of the person, or the message is gone." }),
+      .openapi({ description: "The reported message as it was when reported; null when the report is of the person. `deleted` is true when it has been deleted since." }),
     createdAt: z.iso.datetime(),
   })
   .openapi("AdminReport");
@@ -69,15 +69,17 @@ export function reportRoutes(deps: Deps) {
       const person = await findByUsername(db, username);
       if (!person) throw new ApiError(404, "not_found");
       if (person.id === userId) throw new ApiError(400, "invalid_request");
+      let copy = {};
       if (messageId) {
         const [found] = await db
-          .select({ id: messages.id })
+          .select({ kind: messages.kind, text: messages.text, key: messages.coupletKey, note: messages.note, deleted: messages.deletedAt })
           .from(messages)
           .innerJoin(conversations, eq(conversations.id, messages.conversationId))
           .where(and(eq(messages.id, messageId), eq(messages.senderId, person.id), or(eq(conversations.userLow, userId), eq(conversations.userHigh, userId))));
         if (!found) throw new ApiError(404, "not_found");
+        copy = { messageKind: found.kind, messageText: found.text, messageKey: found.key, messageNote: found.note };
       }
-      await db.insert(reports).values({ reporterId: userId, targetUserId: person.id, messageId: messageId ?? null, reason, note: note ?? null, createdAt: deps.now() });
+      await db.insert(reports).values({ reporterId: userId, targetUserId: person.id, messageId: messageId ?? null, ...copy, reason, note: note ?? null, createdAt: deps.now() });
       return c.body(null, 204);
     },
   );
@@ -120,7 +122,9 @@ export function reportRoutes(deps: Deps) {
             target: to,
             reason: r.reason,
             note: r.note,
-            message: m ? { id: m.id, kind: m.kind, text: m.text, key: m.coupletKey, note: m.note, deleted: m.deletedAt !== null } : null,
+            message: r.messageKind
+              ? { id: r.messageId, kind: r.messageKind, text: r.messageText, key: r.messageKey, note: r.messageNote, deleted: m === null || m.deletedAt !== null }
+              : null,
             createdAt: r.createdAt.toISOString(),
           })),
           nextBefore: rows.length > PAGE && last ? timeCursor(last.r.createdAt, last.r.id) : null,

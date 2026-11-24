@@ -78,6 +78,7 @@ describe("GET /v1/shared-divans", () => {
     const { ali, sara, id } = await pair();
     const omid = await h.signUp("omid");
     await befriend(ali, omid);
+    tick(); // omid's divan is newer than sara's
     await h.request("/v1/shared-divans", { method: "POST", token: ali.token, json: { username: "omid" } });
     await add(ali, id, A);
     await add(sara, id, B);
@@ -129,10 +130,11 @@ describe("items", () => {
   it("refuses bad bodies, outsiders, and adding once we are no longer friends", async () => {
     const { ali, sara, id } = await pair();
     const omid = await h.signUp("omid");
-    for (const bad of [{ key: "nope" }, { key: A, note: "x".repeat(201) }, { key: A, note: "" }, {}]) {
+    for (const bad of [{ key: "nope" }, { key: A, note: "x".repeat(201) }, { key: A, note: "" }, { key: A, note: "   " }, {}]) {
       expect((await h.request(`/v1/shared-divans/${id}/items`, { method: "POST", token: ali.token, json: bad })).status).toBe(400);
     }
-    expect((await add(ali, id, A, "x".repeat(200))).status).toBe(201);
+    expect(((await (await add(ali, id, A, "  padded  ")).json()) as Item).note).toBe("padded");
+    expect((await add(ali, id, B, "x".repeat(200))).status).toBe(201);
     expect((await add(omid, id, B)).status).toBe(404);
     expect((await items(omid, id)).items).toBeUndefined();
     expect((await h.request(`/v1/shared-divans/${crypto.randomUUID()}/items`, { token: ali.token })).status).toBe(404);
@@ -140,7 +142,7 @@ describe("items", () => {
     const res = await add(ali, id, B);
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: "forbidden" });
-    expect((await items(ali, id)).items).toHaveLength(1); // what is there stays readable
+    expect((await items(ali, id)).items).toHaveLength(2); // what is there stays readable
   });
 
   it("lists newest first, filtered by who added, with counts of the whole divan, and pages", async () => {

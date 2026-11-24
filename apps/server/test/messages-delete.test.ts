@@ -56,10 +56,12 @@ describe("DELETE /v1/me with messages", () => {
     expect(await h.db.select().from(sharedDivanLikes)).toEqual([]);
     expect(await h.db.select().from(sharedDivans)).toHaveLength(1);
 
-    // Reports about ali are gone; the one ali filed stays, without a name.
+    // Reports stay: the one ali filed has no reporter now, the one about ali has no target.
     const filed = await h.db.select().from(reports);
-    expect(filed).toHaveLength(1);
-    expect(filed[0]).toMatchObject({ reporterId: null, reason: "spam" });
+    expect(filed.map((r) => [r.reason, r.reporterId, r.targetUserId]).sort()).toEqual([
+      ["abuse", rude.id, null],
+      ["spam", null, rude.id],
+    ]);
 
     // What sara sees: no chat with ali, the other chat is whole.
     const chats = (await (await h.request("/v1/conversations", { token: sara.token })).json()) as { items: { id: string }[] };

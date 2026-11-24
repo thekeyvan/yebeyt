@@ -67,9 +67,16 @@ export async function getOrCreateConversation(db: Db, a: string, b: string): Pro
   return row!.id;
 }
 
-/** May `from` write to `to`: nobody blocked the other, and `to` takes messages from everyone, or from friends and `from` is one. */
-export async function mayMessage(db: Db, from: string, to: string): Promise<boolean> {
+/**
+ * May `from` write to `to` in this conversation: nobody blocked the other, and either `to` already wrote here (a reply is always fine),
+ * or `to` takes messages from everyone, or from friends and `from` is one.
+ */
+export async function mayMessage(db: Db, from: string, to: string, conversationId?: string): Promise<boolean> {
   if (await isBlocked(db, from, to)) return false;
+  if (conversationId) {
+    const [reply] = await db.select({ id: messages.id }).from(messages).where(and(eq(messages.conversationId, conversationId), eq(messages.senderId, to))).limit(1);
+    if (reply) return true;
+  }
   const [row] = await db.select({ from: privacySettings.messagesFrom }).from(privacySettings).where(eq(privacySettings.userId, to));
   if ((row?.from ?? PRIVACY_DEFAULTS.messagesFrom) === "all") return true;
   return (await relationOf(db, from, to)).isFriend;

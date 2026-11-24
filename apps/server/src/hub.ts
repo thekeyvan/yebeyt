@@ -1,19 +1,29 @@
 /** An event for a live socket: `type` plus its data, sent as one JSON text frame. */
-export type LiveEvent = { type: "message" | "read" | "presence" | "divan" } & Record<string, unknown>;
+export type LiveEvent = { type: "message" | "deleted" | "read" | "presence" | "divan" } & Record<string, unknown>;
+
+export const MAX_SOCKETS_PER_USER = 5;
 
 /**
  * The live connections of this process, by user. It lives in memory, so it works for one server instance only:
  * with several instances the events would have to travel through Postgres LISTEN/NOTIFY or Redis (see the README).
  */
 export function createHub() {
-  const sockets = new Map<string, Set<(event: LiveEvent) => void>>();
+  const sockets = new Map<string, Map<(event: LiveEvent) => void, () => void>>();
   return {
-    /** Registers an authenticated socket. `first` is true when the user was offline before; `remove` returns true when it was their last socket. */
-    add(userId: string, send: (event: LiveEvent) => void) {
+    /**
+     * Registers an authenticated socket. `first` is true when the user was offline before; `remove` returns true when it was their last socket.
+     * A user keeps at most 5 sockets: past that, the oldest is dropped and its `close` is called.
+     */
+    add(userId: string, send: (event: LiveEvent) => void, close: () => void = () => {}) {
       let set = sockets.get(userId);
       const first = !set;
-      if (!set) sockets.set(userId, (set = new Set()));
-      set.add(send);
+      if (!set) sockets.set(userId, (set = new Map()));
+      set.set(send, close);
+      while (set.size > MAX_SOCKETS_PER_USER) {
+        const [oldest, closeOldest] = set.entries().next().value!;
+        set.delete(oldest);
+        closeOldest();
+      }
       return {
         first,
         remove(): boolean {
@@ -28,7 +38,7 @@ export function createHub() {
     isOnline: (userId: string): boolean => sockets.has(userId),
     /** Sends the event to every socket of the user, if any. */
     publish(userId: string, event: LiveEvent) {
-      for (const send of sockets.get(userId) ?? []) send(event);
+      for (const send of sockets.get(userId)?.keys() ?? []) send(event);
     },
   };
 }

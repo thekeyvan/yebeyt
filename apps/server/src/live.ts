@@ -1,12 +1,12 @@
-import { and, eq, or, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import type { UpgradeWebSocket } from "hono/ws";
+import { decodeJwt } from "jose";
 import type { WebSocket } from "ws";
 import { verifyAccessToken } from "./auth/sessions.js";
-import { conversations, users } from "./db/schema.js";
+import { users } from "./db/schema.js";
 import type { Deps } from "./deps.js";
-import { showingOnline } from "./messaging.js";
-import { notBlockedWith } from "./social.js";
+import { announcePresence } from "./presence.js";
 
 export type LiveOptions = {
   /** How long a new socket may stay without sending its token. */
@@ -15,26 +15,14 @@ export type LiveOptions = {
   heartbeatMs?: number;
 };
 
-/** Close codes the server sends: the first message was not a good token, or the user has no username yet. */
+/** Close codes the server sends: no good token (also when the token expires), the user has no username yet, or a newer socket replaced this one. */
 export const CLOSE_UNAUTHORIZED = 4401;
 export const CLOSE_USERNAME_REQUIRED = 4403;
-
-/** Tells the people who share a chat with the user (and may see it) that they went online or offline. */
-async function announcePresence(deps: Deps, userId: string, online: boolean) {
-  const { db } = deps;
-  if (!(await showingOnline(db, [userId])).has(userId)) return;
-  const [me] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId));
-  const otherId = sql<string>`case when ${conversations.userLow} = ${userId} then ${conversations.userHigh} else ${conversations.userLow} end`;
-  const watchers = await db
-    .select({ id: otherId })
-    .from(conversations)
-    .where(and(or(eq(conversations.userLow, userId), eq(conversations.userHigh, userId)), notBlockedWith(userId, otherId)));
-  for (const { id } of watchers) deps.hub.publish(id, { type: "presence", username: me!.username, online });
-}
+export const CLOSE_REPLACED = 4409;
 
 /**
  * `GET /v1/live`, a WebSocket. The first message must be `{ "type": "auth", "token": <access token> }` within the timeout.
- * After `{ "type": "ready" }` the server sends events (see the README) and pings every `heartbeatMs`. Plain Hono routes,
+ * After `{ "type": "ready" }` the server sends events (see the README) and pings every `heartbeatMs`; frames over 4 KB close the socket. Plain Hono routes,
  * not in the OpenAPI document.
  */
 export function liveRoutes(deps: Deps, upgradeWebSocket: UpgradeWebSocket<WebSocket>, options: LiveOptions = {}) {
@@ -80,7 +68,10 @@ export function liveRoutes(deps: Deps, upgradeWebSocket: UpgradeWebSocket<WebSoc
             if (!user.username) return ws.close(CLOSE_USERNAME_REQUIRED, "username required");
             if (closed) return;
             userId = id;
-            connection = deps.hub.add(id, (e) => ws.send(JSON.stringify(e)));
+            // The socket lives as long as the token: when it expires the client reconnects with a fresh one.
+            const expiresIn = decodeJwt(message.token).exp! * 1000 - deps.now().getTime();
+            timers.push(setTimeout(() => ws.close(CLOSE_UNAUTHORIZED, "token expired"), expiresIn));
+            connection = deps.hub.add(id, (e) => ws.send(JSON.stringify(e)), () => ws.close(CLOSE_REPLACED, "too many connections"));
             ws.send(JSON.stringify({ type: "ready" }));
             if (connection.first) await announcePresence(deps, id, true);
           } catch {
