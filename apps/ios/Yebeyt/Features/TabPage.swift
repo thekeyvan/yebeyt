@@ -12,13 +12,18 @@ struct TabPage: View {
             .animation(Motion.bouncy, value: model.selectedTab)
     }
 
-    /// The page slides in a little from the side of its tab, and the one that leaves fades out quickly.
+    /// The page slides in from the side of its tab and, when it is the one that goes, out to the other side.
     private func arrival(_ tab: Tab) -> (Motion.Variant) -> AnyTransition {
         { variant in
             let rightToLeft = layoutDirection == .rightToLeft
-            var arrival = Motion.tabArrival(from: model.previousTab.index, to: tab.index, rightToLeft: rightToLeft, variant)
-            if rightToLeft { arrival.dx = -arrival.dx }  // `.offset` mirrors x in right-to-left, `dx` is in screen directions
-            return Motion.tab(arrival, variant)
+            func slide(from old: Int, to new: Int) -> Motion.Arrival {
+                var arrival = Motion.tabArrival(from: old, to: new, rightToLeft: rightToLeft, variant)
+                if rightToLeft { arrival.dx = -arrival.dx }  // `.offset` mirrors x in right-to-left, `dx` is in screen directions
+                return arrival
+            }
+            let incoming = slide(from: model.previousTab.index, to: tab.index)
+            let outgoing = model.arriving.map { Motion.departure(of: slide(from: tab.index, to: $0.index)) } ?? Motion.Arrival(dy: 0, scale: 1)
+            return Motion.tab(incoming: incoming, outgoing: outgoing, variant)
         }
     }
 

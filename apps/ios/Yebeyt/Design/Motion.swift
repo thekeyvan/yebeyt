@@ -75,8 +75,8 @@ enum Motion {
     /// A full-screen cover rises from the bottom a little smaller than it ends.
     static let coverScale = 0.96
 
-    /// How far the incoming tab page slides.
-    static let tabSlide = 16.0
+    /// How far a tab page slides: the new one in from its tab's side, the old one out to the far side.
+    static let tabSlide = 40.0
 
     /// The tab's page slides in from the side its tab is on: `rightToLeft` is the layout, where the first tab is at the
     /// right, so a tab after the open one is at the left. `dx` is in screen directions. Plain fade under Reduce Motion.
@@ -116,10 +116,18 @@ enum Motion {
         return arrive(rowArrival(variant)).animation(bouncy)
     }
 
-    /// The page of a tab slides in a little with `bouncy`; the page that leaves fades out quickly.
-    static func tab(_ arrival: Arrival, _ variant: Variant) -> AnyTransition {
+    /// The page of a tab slides in from the tapped tab's side while the old page slides out to the far side, both with
+    /// `bouncy`; the opacity follows quickly as a secondary. `incoming` and `outgoing` are in the same units as `Arrival.dx`.
+    static func tab(incoming: Arrival, outgoing: Arrival, _ variant: Variant) -> AnyTransition {
         guard rises(variant) else { return .opacity }
-        return .asymmetric(insertion: arrive(arrival).animation(bouncy), removal: .opacity.animation(drop))
+        return .asymmetric(insertion: slide(incoming), removal: slide(outgoing))
+    }
+
+    /// The old page goes out the way the new one does not come from.
+    static func departure(of arrival: Arrival) -> Arrival { Arrival(dy: arrival.dy, scale: arrival.scale, dx: -arrival.dx) }
+
+    private static func slide(_ arrival: Arrival) -> AnyTransition {
+        AnyTransition.offset(x: arrival.dx).animation(bouncy).combined(with: AnyTransition.opacity.animation(drop))
     }
 
     // MARK: Thrown card

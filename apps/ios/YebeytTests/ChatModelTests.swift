@@ -167,6 +167,33 @@ struct ChatModelTests {
         #expect(rig.model.entries().count == 2)  // the day and one bubble
     }
 
+    @Test func aSentBubbleKeepsItsRowIDWhenTheServersMessageReplacesIt() async {
+        let rig = Rig { _ in .json(201, MessageJSON.message(id: "m1", fromMe: true, text: "سلام")) }
+        rig.stub.delay = 0.05
+        rig.model.send(text: "سلام")
+        let sending = rig.model.entries().last
+        #expect(sending?.id == "new-1")
+        await rig.model.settle()
+        let sent = rig.model.entries().last
+        #expect(sent?.id == "m1")
+        #expect(sent?.rowID == sending?.rowID)  // one row, so the list springs it in once
+    }
+
+    @Test func theLiveEventBeforeTheAnswerKeepsTheRowIDToo() throws {
+        let rig = Rig { _ in .json(201, MessageJSON.message(id: "m1", fromMe: true, text: "سلام")) }
+        rig.stub.delay = 0.05
+        rig.model.send(text: "سلام")
+        let sending = rig.model.entries().last
+        rig.model.apply(.message(try MessageJSON.decoded(MessageJSON.message(id: "m1", fromMe: true, text: "سلام"))))
+        #expect(rig.model.entries().last?.rowID == sending?.rowID)
+    }
+
+    @Test func aMessageOfSomeoneElseIsKeyedByItsOwnID() throws {
+        let rig = Rig()
+        rig.model.apply(.message(try MessageJSON.decoded(MessageJSON.message(id: "m2", fromMe: false, text: "سلام"))))
+        #expect(rig.model.entries().last?.rowID == "m2")
+    }
+
     @Test func aSecondPhoneOfMineShowsUpAsAnOrdinaryMessage() throws {
         let rig = Rig()
         rig.model.apply(.message(try MessageJSON.decoded(MessageJSON.message(id: "m1", fromMe: true, text: "از گوشی دیگه"))))

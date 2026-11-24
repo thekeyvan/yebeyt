@@ -62,9 +62,7 @@ struct SettingsScreen: View {
         .sheet(isPresented: $editingProfile) {
             UsernameStep(account: account, onSaved: { editingProfile = false })
                 .presentationDetents([.large])
-                .presentationBackground(Tokens.Colors.white)
-                .presentationCornerRadius(30)
-                .presentationDragIndicator(.visible)
+                .stickerSheet()
                 .environment(\.layoutDirection, .rightToLeft)
         }
         .sheet(isPresented: $textOpen) {

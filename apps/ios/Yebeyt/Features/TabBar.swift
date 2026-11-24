@@ -34,7 +34,14 @@ struct TabBar: View {
 
     private func open(_ tab: Tab, wasOpen: Bool) {
         if !wasOpen { tabTaps += 1 }
-        model.select(tab)
+        guard !wasOpen else { return model.select(tab) }
+        // The page on screen is told where the new one comes from, then (a moment later, as a view that goes out is drawn
+        // with what it knew last) the tab opens and the pages slide.
+        model.arriving = tab
+        Task {
+            model.select(tab)
+            model.arriving = nil
+        }
     }
 
     private func item(_ tab: Tab) -> some View {

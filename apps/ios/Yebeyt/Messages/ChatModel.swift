@@ -29,6 +29,11 @@ final class ChatModel {
         let content: Content
         /// «دیده شد» goes under this message of mine.
         var seen = false
+        /// The send this message of mine answers: the bubble keeps one identity from «sending» to «sent».
+        var sendID: String?
+
+        /// What the list keys the row by: the same before and after the server's answer, so the bubble springs in once.
+        var rowID: String { sendID ?? id }
     }
 
     enum Phase: Equatable {
@@ -43,6 +48,8 @@ final class ChatModel {
     private(set) var other: ChatPerson
     private(set) var messages: [ChatMessage] = []
     private(set) var pending: [Pending] = []
+    /// Message id → the send it answers (see `Entry.rowID`).
+    private var sendIDs: [String: String] = [:]
     private(set) var otherReadMessageId: String?
     private(set) var phase = Phase.loading
     private(set) var isLoadingOlder = false
@@ -180,6 +187,7 @@ final class ChatModel {
             let outgoing = OutgoingMessage(clientId: clientId, content: sending.content)
             let message = try await session.authorized { try await self.session.api.sendMessage(outgoing, conversation: self.id, token: $0) }
             pending.removeAll { $0.clientId == clientId }
+            sendIDs[message.id] = clientId
             insert(message)
         } catch let error as APIError {
             if error.code == .messagesClosed {
@@ -226,6 +234,7 @@ final class ChatModel {
         switch event {
         case .message(let message) where message.conversationId == id:
             if message.fromMe, let index = pending.firstIndex(where: { !$0.failed && Self.matches($0.content, message) }) {
+                sendIDs[message.id] = pending[index].clientId
                 pending.remove(at: index)  // the event came before the answer of the send
             }
             insert(message)
@@ -303,7 +312,7 @@ final class ChatModel {
         }
         for message in messages where Self.isShown(message) {
             day(message.createdAt)
-            result.append(Entry(id: message.id, content: .message(message), seen: message.id == seen))
+            result.append(Entry(id: message.id, content: .message(message), seen: message.id == seen, sendID: sendIDs[message.id]))
         }
         for sending in pending {
             day(sending.createdAt)

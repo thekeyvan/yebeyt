@@ -85,9 +85,7 @@ struct AccountPromptSheet: View {
                 EmptyView()
             }
         }
-        .presentationBackground(Tokens.Colors.white)
-        .presentationCornerRadius(30)
-        .presentationDragIndicator(.visible)
+        .stickerSheet()
         .environment(\.layoutDirection, .rightToLeft)
         .accessibilityElement(children: .contain)
     }
@@ -99,20 +97,19 @@ private struct SheetHeight: PreferenceKey {
 }
 
 extension View {
-    /// Shows the account sheet over this view while `AccountModel.prompt` is set. A screen presented over the
-    /// tabs (the reader) hosts its own; the tabs host it only while nothing covers them.
-    func accountPrompt(host: Bool) -> some View {
-        modifier(AccountPromptHost(host: host))
+    /// Shows the account sheet over this view while `AccountModel.prompt` is set. The root hosts it once, for the tabs
+    /// and for the reader over them.
+    func accountPrompt() -> some View {
+        modifier(AccountPromptHost())
     }
 }
 
 private struct AccountPromptHost: ViewModifier {
     @Environment(AccountModel.self) private var account
-    let host: Bool
 
     func body(content: Content) -> some View {
         content.sheet(isPresented: Binding(
-            get: { host && account.prompt != nil },
+            get: { account.prompt != nil },
             set: { if !$0 { account.dismissPrompt() } }
         )) {
             AccountPromptSheet()

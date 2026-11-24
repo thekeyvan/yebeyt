@@ -35,9 +35,7 @@ struct UnsyncedSignOutSheet: View {
         }
         .padding(EdgeInsets(top: 28, leading: 22, bottom: 16, trailing: 22))
         .presentationDetents([.height(280)])
-        .presentationBackground(Tokens.Colors.white)
-        .presentationCornerRadius(30)
-        .presentationDragIndicator(.visible)
+        .stickerSheet()
         .environment(\.layoutDirection, .rightToLeft)
     }
 }

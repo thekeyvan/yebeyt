@@ -24,6 +24,8 @@ final class AppModel {
     private(set) var selectedTab: Tab {
         didSet { if selectedTab != oldValue { previousTab = oldValue } }
     }
+    /// The tab the person has just tapped, until it opens: the page that leaves is drawn heading the other way first.
+    var arriving: Tab?
     /// The tab that was open before this one: the new page slides in from the side of its tab.
     private(set) var previousTab: Tab
     /// The badge of the «پیام‌ها» tab: the unread messages plus the incoming friend requests.

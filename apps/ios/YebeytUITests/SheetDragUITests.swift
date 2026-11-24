@@ -82,6 +82,15 @@ final class SheetDragUITests: XCTestCase {
         XCTAssertTrue(waitForDisappearance(of: chip))
     }
 
+    @MainActor func testATapOutsideTheReadersTextSheetClosesIt() {
+        let app = launch(["-beytRoute", "poem:/hafez/ghazal/sh3", "-beytSheet", "text"])
+        let chip = app.buttons["نستعلیق"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 10))
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)).tap()
+        XCTAssertTrue(waitForDisappearance(of: chip))
+        XCTAssertTrue(app.staticTexts["readerTitle"].exists, "the reader is still open")
+    }
+
     // MARK: The answer sheet (custom): a drag down is «بیت بعدی»
 
     @MainActor func testTheAnswerSheetClosesWithADragDownLikeTheNextButton() {

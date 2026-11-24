@@ -234,11 +234,21 @@ struct MotionTests {
 
     @Test func theTabPageSlidesInFromTheSideOfItsTab() {
         // Right-to-left: the first tab (خونه) is at the right, so کاوش is at the left and the page comes from the left.
-        #expect(Motion.tabArrival(from: 0, to: 1, rightToLeft: true, .full).dx == -16)
-        #expect(Motion.tabArrival(from: 3, to: 1, rightToLeft: true, .full).dx == 16)
-        #expect(Motion.tabArrival(from: 0, to: 1, rightToLeft: false, .full).dx == 16)
-        #expect(Motion.tabArrival(from: 4, to: 2, rightToLeft: false, .full).dx == -16)
+        #expect(Motion.tabArrival(from: 0, to: 1, rightToLeft: true, .full).dx == -40)
+        #expect(Motion.tabArrival(from: 3, to: 1, rightToLeft: true, .full).dx == 40)
+        #expect(Motion.tabArrival(from: 0, to: 1, rightToLeft: false, .full).dx == 40)
+        #expect(Motion.tabArrival(from: 4, to: 2, rightToLeft: false, .full).dx == -40)
         #expect(Motion.tabArrival(from: 2, to: 2, rightToLeft: true, .full).dx == 0)
+    }
+
+    @Test func theOldTabPageGoesOutToTheFarSide() {
+        let coming = Motion.tabArrival(from: 0, to: 1, rightToLeft: true, .full)
+        #expect(Motion.departure(of: coming).dx == -coming.dx)
+        #expect(Motion.tabSlide == 40)
+    }
+
+    @Test func aCoverRisesFromJustUnderFullSize() {
+        #expect(Motion.coverScale == 0.96)
     }
 
     @Test func theTabPageOnlyFadesUnderReduceMotion() {

@@ -37,26 +37,25 @@ struct PendingGameStart: Identifiable {
     let start: () -> Void
 }
 
-/// Shows «از بازی بری بیرون؟» for `AppModel.startGame`. One place at a time can present it: the tabs, or the reader when it is
-/// open (`active` is false for the tabs then), as a sheet cannot open under a full-screen cover.
+/// Shows «از بازی بری بیرون؟» for `AppModel.startGame`, once, from the root (the reader is an overlay of the root, so
+/// the sheet opens over it too).
 private struct LeaveGameQuestion: ViewModifier {
     @Bindable var app: AppModel
-    let active: Bool
 
     func body(content: Content) -> some View {
         content
-            .sheet(item: active ? $app.pendingGameStart : .constant(nil)) { pending in
+            .sheet(item: $app.pendingGameStart) { pending in
                 ConfirmSheet(
                     title: LeaveGame.title, message: LeaveGame.message, confirm: LeaveGame.leave, cancel: LeaveGame.stay,
                     prefix: "leaveGame", isPresented: Binding(get: { app.pendingGameStart != nil }, set: { if !$0 { app.pendingGameStart = nil } })
                 ) { pending.start() }
             }
-            .onChange(of: active && app.pendingGameStart != nil) { _, asking in if active { app.leaveQuestionOpen = asking } }
+            .onChange(of: app.pendingGameStart != nil) { _, asking in app.leaveQuestionOpen = asking }
     }
 }
 
 extension View {
-    func leaveGameQuestion(_ app: AppModel, active: Bool = true) -> some View {
-        modifier(LeaveGameQuestion(app: app, active: active))
+    func leaveGameQuestion(_ app: AppModel) -> some View {
+        modifier(LeaveGameQuestion(app: app))
     }
 }

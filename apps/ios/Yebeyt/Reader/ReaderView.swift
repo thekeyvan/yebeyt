@@ -53,16 +53,11 @@ struct ReaderView: View {
         .animation(Motion.bouncy, value: model.holdIndex)
         .animation(Motion.bouncy, value: model.toast)
         .sheet(isPresented: $model.textSheetOpen) {
-            // The page behind stays lit and live: every change of the text shows on it at once.
             TextSheet { model.textSheetOpen = false }
-                .presentationBackgroundInteraction(.enabled)
         }
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
         .sharedDivanSheet(item: $sharedTarget) { model.showToast($0) }
-        .leaveGameQuestion(app)
-        .background { Color.clear.accountPrompt(host: true) }
         .environment(\.layoutDirection, .rightToLeft)
-        .preferredColorScheme(theme.isDark ? .dark : .light)  // light status bar text on the dark theme
         .task { await model.load(using: store) }
         .onChange(of: model.phase) { _, _ in recordProgress() }
         .onChange(of: model.index) { _, _ in recordProgress() }

@@ -125,8 +125,8 @@ private struct ChatContent: View {
                     if case .failed(let reason) = chat.phase {
                         failure(reason)
                     }
-                    ForEach(entries) { entry in
-                        row(entry).id(entry.id).motionTransition(Motion.row)
+                    ForEach(entries, id: \.rowID) { entry in
+                        row(entry).id(entry.rowID).motionTransition(Motion.row)
                     }
                     Color.clear.frame(height: 1).id(Self.bottomID)
                         .onAppear {
@@ -139,7 +139,7 @@ private struct ChatContent: View {
                 .padding(.top, 6)
                 .padding(.bottom, 8)
                 // A message that arrives or is sent springs in; the first load, and older pages, do not.
-                .animation(settled ? Motion.bouncy : nil, value: chat.entries().last?.id)
+                .animation(settled ? Motion.bouncy : nil, value: chat.entries().last?.rowID)
             }
             .defaultScrollAnchor(.bottom)
             .scrollIndicators(.hidden)

@@ -167,7 +167,8 @@ struct YebeytApp: App {
                 .environment(accounts.onboarding)
                 .environment(\.layoutDirection, .rightToLeft)
                 .environment(\.locale, Locale(identifier: "fa_IR"))
-                .preferredColorScheme(.light)
+                // Light, except over the dark reader theme: then the status bar text turns light.
+                .preferredColorScheme(model.reader != nil && textSettings.settings.theme.isDark ? .dark : .light)
                 .font(.ui(16))
                 .tint(Tokens.Colors.lapis)
                 .onOpenURL { GIDSignIn.sharedInstance.handle($0) }

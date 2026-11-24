@@ -89,8 +89,8 @@ struct RootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }
         .onChange(of: model.currentScreen, initial: true) { _, screen in FeedbackLog.shared.visit(screen) }
-        .accountPrompt(host: model.reader == nil)
-        .leaveGameQuestion(model, active: model.reader == nil)
+        .accountPrompt()
+        .leaveGameQuestion(model)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
         .sharedDivanSheet(item: $model.sharedTarget) { model.showToast($0) }
         // The reader is drawn over everything, not as a system cover, so that it can rise with a spring like the game.
@@ -106,6 +106,9 @@ struct RootView: View {
                 openPoet: { model.openPoet(slug: $0) }
             )
             .id(route.id)
+            .accessibilityElement(children: .contain)
+            .accessibilityAddTraits(.isModal)
+            .accessibilityAction(.escape) { model.closeReader() }
             .motionTransition(Motion.cover)
         }
     }
