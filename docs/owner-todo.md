@@ -74,7 +74,7 @@ These can't be tested in the simulator here:
 8. **Feedback storage:** screenshots and recordings are kept in Postgres for now (screenshot ≤3 MB, recording ≤25 MB). If many arrive, move them to a Railway bucket. OK?
 9. ✅ **Feedback after deleting an account:** (owner: stays anonymous, 24 Nov) the text stays, without the user (anonymous). Or should it be deleted too?
 10. **Reading feedback:** there is no admin screen yet; feedback is read through the admin API (`GET /v1/admin/feedback` with `ADMIN_TOKEN`). Should a simple page come before the admin dashboard?
-11. **Friends = mutual follows.** Following is one-way; two people following each other are friends. OK, or should friend requests need acceptance?
+11. ✅ **Friends:** (owner, 24 Nov: friend requests with acceptance; reject is silent; no cooldown) ~~Friends = mutual follows.~~ Following is one-way; two people following each other are friends. OK, or should friend requests need acceptance?
 12. ✅ **League tiers** (owner: OK, 24 Nov) reuse the level names (نوآموز … استاد سخن), weekly from Saturday, groups of 30, top 5 up, bottom 5 down. OK?
 13. **Notifications:** (owner will add the key; steps in 3b) «تا فردا» games and messages need push notifications. That needs an APNs key (Apple Developer → Keys → a key with Apple Push Notifications). Please create one and put it in Railway as `APNS_KEY` (with its key id as `APNS_KEY_ID`), or tell the lead to do without push for now.
 14. **Scores come from the phone,** so a determined cheater could fake them. The server caps points per round, and the daily and onboarding points count once. Good enough for now?
