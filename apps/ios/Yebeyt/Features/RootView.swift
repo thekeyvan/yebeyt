@@ -20,10 +20,7 @@ struct RootView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             Group {
-                TabPage(model: model)
-                    .safeAreaInset(edge: .bottom, spacing: 0) {
-                        Color.clear.frame(height: keyboardUp || !model.showsTabBar ? 0 : TabBar.footprint)
-                    }
+                TabPage(model: model, reserve: keyboardUp || !model.showsTabBar ? 0 : TabBar.footprint)
                 // The bar would ride up on top of the keyboard, so it is hidden while the keyboard is up.
                 // The privacy, avatar and invite screens are drawn without it on their boards.
                 if !keyboardUp, model.showsTabBar {

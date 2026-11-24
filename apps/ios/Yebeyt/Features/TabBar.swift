@@ -26,6 +26,7 @@ struct TabBar: View {
         .padding(.bottom, 18)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("تب‌ها")
+        .accessibilityIdentifier("tabBar")
     }
 
     private func item(_ tab: Tab) -> some View {
