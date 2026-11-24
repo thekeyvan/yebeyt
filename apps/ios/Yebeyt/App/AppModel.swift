@@ -28,6 +28,12 @@ final class AppModel {
     var gamesPath: [Destination]
     /// The screens pushed on the من tab: the divan, privacy, the avatar, the invite, settings, badges.
     var mePath: [Destination]
+    /// The screens pushed on the پیام‌ها tab: a chat, a shared divan.
+    var messagesPath: [Destination]
+    /// A line shown for a moment over the tabs («به دیوان من و سارا اضافه شد»); nil when none is.
+    var toast: String?
+    /// The couplet that «به دیوان مشترک» was chosen for, over the tabs; nil when no sheet is open.
+    var sharedTarget: SharedDivanTarget?
     /// The couplet lifted by a long press outside the reader (the divan), shown over the tabs; nil when none is.
     var hold: HeldCouplet?
     /// What the iOS share sheet shows over the tabs, nil when it is closed.
@@ -41,7 +47,7 @@ final class AppModel {
 
     init(
         tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil, explorePath: [Destination] = [],
-        gamesPath: [Destination] = [], mePath: [Destination] = [], game: GameRoute? = nil
+        gamesPath: [Destination] = [], mePath: [Destination] = [], messagesPath: [Destination] = [], game: GameRoute? = nil
     ) {
         selectedTab = tab
         self.unreadCount = unreadCount
@@ -49,6 +55,7 @@ final class AppModel {
         self.explorePath = explorePath
         self.gamesPath = gamesPath
         self.mePath = mePath
+        self.messagesPath = messagesPath
         self.game = game
     }
 
@@ -57,6 +64,7 @@ final class AppModel {
         if tab == selectedTab, tab == .explore { explorePath = [] }
         if tab == selectedTab, tab == .games { gamesPath = [] }
         if tab == selectedTab, tab == .me { mePath = [] }
+        if tab == selectedTab, tab == .messages { messagesPath = [] }
         selectedTab = tab
     }
 
@@ -67,6 +75,7 @@ final class AppModel {
 
     /// The screens drawn without the tab bar, as on their boards: the privacy, avatar and invite screens.
     var showsTabBar: Bool {
+        if selectedTab == .messages { return messagesPath.isEmpty }  // a chat and a shared divan are drawn without it
         guard selectedTab == .me, let top = mePath.last else { return true }
         return ![.privacy, .avatar, .invite].contains(top)
     }
@@ -84,7 +93,8 @@ final class AppModel {
         case .explore: explorePath.last
         case .games: gamesPath.last
         case .me: mePath.last
-        case .home, .messages: nil
+        case .messages: messagesPath.last
+        case .home: nil
         }
         return top.map(ScreenName.init) ?? ScreenName(selectedTab)
     }
@@ -94,6 +104,18 @@ final class AppModel {
         reader = nil
         selectedTab = .explore
         explorePath = [.poet(slug)]
+    }
+
+    /// Switches to the پیام‌ها tab with the chat open (the entry of «پیام بده»; see `MessagesCenter.openChat`).
+    func showChat(_ id: String) {
+        reader = nil
+        hold = nil
+        selectedTab = .messages
+        messagesPath = [.chat(id)]
+    }
+
+    func showToast(_ text: String) {
+        toast = text
     }
 
     func play(_ route: GameRoute) {

@@ -27,7 +27,11 @@ struct TabPage: View {
                     .navigationDestination(for: Destination.self) { DestinationView(destination: $0).swipeBack() }
             }
         case .messages:
-            NavigationStack { PlaceholderPage(tab: model.selectedTab).swipeBack() }
+            NavigationStack(path: $model.messagesPath) {
+                InboxScreen()
+                    .swipeBack()
+                    .navigationDestination(for: Destination.self) { DestinationView(destination: $0).swipeBack() }
+            }
         }
     }
 }

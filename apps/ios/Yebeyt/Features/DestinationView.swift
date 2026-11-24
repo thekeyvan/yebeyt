@@ -39,6 +39,10 @@ struct DestinationView: View {
             BadgesScreen()
         case .licenses:
             LicensesScreen()
+        case .chat(let id):
+            ChatScreen(id: id)
+        case .sharedDivan(let username):
+            SharedDivanScreen(username: username)
         }
     }
 }

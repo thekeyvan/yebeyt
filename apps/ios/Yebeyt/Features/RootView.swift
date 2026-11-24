@@ -9,6 +9,7 @@ struct RootView: View {
     @Environment(PrivacyStore.self) private var privacy
     @Environment(AvatarStore.self) private var avatar
     @Environment(FeedbackCenter.self) private var feedback
+    @Environment(MessagesCenter.self) private var messages
     @Environment(\.scenePhase) private var scenePhase
     @State private var keyboardUp = false
 
@@ -33,6 +34,7 @@ struct RootView: View {
                     .transition(.move(edge: .bottom))
             }
         }
+        .messageToast($model.toast, bottom: 110)
         .animation(.snappy, value: model.game)
         // The bar sits 18pt above the screen edge, as on the board; the pages reserve its height.
         .ignoresSafeArea(.container, edges: .bottom)
@@ -63,10 +65,17 @@ struct RootView: View {
             await privacy.flush()
         }
         .task(id: session.user?.id) { await avatar.reconcile(with: session.user) }
+        // The live socket is open while the app is in front and someone is signed in; signing out forgets the chats.
+        .task(id: session.isSignedIn && scenePhase != .background) {
+            messages.setActive(session.isSignedIn && scenePhase != .background)
+            if session.isSignedIn { await messages.refreshUnread() }
+        }
+        .onChange(of: session.isSignedIn) { _, signedIn in if !signedIn { messages.reset() } }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }
         .onChange(of: model.currentScreen, initial: true) { _, screen in FeedbackLog.shared.visit(screen) }
         .accountPrompt(host: model.reader == nil)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
+        .sharedDivanSheet(item: $model.sharedTarget) { model.showToast($0) }
         .fullScreenCover(item: $model.reader) { route in
             ReaderView(
                 route: route, close: { model.closeReader() },
@@ -86,6 +95,10 @@ struct RootView: View {
             playWithCouplet: { index in
                 model.hold = nil
                 model.playWithCouplet(poem: held.path, index: index)
+            },
+            addToSharedDivan: {
+                model.hold = nil
+                model.sharedTarget = SharedDivanTarget(key: held.id, person: held.sharedWith)
             }
         )
         .transition(.opacity)

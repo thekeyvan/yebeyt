@@ -91,7 +91,7 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
         case ("PUT", "/v1/me/avatar"): (200, Self.userJSON)
         case ("DELETE", "/v1/me"): (204, "")
         case (_, "/v1/poets/pictures"): (200, "[]")
-        default: (404, #"{"error":"not_found"}"#)
+        default: Self.messagesAnswer(request) ?? (404, #"{"error":"not_found"}"#)
         }
         let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)

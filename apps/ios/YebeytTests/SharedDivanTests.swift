@@ -144,6 +144,21 @@ struct SharedDivanTests {
         #expect(model.counts == SharedDivanCounts(total: 25, mine: 11, theirs: 14))  // the list read again (24), plus this one
     }
 
+    @Test func addingFromTheDivanPutsMyCoupletAtTheTop() async throws {
+        let (model, stub) = model { request in
+            request.method == "POST" ? .json(201, MessageJSON.item(id: "i9", key: "/hafez/ghazal/sh3#0", mine: true, note: "یاد تو")) : Self.server(request)
+        }
+        await model.load()
+        await model.add(key: "/hafez/ghazal/sh3#0", note: " یاد تو ")
+        #expect(model.items.first?.id == "i9")
+        #expect(model.counts == SharedDivanCounts(total: 25, mine: 12, theirs: 13))
+        #expect(stub.requests.last?.json["note"] as? String == "یاد تو")
+        stub.respond { _ in .json(403, #"{"error":"forbidden"}"#) }
+        await model.add(key: "/hafez/ghazal/sh4#0", note: nil)
+        #expect(model.toast == "فقط با دوستات می‌شه دیوان مشترک داشت")
+        #expect(model.items.count == 5)
+    }
+
     // MARK: «به دیوان مشترک» in the hold menu
 
     func adder(person: ChatPerson? = nil, _ handler: @escaping @Sendable (StubServer.Request) -> StubServer.Response) -> (SharedDivanAdder, StubServer) {

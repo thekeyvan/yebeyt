@@ -12,6 +12,8 @@ struct HeldCouplet: Equatable, Identifiable {
     let caption: String
     let shareText: String
     let copyText: String
+    /// Set when the long press happened in a chat: the person whose shared divan «به دیوان مشترک» goes to.
+    var sharedWith: ChatPerson?
 
     var id: String { ReaderMarks.key(poemPath: path, couplet: index) }
     var hasMeaning: Bool { couplet.meaning != nil }
@@ -29,6 +31,8 @@ struct HoldMenu: View {
     /// «معنی این بیت» (true) and «بیت به بیت، از همین بیت» (false): the couplet's page in the reader.
     let openCouplet: (_ withMeaning: Bool) -> Void
     let playWithCouplet: (Int) -> Void
+    /// «به دیوان مشترک»: the sheet that adds this couplet to a shared divan.
+    let addToSharedDivan: () -> Void
 
     /// The board puts the lifted couplet 258pt below the top of the screen (844pt tall).
     private static let boardTop: CGFloat = 258
@@ -155,6 +159,8 @@ struct HoldMenu: View {
             row("بیت به بیت، از همین بیت", CoupletFocusIcon()) { openCouplet(false) }
             rule
             row("بازی با این بیت", GamesIcon()) { playWithCouplet(held.index) }
+            rule
+            row("به دیوان مشترک", SharedDivanIcon()) { account.require(.messages) { addToSharedDivan() } }
             rule
             row("کپی متن", CopyIcon()) {
                 UIPasteboard.general.string = held.copyText

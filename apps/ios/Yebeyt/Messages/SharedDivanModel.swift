@@ -144,6 +144,21 @@ final class SharedDivanModel {
         }
     }
 
+    // MARK: Adding
+
+    /// «+»: a couplet goes into this divan. A couplet already there is not added twice.
+    func add(key: String, note: String?) async {
+        guard let divan else { return }
+        let trimmed = note?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = trimmed?.isEmpty == false ? trimmed.map { String($0.prefix(ChatModel.maxNoteLength)) } : nil
+        do {
+            let item = try await session.authorized { try await self.session.api.addSharedDivanItem(id: divan.id, key: key, note: text, token: $0) }
+            apply(.divan(sharedDivanId: divan.id, item: item))
+        } catch let error as APIError {
+            toast = MessageCopy.toast(for: error, sharedDivan: true)
+        } catch {}
+    }
+
     // MARK: Live
 
     /// A couplet the other person added arrives at the top (when the chips would show it) and the counts move.

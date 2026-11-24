@@ -19,6 +19,8 @@ struct YebeytApp: App {
     @State private var privacy: PrivacyStore
     @State private var divanSync: DivanSync
     @State private var feedback: FeedbackCenter
+    @State private var messages: MessagesCenter
+    @State private var resolver: CoupletResolver
     #if DEBUG
     private let showsStickers: Bool
     private let feedbackOpen: FeedbackLaunchOptions.Open?
@@ -38,7 +40,9 @@ struct YebeytApp: App {
         let marks = ReaderMarks()
         _marks = State(initialValue: marks)
         do {
-            _poetry = State(initialValue: try PoetryStore())
+            let store = try PoetryStore()
+            _poetry = State(initialValue: store)
+            _resolver = State(initialValue: CoupletResolver(store: store))
         } catch {
             fatalError("The bundled poetry data is unreadable: \(error)")  // a packaging bug, not a runtime condition
         }
@@ -90,6 +94,15 @@ struct YebeytApp: App {
         #endif
         feedback.presenter = FeedbackSheetPresenter()
         _feedback = State(initialValue: feedback)
+        #if DEBUG
+        let center = MessagesCenter(session: accounts.session, sockets: MessagesLaunchOptions.fromProcess.sockets)
+        MessagesLaunchOptions.fromProcess.prepare(center: center, app: appModel)
+        #else
+        let center = MessagesCenter(session: accounts.session)
+        #endif
+        center.onUnread = { appModel.unreadCount = $0 }
+        center.show = { appModel.showChat($0) }
+        _messages = State(initialValue: center)
     }
 
     var body: some Scene {
@@ -110,6 +123,8 @@ struct YebeytApp: App {
                 .environment(privacy)
                 .environment(divanSync)
                 .environment(feedback)
+                .environment(messages)
+                .environment(resolver)
                 .environment(accounts.session)
                 .environment(accounts.account)
                 .environment(accounts.pictures)

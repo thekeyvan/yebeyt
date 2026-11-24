@@ -23,4 +23,9 @@ enum Destination: Hashable, Sendable {
     case settings
     case badges
     case licenses
+    // Pushed on the پیام‌ها tab:
+    /// A chat, by its conversation id.
+    case chat(String)
+    /// The divan shared with a person, by their username.
+    case sharedDivan(String)
 }

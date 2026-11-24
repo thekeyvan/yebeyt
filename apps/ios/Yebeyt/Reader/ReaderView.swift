@@ -8,6 +8,7 @@ struct ReaderView: View {
     @Environment(ReadingProgress.self) private var progress
     @Environment(Library.self) private var library
     @State private var model: ReaderModel
+    @State private var sharedTarget: SharedDivanTarget?
     let close: () -> Void
     let playWithPoem: () -> Void
     let playWithCouplet: (Int) -> Void
@@ -38,7 +39,11 @@ struct ReaderView: View {
                     held: held, dismiss: { withAnimation(.snappy) { model.holdIndex = nil } },
                     share: { model.shareCouplet(index) },
                     openCouplet: { withMeaning in withAnimation(.snappy) { model.openCouplet(index, withMeaning: withMeaning) } },
-                    playWithCouplet: playWithCouplet
+                    playWithCouplet: playWithCouplet,
+                    addToSharedDivan: {
+                        model.holdIndex = nil
+                        sharedTarget = SharedDivanTarget(key: ReaderMarks.key(poemPath: model.path, couplet: index), person: nil)
+                    }
                 )
                 .transition(.opacity)
             }
@@ -48,6 +53,7 @@ struct ReaderView: View {
         .animation(.snappy, value: model.textSheetOpen)
         .animation(.snappy, value: model.toast)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
+        .sharedDivanSheet(item: $sharedTarget) { model.showToast($0) }
         .background { Color.clear.accountPrompt(host: true) }
         .environment(\.layoutDirection, .rightToLeft)
         .preferredColorScheme(theme.isDark ? .dark : .light)  // light status bar text on the dark theme

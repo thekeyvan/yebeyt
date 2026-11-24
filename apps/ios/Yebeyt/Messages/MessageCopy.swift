@@ -15,6 +15,8 @@ enum MessageCopy {
     /// «سارا یه بیت به دیوان مشترک اضافه کرد»
     static func divanAdded(by name: String) -> String { "\(name) یه بیت به دیوان مشترک اضافه کرد" }
 
+    static let divanAddedByMe = "تو یه بیت به دیوان مشترک اضافه کردی"
+
     /// «به دیوان من و سارا اضافه شد»
     static func addedToDivan(with name: String) -> String { "به دیوان من و \(name) اضافه شد" }
 
