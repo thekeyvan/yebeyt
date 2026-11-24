@@ -4,20 +4,14 @@ Only what is still open. These need accounts or devices the agents don't have he
 
 ## 1. Apple
 
-- **App Clip ID:** if it isn't finished yet, register `com.yebeyt.app.Clip` (Identifiers → «+» → App IDs → App Clip, parent `com.yebeyt.app`, Product Name `Clip`), with only **Associated Domains** ticked.
-- **App Store id:** send the lead the app's Apple ID (App Store Connect → the app → App Information → General → Apple ID; a number of about 10 digits). The lead puts it in the website's store buttons.
 - **App Store Connect URLs:** in App Store Connect set the Privacy Policy URL to https://yebeyt.com/en/privacy and the support URL to https://yebeyt.com/en/support.
 - **Push key backup:** the push key file `AuthKey_K95YXBLYY5.p8` is still in Downloads. Put it in a password manager and delete it from Downloads; it can't be downloaded again.
 
 ## 2. Google Cloud
 
-- When the Apple ID from item 1 is known, add it to the iOS client (APIs & Services → Credentials → the iOS client → App Store ID).
+- Add the App Store id `6837700208` to the iOS client (APIs & Services → Credentials → the iOS client → App Store ID).
 - On the OAuth consent screen (Branding) set the home page https://yebeyt.com/en, privacy https://yebeyt.com/en/privacy, terms https://yebeyt.com/en/terms.
 - Once Google sign-in works on a phone, shut down the old project `beyt-515410` (IAM & Admin → Settings → Shut down).
-
-## 2b. Cloudflare (cleanup, any time)
-
-- The old 1.0 site's Pages project «yebeyt» (Workers & Pages) no longer serves anything; delete it.
 
 ## 3. Test on a real phone
 
@@ -70,5 +64,6 @@ Notes:
 - 24 Nov: `api.yebeyt.com` points at the new server (CNAME `1kdy3n7t.up.railway.app`, certificate valid).
 - 24 Nov: new Google Cloud project **yebeyt** (account accounts@ksco.nl), consent screen published, iOS client `461381422799-sfbege1fi9tirookg2rp7utukvdtathq.apps.googleusercontent.com` in the app and in the server's `GOOGLE_CLIENT_IDS`.
 - 24 Nov: App ID `com.yebeyt.app` (description yebeyt) with Associated Domains, Push Notifications and Sign in with Apple. The Sign in with Apple key `ZBLL8ASYCU` is valid.
+- 24 Nov: App Clip ID `com.yebeyt.app.Clip` registered (Associated Domains). App Store Apple ID `6837700208` (the lead turns it on in the website's store buttons when 2.0 is live; until then the id has no store page). The old Pages project is deleted.
 - 24 Nov: push key «yebeyt push» (`K95YXBLYY5`) in Railway as `APNS_KEY`, `APNS_KEY_ID`, `APNS_TEAM_ID`.
 - Answered: levels, avatar parts, settings as a plain list, feedback stays anonymous after account deletion, league tiers, push notifications, another person's page in a plain layout, friend requests instead of mutual follows. The privacy policy has the lines about reported messages and feedback.
