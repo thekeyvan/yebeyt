@@ -14,6 +14,7 @@ Approved by the founder on 2026-11-22 ("exactly this"). Use this recipe, unchang
 - `round2/prompt.txt`: the instruction given to Codex.
 - `round2/prompts.md`: the final per-image prompts Codex used (good examples to copy for new poets).
 - `round2/*.png`: the 16 approved originals (black on white, 1024×1024).
+- `poet-*.png` (this folder, top level): the round-2 portraits converted with `to_white.py` (white on transparent, 1024×1024) — the files the server gets.
 - `to_white.py`: turns the black-on-white originals into white lines on a transparent background.
 
 ## Add new poets

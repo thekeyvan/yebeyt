@@ -141,7 +141,7 @@ Other game events: `{type:"game.move", gameId, move: {n, username, key, m1, m2, 
 
 ## Poet pictures
 
-Stored in Postgres (`poet_pictures`), served with `ETag` and a day of caching. Upload from `design/poets`:
+Stored in Postgres (`poet_pictures`), served with `ETag` and a day of caching. Upload from `design/poets` (white lines on transparent; made from round2 with to_white.py):
 
 ```bash
 API_URL=http://localhost:8080 ADMIN_TOKEN=… pnpm --filter @yebeyt/server pictures:upload design/poets
