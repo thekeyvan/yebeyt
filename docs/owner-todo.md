@@ -2,15 +2,11 @@
 
 Only what is still open. These need accounts or devices the agents don't have here (the corporate proxy on this laptop blocks Cloudflare, `gcloud` and the simulator's network). None of them blocks the build. What's already done is listed at the end.
 
-## 1. Apple
-
-- **Push key backup:** the push key file `AuthKey_K95YXBLYY5.p8` is still in Downloads. Put it in a password manager and delete it from Downloads; it can't be downloaded again.
-
-## 2. Google Cloud
+## 1. Google Cloud
 
 - Once Google sign-in works on a phone, shut down the old project `beyt-515410` (IAM & Admin → Settings → Shut down).
 
-## 3. Test on a real phone
+## 2. Test on a real phone
 
 These can't be tested in the simulator here (build from Xcode onto the phone):
 
@@ -20,12 +16,12 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 - Feedback: shake the phone on any screen and the sheet opens; the «بازخورد» row in settings opens it too. Send a bug with a screenshot and a screen recording («دوباره انجامش بده، ما فیلم می‌گیریم»): iOS asks once to allow recording, then the red «در حال ضبط · تموم» pill shows. The simulator gives ReplayKit no frames, so recording can only be tested on a real phone. The report should appear in `GET /v1/admin/feedback` with the screenshot and the recording.
 - With a second account (another phone, or a friend): send a friend request and accept it, send a message, and play a game together.
 
-## 4. Read when there's time
+## 3. Read when there's time
 
 - The lead's decisions in [yebeyt-2.md](yebeyt-2.md) («Decisions the lead made while the owner was away»).
 - `tools/ganjoor/curation.json` (poet bios and book blurbs) and `tools/ganjoor/glossary.json` (word meanings): both written by an agent; please check the Persian.
 
-## 5. Open questions (the lead decided something for now; change anything)
+## 4. Open questions (the lead decided something for now; change anything)
 
 1. **Badges:** ۷ روز, اولین مشاعره, حافظ‌شناس (50 right answers on Hafez), ۱۰۰ بیت (100 couplets read). More badges, other rules?
 2. **Delete account copy:** «حسابت و همه‌ی چیزهایی که جمع کردی پاک می‌شه. مطمئنی؟» — «پاک کن» / «نه».
@@ -37,7 +33,7 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 8. **Friend requests copy** (written by the builder): the empty requests screen says «درخواستی نداری.»; the block sheet's second line says «دیگه نمی‌تونه بهت پیام بده یا درخواست دوستی بفرسته.». OK?
 9. **English home page** (https://yebeyt.com/en): tagline "Every couplet, a game."; intro "A new couplet every day, games with poetry, and mosha'ere with your friends." The reviewer suggests "mosha'ere (poetry duels)" so English readers understand it. OK, or other wording?
 
-## 6. App Store Connect: the privacy label (don't fill it in yet)
+## 5. App Store Connect: the privacy label (don't fill it in yet)
 
 This table covers only feedback. Accounts, the divan sync, friends, messages and game scores also send data, and those rows are still missing. The lead will finish the full table before the first upload; fill in the label then, all at once.
 
