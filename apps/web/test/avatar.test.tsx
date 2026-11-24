@@ -59,10 +59,12 @@ describe("Avatar", () => {
     expect(behind.indexOf("#D9A86C")).toBeLessThan(behind.indexOf("M44 210"));
   });
 
-  it("falls back to each part's default for an id it doesn't know", () => {
-    const unknown = { face: "purple", eyes: "sleepy", hair: "rainbow", mouth: "scream", accessory: "wizard-hat", background: "neon" };
-    expect(render(unknown)).toBe(render({ ...standard, accessory: "none" }));
-    expect(render({ ...standard, face: "constructor", hair: "toString" })).toBe(render(standard));
+  it("draws the whole standard face, as the app does, when any part id is unknown", () => {
+    const chosen = { face: "brown", eyes: "happy", hair: "lapis", mouth: "grin", accessory: "crown", background: "mint" };
+    for (const bad of [{ face: "purple" }, { eyes: "sleepy" }, { hair: "rainbow" }, { mouth: "scream" }, { accessory: "wizard-hat" }, { background: "neon" }, { face: "constructor" }, { hair: "toString" }]) {
+      expect(render({ ...chosen, ...bad }), JSON.stringify(bad)).toBe(render(standard));
+    }
+    expect(render(chosen)).not.toBe(render(standard));
   });
 
   it("gives each face its own clip id, so several on a page don't share one", () => {
