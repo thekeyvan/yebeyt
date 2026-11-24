@@ -1,5 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { reactions } from "../db/schema.js";
 import type { Db } from "../db/index.js";
 import type { Deps } from "../deps.js";
@@ -10,12 +10,31 @@ import { coupletKeySchema } from "../schemas.js";
 
 const security = [{ bearerAuth: [] }];
 const MAX_KEYS = 50;
+const MINE_PAGE = 200;
 
 const kindSchema = z.enum(["like", "repost"]);
 const keyQuery = z.object({ key: coupletKeySchema.openapi({ description: "The couplet key; the `#` must be percent-encoded (`%23`)." }) });
 const countsSchema = z
   .object({ likes: z.number().int(), reposts: z.number().int(), likedByMe: z.boolean(), repostedByMe: z.boolean() })
   .openapi("ReactionCounts");
+
+const mineSchema = z
+  .object({
+    items: z.array(z.object({ key: coupletKeySchema, kind: kindSchema, at: z.iso.datetime() })),
+    nextCursor: z.string().nullable().openapi({ description: "Pass as `cursor` for the next page; null on the last page." }),
+  })
+  .openapi("MyReactions");
+
+/** The cursor is the last row's "<time>|<kind>|<key>" (a key never holds a bar), so rows of the same time are never skipped. */
+function parseMineCursor(cursor: string): { at: Date; kind: "like" | "repost"; key: string } | null {
+  const [time, kind, key, ...rest] = cursor.split("|");
+  const at = new Date(time ?? "");
+  // Re-printing the date must give the same text, which refuses dates that do not exist (30 February).
+  if (rest.length > 0 || Number.isNaN(at.getTime()) || at.toISOString() !== time) return null;
+  if ((kind !== "like" && kind !== "repost") || !coupletKeySchema.safeParse(key).success) return null;
+  return { at, kind, key: key! };
+}
+const mineCursorSchema = z.string().max(300).refine((v) => parseMineCursor(v) !== null);
 
 /** The keys of a comma list: 1 to 50 couplet keys (a key never holds a comma). Repeats count once. */
 function parseKeys(list: string): string[] | null {
@@ -118,6 +137,51 @@ export function reactionRoutes(deps: Deps) {
       },
     }),
     async (c) => c.json(await countsFor(db, c.get("userId"), parseKeys(c.req.valid("query").keys)!), 200),
+  );
+
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/v1/me/reactions",
+      tags: ["reactions"],
+      summary: "My own likes and reposts",
+      description: "Newest first, 200 a page. The phone pulls them when it signs in.",
+      security,
+      request: { query: z.object({ cursor: mineCursorSchema.optional() }) },
+      responses: {
+        200: { description: "A page of my reactions.", content: { "application/json": { schema: mineSchema } } },
+        400: errorResponse("A malformed cursor."),
+        401: errorResponse("Not signed in."),
+      },
+    }),
+    async (c) => {
+      const given = c.req.valid("query").cursor;
+      const cursor = given ? parseMineCursor(given)! : null;
+      // Newest first, then kind and key descending as a fixed tie-break ("C" compares bytes, so the order is the same everywhere).
+      const tie = sql`(${reactions.kind}::text || '|' || ${reactions.key}) collate "C"`;
+      const rows = await db
+        .select({ key: reactions.key, kind: reactions.kind, at: reactions.createdAt })
+        .from(reactions)
+        .where(
+          and(
+            eq(reactions.userId, c.get("userId")),
+            cursor
+              ? sql`(${reactions.createdAt} < ${cursor.at.toISOString()}::timestamptz or (${reactions.createdAt} = ${cursor.at.toISOString()}::timestamptz and ${tie} < ${`${cursor.kind}|${cursor.key}`}))`
+              : undefined,
+          ),
+        )
+        .orderBy(desc(reactions.createdAt), sql`${tie} desc`)
+        .limit(MINE_PAGE + 1);
+      const page = rows.slice(0, MINE_PAGE);
+      const last = page.at(-1);
+      return c.json(
+        {
+          items: page.map((r) => ({ key: r.key, kind: r.kind, at: r.at.toISOString() })),
+          nextCursor: rows.length > MINE_PAGE && last ? `${last.at.toISOString()}|${last.kind}|${last.key}` : null,
+        },
+        200,
+      );
+    },
   );
 
   return app;

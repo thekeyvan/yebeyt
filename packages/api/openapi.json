@@ -2077,6 +2077,54 @@
           "$ref": "#/components/schemas/ReactionCounts"
         }
       },
+      "MyReactions": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 200,
+                  "pattern": "^\\/[a-z0-9_\\-/]+#\\d{1,5}$",
+                  "example": "/hafez/ghazal/sh3#0",
+                  "description": "<poemPath>#<coupletIndex>"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "like",
+                    "repost"
+                  ]
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "key",
+                "kind",
+                "at"
+              ]
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `cursor` for the next page; null on the last page."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
       "ScoreResult": {
         "type": "object",
         "properties": {
@@ -6669,6 +6717,63 @@
           },
           "400": {
             "description": "invalid_request: a bad key, or more than 50.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/reactions": {
+      "get": {
+        "tags": [
+          "reactions"
+        ],
+        "summary": "My own likes and reposts",
+        "description": "Newest first, 200 a page. The phone pulls them when it signs in.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 300
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of my reactions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyReactions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A malformed cursor.",
             "content": {
               "application/json": {
                 "schema": {
