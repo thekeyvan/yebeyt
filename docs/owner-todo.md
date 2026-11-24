@@ -2,31 +2,18 @@
 
 Only what is still open. These need accounts or devices the agents don't have here (the corporate proxy on this laptop blocks Cloudflare, `gcloud` and the simulator's network). None of them blocks the build. What's already done is listed at the end.
 
-## 1. Cloudflare: point yebeyt.com at the new website
-
-yebeyt.com still points at the old Cloudflare Pages site (1.0). The new site (`apps/web`) runs on Railway at https://web-production-83a0b542.up.railway.app. First detach yebeyt.com and www from the Pages project (Workers & Pages → the old site → Custom domains → remove). Then in Cloudflare → yebeyt.com → DNS:
-
-| Type | Name | Target / value | Proxy |
-|---|---|---|---|
-| CNAME | `@` (yebeyt.com) | `j45dzw62.up.railway.app` | DNS only (grey cloud) |
-| CNAME | `www` | `uqy7gib1.up.railway.app` | DNS only |
-| TXT | `_railway-verify` | `railway-verify=0ff77988ea9c89a144c79c87ed28059d6c156bbce03877270de6863b4e5ea5e6` | — |
-| TXT | `_railway-verify.www` | `railway-verify=99e2ec4d1178f00db1b97a3a1af74764917aa999f3af124375c99495eba2d7fa` | — |
-
-Keep the MX/TXT records for Zoho mail (hello@yebeyt.com) as they are, and leave the `api` records alone. Check afterwards: `curl https://yebeyt.com/.well-known/apple-app-site-association` returns JSON. Universal Links and the App Clip (slice 9b) need this.
-
-## 2. Apple
+## 1. Apple
 
 - **App Clip ID:** if it isn't finished yet, register `com.yebeyt.app.Clip` (Identifiers → «+» → App IDs → App Clip, parent `com.yebeyt.app`, Product Name `Clip`), with only **Associated Domains** ticked.
 - **App Store id:** send the lead the app's Apple ID (App Store Connect → the app → App Information → General → Apple ID; a number of about 10 digits). The lead puts it in the website's store buttons.
 - **Push key backup:** the push key file `AuthKey_K95YXBLYY5.p8` is still in Downloads. Put it in a password manager and delete it from Downloads; it can't be downloaded again.
 
-## 3. Google Cloud
+## 2. Google Cloud
 
-- When the Apple ID from item 2 is known, add it to the iOS client (APIs & Services → Credentials → the iOS client → App Store ID).
+- When the Apple ID from item 1 is known, add it to the iOS client (APIs & Services → Credentials → the iOS client → App Store ID).
 - Once Google sign-in works on a phone, shut down the old project `beyt-515410` (IAM & Admin → Settings → Shut down).
 
-## 4. Test on a real phone
+## 3. Test on a real phone
 
 These can't be tested in the simulator here (build from Xcode onto the phone):
 
@@ -36,12 +23,12 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 - Feedback: shake the phone on any screen and the sheet opens; the «بازخورد» row in settings opens it too. Send a bug with a screenshot and a screen recording («دوباره انجامش بده، ما فیلم می‌گیریم»): iOS asks once to allow recording, then the red «در حال ضبط · تموم» pill shows. The simulator gives ReplayKit no frames, so recording can only be tested on a real phone. The report should appear in `GET /v1/admin/feedback` with the screenshot and the recording.
 - With a second account (another phone, or a friend): send a friend request and accept it, send a message, and play a game together.
 
-## 5. Read when there's time
+## 4. Read when there's time
 
 - The lead's decisions in [yebeyt-2.md](yebeyt-2.md) («Decisions the lead made while the owner was away»).
 - `tools/ganjoor/curation.json` (poet bios and book blurbs) and `tools/ganjoor/glossary.json` (word meanings): both written by an agent; please check the Persian.
 
-## 6. Open questions (the lead decided something for now; change anything)
+## 5. Open questions (the lead decided something for now; change anything)
 
 1. **Badges:** ۷ روز, اولین مشاعره, حافظ‌شناس (50 right answers on Hafez), ۱۰۰ بیت (100 couplets read). More badges, other rules?
 2. **Delete account copy:** «حسابت و همه‌ی چیزهایی که جمع کردی پاک می‌شه. مطمئنی؟» — «پاک کن» / «نه».
@@ -51,7 +38,7 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 6. **Reading feedback:** there is no admin screen yet; feedback is read through the admin API (`GET /v1/admin/feedback` with `ADMIN_TOKEN`). Should a simple page come before the admin dashboard?
 7. **Scores come from the phone,** so a determined cheater could fake them. The server caps points per round, and the daily and onboarding points count once. Good enough for now?
 
-## 7. App Store Connect: the privacy label for feedback
+## 6. App Store Connect: the privacy label for feedback
 
 The app has a privacy manifest (`apps/ios/Yebeyt/PrivacyInfo.xcprivacy`): no tracking, UserDefaults (reason CA92.1, the app's own settings), and the data that feedback sends. In App Store Connect → the app → App Privacy → Data Types, tick (for the lead to review; Apple's names):
 
@@ -69,6 +56,7 @@ Notes:
 
 ## Done
 
+- 24 Nov: `yebeyt.com` and `www.yebeyt.com` point at the new website on Railway (certificates valid); the old Pages site is detached.
 - 24 Nov: `api.yebeyt.com` points at the new server (CNAME `1kdy3n7t.up.railway.app`, certificate valid).
 - 24 Nov: new Google Cloud project **yebeyt** (account accounts@ksco.nl), consent screen published, iOS client `461381422799-sfbege1fi9tirookg2rp7utukvdtathq.apps.googleusercontent.com` in the app and in the server's `GOOGLE_CLIENT_IDS`.
 - 24 Nov: App ID `com.yebeyt.app` (description yebeyt) with Associated Domains, Push Notifications and Sign in with Apple. The Sign in with Apple key `ZBLL8ASYCU` is valid.
