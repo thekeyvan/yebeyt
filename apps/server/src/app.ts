@@ -26,6 +26,7 @@ import { progressRoutes } from "./routes/progress.js";
 import { reactionRoutes } from "./routes/reactions.js";
 import { reportRoutes } from "./routes/reports.js";
 import { scoreRoutes } from "./routes/scores.js";
+import { sharedDivanRoutes } from "./routes/sharedDivans.js";
 import { usernameRoutes } from "./routes/usernames.js";
 
 export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
@@ -83,6 +84,7 @@ export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
   app.route("/", reportRoutes(deps));
   app.route("/", conversationRoutes(deps));
   app.route("/", messageRoutes(deps));
+  app.route("/", sharedDivanRoutes(deps));
   app.route("/", peopleRoutes(deps));
   app.route("/", reactionRoutes(deps));
   app.route("/", scoreRoutes(deps));
