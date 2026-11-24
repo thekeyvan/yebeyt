@@ -60,7 +60,8 @@ struct AccountLaunchOptions {
 }
 
 /// The server as `-beytSignedIn` sees it: every name is free, three names are suggested, saves succeed, the divan
-/// is empty, the privacy settings are the defaults, deleting the account works, and no poet has a picture.
+/// is empty, the privacy settings are the defaults, deleting the account works, and no poet has a picture. Friends,
+/// scores, reactions, the leaderboard and the feed are in `DebugFriendsBackend`.
 final class DebugBackend: URLProtocol, @unchecked Sendable {
     /// Set once at launch (`-beytSyncFails`), before any request.
     nonisolated(unsafe) static var failsSync = false
@@ -91,7 +92,10 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
         case ("PUT", "/v1/me/avatar"): (200, Self.userJSON)
         case ("DELETE", "/v1/me"): (204, "")
         case (_, "/v1/poets/pictures"): (200, "[]")
-        default: Self.messagesAnswer(request) ?? (404, #"{"error":"not_found"}"#)
+        default:
+            Self.messagesAnswer(request)
+                ?? DebugFriendsBackend.answer(method: request.httpMethod ?? "GET", path: path, query: request.url?.query ?? "")
+                ?? (404, #"{"error":"not_found"}"#)
         }
         let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)

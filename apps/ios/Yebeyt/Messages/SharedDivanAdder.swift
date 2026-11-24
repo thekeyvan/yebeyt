@@ -67,8 +67,8 @@ final class SharedDivanAdder {
         var found: [ChatPerson] = []
         var next: String?
         repeat {
-            guard let page = try? await session.authorized({ try await self.session.api.chatFriends(cursor: next, token: $0) }) else { break }
-            found += page.items
+            guard let page = try? await session.authorized({ try await self.session.api.friends(cursor: next, token: $0) }) else { break }
+            found += page.items.map { ChatPerson(username: $0.username, displayName: $0.displayName, avatar: $0.avatar, online: nil) }
             next = page.nextCursor
         } while next != nil
         let have = Set(divans.map(\.other.username))

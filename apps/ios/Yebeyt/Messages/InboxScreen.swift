@@ -4,7 +4,6 @@ import SwiftUI
 struct InboxScreen: View {
     @Environment(MessagesCenter.self) private var center
     @Environment(AppModel.self) private var model
-    @Environment(Session.self) private var session
     @State private var composing = false
 
     var body: some View {
@@ -20,7 +19,7 @@ struct InboxScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $composing) { NewChatSheet(session: session, center: center) }
+        .sheet(isPresented: $composing) { NewChatSheet() }
         .onAppear { inbox.isVisible = true }
         .onDisappear { inbox.isVisible = false }
         .task { await inbox.load() }

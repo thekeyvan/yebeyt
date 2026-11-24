@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { reactions } from "../src/db/schema.js";
 import { makeHarness, type Harness } from "./helpers.js";
 
 let h: Harness;
@@ -107,5 +108,46 @@ describe("reactions", () => {
     await react(sara.token, "PUT", "like", K1);
     await h.request("/v1/me", { method: "DELETE", token: ali.token });
     expect((await counts(sara.token, [K1]))[K1]).toMatchObject({ likes: 1, likedByMe: true });
+  });
+
+  it("lists my own likes and reposts, newest first, with their time", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    await react(sara.token, "PUT", "like", K2);
+    await react(ali.token, "PUT", "like", K1);
+    h.clock.time = new Date("2026-06-01T12:05:00Z");
+    await react(ali.token, "PUT", "repost", K1);
+    const res = await h.request("/v1/me/reactions", { token: ali.token });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      items: [
+        { key: K1, kind: "repost", at: "2026-06-01T12:05:00.000Z" },
+        { key: K1, kind: "like", at: "2026-06-01T12:00:00.000Z" },
+      ],
+      nextCursor: null,
+    });
+  });
+
+  it("pages my reactions 200 at a time without skipping the ones with the same time", async () => {
+    const ali = await h.signUp("ali");
+    await h.db.insert(reactions).values(
+      Array.from({ length: 205 }, (_, i) => ({ userId: ali.id, key: `/p/q#${i}`, kind: "like" as const, createdAt: new Date("2026-06-01T12:00:00Z") })),
+    );
+    const first = (await (await h.request("/v1/me/reactions", { token: ali.token })).json()) as { items: { key: string }[]; nextCursor: string | null };
+    expect(first.items).toHaveLength(200);
+    expect(first.nextCursor).not.toBeNull();
+    const second = (await (await h.request(`/v1/me/reactions?cursor=${encodeURIComponent(first.nextCursor!)}`, { token: ali.token })).json()) as {
+      items: { key: string }[];
+      nextCursor: string | null;
+    };
+    expect(second.items).toHaveLength(5);
+    expect(second.nextCursor).toBeNull();
+    expect(new Set([...first.items, ...second.items].map((i) => i.key)).size).toBe(205);
+  });
+
+  it("refuses a malformed cursor on my reactions and needs sign-in", async () => {
+    const ali = await h.signUp("ali");
+    expect((await h.request("/v1/me/reactions?cursor=nope", { token: ali.token })).status).toBe(400);
+    expect((await h.request("/v1/me/reactions")).status).toBe(401);
   });
 });

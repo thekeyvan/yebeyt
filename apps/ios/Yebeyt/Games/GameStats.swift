@@ -13,10 +13,16 @@ final class GameStats {
     }
 
     static let defaultsKey = "games.stats"
+    static let ownerKey = "games.stats.owner"
+    static let claimedKey = "games.stats.claimed"
 
     private var saved: Saved
     /// The Tehran day the app shows; `refreshToday()` moves it at midnight.
     private(set) var today: TehranDay
+    /// The account these points were carried over to; nil while they are a guest's, or from before accounts knew.
+    private(set) var owner: String?
+    /// The points that belong to accounts that have left this phone; only what is above them is the next account's to claim.
+    private(set) var claimedPoints = 0
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let now: () -> Date
 
@@ -24,10 +30,39 @@ final class GameStats {
         self.defaults = defaults
         self.now = now
         today = TehranDay(date: now())
+        owner = defaults.string(forKey: Self.ownerKey)
+        claimedPoints = defaults.integer(forKey: Self.claimedKey)
         saved = defaults.data(forKey: Self.defaultsKey).flatMap { try? JSONDecoder().decode(Saved.self, from: $0) } ?? Saved()
     }
 
     var points: Int { saved.points }
+
+    /// The points a guest earned that no account has claimed: the current account's own, or the next one's.
+    var guestPoints: Int { max(0, saved.points - claimedPoints) }
+
+    /// A person signs in: the points on the phone go to the first account that does, and stay that account's. Returns
+    /// whether they are `userID`'s.
+    @discardableResult
+    func claim(for userID: String) -> Bool {
+        if owner == nil {
+            owner = userID
+            defaults.set(userID, forKey: Self.ownerKey)
+        }
+        return owner == userID
+    }
+
+    /// The account leaves the phone (signing out, deleting it): the points so far stay its own and are not offered to the
+    /// next account, and its streak and best scores go (they would be carried to the next account as its own); what is
+    /// earned from now on is a guest's again and the next account may claim it. The day records of the puzzle stay.
+    func release() {
+        owner = nil
+        claimedPoints = saved.points
+        saved.solvedDays = []
+        saved.best = [:]
+        defaults.removeObject(forKey: Self.ownerKey)
+        defaults.set(claimedPoints, forKey: Self.claimedKey)
+        persist()
+    }
 
     /// The days in a row the daily puzzle was solved, up to today. A day not played yet doesn't break it
     /// until the day is over.
@@ -71,6 +106,16 @@ final class GameStats {
         roundHandler?(game, right, questions)
     }
 
+    /// Told when a round of a solo game is over, with its points (for the server).
+    @ObservationIgnored var finishedRoundHandler: (@MainActor (GameKind, Int) -> Void)?
+
+    func finishRound(of game: GameKind, points: Int) {
+        finishedRoundHandler?(game, points)
+    }
+
+    /// Told when a day's puzzle is over, solved or out of tries: the day, whether it was solved, the tries it took and its points.
+    @ObservationIgnored var finishedDailyHandler: (@MainActor (TehranDay, Bool, Int, Int) -> Void)?
+
     func daily(on day: TehranDay) -> DailyRecord? { saved.daily[day.number] }
 
     /// The app came back: after Tehran midnight it is a new day.
@@ -86,7 +131,8 @@ final class GameStats {
 
     /// Keeps a day's puzzle. The moment it is first solved, its points are added and the day counts for the streak.
     func record(_ record: DailyRecord, on day: TehranDay) {
-        let wasSolved = saved.daily[day.number]?.outcome == .solved
+        let before = saved.daily[day.number]?.outcome ?? .playing
+        let wasSolved = before == .solved
         saved.daily[day.number] = record
         if record.outcome == .solved, !wasSolved {
             saved.points += record.points
@@ -94,6 +140,9 @@ final class GameStats {
             raiseBest(.daily, to: record.points)
         }
         persist()
+        if before == .playing, record.outcome != .playing {
+            finishedDailyHandler?(day, record.outcome == .solved, record.tries.count, record.points)
+        }
     }
 
     /// Points earned in a round, as they come.

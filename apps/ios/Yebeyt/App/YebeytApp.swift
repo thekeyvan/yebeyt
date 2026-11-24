@@ -18,6 +18,10 @@ struct YebeytApp: App {
     @State private var avatar: AvatarStore
     @State private var privacy: PrivacyStore
     @State private var divanSync: DivanSync
+    @State private var reactionsSync: ReactionsSync
+    @State private var scoreSync: ScoreSync
+    @State private var myStats: MyStats
+    @State private var blocked: BlockedPeople
     @State private var feedback: FeedbackCenter
     @State private var messages: MessagesCenter
     @State private var resolver: CoupletResolver
@@ -64,10 +68,12 @@ struct YebeytApp: App {
         let screens = options.destinations(in: library)
         let appModel = AppModel(
             tab: options.tab ?? (options.route?.isMe == true ? .me : options.route.map(\.isGames) == true ? .games : screens.isEmpty ? .home : .explore),
-            unreadCount: options.unread ?? 0, reader: options.reader, explorePath: screens, gamesPath: options.gamesPath,
+            unreadCount: options.unread ?? 0, reader: options.reader, homePath: options.homePath, explorePath: screens, gamesPath: options.gamesPath,
             mePath: options.mePath, game: options.game
         )
         appModel.autoplay = options.autoplay
+        appModel.leaderboardStart = options.board
+        appModel.peopleStart = options.peopleText
         let stats = options.today.map { today in GameStats(now: { today.noon }) } ?? GameStats()
         #else
         let appModel = AppModel()
@@ -84,6 +90,17 @@ struct YebeytApp: App {
         _avatar = State(initialValue: AvatarStore(session: accounts.session))
         _privacy = State(initialValue: PrivacyStore(session: accounts.session))
         _divanSync = State(initialValue: DivanSync(marks: marks, session: accounts.session))
+        _reactionsSync = State(initialValue: ReactionsSync(marks: marks, session: accounts.session))
+        let scores = ScoreSync(session: accounts.session)
+        let myStats = MyStats(local: stats, session: accounts.session)
+        scores.didSend = { Task { await myStats.refresh() } }
+        stats.finishedRoundHandler = { kind, points in
+            if let game = ScoreGame(kind) { scores.report(game, points: points) }
+        }
+        stats.finishedDailyHandler = { day, solved, tries, points in scores.reportDaily(on: day, solved: solved, tries: tries, points: points) }
+        _scoreSync = State(initialValue: scores)
+        _myStats = State(initialValue: myStats)
+        _blocked = State(initialValue: BlockedPeople(session: accounts.session))
         #if DEBUG
         if options.seedDivan { marks.seedDivan() }
         let feedbackOptions = FeedbackLaunchOptions.fromProcess
@@ -122,6 +139,10 @@ struct YebeytApp: App {
                 .environment(avatar)
                 .environment(privacy)
                 .environment(divanSync)
+                .environment(reactionsSync)
+                .environment(scoreSync)
+                .environment(myStats)
+                .environment(blocked)
                 .environment(feedback)
                 .environment(messages)
                 .environment(resolver)

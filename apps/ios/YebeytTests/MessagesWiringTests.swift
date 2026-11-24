@@ -120,51 +120,8 @@ struct MessagesWiringTests {
         #expect(try decode(SharedDivanItemPage.self, answer("GET", "/v1/shared-divans/d-sara/items", query: "by=me")).items.map(\.id) == ["i2"])
         #expect(try decode(SharedDivanItemPage.self, answer("GET", "/v1/shared-divans/d-sara/items", query: "by=them")).items.map(\.id) == ["i1", "i3"])
         #expect(try decode(SharedDivanItem.self, answer("PUT", "/v1/shared-divans/d-sara/items/i3/like")).likedByMe)
-        #expect(try decode(ChatPersonPage.self, answer("GET", "/v1/me/friends")).items.count == 4)
         #expect(try answer("GET", "/v1/me/unread") == #"{"total":2}"#)
         #expect(MessagesStub.answer(method: "GET", path: "/v1/something/else", query: "", body: Data()) == nil)
     }
     #endif
-}
-
-@MainActor
-struct NewChatTests {
-    @Test func aSearchListsPeopleAndAnEmptyQueryClearsThem() async {
-        let stub = StubServer { request in
-            request.query.contains("q=sar") ? .json(200, #"{"items":[\#(MessageJSON.person)]}"#) : .json(200, #"{"items":[]}"#)
-        }
-        let model = NewChatModel(session: signedInSession(stub.api)) { _ in nil }
-        model.query = "sar"
-        await model.search()
-        #expect(model.results.map(\.username) == ["sara"])
-        #expect(stub.requests.last?.path == "/v1/users/search")
-        model.query = "  "
-        await model.search()
-        #expect(model.results.isEmpty)
-        stub.respond { _ in .offline }
-        model.query = "x"
-        await model.search()
-        #expect(model.failure == APIError.network.persianMessage)
-    }
-
-    @Test func aTapOpensTheChatAndAClosedOneSaysWhy() async {
-        let opened = Recorded<String>()
-        let stub = StubServer()
-        let sara = ChatPerson(username: "sara", displayName: "سارا", avatar: nil, online: nil)
-        let model = NewChatModel(session: signedInSession(stub.api)) { name in
-            opened.add(name)
-            return name == "kian" ? "دیگه نمی‌تونی به این گفتگو پیام بدی" : nil
-        }
-        #expect(await model.open(sara))
-        #expect(!(await model.open(ChatPerson(username: "kian", displayName: nil, avatar: nil, online: nil))))
-        #expect(model.failure == "دیگه نمی‌تونی به این گفتگو پیام بدی")
-        #expect(opened.all == ["sara", "kian"])
-    }
-
-    @Test func theDebugStubSearchesByNameAndUsername() throws {
-        let (status, text) = try #require(MessagesStub.answer(method: "GET", path: "/v1/users/search", query: "q=sar", body: Data()))
-        #expect(status == 200)
-        let found = try JSONDecoder().decode(ChatPersonPage.self, from: Data(text.utf8))
-        #expect(found.items.map(\.username) == ["sara"])
-    }
 }

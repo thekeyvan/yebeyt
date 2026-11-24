@@ -22,6 +22,8 @@ final class AppModel {
     var unreadCount: Int
     /// The poem on screen in the full-screen reader, nil when it is closed.
     var reader: ReaderRoute?
+    /// The screens pushed on the خونه tab: finding friends and a person's page.
+    var homePath: [Destination]
     /// The screens pushed on the کاوش tab: the library, a book, a poet, search.
     var explorePath: [Destination]
     /// The screens pushed on the بازی tab: the catalog.
@@ -40,18 +42,23 @@ final class AppModel {
     var share: ReaderModel.Share?
     /// The game open over the tabs, nil when none is.
     var game: GameRoute?
+    /// The text «پیدا کردن دوست» starts with (a debug launch can fill the field).
+    var peopleStart = ""
+    /// The tab of رده‌بندی that opens first (a debug launch can start on another).
+    var leaderboardStart = LeaderboardModel.Tab.league
     #if DEBUG
     /// What a debug launch plays by itself before the game is shown (`-beytPlay`).
     var autoplay = GameAutoplay.none
     #endif
 
     init(
-        tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil, explorePath: [Destination] = [],
+        tab: Tab = .home, unreadCount: Int = 0, reader: ReaderRoute? = nil, homePath: [Destination] = [], explorePath: [Destination] = [],
         gamesPath: [Destination] = [], mePath: [Destination] = [], messagesPath: [Destination] = [], game: GameRoute? = nil
     ) {
         selectedTab = tab
         self.unreadCount = unreadCount
         self.reader = reader
+        self.homePath = homePath
         self.explorePath = explorePath
         self.gamesPath = gamesPath
         self.mePath = mePath
@@ -61,6 +68,7 @@ final class AppModel {
 
     /// Tapping the tab you are on goes back to its first screen.
     func select(_ tab: Tab) {
+        if tab == selectedTab, tab == .home { homePath = [] }
         if tab == selectedTab, tab == .explore { explorePath = [] }
         if tab == selectedTab, tab == .games { gamesPath = [] }
         if tab == selectedTab, tab == .me { mePath = [] }
@@ -90,11 +98,11 @@ final class AppModel {
         if reader != nil { return .reader }
         if let game { return ScreenName(game) }
         let top: Destination? = switch selectedTab {
+        case .home: homePath.last
         case .explore: explorePath.last
         case .games: gamesPath.last
         case .me: mePath.last
         case .messages: messagesPath.last
-        case .home: nil
         }
         return top.map(ScreenName.init) ?? ScreenName(selectedTab)
     }

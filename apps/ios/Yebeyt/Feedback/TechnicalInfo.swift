@@ -26,6 +26,10 @@ enum ScreenName: String, Sendable, CaseIterable {
     case licenses = "مجوزها"
     case chat = "گفتگو"
     case sharedDivan = "دیوان مشترک"
+    case people = "پیدا کردن دوست"
+    case person = "صفحه‌ی یه آدم"
+    case leaderboard = "رده‌بندی"
+    case friends = "دوستا"
     case reader = "خوندن شعر"
     case daily = "معمای امروز"
     case jigsaw = "جورچین بیت"
@@ -64,6 +68,10 @@ enum ScreenName: String, Sendable, CaseIterable {
         case .licenses: self = .licenses
         case .chat: self = .chat
         case .sharedDivan: self = .sharedDivan
+        case .people: self = .people
+        case .person: self = .person  // never the username
+        case .leaderboard: self = .leaderboard
+        case .friends: self = .friends
         }
     }
 

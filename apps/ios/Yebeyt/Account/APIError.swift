@@ -19,6 +19,10 @@ enum APIErrorCode: String, Sendable {
     case unsupportedMediaType = "unsupported_media_type"
     case internalError = "internal_error"
     case unavailable
+    case conflict
+    case pointsTooHigh = "points_too_high"
+    case badTimestamp = "bad_timestamp"
+    case usernameRequired = "username_required"
     case busy
     case alreadyUploaded = "already_uploaded"
     case uploadTimeout = "upload_timeout"
@@ -43,6 +47,12 @@ enum APIError: Error, Equatable, Sendable {
     /// The server refused the access or refresh token.
     var isUnauthorized: Bool {
         if case .server(let status, _, _) = self { status == 401 } else { false }
+    }
+
+    /// The server will never take this request as it is (a client error other than 401, 408 and 429): sending it
+    /// again is useless, so a queue drops it. A 409 is the round already counted.
+    var isFinal: Bool {
+        if case .server(let status, _, _) = self { (400..<500).contains(status) && ![401, 408, 429].contains(status) } else { false }
     }
 
     /// The Persian line shown to the person. The codes themselves never reach the screen.

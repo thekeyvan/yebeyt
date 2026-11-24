@@ -113,4 +113,15 @@ struct CurrentScreenTests {
         model.closeGame()
         #expect(model.currentScreen == .book)
     }
+
+    @Test func aPersonsPageOnTheHomeTabIsNamedWithoutTheUsername() {
+        let model = AppModel(tab: .home, homePath: [.people, .person("sara.ghazal")])
+        #expect(model.currentScreen == .person)
+        model.homePath = [.people]
+        #expect(model.currentScreen == .people)
+        model.homePath = [.person("sara.ghazal")]
+        FeedbackLog.shared.visit(model.currentScreen)
+        #expect(!FeedbackLog.shared.steps.map(\.rawValue).contains { $0.contains("sara") })
+        #expect(FeedbackLog.shared.steps.last == .person)
+    }
 }

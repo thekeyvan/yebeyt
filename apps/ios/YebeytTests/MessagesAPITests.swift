@@ -70,7 +70,6 @@ struct MessagesAPITests {
         _ = try await api.addSharedDivanItem(id: "d1", key: "/hafez/ghazal/sh3#0", note: "یاد سفر", token: "t")
         #expect(try await api.setSharedDivanLike(id: "d1", item: "i1", liked: true, token: "t").likedByMe)
         #expect(try await api.setSharedDivanLike(id: "d1", item: "i1", liked: false, token: "t").likedByMe == false)
-        #expect(try await api.chatFriends(cursor: nil, token: "t").items.map(\.username) == ["sara"])
 
         #expect(stub.requests.allSatisfy { $0.authorization == "Bearer t" })
         #expect(stub.requests[0].query == "cursor=next")

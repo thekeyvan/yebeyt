@@ -71,25 +71,7 @@ extension API {
         try await call(liked ? "PUT" : "DELETE", "/v1/shared-divans/\(id)/items/\(item)/like", token: token)
     }
 
-    /// My friends, for choosing whose shared divan to add to.
-    func chatFriends(cursor: String?, token: String) async throws -> ChatPersonPage {
-        try await call("GET", "/v1/me/friends", query: Self.items(("cursor", cursor)), token: token)
-    }
-
-    /// People by username or name (the sheet of a new chat). At most 20.
-    func searchChatPeople(query: String, token: String) async throws -> [ChatPerson] {
-        struct Found: Decodable { var items: [ChatPerson] }
-        let found: Found = try await call("GET", "/v1/users/search", query: [URLQueryItem(name: "q", value: query)], token: token)
-        return found.items
-    }
-
     private static func items(_ pairs: (String, String?)...) -> [URLQueryItem] {
         pairs.compactMap { name, value in value.map { URLQueryItem(name: name, value: $0) } }
     }
-}
-
-/// A page of people (`GET /v1/me/friends`).
-struct ChatPersonPage: Equatable, Sendable, Decodable {
-    var items: [ChatPerson]
-    var nextCursor: String?
 }

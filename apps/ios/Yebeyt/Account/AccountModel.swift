@@ -3,7 +3,7 @@ import Observation
 
 /// What needs an account: the first use of it shows the account gate.
 enum AccountFeature: String, Sendable {
-    case likes, messages, invite, profile
+    case likes, messages, invite, profile, leaderboard
 
     /// Fits «برای … یه حساب لازمه».
     var title: String {
@@ -12,6 +12,7 @@ enum AccountFeature: String, Sendable {
         case .messages: "پیام دادن به دوستات"
         case .invite: "دعوت دوستات"
         case .profile: "همگام کردن دیوان و امتیازهات"
+        case .leaderboard: "دیدن رده‌بندی"
         }
     }
 }
@@ -124,7 +125,7 @@ final class AccountModel {
             session.apply(signedIn)
             self.provider = provider
             providerName = result.name
-            await carryOverProgress()
+            if stats.claim(for: signedIn.user.id) { await carryOverProgress() }  // another account's points are not carried over
             return .signedIn(needsUsername: signedIn.user.username == nil)
         } catch SignInError.canceled {
             return .canceled

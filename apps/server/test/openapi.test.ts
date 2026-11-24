@@ -62,6 +62,7 @@ describe("OpenAPI document", () => {
       "/v1/me/privacy",
       "/v1/me/profile",
       "/v1/me/progress",
+      "/v1/me/reactions",
       "/v1/me/stats",
       "/v1/me/unread",
       "/v1/me/username",

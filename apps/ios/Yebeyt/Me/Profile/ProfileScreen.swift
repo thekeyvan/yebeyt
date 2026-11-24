@@ -7,6 +7,7 @@ struct ProfileScreen: View {
     @Environment(AccountModel.self) private var account
     @Environment(AvatarStore.self) private var avatar
     @Environment(GameStats.self) private var stats
+    @Environment(MyStats.self) private var myStats
     @Environment(Achievements.self) private var achievements
     @Environment(ReadingProgress.self) private var reading
     @Environment(ReaderMarks.self) private var marks
@@ -33,6 +34,7 @@ struct ProfileScreen: View {
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task(id: firstKept.map(\.key)) { await divan.load(firstKept, using: poetry) }
+        .task(id: session.user?.username) { await myStats.refreshFriendsCount() }
     }
 
     // MARK: Top
@@ -81,9 +83,17 @@ struct ProfileScreen: View {
                     .accessibilityIdentifier("profileName")
                 if session.isSignedIn {
                     if let username = session.user?.username {
-                        Text("@\(username)").font(.ui(13)).foregroundStyle(Tokens.Colors.muted)
-                            .environment(\.layoutDirection, .leftToRight)
-                            .accessibilityIdentifier("profileUsername")
+                        HStack(spacing: 4) {
+                            Text("@\(username)").environment(\.layoutDirection, .leftToRight)
+                                .accessibilityIdentifier("profileUsername")
+                            if let friends = myStats.friendsCount {
+                                Text("·")
+                                Button { model.mePath.append(.friends) } label: { Text("\(PersianDigits.string(friends)) دوست") }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("profileFriends")
+                            }
+                        }
+                        .font(.ui(13)).foregroundStyle(Tokens.Colors.muted)
                     }
                 } else {
                     signInButton
@@ -125,9 +135,9 @@ struct ProfileScreen: View {
 
     private var statCards: some View {
         HStack(spacing: 10) {
-            card(Level.name(points: stats.points), "سطح", fill: Tokens.Colors.lapis, text: Tokens.Colors.white)
-            card(PersianDigits.grouped(stats.points), "امتیاز", fill: Tokens.Colors.amber, text: Tokens.Colors.ink)
-            card("\(PersianDigits.string(stats.streak)) روز", "پشت‌سرهم", fill: Tokens.Colors.fire, text: Tokens.Colors.white)
+            card(Level.name(points: myStats.points), "سطح", fill: Tokens.Colors.lapis, text: Tokens.Colors.white)
+            card(PersianDigits.grouped(myStats.points), "امتیاز", fill: Tokens.Colors.amber, text: Tokens.Colors.ink)
+            card("\(PersianDigits.string(myStats.streak)) روز", "پشت‌سرهم", fill: Tokens.Colors.fire, text: Tokens.Colors.white)
         }
         .accessibilityElement(children: .contain)
     }

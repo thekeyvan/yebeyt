@@ -3,7 +3,7 @@ import Foundation
 
 /// What `-beytSignedIn` answers for messages and shared divans: five friends (sara, arian, kian, mahsa, bardia),
 /// their chats as on the boards, one shared divan with Sara (24 couplets, 13 hers and 11 mine) and one with Kian.
-/// Sending echoes the message back; likes flip; everything else succeeds with nothing. Times are today and the
+/// Sending echoes the message back; likes flip. People, friends, search and reports are the friends stub's (`DebugFriendsBackend`). Times are today and the
 /// days before, so the chats look as on the boards on any day.
 enum MessagesStub {
     private struct Person {
@@ -141,19 +141,11 @@ enum MessagesStub {
         case ("POST", "/v1/conversations"):
             let username = json["username"] as? String ?? "sara"
             return (200, #"{"id":"c-\#(username)","other":\#(person(username).json)}"#)
-        case ("GET", "/v1/me/friends"):
-            let friends = people.prefix(4).map { #"{"username":"\#($0.username)","displayName":"\#($0.name)","avatar":null,"isFriend":true}"# }
-            return (200, #"{"items":[\#(friends.joined(separator: ","))],"nextCursor":null}"#)
-        case ("GET", "/v1/users/search"):
-            let wanted = (query.removingPercentEncoding ?? query).replacingOccurrences(of: "q=", with: "")
-            let found = people.filter { $0.username.contains(wanted.lowercased()) || $0.name.contains(wanted) }.map { person($0.username).json }
-            return (200, #"{"items":[\#(found.joined(separator: ","))]}"#)
-        case ("POST", "/v1/reports"): return (204, "")
         case ("GET", "/v1/shared-divans"): return (200, #"{"items":[\#(divan("sara")),\#(divan("kian"))],"nextCursor":null}"#)
         case ("POST", "/v1/shared-divans"): return (200, divan(json["username"] as? String ?? "sara"))
         default: break
         }
-        if method == "GET", parts.count == 3, parts[1] == "users" {
+        if method == "GET", parts.count == 3, parts[1] == "users", people.contains(where: { $0.username == parts[2] }) {
             return (200, #"{"username":"\#(parts[2])","league":{"tier":\#(parts[2] == "sara" ? 2 : 1)}}"#)
         }
         if parts.count == 4, parts[1] == "conversations", parts[3] == "messages" {

@@ -6,6 +6,8 @@ struct DailyPuzzleCard: View {
     let puzzle: DailyPuzzle
     let day: TehranDay
     let finished: Bool
+    /// «۳ تا از دوستات حلش کردن», when some did.
+    var friendsLine: String?
     let open: () -> Void
 
     var body: some View {
@@ -17,6 +19,9 @@ struct DailyPuzzleCard: View {
             Text("کلمه‌ی گم‌شده").font(.title(30)).accessibilityAddTraits(.isHeader)
             couplet
             HStack {
+                if let friendsLine {
+                    Text(friendsLine).font(.ui(13, weight: .medium)).accessibilityIdentifier("dailyFriends")
+                }
                 Spacer(minLength: 0)
                 Button(finished ? "ببین" : "بزن بریم", action: open)
                     .buttonStyle(DailyButtonStyle())

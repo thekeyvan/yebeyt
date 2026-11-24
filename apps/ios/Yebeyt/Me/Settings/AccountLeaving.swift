@@ -1,31 +1,31 @@
 import Foundation
 
-/// What on this phone belongs to an account: the divan with its times, the privacy settings and the face (and, for
-/// deleting, the likes and reposts). It goes when the person signs out or deletes the account, so nothing of it is carried over to the
-/// next account on this phone. Likes and reposts stay on sign-out and go only with a deleted account, until they sync with the server.
-/// What a guest has anyway (reading, game scores, text settings) stays.
+/// What on this phone belongs to an account: the divan with its times, the likes and reposts, the privacy settings and
+/// the face, and the scores and reactions not sent yet. It goes when the person signs out or deletes the account, so
+/// nothing of it is carried over to the next account on this phone (the game points stay on the phone, but only as the
+/// leaving account's: the next one may claim just what is earned after). What a guest has anyway (reading, game scores,
+/// text settings) stays.
 @MainActor
 struct LocalAccountData {
     let marks: ReaderMarks
     let privacy: PrivacyStore
     let avatar: AvatarStore
+    let reactions: ReactionsSync
+    let scores: ScoreSync
+    let stats: GameStats
 
-    /// Signing out: the divan, the privacy settings and the face go. The likes and reposts stay until they live on
-    /// the server.
     func clearForSignOut() {
+        stats.release()
         marks.clearDivan()
+        marks.clearLikesAndReposts()
+        reactions.clear()
+        scores.clear()
         privacy.clear()
         avatar.clear()
     }
-
-    /// Deleting the account: all of it.
-    func clearAll() {
-        clearForSignOut()
-        marks.clearLikesAndReposts()
-    }
 }
 
-/// «خروج از حساب»: one last sync (the divan, an unsent face, unsent privacy changes), so nothing made on this phone
+/// «خروج از حساب»: one last sync (the divan, the likes and reposts, an unsent face, unsent privacy changes, the scores), so nothing made on this phone
 /// is lost, then the sign-in is forgotten and the account's data goes from the phone. When the last sync did not go
 /// through, nothing happens until the person insists (`force`): what is not on the account would be lost.
 @MainActor
@@ -41,11 +41,15 @@ struct AccountSignOut {
     func signOut(force: Bool = false) async -> Outcome {
         if !force {
             let divanSent = await divanSync.syncNow()
+            let reactionsSent = await data.reactions.syncNow()
             await data.privacy.flush()
             await data.avatar.flush()
-            guard divanSent, !data.privacy.hasUnsentChanges, !data.avatar.isUnsent else { return .unsynced }
+            await data.scores.flush()
+            guard divanSent, reactionsSent, !data.scores.hasUnsent, !data.privacy.hasUnsentChanges, !data.avatar.isUnsent else { return .unsynced }
         }
         await divanSync.stop()
+        await data.reactions.stop()
+        await data.scores.settle()
         await data.privacy.settle()
         await data.avatar.settle()
         await session.signOut()
@@ -76,9 +80,11 @@ struct AccountDeletion {
         await session.signOut(tellServer: false)
         // Whatever was on its way when the account went must land (or fail) before the phone is cleared.
         await divanSync.stop()
+        await data.reactions.stop()
+        await data.scores.settle()
         await data.privacy.settle()
         await data.avatar.settle()
-        data.clearAll()
+        data.clearForSignOut()
         return nil
     }
 }

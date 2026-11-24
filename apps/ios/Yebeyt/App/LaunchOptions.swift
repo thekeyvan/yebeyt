@@ -11,7 +11,9 @@ import Foundation
 /// `-beytStub 1` makes گوش کن use canned recitations (no network, no sound).
 /// With `poem:` the reader opens, and `-beytCouplet <n>` (0-based), `-beytMode scroll`, `-beytSheet text`,
 /// `-beytMeaning 1` and `-beytHold <n>` set its state. The من routes `-beytRoute me|divan|privacy|avatar|invite|settings|badges`
-/// open the من tab, with that screen pushed (`me` is the profile), and `-beytSeedDivan 1` first keeps some sample couplets. `-beytFresh 1` first forgets what the phone has kept
+/// open the من tab, with that screen pushed (`me` is the profile), `-beytRoute friends` pushes my friends there, and `-beytSeedDivan 1`
+/// first keeps some sample couplets. `-beytRoute people|people:<text>|person:<username>` open the خونه tab with that screen pushed and `-beytRoute leaderboard`
+/// the بازی tab with رده‌بندی (they want `-beytSignedIn 1`). `-beytFresh 1` first forgets what the phone has kept
 /// (reading progress, marks, follows, rejected couplets, game stats). Values that don't parse are ignored.
 struct LaunchOptions {
     enum Route: Equatable {
@@ -41,6 +43,10 @@ struct LaunchOptions {
         case invite
         case settings
         case badges
+        case people(String)
+        case person(String)
+        case leaderboard
+        case friends
 
         init?(_ text: String) {
             let (name, value) = text.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
@@ -66,6 +72,10 @@ struct LaunchOptions {
             case ("invite", nil): self = .invite
             case ("settings", nil): self = .settings
             case ("badges", nil): self = .badges
+            case ("people", let text): self = .people(text ?? "")
+            case ("leaderboard", nil): self = .leaderboard
+            case ("friends", nil): self = .friends
+            case ("person", let username?) where !username.isEmpty: self = .person(username)
             case ("poem", let path?) where Self.isPath(path): self = .poem(path)
             case ("book", let path?) where Self.isPath(path): self = .book(path)
             case ("section", let path?) where Self.isPath(path): self = .section(path)
@@ -81,7 +91,7 @@ struct LaunchOptions {
         /// The route opens something on the من tab.
         var isMe: Bool {
             switch self {
-            case .me, .divan, .privacy, .avatar, .invite, .settings, .badges: true
+            case .me, .divan, .privacy, .avatar, .invite, .settings, .badges, .friends: true
             default: false
             }
         }
@@ -89,7 +99,7 @@ struct LaunchOptions {
         /// The route opens something on the بازی tab.
         var isGames: Bool {
             switch self {
-            case .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen: true
+            case .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen, .leaderboard: true
             default: false
             }
         }
@@ -104,6 +114,8 @@ struct LaunchOptions {
     private let meaning: String?
     private let hold: Int?
     private let play: Int?
+    /// `-beytBoard league|friends|global`: the tab of رده‌بندی that opens first.
+    private(set) var board: LeaderboardModel.Tab
     /// `-beytStub 1`: گوش کن plays canned recitations instead of asking Ganjoor.
     private let stub: Bool
     /// `-beytToday <yyyy-mm-dd>`: the Tehran day the games use instead of the real one.
@@ -127,6 +139,11 @@ struct LaunchOptions {
         meaning = (values["beytMeaning"] as? String) ?? (values["beytMeaning"] as? Int).map(String.init)
         hold = number("beytHold")
         play = number("beytPlay")
+        board = switch values["beytBoard"] as? String {
+        case "friends": .friends
+        case "global": .global
+        default: .league
+        }
         stub = number("beytStub") == 1
         today = (values["beytToday"] as? String).flatMap { TehranDay(key: $0) }
         fresh = number("beytFresh") == 1
@@ -134,7 +151,7 @@ struct LaunchOptions {
     }
 
     @MainActor static let savedStateKeys = [
-        ReaderMarks.defaultsKey, ReaderMarks.divanKey, ReadingProgress.defaultsKey, Follows.defaultsKey, HomeModel.defaultsKey, GameStats.defaultsKey,
+        ReaderMarks.defaultsKey, ReaderMarks.divanKey, ReadingProgress.defaultsKey, Follows.defaultsKey, HomeModel.defaultsKey, GameStats.defaultsKey, GameStats.ownerKey, GameStats.claimedKey,
         PrivacyStore.defaultsKey, PrivacyStore.unsentKey, AvatarStore.defaultsKey, AvatarStore.unsentKey, Achievements.defaultsKey,
         FeedbackSettings.shakeKey,
     ]
@@ -155,7 +172,7 @@ struct LaunchOptions {
         case .book(let path): return library.book(path: path).map { [.library, .book($0.id)] } ?? []
         case .section(let path): return library.section(path: path).map { [.library, .book($0.book.id), .section(book: $0.book.id, section: $0.section.id)] } ?? []
         case .stickers, .poem, .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen, nil: return []
-        case .me, .divan, .privacy, .avatar, .invite, .settings, .badges: return []
+        case .me, .divan, .privacy, .avatar, .invite, .settings, .badges, .friends, .people, .person, .leaderboard: return []
         }
     }
 
@@ -168,12 +185,33 @@ struct LaunchOptions {
         case .invite: [.invite]
         case .settings: [.settings]
         case .badges: [.badges]
+        case .friends: [.friends]
+        default: []
+        }
+    }
+
+    /// What the «پیدا کردن دوست» field starts with (`people:<text>`).
+    var peopleText: String {
+        if case .people(let text) = route { text } else { "" }
+    }
+
+    /// The screens a friends route pushes on the خونه tab.
+    var homePath: [Destination] {
+        switch route {
+        case .people: [.people]
+        case .person(let username): [.person(username)]
         default: []
         }
     }
 
     /// The screens a games route pushes on the بازی tab.
-    var gamesPath: [Destination] { route == .gamesCatalog ? [.gamesCatalog] : [] }
+    var gamesPath: [Destination] {
+        switch route {
+        case .gamesCatalog: [.gamesCatalog]
+        case .leaderboard: [.leaderboard]
+        default: []
+        }
+    }
 
     /// The game a games route opens.
     var game: GameRoute? {

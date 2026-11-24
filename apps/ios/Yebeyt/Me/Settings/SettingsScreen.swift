@@ -10,6 +10,9 @@ struct SettingsScreen: View {
     @Environment(PrivacyStore.self) private var privacy
     @Environment(AvatarStore.self) private var avatar
     @Environment(DivanSync.self) private var divanSync
+    @Environment(ReactionsSync.self) private var reactions
+    @Environment(ScoreSync.self) private var scores
+    @Environment(GameStats.self) private var gameStats
     @Environment(FeedbackCenter.self) private var feedback
     @AppStorage(FeedbackSettings.shakeKey) private var shakeForFeedback = true
     @State private var editingProfile = false
@@ -116,7 +119,7 @@ struct SettingsScreen: View {
     private var divider: some View { Tokens.Colors.chipBorder.frame(height: 1) }
 
     private var leaving: AccountSignOut {
-        AccountSignOut(session: session, data: LocalAccountData(marks: marks, privacy: privacy, avatar: avatar), divanSync: divanSync)
+        AccountSignOut(session: session, data: LocalAccountData(marks: marks, privacy: privacy, avatar: avatar, reactions: reactions, scores: scores, stats: gameStats), divanSync: divanSync)
     }
 
     /// One last sync, then out; when it did not go through, the person is asked before anything is lost.

@@ -5,7 +5,7 @@ extension ProgressPayload {
     /// `GameStats`: the points, the streak (its last day is today when today's puzzle is solved, else yesterday)
     /// and the best score of every game played.
     @MainActor init(stats: GameStats) {
-        points = stats.points
+        points = stats.guestPoints
         streakDays = stats.streak
         let solvedToday = stats.daily(on: stats.today)?.outcome == .solved
         streakLastDate = stats.streak > 0 ? (solvedToday ? stats.today : stats.today.previous).key : nil

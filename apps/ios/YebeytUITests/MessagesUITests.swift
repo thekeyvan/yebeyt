@@ -54,13 +54,21 @@ final class MessagesUITests: XCTestCase {
         let compose = element(app, "inboxCompose")
         XCTAssertTrue(compose.waitForExistence(timeout: 10))
         compose.tap()
-        let field = app.textFields["newChatSearch"]
+        let field = app.textFields["peopleSearch"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap()
         field.typeText("sar")
-        let person = element(app, "newChat-sara")
+        let person = element(app, "newChat-sara.ghazal")
         XCTAssertTrue(person.waitForExistence(timeout: 10))
         person.tap()
+        XCTAssertTrue(app.textFields["composer"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor func testMessageOnAPersonsPageOpensTheChat() {
+        let app = launch(["-beytRoute", "person:kian_k"])  // a friend, so «پیام بده» shows
+        let message = element(app, "personMessage")
+        XCTAssertTrue(message.waitForExistence(timeout: 10))
+        message.tap()
         XCTAssertTrue(app.textFields["composer"].waitForExistence(timeout: 10))
     }
 
@@ -99,7 +107,7 @@ final class MessagesUITests: XCTestCase {
         XCTAssertTrue(element(app, "divanWith-kian").exists)
         XCTAssertTrue(app.buttons["otherFriend"].exists)
         app.buttons["otherFriend"].tap()
-        XCTAssertTrue(element(app, "divanWith-arian").waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, "divanWith-mahsa.m").waitForExistence(timeout: 5))
         XCTAssertTrue(element(app, "divanWith-sara").exists)  // the friends with a divan stay listed above
         element(app, "divanWith-sara").tap()
         XCTAssertTrue(app.buttons["divanAdd"].waitForExistence(timeout: 5))

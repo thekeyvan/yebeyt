@@ -4,6 +4,7 @@ import { follows, privacySettings, users } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { leagueOf } from "../leagues.js";
+import { canMessage } from "../messaging.js";
 import { findByUsername, relationOf, shortPersonSchema } from "../people.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
@@ -23,6 +24,7 @@ const profileSchema = shortPersonSchema
     isFollowing: z.boolean(),
     followsYou: z.boolean(),
     isFriend: z.boolean(),
+    canMessage: z.boolean().openapi({ description: "I may write to them now: nobody blocked the other, and their «بهم پیام بده» lets me (or they already wrote to me in our chat). Never for myself." }),
     league: z.object({ tier: z.number().int().min(0).max(4) }).nullable().openapi({ description: "This week's tier; null before their first score of the week, and for a stranger who keeps off the global leaderboard (same rule as `weekPoints`)." }),
     weekPoints: z.number().int().nullable().openapi({ description: "Only for a friend, for yourself, or someone who allows the global leaderboard; else null." }),
   })
@@ -103,7 +105,7 @@ export function peopleRoutes(deps: Deps) {
       const person = await findByUsername(db, c.req.valid("param").username);
       if (!person || (await isBlocked(db, me, person.id))) throw new ApiError(404, "not_found");
       const week = weekOf(deps.now());
-      const [relation, [privacy], [count], league] = await Promise.all([
+      const [relation, [privacy], [count], league, mayWrite] = await Promise.all([
         relationOf(db, me, person.id),
         db.select({ inGlobal: privacySettings.inGlobalLeaderboard }).from(privacySettings).where(eq(privacySettings.userId, person.id)),
         db
@@ -116,6 +118,7 @@ export function peopleRoutes(deps: Deps) {
             ),
           ),
         leagueOf(db, person.id, week),
+        canMessage(db, me, person.id),
       ]);
       // Tier and points follow one rule: a friend, yourself, or someone who allows the global leaderboard.
       const sharesPoints = relation.isFriend || person.id === me || privacy?.inGlobal === true;
@@ -126,6 +129,7 @@ export function peopleRoutes(deps: Deps) {
           avatar: person.avatar,
           friendsCount: count!.n,
           ...relation,
+          canMessage: mayWrite,
           league: league && sharesPoints ? { tier: league.tier } : null,
           weekPoints: sharesPoints ? await weekPointsOf(db, person.id, week) : null,
         },

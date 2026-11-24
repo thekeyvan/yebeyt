@@ -7,6 +7,7 @@ struct OnbGameView: View {
     @Environment(Taste.self) private var taste
     @Environment(GameDeck.self) private var deck
     @Environment(GameStats.self) private var stats
+    @Environment(ScoreSync.self) private var scores
     @State private var game: OnboardingGame?
     @State private var slotFrames: [Int: CGRect] = [:]
 
@@ -80,6 +81,7 @@ struct OnbGameView: View {
     private func finish(won: Bool) async {
         if won {
             stats.award(OnboardingGame.reward)
+            scores.report(.onboarding, points: OnboardingGame.reward, keepWhileSignedOut: true)
             try? await Task.sleep(for: .milliseconds(900))
         }
         onboarding.gameEnded(won: won)

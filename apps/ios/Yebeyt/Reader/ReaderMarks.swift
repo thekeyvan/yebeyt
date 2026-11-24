@@ -4,7 +4,8 @@ import Observation
 /// What the reader has marked on this phone, per couplet: پسند, بازنشر and نگه دار. Keys look like
 /// «/hafez/ghazal/sh3#1» (the poem path and the 0-based couplet index).
 ///
-/// پسند and بازنشر are only local for now (JSON in UserDefaults). نگه دار is the divan: each couplet has the time
+/// پسند and بازنشر are kept on the phone (JSON in UserDefaults) and, for a signed-in person, on the server
+/// (`ReactionsSync`; they go when the person signs out). نگه دار is the divan: each couplet has the time
 /// it was kept and the time it was taken out (`DivanItem`), kept as its own JSON, so that it can be merged with
 /// the server's divan (`DivanSync`). Couplets kept before the times existed get the time of the first launch
 /// that knows about them.
@@ -27,6 +28,8 @@ final class ReaderMarks {
     @ObservationIgnored private let now: () -> Date
     /// Called after the person keeps or un-keeps a couplet (not after a merge from the server).
     @ObservationIgnored var keptDidChange: (@MainActor () -> Void)?
+    /// Called after the person likes, un-likes, reposts or un-reposts a couplet: the key, the kind and whether it is on now.
+    @ObservationIgnored var reactionDidChange: (@MainActor (String, ReactionKind, Bool) -> Void)?
 
     init(defaults: UserDefaults = .standard, now: @escaping () -> Date = { .now }) {
         self.defaults = defaults
@@ -62,6 +65,7 @@ final class ReaderMarks {
         if !isOn { keys.remove(key) }
         marked[mark] = keys
         saveMarks()
+        reactionDidChange?(key, mark == .liked ? .like : .repost, isOn)
         return isOn
     }
 
@@ -100,8 +104,19 @@ final class ReaderMarks {
         defaults.removeObject(forKey: Self.divanKey)
     }
 
-    /// Forgets the likes and reposts too (after the account is deleted). They are not on the server yet, so signing
-    /// out keeps them.
+    /// Takes what the server has of one kind (likes or reposts): it replaces the phone's, except the couplets in
+    /// `unsent`, which were changed here and not sent yet and keep their state on the phone.
+    func apply(server keys: Set<String>, as mark: Mark, keeping unsent: Set<String>) {
+        guard mark != .kept else { return }
+        let local = marked[mark] ?? []
+        let merged = keys.subtracting(unsent).union(local.intersection(unsent))
+        if merged != local {
+            marked[mark] = merged
+            saveMarks()
+        }
+    }
+
+    /// Forgets the likes and reposts (after signing out or deleting the account: they belong to the account).
     func clearLikesAndReposts() {
         marked = [:]
         defaults.removeObject(forKey: Self.defaultsKey)

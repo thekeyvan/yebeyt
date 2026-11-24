@@ -1,11 +1,15 @@
 import SwiftUI
 
-/// The بازی tab (GamesE): the streak and points, today's puzzle, and the games. The greeting, the friends line, the
-/// مشاعره card, «+ بازی با دوست» and the leaderboard link stay hidden until friends and the server exist.
+/// The بازی tab (GamesE): the greeting for a signed-in person, the streak and points (the points open رده‌بندی),
+/// today's puzzle with «۳ تا از دوستات حلش کردن», and the games. The مشاعره card and «+ بازی با دوست» stay hidden
+/// until games with friends exist.
 struct GamesView: View {
     @Environment(AppModel.self) private var app
     @Environment(GameDeck.self) private var deck
     @Environment(GameStats.self) private var stats
+    @Environment(MyStats.self) private var myStats
+    @Environment(Session.self) private var session
+    @Environment(AccountModel.self) private var account
 
     var body: some View {
         ScrollView {
@@ -14,7 +18,7 @@ struct GamesView: View {
                 if let puzzle = DailyPuzzle.pick(day: stats.today, from: deck) {
                     DailyPuzzleCard(
                         puzzle: puzzle, day: stats.today, finished: (stats.daily(on: stats.today)?.outcome ?? .playing) != .playing,
-                        open: { app.play(.daily) }
+                        friendsLine: myStats.friendsLine, open: { app.play(.daily) }
                     )
                 }
                 gamesHeading
@@ -27,15 +31,35 @@ struct GamesView: View {
         .scrollIndicators(.hidden)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
+        .task(id: "\(session.isSignedIn)|\(stats.today.number)") {
+            await myStats.refresh()
+            await myStats.refreshFriends(on: stats.today)
+        }
+    }
+
+    /// «سلام نیلوفر!» for a signed-in person, as the provider or the person named themselves.
+    private var greeting: String? {
+        guard session.isSignedIn, let name = session.user?.displayName ?? account.providerName ?? session.user?.username else { return nil }
+        return "سلام \(name)!"
     }
 
     private var header: some View {
         HStack(alignment: .bottom) {
-            Text("بازی").font(.title(40)).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
+            VStack(alignment: .leading, spacing: 0) {
+                if let greeting {
+                    Text(greeting).font(.ui(14)).foregroundStyle(Tokens.Colors.muted).accessibilityIdentifier("greeting")
+                }
+                Text("بازی").font(.title(40)).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
+            }
             Spacer(minLength: 0)
             HStack(spacing: 6) {
-                StickerBadge(kind: .streak(stats.streak)).accessibilityLabel("رشته‌ی \(PersianDigits.string(stats.streak)) روزه")
-                StickerBadge(kind: .points(stats.points)).accessibilityLabel("امتیاز \(PersianDigits.grouped(stats.points))")
+                StickerBadge(kind: .streak(myStats.streak)).accessibilityLabel("رشته‌ی \(PersianDigits.string(myStats.streak)) روزه")
+                Button { account.require(.leaderboard) { app.gamesPath.append(.leaderboard) } } label: {
+                    StickerBadge(kind: .points(myStats.points))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("امتیاز \(PersianDigits.grouped(myStats.points)) و رده‌بندی")
+                .accessibilityIdentifier("leaderboardLink")
             }
             .padding(.bottom, 6)
         }
