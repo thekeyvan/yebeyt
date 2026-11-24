@@ -275,6 +275,19 @@ struct ToastTimingAndStartGameTests {
         #expect(!SwipeBackDelegate.allows(stackDepth: 1, blocked: false))
     }
 
+    @Test func theFaceBlocksTheSwipeAgainWhenItComesBackWithAnUnsavedDraft() {
+        let saved = AvatarParts.standard
+        var draft = saved
+        draft.hair = "black"
+        AvatarScreen.blockSwipeBack(draft: draft, saved: saved)
+        #expect(SwipeBackDelegate.blocked)
+        SwipeBackDelegate.blocked = false  // the screen went (another tab)
+        AvatarScreen.blockSwipeBack(draft: draft, saved: saved)  // and came back
+        #expect(SwipeBackDelegate.blocked)
+        AvatarScreen.blockSwipeBack(draft: saved, saved: saved)
+        #expect(!SwipeBackDelegate.blocked)
+    }
+
     @Test func anotherGameStartsAtOnceOrWaitsForTheLeaveQuestion() throws {
         let app = AppModel()
         var started = 0

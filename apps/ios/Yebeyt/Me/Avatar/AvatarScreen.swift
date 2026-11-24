@@ -22,6 +22,11 @@ struct AvatarScreen: View {
     /// A face that differs from the saved one is lost by leaving without «ذخیره».
     static func asksBeforeLeaving(draft: AvatarParts, saved: AvatarParts) -> Bool { draft != saved }
 
+    /// The edge swipe back can't leave while the draft differs from the saved face.
+    @MainActor static func blockSwipeBack(draft: AvatarParts, saved: AvatarParts) {
+        SwipeBackDelegate.blocked = asksBeforeLeaving(draft: draft, saved: saved)
+    }
+
     private var progress: AvatarProgress { AvatarProgress(stats: stats, achievements: achievements) }
 
     var body: some View {
@@ -47,9 +52,11 @@ struct AvatarScreen: View {
             ) { dismiss() }
         }
         .onAppear {
-            guard !loaded else { return }
-            loaded = true
-            draft = store.parts
+            if !loaded {
+                loaded = true
+                draft = store.parts
+            }
+            Self.blockSwipeBack(draft: draft, saved: store.parts)  // also when the screen comes back (another tab and back)
         }
         // The edge swipe back would lose the changes without asking.
         .onChange(of: Self.asksBeforeLeaving(draft: draft, saved: store.parts)) { _, unsaved in SwipeBackDelegate.blocked = unsaved }

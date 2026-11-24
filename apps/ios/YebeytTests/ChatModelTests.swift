@@ -408,4 +408,13 @@ struct ChatModelTests {
         #expect(model.statusLine == nil)
         #expect(model.other.name == "sara")
     }
+
+    @Test func theSameToastShownAgainStartsItsTimeOver() {
+        let stub = StubServer()
+        let model = ChatModel(conversation: Conversation(id: "c1", other: ChatPerson(username: "sara", displayName: nil, avatar: nil, online: nil)), session: signedInSession(stub.api))
+        let before = model.toastSerial
+        model.toast = "نرسید"
+        model.toast = "نرسید"
+        #expect(model.toastSerial == before + 2)
+    }
 }

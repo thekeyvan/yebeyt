@@ -31,7 +31,7 @@ private struct SharedDivanContent: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
-        .messageToast($model.toast, bottom: 40)
+        .messageToast($model.toast, serial: model.toastSerial, bottom: 40)
         .sheet(isPresented: $adding) {
             CoupletPickerSheet(title: "یه بیت اضافه کن", action: "اضافه کن") { key, note in
                 Task { await model.add(key: key, note: note) }

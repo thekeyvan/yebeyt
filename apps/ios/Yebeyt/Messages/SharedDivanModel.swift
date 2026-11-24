@@ -33,7 +33,11 @@ final class SharedDivanModel {
     private(set) var isLoadingMore = false
     /// The poets of the couplets seen so far, the most frequent first; the poet chips.
     private(set) var poetSlugs: [String] = []
-    var toast: String?
+    var toast: String? {
+        didSet { toastSerial += 1 }
+    }
+    /// Counts every assignment of `toast`, so the same line shown again starts its time over.
+    private(set) var toastSerial = 0
     /// The screen is showing: a reconnect reads it again.
     var isVisible = false
 

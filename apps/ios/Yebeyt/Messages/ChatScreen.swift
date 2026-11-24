@@ -42,7 +42,7 @@ private struct ChatContent: View {
         .dottedPaper()
         .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .toolbar(.hidden, for: .navigationBar)
-        .messageToast($chat.toast, bottom: 150)
+        .messageToast($chat.toast, serial: chat.toastSerial, bottom: 150)
         .sheet(isPresented: $picking) {
             CoupletPickerSheet(title: "بیت بفرست", action: "بفرست") { key, note in chat.sendCouplet(key: key, note: note) }
         }

@@ -51,7 +51,11 @@ final class ChatModel {
     /// «لیگ غزل‌باز», when the server told it.
     private(set) var league: String?
     /// A line shown for a moment («یه کم آروم‌تر»); the view clears it.
-    var toast: String?
+    var toast: String? {
+        didSet { toastSerial += 1 }
+    }
+    /// Counts every assignment of `toast`, so the same line shown again starts its time over.
+    private(set) var toastSerial = 0
     /// The chat is on screen with the app in front: new messages are marked read.
     var isVisible = false {
         didSet {
