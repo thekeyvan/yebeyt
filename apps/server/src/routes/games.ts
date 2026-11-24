@@ -1,5 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import { and, desc, eq, gte, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, ne, or, sql } from "drizzle-orm";
 import { isCode, newCode, normalizeCode } from "../codes.js";
 import { isUniqueViolation } from "../db/index.js";
 import { gamePlayers, games, messages, moshMoves, privacySettings } from "../db/schema.js";
@@ -48,6 +48,8 @@ export function gameRoutes(deps: Deps) {
   const { db } = deps;
   const ganjoor = createGanjoor(deps);
   const creating = createRateLimiter(20, 3_600_000, deps.now);
+  const moving = createRateLimiter(20, 60_000, deps.now);
+  const joiningByCode = createRateLimiter(20, 60_000, deps.now);
 
   /** The game and its players if `userId` plays in it (404 otherwise). An overdue مشاعره game is ended first, unless `lazy` is false. */
   const load = async (userId: string, id: string, lazy = true) => {
@@ -182,13 +184,17 @@ export function gameRoutes(deps: Deps) {
       path: "/v1/games/by-code/{code}/join",
       tags: ["games"],
       summary: "Join a waiting game by its code",
-      description: "Same as joining by id. The code is read in any case, with O as 0 and I or L as 1.",
+      description: "Same as joining by id, for a game that is not done (a done game's code is free again). The code is read in any case, with O as 0 and I or L as 1. 20 a minute per user.",
       security,
       request: { params: codeParam },
-      responses: { ...joinResponses, 400: errorResponse("invalid_request: not a game code.") },
+      responses: { ...joinResponses, 400: errorResponse("invalid_request: not a game code."), 429: errorResponse("rate_limited: 20 a minute per user.") },
     }),
     async (c) => {
-      const [found] = await db.select({ id: games.id }).from(games).where(eq(games.code, normalizeCode(c.req.valid("param").code)));
+      if (!joiningByCode.take(c.get("userId"))) throw new ApiError(429, "rate_limited");
+      const [found] = await db
+        .select({ id: games.id })
+        .from(games)
+        .where(and(eq(games.code, normalizeCode(c.req.valid("param").code)), ne(games.status, "done")));
       if (!found) throw new ApiError(404, "not_found");
       const { game, players } = await join(c.get("userId"), found.id);
       return c.json(await gameView(deps, game, players), 200);
@@ -271,20 +277,22 @@ export function gameRoutes(deps: Deps) {
         "My turn only. The creator opens with any couplet; each next one must start with the last letter of the previous couplet's second hemistich (letters compared without diacritics: آ as ا, ي as ی, ك as ک, ۀ and ة as ه, ئ as ی; punctuation and half-spaces skipped), and no couplet repeats in a game. " +
         "`key` is the couplet the phone matched; the server fetches that poem from Ganjoor (at the commit the app's data comes from) and checks that `m1` and `m2` are its text, ignoring diacritics, punctuation and Arabic letter forms (400 `bad_couplet`; 503 `unavailable` when Ganjoor cannot be reached). " +
         "A request after the turn's deadline (the last move, or the start, plus `turnSeconds`) ends the game with the other player as winner and answers 409 `turn_over`. " +
-        "A good move is +1 for me, passes the turn, and sends live `game.move` and `game.turn` events to both players.",
+        "20 moves a minute per user. A good move is +1 for me, passes the turn, and sends live `game.move` and `game.turn` events to both players.",
       security,
       request: { params: idParam, body: { required: true, content: { "application/json": { schema: moveBody } } } },
       responses: {
         200: { description: "The game after the move.", content: { "application/json": { schema: gameSchema } } },
         ...gameErrors,
         409: errorResponse("not_your_turn, wrong_letter, already_played, turn_over (the game just ended) or game_not_active (waiting or done)."),
-        503: errorResponse("unavailable: Ganjoor could not be reached."),
+        429: errorResponse("rate_limited: 20 moves a minute per user."),
+        503: errorResponse("unavailable: Ganjoor could not be reached; or busy: too many poems were fetched from Ganjoor in the last minute (60 for the whole server)."),
       },
     }),
     async (c) => {
       const me = c.get("userId");
       const { id } = c.req.valid("param");
       const { key, m1, m2 } = c.req.valid("json");
+      if (!moving.take(me)) throw new ApiError(429, "rate_limited");
       const { game, players } = await load(me, id, false);
       if (game.kind !== "mosh") throw new ApiError(400, "invalid_request");
       if (game.status !== "active") throw new ApiError(409, "game_not_active");

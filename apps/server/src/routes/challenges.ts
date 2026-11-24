@@ -36,7 +36,7 @@ const createBody = z
       .array(coupletKeySchema)
       .length(CHALLENGE_ITEMS)
       .refine((keys) => new Set(keys).size === keys.length)
-      .openapi({ description: "The ten couplet keys, in the order they were played." }),
+      .openapi({ description: "The ten couplet keys, in the order they were played; each must be a couplet of the game deck." }),
     score: scoreSchema.openapi({ description: "How many of the ten the creator got." }),
     seconds: secondsSchema,
   })
@@ -93,10 +93,11 @@ export function challengeRoutes(deps: Deps) {
   const creating = createRateLimiter(30, HOUR_MS, deps.now);
   const answering = createRateLimiter(60, HOUR_MS, deps.now);
   const guests = createRateLimiter(120, HOUR_MS, deps.now);
+  const lookups = createRateLimiter(600, 60_000, deps.now);
 
-  /** «۱۰ بیت سعدی»: the poet is the first part of a couplet's key, so this works for any poem. */
+  /** «۱۰ بیت سعدی» when the couplets (all of them in the deck) are by one poet. */
   const labelOf = (items: string[]): string | null => {
-    const slugs = new Set(items.map((key) => key.split("/")[1]));
+    const slugs = new Set(items.map((key) => deps.data.byKey.get(key)?.poet));
     const poet = slugs.size === 1 ? deps.data.poets.find((p) => p.slug === [...slugs][0]) : undefined;
     return poet ? `${persianNumber(items.length)} بیت ${poet.name}` : null;
   };
@@ -114,7 +115,7 @@ export function challengeRoutes(deps: Deps) {
       request: { body: { required: true, content: { "application/json": { schema: createBody } } } },
       responses: {
         201: { description: "The code and the link.", content: { "application/json": { schema: createdSchema } } },
-        400: errorResponse("invalid_request: not ten different couplet keys, or a score or time out of range."),
+        400: errorResponse("invalid_request: not ten different keys of couplets in the game deck, or a score or time out of range."),
         401: errorResponse("Not signed in."),
         403: errorResponse("username_required."),
         429: errorResponse("rate_limited: 30 an hour per user."),
@@ -124,6 +125,7 @@ export function challengeRoutes(deps: Deps) {
       const me = c.get("userId");
       if (!creating.take(me)) throw new ApiError(429, "rate_limited");
       const body = c.req.valid("json");
+      if (!body.items.every((key) => deps.data.byKey.has(key))) throw new ApiError(400, "invalid_request");
       const now = deps.now();
       for (let attempt = 0; ; attempt++) {
         const code = newCode();
@@ -143,15 +145,17 @@ export function challengeRoutes(deps: Deps) {
       path: "/v1/challenges/{code}",
       tags: ["challenges"],
       summary: "A challenge, for the page and the app that open its link",
-      description: "No account needed. The code is read in any case, with O as 0 and I or L as 1. An expired or unknown code is 404.",
+      description: "No account needed (all lookups together share 600 a minute). The code is read in any case, with O as 0 and I or L as 1. An expired or unknown code is 404.",
       security: [noAuth],
       request: { params: codeParam },
       responses: {
         200: { description: "Who made it, the couplets and their score.", content: { "application/json": { schema: challengeSchema } } },
         404: errorResponse("No such challenge, or it expired."),
+        429: errorResponse("rate_limited: 600 lookups a minute for the whole server."),
       },
     }),
     async (c) => {
+      if (!lookups.take("lookups")) throw new ApiError(429, "rate_limited");
       const [row] = await db
         .select({ challenge: challenges, username: users.username, displayName: users.displayName, avatar: users.avatar })
         .from(challenges)

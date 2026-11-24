@@ -2,7 +2,7 @@ import { randomInt } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { gamePlayers, games, type DuelRound } from "./db/schema.js";
 import type { Deps } from "./deps.js";
-import { duelRoundViews, endGame, playersOf, type PlayerRow } from "./games.js";
+import { endGame, playersOf, type PlayerRow } from "./games.js";
 import { makeQuestions, type Question, ROUNDS, seededGenerator } from "./quiz.js";
 
 /** Times of a duel, in milliseconds. A round lasts 8 seconds; a player away for more than 15 seconds loses. */
@@ -93,12 +93,15 @@ export function createDuels(deps: Deps, options: { seed?: () => bigint; timings?
       run.timer = setTimeout(() => void guard("round", ask(run, run.round + 1)), t.pauseMs);
       return;
     }
-    runs.delete(run.gameId);
     const [a, b] = run.players;
     const [first, second] = [run.scores.get(a!.userId) ?? 0, run.scores.get(b!.userId) ?? 0];
     const winner = first === second ? null : first > second ? a! : b!;
-    await deps.db.update(games).set({ rounds: run.rounds }).where(eq(games.id, run.gameId));
-    await endGame(deps, run.gameId, winner?.userId ?? null, "finished", { couplets: duelRoundViews(deps.data, run.rounds, run.players) });
+    // The duel stays in memory until the game is written as done: the absence timers and the sweep must not see a duel that nobody runs. endGame keeps the rounds.
+    try {
+      await endGame(deps, run.gameId, winner?.userId ?? null, "finished");
+    } finally {
+      if (runs.get(run.gameId) === run) runs.delete(run.gameId);
+    }
   }
 
   async function startRun(gameId: string, players: PlayerRow[]) {
@@ -182,6 +185,9 @@ export function createDuels(deps: Deps, options: { seed?: () => bigint; timings?
       publishAll(run, { type: "duel.answered", gameId: run.gameId, round: message.round, username: run.players.find((p) => p.userId === userId)!.username });
       if (run.locked.size === run.players.length) void guard("round", resolve(run, null));
     },
+
+    /** The rounds played so far in a duel this process runs (empty when it does not). */
+    roundsOf: (gameId: string): DuelRound[] => runs.get(gameId)?.rounds ?? [],
 
     /** Whether the duel is being played by this process. */
     has: (gameId: string) => runs.has(gameId),

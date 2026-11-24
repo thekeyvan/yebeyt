@@ -1,9 +1,12 @@
 import { z } from "zod";
 import type { Deps } from "./deps.js";
 import { ApiError } from "./errors.js";
+import { createRateLimiter } from "./rateLimit.js";
 
 export const POEM_CACHE_SIZE = 500;
 export const FETCH_TIMEOUT_MS = 5000;
+/** Poems fetched from GitHub in a minute, for the whole server; a poem that is already in memory costs nothing. */
+export const FETCHES_PER_MINUTE = 60;
 
 export type PoemCouplet = { m1: string; m2: string };
 
@@ -17,14 +20,15 @@ const NOT_POETRY = "Comment";
 /** Groups a poem's verses into couplets exactly as tools/ganjoor/couplets.py does, so an index here is the index on the phone. */
 export function groupCouplets(verses: z.infer<typeof verseSchema>[]): PoemCouplet[] {
   const couplets: PoemCouplet[] = [];
-  let index: number | null | undefined;
+  let index: number | null = null;
   let filled = new Set<string>();
   for (const v of [...verses].sort((a, b) => a.VOrder - b.VOrder)) {
     if (v.Position === NOT_POETRY) continue;
     const slot = SECOND_HALF.has(v.Position) ? "m2" : "m1";
-    if (couplets.length === 0 || v.CoupletIndex !== index || filled.has(slot)) {
+    const coupletIndex = v.CoupletIndex ?? null; // a missing index is null, as in the Python
+    if (couplets.length === 0 || coupletIndex !== index || filled.has(slot)) {
       couplets.push({ m1: "", m2: "" });
-      index = v.CoupletIndex;
+      index = coupletIndex;
       filled = new Set();
     }
     couplets[couplets.length - 1]![slot] = v.Text.replaceAll("\r", "");
@@ -37,10 +41,12 @@ export function groupCouplets(verses: z.infer<typeof verseSchema>[]): PoemCouple
  * The poems of ganjoor-data at the commit the app's data comes from (`poets.json` `source.sha`), fetched on demand from raw.githubusercontent.com
  * and kept in memory (the last 500, least recently used first out). Used to check the couplets players send in مشاعره.
  */
-export function createGanjoor(deps: Pick<Deps, "fetch" | "data">) {
+export function createGanjoor(deps: Pick<Deps, "fetch" | "data" | "now">, fetchesPerMinute = FETCHES_PER_MINUTE) {
+  const budget = createRateLimiter(fetchesPerMinute, 60_000, deps.now);
   const cache = new Map<string, Promise<PoemCouplet[] | null>>();
 
   async function load(poemPath: string): Promise<PoemCouplet[] | null> {
+    if (!budget.take("fetches")) throw new ApiError(503, "busy");
     const url = `https://raw.githubusercontent.com/ganjoor/ganjoor-data/${deps.data.sha}/poets${poemPath}.json`;
     let res: Response;
     try {
@@ -55,7 +61,7 @@ export function createGanjoor(deps: Pick<Deps, "fetch" | "data">) {
     return groupCouplets(parsed.data.Verses);
   }
 
-  /** The couplets of a poem (`/hafez/ghazal/sh3`), null when there is no such poem; 503 `unavailable` when Ganjoor cannot be reached. */
+  /** The couplets of a poem (`/hafez/ghazal/sh3`), null when there is no such poem; 503 `unavailable` when Ganjoor cannot be reached, 503 `busy` past 60 fetches a minute. */
   async function poem(poemPath: string): Promise<PoemCouplet[] | null> {
     if (poemPath.split("/").slice(1).some((part) => part === "")) return null;
     let pending = cache.get(poemPath);

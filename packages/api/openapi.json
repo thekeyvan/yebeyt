@@ -1565,6 +1565,7 @@
               "resigned",
               "left",
               "finished",
+              "expired",
               null
             ]
           },
@@ -1729,7 +1730,7 @@
               "example": "/hafez/ghazal/sh3#0",
               "description": "<poemPath>#<coupletIndex>"
             },
-            "description": "The ten couplet keys, in the order they were played."
+            "description": "The ten couplet keys, in the order they were played; each must be a couplet of the game deck."
           },
           "score": {
             "type": "integer",
@@ -5654,7 +5655,7 @@
           "games"
         ],
         "summary": "Join a waiting game by its code",
-        "description": "Same as joining by id. The code is read in any case, with O as 0 and I or L as 1.",
+        "description": "Same as joining by id, for a game that is not done (a done game's code is free again). The code is read in any case, with O as 0 and I or L as 1. 20 a minute per user.",
         "security": [
           {
             "bearerAuth": []
@@ -5724,6 +5725,16 @@
           },
           "409": {
             "description": "game_full: somebody else took the seat, or the game is over.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 20 a minute per user.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5854,7 +5865,7 @@
           "games"
         ],
         "summary": "Play a couplet in مشاعره",
-        "description": "My turn only. The creator opens with any couplet; each next one must start with the last letter of the previous couplet's second hemistich (letters compared without diacritics: آ as ا, ي as ی, ك as ک, ۀ and ة as ه, ئ as ی; punctuation and half-spaces skipped), and no couplet repeats in a game. `key` is the couplet the phone matched; the server fetches that poem from Ganjoor (at the commit the app's data comes from) and checks that `m1` and `m2` are its text, ignoring diacritics, punctuation and Arabic letter forms (400 `bad_couplet`; 503 `unavailable` when Ganjoor cannot be reached). A request after the turn's deadline (the last move, or the start, plus `turnSeconds`) ends the game with the other player as winner and answers 409 `turn_over`. A good move is +1 for me, passes the turn, and sends live `game.move` and `game.turn` events to both players.",
+        "description": "My turn only. The creator opens with any couplet; each next one must start with the last letter of the previous couplet's second hemistich (letters compared without diacritics: آ as ا, ي as ی, ك as ک, ۀ and ة as ه, ئ as ی; punctuation and half-spaces skipped), and no couplet repeats in a game. `key` is the couplet the phone matched; the server fetches that poem from Ganjoor (at the commit the app's data comes from) and checks that `m1` and `m2` are its text, ignoring diacritics, punctuation and Arabic letter forms (400 `bad_couplet`; 503 `unavailable` when Ganjoor cannot be reached). A request after the turn's deadline (the last move, or the start, plus `turnSeconds`) ends the game with the other player as winner and answers 409 `turn_over`. 20 moves a minute per user. A good move is +1 for me, passes the turn, and sends live `game.move` and `game.turn` events to both players.",
         "security": [
           {
             "bearerAuth": []
@@ -5942,8 +5953,18 @@
               }
             }
           },
+          "429": {
+            "description": "rate_limited: 20 moves a minute per user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "503": {
-            "description": "unavailable: Ganjoor could not be reached.",
+            "description": "unavailable: Ganjoor could not be reached; or busy: too many poems were fetched from Ganjoor in the last minute (60 for the whole server).",
             "content": {
               "application/json": {
                 "schema": {
@@ -6066,7 +6087,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: not ten different couplet keys, or a score or time out of range.",
+            "description": "invalid_request: not ten different keys of couplets in the game deck, or a score or time out of range.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6114,7 +6135,7 @@
           "challenges"
         ],
         "summary": "A challenge, for the page and the app that open its link",
-        "description": "No account needed. The code is read in any case, with O as 0 and I or L as 1. An expired or unknown code is 404.",
+        "description": "No account needed (all lookups together share 600 a minute). The code is read in any case, with O as 0 and I or L as 1. An expired or unknown code is 404.",
         "security": [
           {}
         ],
@@ -6142,6 +6163,16 @@
           },
           "404": {
             "description": "No such challenge, or it expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 600 lookups a minute for the whole server.",
             "content": {
               "application/json": {
                 "schema": {

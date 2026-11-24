@@ -409,7 +409,7 @@ export type DuelRound = { round: number; type: "second" | "poet" | "book"; key: 
 
 /**
  * A game with a friend: مشاعره (`mosh`, turns of `turnSeconds`) or بازی رودررو (`duel`, live). It waits for a second player,
- * is active while played and done when it ends (`winnerId` null when nobody won). A turn's deadline is `turnStartedAt` + `turnSeconds`.
+ * is active while played and done when it ends (`winnerId` null when nobody won). A turn's deadline is `turnStartedAt` + `turnSeconds`. A waiting game nobody joins in 7 days ends as `expired`.
  * `createdBy` and `winnerId` become null when that account is deleted. `rounds` is for a finished duel.
  */
 export const games = pgTable(
@@ -419,18 +419,20 @@ export const games = pgTable(
     kind: text("kind", { enum: FRIEND_GAME_KINDS }).notNull(),
     turnSeconds: integer("turn_seconds").notNull(),
     status: text("status", { enum: ["waiting", "active", "done"] }).notNull().default("waiting"),
-    code: text("code").notNull().unique(),
+    code: text("code").notNull(),
     createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
     startedAt: timestamptz("started_at"),
     turnStartedAt: timestamptz("turn_started_at"),
     endedAt: timestamptz("ended_at"),
     winnerId: uuid("winner_id").references(() => users.id, { onDelete: "set null" }),
-    endReason: text("end_reason", { enum: ["timeout", "resigned", "left", "finished"] }),
+    endReason: text("end_reason", { enum: ["timeout", "resigned", "left", "finished", "expired"] }),
     rounds: jsonb("rounds").$type<DuelRound[]>(),
   },
   (t) => [
     check("games_turn_seconds", sql`${t.turnSeconds} in (8, 30, 120, 86400)`),
+    // A code is free again once its game is done, so only the games still open need different codes.
+    uniqueIndex("games_code_open").on(t.code).where(sql`${t.status} <> 'done'`),
     index("games_active_deadline").on(t.status, t.kind),
   ],
 );

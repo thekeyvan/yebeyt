@@ -20,6 +20,9 @@ describe("groupCouplets", () => {
   it("drops Comment verses", () => {
     expect(groupCouplets([verse(1, "Right", "الف", 0), verse(2, "Comment", "یادداشت", null), verse(3, "Left", "ب", 0)])).toEqual([{ m1: "الف", m2: "ب" }]);
   });
+  it("takes a missing CoupletIndex like null", () => {
+    expect(groupCouplets([verse(1, "Right", "الف", null), { VOrder: 2, Position: "Left", Text: "ب" } as never])).toEqual([{ m1: "الف", m2: "ب" }]);
+  });
   it("makes a Single or Paragraph verse a couplet of its own, and starts a new couplet when a slot would repeat", () => {
     expect(groupCouplets([verse(1, "Paragraph", "یک", 0), verse(2, "Single", "دو", 1), verse(3, "Single", "سه", 1)])).toEqual([
       { m1: "یک", m2: "" },
@@ -33,9 +36,10 @@ describe("groupCouplets", () => {
 });
 
 describe("the Ganjoor fetch", () => {
-  const make = (handler: () => Response | Promise<Response>) => {
+  const now = () => new Date("2026-06-01T12:00:00Z");
+  const make = (handler: () => Response | Promise<Response>, perMinute = 1000) => {
     const fetchMock = vi.fn<typeof fetch>(async () => handler());
-    return { fetchMock, ganjoor: createGanjoor({ fetch: fetchMock, data }) };
+    return { fetchMock, ganjoor: createGanjoor({ fetch: fetchMock, data, now }, perMinute) };
   };
 
   it("reads a poem at the pinned commit and finds a couplet by key", async () => {
@@ -72,7 +76,7 @@ describe("the Ganjoor fetch", () => {
       expect(init?.signal).toBeInstanceOf(AbortSignal);
       throw new DOMException("timeout", "TimeoutError");
     });
-    await expect(createGanjoor({ fetch: fetchMock, data }).poem("/a/b")).rejects.toMatchObject({ status: 503 });
+    await expect(createGanjoor({ fetch: fetchMock, data, now }).poem("/a/b")).rejects.toMatchObject({ status: 503 });
   });
 
   it("keeps 500 poems and drops the least recently used", async () => {
@@ -85,6 +89,18 @@ describe("the Ganjoor fetch", () => {
     expect(fetchMock).toHaveBeenCalledTimes(POEM_CACHE_SIZE + 1);
     await ganjoor.poem("/p/1");
     expect(fetchMock).toHaveBeenCalledTimes(POEM_CACHE_SIZE + 2);
+  });
+
+  it("fetches at most 60 poems a minute: the 61st is 503 busy, poems in memory still answer, and a minute later it goes on", async () => {
+    let clock = new Date("2026-06-01T12:00:00Z");
+    const fetchMock = vi.fn<typeof fetch>(async () => poemJson(verse(1, "Right", "الف", 0)));
+    const ganjoor = createGanjoor({ fetch: fetchMock, data, now: () => clock });
+    for (let i = 0; i < 60; i++) await ganjoor.poem(`/p/${i}`);
+    await expect(ganjoor.poem("/p/60")).rejects.toMatchObject({ status: 503, code: "busy" });
+    expect(await ganjoor.poem("/p/0")).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(60);
+    clock = new Date(clock.getTime() + 60_001);
+    expect(await ganjoor.poem("/p/60")).toHaveLength(1);
   });
 
   it("asks once for a poem asked for twice at the same time", async () => {

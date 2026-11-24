@@ -12,6 +12,8 @@ import { weekOf } from "./week.js";
 
 export const SWEEP_MS = 30_000;
 const ORPHAN_DUEL_MS = 60_000;
+/** A game nobody joined in this long is ended. */
+export const WAITING_GAME_DAYS = 7;
 /** Points a friend game adds to the weekly league: for each accepted couplet (مشاعره) or round won (رودررو), up to the game's cap in `GAME_CAPS`. */
 export const POINTS_PER_UNIT = { mosh: 10, duel: 30 } as const;
 
@@ -36,7 +38,7 @@ export const gameSummarySchema = z
     createdAt: z.iso.datetime(),
     endedAt: z.iso.datetime().nullable(),
     winner: z.string().nullable().openapi({ description: "The winner's username when the game is done and somebody won." }),
-    endReason: z.enum(["timeout", "resigned", "left", "finished"]).nullable(),
+    endReason: z.enum(["timeout", "resigned", "left", "finished", "expired"]).nullable(),
     players: z.array(playerSchema),
     turn: turnSchema.nullable().openapi({ description: "مشاعره while active: whose turn it is. Null otherwise." }),
   })
@@ -118,14 +120,15 @@ export async function gameView(deps: Deps, game: GameRow, players: PlayerRow[]) 
 /**
  * Ends a game once: marks it done, records the points of both players for the weekly league (`mosh` and `duel` score events, capped), puts a
  * system line in their chat and tells both. Returns false when it was already done, so two callers racing change nothing twice.
- * `extra` is added to the live `game.ended` event.
  */
-export async function endGame(deps: Deps, gameId: string, winnerId: string | null, reason: EndReason, extra: Record<string, unknown> = {}): Promise<boolean> {
+export async function endGame(deps: Deps, gameId: string, winnerId: string | null, reason: EndReason): Promise<boolean> {
   const now = deps.now();
+  // The rounds a duel has played so far are kept, so after a give-up or a leave the players still see those couplets.
+  const rounds = deps.duels.roundsOf(gameId);
   const ended = await deps.db.transaction(async (tx) => {
     const [game] = await tx
       .update(games)
-      .set({ status: "done", endedAt: now, winnerId, endReason: reason })
+      .set({ status: "done", endedAt: now, winnerId, endReason: reason, ...(rounds.length ? { rounds } : {}) })
       .where(and(eq(games.id, gameId), ne(games.status, "done")))
       .returning();
     if (!game) return null;
@@ -160,7 +163,7 @@ export async function endGame(deps: Deps, gameId: string, winnerId: string | nul
       winner: winner?.username ?? null,
       reason,
       scores: players.map((q) => ({ username: q.username, score: q.score })),
-      ...extra,
+      ...(rounds.length ? { couplets: duelRoundViews(deps.data, rounds, players) } : {}),
     });
   }
   return true;
@@ -173,7 +176,7 @@ export async function endIfOverdue(deps: Deps, game: GameRow, players: PlayerRow
   return endGame(deps, game.id, winner?.userId ?? null, "timeout");
 }
 
-/** Ends every مشاعره game whose turn has run out, and the duels nobody runs. Runs every 30 seconds; reads and moves also check the مشاعره game they touch. Returns how many ended. */
+/** Ends every مشاعره game whose turn has run out, the duels nobody runs and the waiting games older than 7 days. Runs every 30 seconds; reads and moves also check the مشاعره game they touch. Returns how many ended. */
 export async function sweepGames(deps: Deps): Promise<number> {
   const due = await deps.db
     .select()
@@ -188,7 +191,13 @@ export async function sweepGames(deps: Deps): Promise<number> {
     .from(games)
     .where(and(eq(games.status, "active"), eq(games.kind, "duel"), lt(games.startedAt, new Date(deps.now().getTime() - ORPHAN_DUEL_MS))));
   for (const { id } of lost) if (!deps.duels.has(id) && (await endGame(deps, id, null, "left"))) ended++;
-  return ended;
+  // A game that waited a week for a second player is done, and its code can no longer be used.
+  const expired = await deps.db
+    .update(games)
+    .set({ status: "done", endedAt: deps.now(), endReason: "expired" })
+    .where(and(eq(games.status, "waiting"), lt(games.createdAt, new Date(deps.now().getTime() - WAITING_GAME_DAYS * 86_400_000))))
+    .returning({ id: games.id });
+  return ended + expired.length;
 }
 
 /**

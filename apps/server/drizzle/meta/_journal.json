@@ -71,6 +71,13 @@
       "when": 1795481593447,
       "tag": "0009_fluffy_excalibur",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795482291855,
+      "tag": "0010_oval_menace",
+      "breakpoints": true
     }
   ]
 }

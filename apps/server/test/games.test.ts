@@ -207,6 +207,52 @@ describe("joining", () => {
   });
 });
 
+describe("limits and expiry", () => {
+  it("lets a user join by code 20 times a minute", async () => {
+    const sara = await h.signUp("sara");
+    for (let i = 0; i < 20; i++) expect((await post(sara, "/v1/games/by-code/ZZZZ/join")).status).toBe(404);
+    expect((await post(sara, "/v1/games/by-code/ZZZZ/join")).status).toBe(429);
+    h.clock.time = new Date(h.clock.time.getTime() + 60_001);
+    const later = { ...sara, token: (await h.signIn("g-sara")).accessToken };
+    expect((await post(later, "/v1/games/by-code/ZZZZ/join")).status).toBe(404);
+  });
+
+  it("lets a user make 20 moves a minute, whatever they are", async () => {
+    const { ali, id } = await activeGame();
+    const bad = () => post(ali, `/v1/games/${id}/moves`, { key: "/t/p#99", m1: "الف", m2: "ب" });
+    for (let i = 0; i < 20; i++) expect((await bad()).status).toBe(400);
+    expect((await bad()).status).toBe(429);
+    expect((await move(ali, id, "/t/p#0")).status).toBe(429);
+  });
+
+  it("ends a game nobody joined for 7 days: done, expired, and its code cannot be used", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    const { game: old } = await json<{ game: GameBody }>(await post(ali, "/v1/games", { kind: "mosh", turnSeconds: 30 }));
+    h.clock.time = new Date(h.clock.time.getTime() + 6 * 86_400_000);
+    const { game: recent } = await json<{ game: GameBody }>(await post({ ...ali, token: (await h.signIn("g-ali")).accessToken }, "/v1/games", { kind: "duel" }));
+    h.clock.time = new Date(h.clock.time.getTime() + 1.5 * 86_400_000);
+    expect(await sweepGames(h.deps)).toBe(1);
+    const rows = await h.db.select({ id: games.id, status: games.status, endReason: games.endReason, winnerId: games.winnerId }).from(games);
+    expect(rows.find((r) => r.id === old.id)).toMatchObject({ status: "done", endReason: "expired", winnerId: null });
+    expect(rows.find((r) => r.id === recent.id)).toMatchObject({ status: "waiting" });
+    const joiner = { ...sara, token: (await h.signIn("g-sara")).accessToken };
+    expect((await post(joiner, `/v1/games/by-code/${old.code}/join`)).status).toBe(404);
+    expect((await post(joiner, `/v1/games/${old.id}/join`)).status).toBe(409);
+    expect((await post(joiner, `/v1/games/by-code/${recent.code}/join`)).status).toBe(200);
+  });
+
+  it("keeps game codes different among open games only", async () => {
+    const ali = await h.signUp("ali");
+    const { game } = await json<{ game: GameBody }>(await post(ali, "/v1/games", { kind: "duel" }));
+    const copy = { kind: "duel" as const, turnSeconds: 8, code: game.code, createdBy: ali.id };
+    await expect(h.db.insert(games).values(copy)).rejects.toThrow();
+    await h.db.update(games).set({ status: "done" }).where(eq(games.id, game.id));
+    await h.db.insert(games).values(copy);
+    await expect(h.db.insert(games).values(copy)).rejects.toThrow();
+  });
+});
+
 describe("reading games", () => {
   it("shows a game to its players only", async () => {
     const { ali, sara, id } = await activeGame();

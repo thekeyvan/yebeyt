@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { challengeResults, challenges, gamePlayers, games, moshMoves, scoreEvents } from "../src/db/schema.js";
+import { loadGameData } from "../src/gameData.js";
 import type { LiveEvent } from "../src/hub.js";
 import { makeHarness, type Harness } from "./helpers.js";
 
@@ -14,7 +15,7 @@ beforeEach(async () => {
 });
 
 const post = (user: User, path: string, json?: unknown) => h.request(path, { method: "POST", token: user.token, json });
-const items = Array.from({ length: 10 }, (_, i) => `/saadi/golestan/sh${i + 1}#0`);
+const items = loadGameData().deck.filter((c) => c.poet === "saadi").slice(0, 10).map((c) => c.key);
 
 describe("DELETE /v1/me with games and challenges", () => {
   it("ends an active game with the other as winner, removes a waiting game, and keeps the other's finished game", async () => {

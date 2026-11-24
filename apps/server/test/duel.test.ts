@@ -177,6 +177,39 @@ describe("a full duel over two sockets", () => {
     expect(view.rounds).toHaveLength(5);
   });
 
+  it("stays in memory until the game is written as done, so the sweep cannot end it with no winner meanwhile", async () => {
+    const { a, s, id } = await startedDuel();
+    await advance(3000);
+    for (let round = 1; round <= 4; round++) {
+      for (const c of [a, s]) await c.expect("duel.question");
+      await advance(8000);
+      for (const c of [a, s]) await c.expect("duel.round");
+      await advance(2500);
+    }
+    for (const c of [a, s]) await c.expect("duel.question");
+    // from here the write that ends the game waits, as a slow database would make it
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const transaction = h.deps.db.transaction.bind(h.deps.db);
+    h.deps.db.transaction = (async (...args: Parameters<typeof transaction>) => {
+      await gate;
+      return transaction(...args);
+    }) as typeof transaction;
+    answer(s, id, 5, rightOption(5));
+    for (const c of [a, s]) await c.expect("duel.round");
+    await settle();
+    expect(h.deps.duels.has(id)).toBe(true);
+    h.clock.time = new Date(h.clock.time.getTime() + 61_000);
+    const { sweepGames } = await import("../src/games.js");
+    expect(await sweepGames(h.deps)).toBe(0);
+    release();
+    for (const c of [a, s]) {
+      await c.expect("message");
+      expect(await c.expect("game.ended")).toMatchObject({ winner: "sara", reason: "finished" });
+    }
+    expect(h.deps.duels.has(id)).toBe(false);
+  });
+
   it("is a draw (no winner) when the rounds are shared", async () => {
     const { a, s, id } = await startedDuel();
     await advance(3000);
@@ -303,15 +336,23 @@ describe("leaving", () => {
     expect(row).toMatchObject({ status: "done", winnerId: null, endReason: "left" });
   });
 
-  it("stops the duel when a player gives up", async () => {
+  it("stops the duel when a player gives up, and keeps the couplets of the rounds played", async () => {
     const { ali, a, s, id } = await startedDuel();
     await advance(3000);
+    for (const c of [a, s]) await c.expect("duel.question");
+    answer(s, id, 1, rightOption(1));
+    for (const c of [a, s]) await c.expect("duel.round");
+    await advance(2500);
     for (const c of [a, s]) await c.expect("duel.question");
     expect((await post(ali, `/v1/games/${id}/resign`)).status).toBe(200);
     for (const c of [a, s]) {
       await c.expect("message");
-      expect(await c.expect("game.ended")).toMatchObject({ winner: "sara", reason: "resigned" });
+      const ended = await c.expect("game.ended");
+      expect(ended).toMatchObject({ winner: "sara", reason: "resigned", couplets: [{ round: 1, key: questions[0]!.couplet.key, winner: "sara" }] });
     }
+    const view = (await (await get(ali, `/v1/games/${id}`)).json()) as { rounds: { round: number; meaning: string }[] };
+    expect(view.rounds.map((r) => r.round)).toEqual([1]);
+    expect(view.rounds[0]!.meaning.length).toBeGreaterThan(0);
     await advance(20_000);
     await a.idle();
     await s.idle();

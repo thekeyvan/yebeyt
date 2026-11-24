@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { challengeResults, challenges } from "../src/db/schema.js";
+import { loadGameData } from "../src/gameData.js";
 import type { LiveEvent } from "../src/hub.js";
 import { sweepChallenges } from "../src/routes/challenges.js";
 import { makeHarness, type Harness } from "./helpers.js";
@@ -12,7 +13,9 @@ beforeEach(async () => {
   h = await makeHarness();
 });
 
-const keys = (poet = "saadi", n = 10) => Array.from({ length: n }, (_, i) => `/${poet}/golestan/sh${i + 1}#0`);
+const data = loadGameData();
+/** The first `n` deck couplets of a poet. */
+const keys = (poet = "saadi", n = 10) => data.deck.filter((c) => c.poet === poet).slice(0, n).map((c) => c.key);
 const post = (user: User | undefined, path: string, json?: unknown, headers?: HeadersInit) => h.request(path, { method: "POST", token: user?.token, json, headers });
 const get = (user: User | undefined, path: string) => h.request(path, { token: user?.token });
 const create = async (user: User, body: Record<string, unknown> = {}) => {
@@ -39,10 +42,10 @@ describe("POST /v1/challenges", () => {
     expect(row!.expiresAt.getTime() - row!.createdAt.getTime()).toBe(30 * 86_400_000);
   });
 
-  it("takes only ten different couplet keys and sane numbers", async () => {
+  it("takes only ten different keys of couplets in the game deck, and sane numbers", async () => {
     const ali = await h.signUp("ali");
     const bad = (extra: Record<string, unknown>) => post(ali, "/v1/challenges", { game: "poet", items: keys(), score: 5, seconds: 60, ...extra });
-    for (const extra of [{ items: keys("saadi", 9) }, { items: keys("saadi", 11) }, { items: [...keys("saadi", 9), "/saadi/golestan/sh1#0"] }, { items: [...keys("saadi", 9), "nonsense"] }, { score: 11 }, { score: -1 }, { score: 1.5 }, { seconds: -1 }, { seconds: 3601 }, { game: "match" }, { extra: 1 }]) {
+    for (const extra of [{ items: keys("saadi", 9) }, { items: keys("saadi", 11) }, { items: [...keys("saadi", 9), keys("saadi", 1)[0]] }, { items: [...keys("saadi", 9), "nonsense"] }, { items: [...keys("saadi", 9), "/saadi/golestan/sh999#0"] }, { score: 11 }, { score: -1 }, { score: 1.5 }, { seconds: -1 }, { seconds: 3601 }, { game: "match" }, { extra: 1 }]) {
       expect((await bad(extra)).status, JSON.stringify(extra).slice(0, 40)).toBe(400);
     }
     expect((await bad({})).status).toBe(201);
@@ -71,18 +74,25 @@ describe("GET /v1/challenges/{code}", () => {
     expect(await res.json()).toEqual({ creator: { username: "niloofar", displayName: "نیلوفر", avatar: null }, game: "jigsaw", items: keys(), score: 8, seconds: 102, label: "۱۰ بیت سعدی" });
   });
 
+  it("allows 600 lookups a minute for everybody together", async () => {
+    const ali = await h.signUp("ali");
+    const { code } = await create(ali);
+    for (let i = 0; i < 600; i++) expect((await get(undefined, `/v1/challenges/${code}`)).status).toBe(200);
+    expect((await get(undefined, `/v1/challenges/${code}`)).status).toBe(429);
+    later(60_001);
+    expect((await get(undefined, `/v1/challenges/${code}`)).status).toBe(200);
+  });
+
   it("reads the code in any case, with o as 0 and l as 1", async () => {
     const ali = await h.signUp("ali");
     const { code } = await create(ali);
     expect((await get(undefined, `/v1/challenges/${code.toLowerCase().replaceAll("0", "o").replaceAll("1", "l")}`)).status).toBe(200);
   });
 
-  it("has no label when the poets differ or the poet is not known", async () => {
+  it("has no label when the poets differ", async () => {
     const ali = await h.signUp("ali");
-    const mixed = await create(ali, { items: [...keys("saadi", 9), "/hafez/ghazal/sh1#0"] });
-    const unknown = await create(ali, { items: keys("nobodyknown") });
+    const mixed = await create(ali, { items: [...keys("saadi", 9), ...keys("hafez", 1)] });
     expect(((await (await get(undefined, `/v1/challenges/${mixed.code}`)).json()) as { label: unknown }).label).toBeNull();
-    expect(((await (await get(undefined, `/v1/challenges/${unknown.code}`)).json()) as { label: unknown }).label).toBeNull();
   });
 
   it("labels a poet's name in the poet's own short form", async () => {
