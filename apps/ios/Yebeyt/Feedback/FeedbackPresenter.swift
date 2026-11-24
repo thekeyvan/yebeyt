@@ -109,6 +109,11 @@ final class FeedbackOverlay {
         toastWindow = window
     }
 
+    func hideToast() {
+        toastWindow?.isHidden = true
+        toastWindow = nil
+    }
+
     private static var scene: UIWindowScene? {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         return scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first

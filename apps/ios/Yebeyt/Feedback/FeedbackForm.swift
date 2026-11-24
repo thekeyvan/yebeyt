@@ -16,7 +16,7 @@ struct FeedbackForm: View {
                 VStack(alignment: .leading, spacing: 6) {
                     if type == .bug { FeedbackLabel(title: "چی شد؟") }
                     FeedbackTextArea(
-                        text: $model.draft.text, minHeight: type == .bug ? 74 : 118, placeholder: type == .bug ? "" : "بنویس…",
+                        text: $model.draft.text, minHeight: type == .bug ? 74 : 118, placeholder: type == .bug ? "" : "بنویس…", label: type == .bug ? "چی شد؟" : nil,
                         id: "feedbackText", disabled: model.isLocked
                     )
                 }
@@ -25,7 +25,7 @@ struct FeedbackForm: View {
                     recording
                 }
                 if let failure = model.failure { FeedbackFailureLine(line: failure) }
-                if type.takesScreenshot, model.image != nil { attachment }
+                if type.sendsTechnical || (type.takesScreenshot && model.image != nil) { attachment }
             }
             .padding(.horizontal, 18)
             .padding(.top, 16)
@@ -101,29 +101,7 @@ struct FeedbackForm: View {
     private var attachment: some View {
         VStack(alignment: .leading, spacing: 9) {
             Text("از همون لحظه همراهش می‌فرستیم").font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.ink)
-            HStack(spacing: 12) {
-                thumbnail
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("عکس صفحه").font(.ui(13, weight: .medium)).foregroundStyle(Tokens.Colors.ink)
-                    Button { editing = true } label: {
-                        HStack(spacing: 4) {
-                            LineIcon(shape: WriteIcon(), size: 14, lineWidth: 2.4, fill: nil)
-                            Text("خط بکش یا بپوشون").font(.ui(11.5, weight: .bold))
-                        }
-                        .foregroundStyle(Tokens.Colors.lapis)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(!model.draft.screenshotOn || model.isLocked)
-                    .accessibilityIdentifier("feedbackEdit")
-                }
-                Spacer(minLength: 0)
-                Toggle("عکس صفحه", isOn: $model.draft.screenshotOn)
-                    .toggleStyle(FeedbackSwitchStyle())
-                    .labelsHidden()
-                    .disabled(model.isLocked)
-                    .accessibilityLabel("عکس صفحه")
-                    .accessibilityIdentifier("feedbackScreenshotSwitch")
-            }
+            if type.takesScreenshot, model.image != nil { screenshotRow }
             if type.sendsTechnical { technical }
             Text("چیزی که جای دیگه تایپ کردی یا پیام‌هات هیچ‌وقت همراهش نمیاد. عکس صفحه رو خودت تصمیم می‌گیری.")
                 .font(.ui(11)).foregroundStyle(Color.feedbackHint).lineSpacing(3)
@@ -132,6 +110,32 @@ struct FeedbackForm: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .meCard(radius: 22, shadow: 0.06)
     }
+
+    private var screenshotRow: some View {
+        HStack(spacing: 12) {
+            thumbnail
+            VStack(alignment: .leading, spacing: 4) {
+                Text("عکس صفحه").font(.ui(13, weight: .medium)).foregroundStyle(Tokens.Colors.ink)
+                Button { editing = true } label: {
+                    HStack(spacing: 4) {
+                        LineIcon(shape: WriteIcon(), size: 14, lineWidth: 2.4, fill: nil)
+                        Text("خط بکش یا بپوشون").font(.ui(11.5, weight: .bold))
+                    }
+                    .foregroundStyle(Tokens.Colors.lapis)
+                }
+                .buttonStyle(.plain)
+                .disabled(!model.draft.screenshotOn || model.isLocked)
+                .accessibilityIdentifier("feedbackEdit")
+            }
+            Spacer(minLength: 0)
+            Toggle("عکس صفحه", isOn: $model.draft.screenshotOn)
+                .toggleStyle(FeedbackSwitchStyle())
+                .labelsHidden()
+                .disabled(model.isLocked)
+                .accessibilityLabel("عکس صفحه")
+                .accessibilityIdentifier("feedbackScreenshotSwitch")
+        }
+}
 
     @ViewBuilder private var thumbnail: some View {
         if let image = model.image {

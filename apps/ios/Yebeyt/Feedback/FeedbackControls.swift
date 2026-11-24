@@ -88,7 +88,7 @@ struct FeedbackTextArea: View {
             .overlay(alignment: .topLeading) {
                 if text.isEmpty {
                     Text(placeholder).font(.ui(14)).foregroundStyle(Color.feedbackHint)
-                        .padding(.horizontal, 15).padding(.vertical, 12)
+                        .padding(.horizontal, 21).padding(.vertical, 12)  // clear of the cursor
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }

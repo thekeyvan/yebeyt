@@ -81,12 +81,29 @@ final class RecordingWriter: @unchecked Sendable {
     }
 }
 
+/// What the feedback flow needs from a screen recorder (a fake one stands in for it in tests).
+@MainActor
+protocol ScreenRecording: AnyObject {
+    var isAvailable: Bool { get }
+    func start() async -> ScreenRecorder.StartResult
+    func stop() async -> (url: URL, seconds: Int)?
+}
+
 /// ReplayKit's in-app recording of the app's own screen. No microphone.
 @MainActor
-final class ScreenRecorder {
+final class ScreenRecorder: ScreenRecording {
     enum StartResult { case started, denied, failed }
 
+    private nonisolated static let filePrefix = "feedback-"
     private var writer: RecordingWriter?
+
+    /// A recording that was never sent (the app was killed) is only a temporary file: removed at launch.
+    nonisolated static func removeStaleFiles(in directory: URL = FileManager.default.temporaryDirectory) {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        for name in names where name.hasPrefix(filePrefix) && name.hasSuffix(".mp4") {
+            try? FileManager.default.removeItem(at: directory.appending(path: name))
+        }
+    }
 
     var isAvailable: Bool { RPScreenRecorder.shared().isAvailable }
 
@@ -94,7 +111,7 @@ final class ScreenRecorder {
     func start() async -> StartResult {
         let recorder = RPScreenRecorder.shared()
         recorder.isMicrophoneEnabled = false
-        let url = FileManager.default.temporaryDirectory.appending(path: "feedback-\(UUID().uuidString).mp4")
+        let url = FileManager.default.temporaryDirectory.appending(path: "\(Self.filePrefix)\(UUID().uuidString).mp4")
         let writer = RecordingWriter(url: url)
         do {
             try await recorder.startCapture { @Sendable buffer, type, _ in

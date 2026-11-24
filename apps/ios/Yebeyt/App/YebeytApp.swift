@@ -30,6 +30,7 @@ struct YebeytApp: App {
         if options.fresh { LaunchOptions.resetSavedState() }
         #endif
         NetworkMonitor.shared.start()
+        ScreenRecorder.removeStaleFiles()
         let textSettings = TextSettingsStore()
         _textSettings = State(initialValue: textSettings)
         _progress = State(initialValue: ReadingProgress())

@@ -45,7 +45,8 @@ final class FeedbackCenter {
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let log: FeedbackLog
     @ObservationIgnored private let capture: () -> UIImage?
-    @ObservationIgnored private let recorder: ScreenRecorder
+    @ObservationIgnored private let recorder: any ScreenRecording
+    @ObservationIgnored private let isEditingText: () -> Bool
     @ObservationIgnored private let network: () -> NetworkKind
     @ObservationIgnored private let device: () -> DeviceInfo
     @ObservationIgnored var presenter: (any FeedbackPresenting)?
@@ -55,7 +56,8 @@ final class FeedbackCenter {
 
     init(
         app: AppModel, text: TextSettingsStore, session: Session, defaults: UserDefaults = .standard, log: FeedbackLog = .shared,
-        capture: @escaping () -> UIImage? = { ScreenshotCapture.keyWindow() }, recorder: ScreenRecorder = ScreenRecorder(),
+        capture: @escaping () -> UIImage? = { ScreenshotCapture.keyWindow() }, recorder: any ScreenRecording = ScreenRecorder(),
+        isEditingText: @escaping () -> Bool = { FeedbackCenter.textFieldHasFocus() },
         network: @escaping () -> NetworkKind = { NetworkMonitor.shared.current }, device: @escaping () -> DeviceInfo = { DeviceInfo.current() }
     ) {
         self.app = app
@@ -65,6 +67,7 @@ final class FeedbackCenter {
         self.log = log
         self.capture = capture
         self.recorder = recorder
+        self.isEditingText = isEditingText
         self.network = network
         self.device = device
     }
@@ -75,9 +78,10 @@ final class FeedbackCenter {
 
     // MARK: Opening
 
-    /// The phone was shaken. Nothing happens when the shake is switched off in the settings.
+    /// The phone was shaken. Nothing happens when the shake is switched off in the settings, or while a text field has
+    /// the focus (shaking the phone then undoes typing).
     @discardableResult func shake() -> Bool {
-        guard FeedbackSettings.shakeEnabled(in: defaults) else { return false }
+        guard FeedbackSettings.shakeEnabled(in: defaults), !isEditingText() else { return false }
         return open(source: .shake)
     }
 
@@ -94,6 +98,16 @@ final class FeedbackCenter {
 
     private func makeModel(_ type: FeedbackType, _ snapshot: FeedbackSnapshot) -> FeedbackModel {
         FeedbackModel(type: type, snapshot: snapshot, sender: FeedbackSender(session: session, log: log))
+    }
+
+    /// A text field or text view in the key window is being edited.
+    static func textFieldHasFocus() -> Bool {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        guard let window = scenes.flatMap(\.windows).first(where: \.isKeyWindow) else { return false }
+        func editing(_ view: UIView) -> Bool {
+            (view.isFirstResponder && view is UITextInput) || view.subviews.contains(where: editing)
+        }
+        return editing(window)
     }
 
     private func makeInfo() -> TechnicalInfo {
@@ -149,10 +163,13 @@ final class FeedbackCenter {
     func showToast(_ line: String) {
         toast = line
         overlay.showToast(for: self)
+        UIAccessibility.post(notification: .announcement, argument: line)
         toastTask?.cancel()
         toastTask = Task {
             try? await Task.sleep(for: .seconds(2.5))
-            if !Task.isCancelled { toast = nil }
+            guard !Task.isCancelled else { return }
+            toast = nil
+            overlay.hideToast()
         }
     }
 
@@ -166,9 +183,12 @@ final class FeedbackCenter {
         switch await recorder.start() {
         case .started:
             beginRecordingState()
-        case .denied, .failed:
+        case .denied:
             recordingRefused = true
             presenter?.present(self)
+        case .failed:
+            presenter?.present(self)
+            showToast(Self.recordingNote)
         }
     }
 
@@ -187,6 +207,7 @@ final class FeedbackCenter {
     private func beginRecordingState() {
         isRecording = true
         overlay.showPill(for: self)
+        UIAccessibility.post(notification: .announcement, argument: "در حال ضبط")
         recordingTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(RecordingBudget.maxSeconds))
             if !Task.isCancelled { await self?.stopRecording() }

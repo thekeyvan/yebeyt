@@ -14,6 +14,16 @@ private final class RecordingPresenter: FeedbackPresenting {
 }
 
 @MainActor
+private final class FakeRecorder: ScreenRecording {
+    var isAvailable = true
+    var startResult = ScreenRecorder.StartResult.started
+    var clip: (url: URL, seconds: Int)?
+    private(set) var stops = 0
+    func start() async -> ScreenRecorder.StartResult { startResult }
+    func stop() async -> (url: URL, seconds: Int)? { stops += 1; return clip }
+}
+
+@MainActor
 struct FeedbackCenterTests {
     private struct Fixture {
         var center: FeedbackCenter
@@ -24,7 +34,7 @@ struct FeedbackCenterTests {
         var stub: StubServer
     }
 
-    private func fixture(network: NetworkKind = .wifi) -> Fixture {
+    private func fixture(network: NetworkKind = .wifi, recorder: any ScreenRecording = FakeRecorder(), editing: Bool = false) -> Fixture {
         let defaults = UserDefaults(suiteName: "feedback.tests.\(UUID().uuidString)")!
         let stub = StubServer { _ in .json(201, #"{"id":"6f1c2a52-0d0b-4a9e-8a52-3f3b1a2f9c11","uploadToken":"t"}"#) }
         let app = AppModel()
@@ -33,7 +43,7 @@ struct FeedbackCenterTests {
         let session = Session(api: stub.api, store: KeychainStore(service: "com.yebeyt.tests.\(UUID().uuidString)"))
         let center = FeedbackCenter(
             app: app, text: TextSettingsStore(defaults: defaults), session: session, defaults: defaults, log: log,
-            capture: { nil }, network: { network }, device: { DeviceInfo(appVersion: "2.0.0", deviceModel: "iPhone17,1", osVersion: "26.0") }
+            capture: { nil }, recorder: recorder, isEditingText: { editing }, network: { network }, device: { DeviceInfo(appVersion: "2.0.0", deviceModel: "iPhone17,1", osVersion: "26.0") }
         )
         center.presenter = presenter
         return Fixture(center: center, app: app, presenter: presenter, log: log, defaults: defaults, stub: stub)
@@ -187,5 +197,66 @@ struct FeedbackCenterTests {
         #expect(size.width % 2 == 0 && size.height % 2 == 0)
         let small = RecordingBudget.videoSize(width: 390, height: 844)
         #expect(small.width == 390 && small.height == 844)  // never enlarged
+    }
+
+    @Test func aShakeWhileATextFieldHasTheFocusDoesNotOpenTheSheet() {
+        let f = fixture(editing: true)
+        #expect(!f.center.shake())
+        #expect(!f.center.isOpen)
+        #expect(f.center.open(source: .settings))  // the settings row is not a shake
+    }
+
+    @Test func goingToTheBackgroundStopsTheRecordingAndBringsTheFormBack() async throws {
+        let recorder = FakeRecorder()
+        let video = FileManager.default.temporaryDirectory.appending(path: "feedback-\(UUID().uuidString).mp4")
+        try Data([1]).write(to: video)
+        recorder.clip = (video, 9)
+        let f = fixture(recorder: recorder)
+        f.center.open(source: .shake, type: .bug)
+        await f.center.startRecording()
+        #expect(f.center.isRecording)
+        #expect(f.presenter.dismissed == 1)
+        await f.center.stopRecording()  // what RootView does when the scene goes to the background
+        #expect(!f.center.isRecording)
+        #expect(recorder.stops == 1)
+        #expect(f.center.model?.recording == FeedbackModel.Recording(url: video, seconds: 9))
+        #expect(f.presenter.presented == 2)  // the bug screen is back
+        await f.center.stopRecording()  // nothing is recording any more: nothing happens
+        #expect(recorder.stops == 1)
+        f.center.model?.removeRecording()
+    }
+
+    @Test func theRecordingOptionIsHiddenOnlyWhenThePersonSaidNo() async {
+        let denied = FakeRecorder()
+        denied.startResult = .denied
+        let a = fixture(recorder: denied)
+        a.center.open(source: .shake, type: .bug)
+        await a.center.startRecording()
+        #expect(a.center.recordingRefused && !a.center.recordingAvailable && !a.center.isRecording)
+
+        let broken = FakeRecorder()
+        broken.startResult = .failed
+        let b = fixture(recorder: broken)
+        b.center.open(source: .shake, type: .bug)
+        await b.center.startRecording()
+        #expect(!b.center.recordingRefused && b.center.recordingAvailable)  // it may work next time
+        #expect(b.presenter.presented == 2)
+
+        let unavailable = FakeRecorder()
+        unavailable.isAvailable = false
+        #expect(!fixture(recorder: unavailable).center.recordingAvailable)
+    }
+
+    @Test func leftoverRecordingsAreDeletedAtLaunchButOtherFilesStay() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let stale = directory.appending(path: "feedback-1.mp4")
+        let other = directory.appending(path: "keep.mp4")
+        try Data([1]).write(to: stale)
+        try Data([1]).write(to: other)
+        ScreenRecorder.removeStaleFiles(in: directory)
+        #expect(!FileManager.default.fileExists(atPath: stale.path))
+        #expect(FileManager.default.fileExists(atPath: other.path))
     }
 }
