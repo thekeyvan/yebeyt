@@ -9,7 +9,6 @@ struct FeedbackGameForm: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                FeedbackHeader(title: "یه بازی پیشنهاد بده", canSend: model.canSend, close: { Task { await center.requestClose() } }, send: { Task { await center.send() } })
                 VStack(alignment: .leading, spacing: 7) {
                     FeedbackLabel(title: "اسمش", hint: "اگه داره")
                     TextField("", text: $model.draft.gameName, prompt: Text("مثلاً «بیت عوضی»").foregroundStyle(Color.feedbackHint))
@@ -45,11 +44,15 @@ struct FeedbackGameForm: View {
                     .accessibilityIdentifier("feedbackAccountNote")
             }
             .padding(.horizontal, 18)
-            .padding(.top, 16)
+            .padding(.top, 6)
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
+        .stickyHeader(paper: Tokens.Colors.boardPaper) {
+            FeedbackHeader(title: "یه بازی پیشنهاد بده", canSend: model.canSend, close: { Task { await center.requestClose() } }, send: { Task { await center.send() } })
+                .padding(.top, 10)
+        }
         .background(Tokens.Colors.boardPaper.ignoresSafeArea())
     }
 }

@@ -13,7 +13,6 @@ struct FeedbackForm: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                FeedbackHeader(title: type.title, canSend: model.canSend, close: { Task { await center.requestClose() } }, send: { Task { await center.send() } })
                 VStack(alignment: .leading, spacing: 6) {
                     if type == .bug { FeedbackLabel(title: "چی شد؟") }
                     FeedbackTextArea(
@@ -29,11 +28,15 @@ struct FeedbackForm: View {
                 if type.sendsTechnical || (type.takesScreenshot && model.image != nil) { attachment }
             }
             .padding(.horizontal, 18)
-            .padding(.top, 16)
+            .padding(.top, 6)
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
+        .stickyHeader(paper: Tokens.Colors.boardPaper) {
+            FeedbackHeader(title: type.title, canSend: model.canSend, close: { Task { await center.requestClose() } }, send: { Task { await center.send() } })
+                .padding(.top, 10)
+        }
         .background(Tokens.Colors.boardPaper.ignoresSafeArea())
         .sheet(isPresented: $removingRecording) {
             ConfirmSheet(

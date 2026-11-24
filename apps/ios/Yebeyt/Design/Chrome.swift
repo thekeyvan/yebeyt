@@ -50,13 +50,14 @@ struct ScreenHeader: View {
 }
 
 /// Pins a screen's top navigation (back or close, and the title row with it) above the content, which scrolls under it.
-/// The pinned area is the page's own dotted paper, so nothing shows through, and a thin shadow appears once something has
-/// scrolled under it. Put it on the screen's `ScrollView`; the header keeps its place in VoiceOver order, first.
+/// The pinned area is the page's own dotted paper (or `paper`, a flat colour, on the feedback boards), so nothing shows
+/// through, and a thin shadow appears once something has scrolled under it. Put it on the screen's `ScrollView`; the header keeps its place in VoiceOver order, first.
 struct StickyHeader<Header: View>: ViewModifier {
     let header: Header
+    var paper: Color?
     @State private var scrolledUnder = false
 
-    /// Fallback before iOS 18, which cannot tell how far a scroll view went: the shadow stays on.
+    /// Before iOS 18 nothing can tell how far a scroll view went: only the hairline stays on, without the shadow.
     private var tracksScroll: Bool {
         if #available(iOS 18, *) { return true }
         return false
@@ -70,7 +71,10 @@ struct StickyHeader<Header: View>: ViewModifier {
                     .padding(.top, 6)
                     .padding(.bottom, 8)
                     .frame(maxWidth: .infinity)
-                    .background { DottedPaper().ignoresSafeArea(edges: .top) }
+                    .contentShape(Rectangle())  // a tap on the padding must not reach the row scrolled under it
+                    .background {
+                        if let paper { paper.ignoresSafeArea(edges: .top) } else { DottedPaper().ignoresSafeArea(edges: .top) }
+                    }
                     .overlay(alignment: .bottom) {
                         Rectangle().fill(Tokens.Colors.ink.opacity(0.1)).frame(height: 1)
                             .opacity(scrolledUnder || !tracksScroll ? 1 : 0)
@@ -101,8 +105,8 @@ private struct ScrollUnderTracker: ViewModifier {
 
 extension View {
     /// `ScrollView { … }.stickyHeader { BackButton() … }`: the header stays at the top while the content scrolls.
-    func stickyHeader<Header: View>(@ViewBuilder _ header: () -> Header) -> some View {
-        modifier(StickyHeader(header: header()))
+    func stickyHeader<Header: View>(paper: Color? = nil, @ViewBuilder _ header: () -> Header) -> some View {
+        modifier(StickyHeader(header: header(), paper: paper))
     }
 }
 

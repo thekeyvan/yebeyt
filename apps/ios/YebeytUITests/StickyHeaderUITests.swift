@@ -2,9 +2,6 @@ import XCTest
 
 /// The top navigation (back, close) is pinned: scrolling to the end of the content leaves it where it was.
 final class StickyHeaderUITests: XCTestCase {
-    /// The top safe area of the iPhone 17 (62 pt) plus the header's own height; anything lower has scrolled away.
-    private let headerBottom: CGFloat = 130
-
     @MainActor private func launch(_ arguments: [String]) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-beytFresh", "1"] + arguments
@@ -30,7 +27,7 @@ final class StickyHeaderUITests: XCTestCase {
         // a long list recycles the rows that went off the top
         if content.exists { XCTAssertLessThan(content.frame.minY, contentBefore - 1, "the content scrolled", file: file, line: line) }
         XCTAssertEqual(button.frame.minY, buttonBefore, accuracy: 1, "the button did not move", file: file, line: line)
-        XCTAssertLessThan(button.frame.minY, headerBottom, "the button is at the top", file: file, line: line)
+        XCTAssertLessThan(button.frame.maxY, app.frame.height / 4, "the button is in the top quarter of the screen", file: file, line: line)
         XCTAssertGreaterThanOrEqual(button.frame.height, 44, file: file, line: line)
         button.tap()
         XCTAssertTrue(leaves(), "tapping the button after scrolling works", file: file, line: line)
@@ -68,5 +65,21 @@ final class StickyHeaderUITests: XCTestCase {
         let app = launch(["-beytRoute", "poet-game", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"])
         assertPinned(app, button: app.buttons["gameClose"], content: app.staticTexts["score"],
                      leaves: { app.buttons["leaveGameConfirm"].waitForExistence(timeout: 5) })
+    }
+
+    /// The pinned header is solid: a tap on its lower edge must not reach the row scrolled under it.
+    @MainActor func testATapOnTheHeaderDoesNotOpenTheRowUnderIt() {
+        let app = launch(["-beytRoute", "section:/hafez/ghazal"])
+        let back = app.buttons["back"]
+        XCTAssertTrue(back.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["poem-1"].waitForExistence(timeout: 10))
+        for _ in 0..<4 { app.swipeUp(velocity: .fast) }
+        sleep(1)  // let the scroll settle
+        let edge = back.frame.maxY + 6
+        XCTAssertTrue(app.buttons.allElementsBoundByIndex.contains { $0.identifier.hasPrefix("poem-") && $0.frame.minY < edge && $0.frame.maxY > edge },
+                      "a row is under the header's lower edge")
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: app.frame.midX, dy: edge)).tap()
+        XCTAssertFalse(app.staticTexts["readerTitle"].waitForExistence(timeout: 3), "the tap opened the row under the header")
+        XCTAssertTrue(back.exists)
     }
 }
