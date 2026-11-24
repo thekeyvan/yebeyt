@@ -528,32 +528,34 @@
           "avatar"
         ]
       },
-      "Relationship": {
+      "FriendshipState": {
         "type": "object",
         "properties": {
-          "isFollowing": {
-            "type": "boolean"
-          },
-          "followsYou": {
-            "type": "boolean"
-          },
-          "isFriend": {
-            "type": "boolean"
+          "friendship": {
+            "$ref": "#/components/schemas/Friendship"
           }
         },
         "required": [
-          "isFollowing",
-          "followsYou",
-          "isFriend"
+          "friendship"
         ]
       },
-      "PeoplePage": {
+      "Friendship": {
+        "type": "string",
+        "enum": [
+          "none",
+          "requested",
+          "incoming",
+          "friends"
+        ],
+        "description": "`requested`: I sent them a request and wait. `incoming`: they sent me one. `friends`: we are friends."
+      },
+      "FriendsPage": {
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Person"
+              "$ref": "#/components/schemas/PersonShort"
             }
           },
           "nextCursor": {
@@ -569,31 +571,43 @@
           "nextCursor"
         ]
       },
-      "Person": {
+      "FriendRequestsPage": {
         "type": "object",
         "properties": {
-          "username": {
-            "type": "string"
+          "items": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/PersonShort"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the request was sent."
+                    }
+                  },
+                  "required": [
+                    "createdAt"
+                  ]
+                }
+              ]
+            }
           },
-          "displayName": {
+          "nextCursor": {
             "type": [
               "string",
               "null"
-            ]
-          },
-          "avatar": {
-            "$ref": "#/components/schemas/Avatar"
-          },
-          "isFriend": {
-            "type": "boolean",
-            "description": "You follow each other."
+            ],
+            "description": "Pass as `cursor` for the next page; null on the last page."
           }
         },
         "required": [
-          "username",
-          "displayName",
-          "avatar",
-          "isFriend"
+          "items",
+          "nextCursor"
         ]
       },
       "BlockedPage": {
@@ -941,10 +955,14 @@
         "properties": {
           "total": {
             "type": "integer"
+          },
+          "friendRequests": {
+            "type": "integer"
           }
         },
         "required": [
-          "total"
+          "total",
+          "friendRequests"
         ]
       },
       "MessagePage": {
@@ -1986,15 +2004,15 @@
           {
             "type": "object",
             "properties": {
-              "isFollowing": {
-                "type": "boolean"
+              "friendship": {
+                "$ref": "#/components/schemas/Friendship"
               },
               "isFriend": {
                 "type": "boolean"
               }
             },
             "required": [
-              "isFollowing",
+              "friendship",
               "isFriend"
             ]
           }
@@ -2011,14 +2029,12 @@
               "friendsCount": {
                 "type": "integer"
               },
-              "isFollowing": {
-                "type": "boolean"
-              },
-              "followsYou": {
-                "type": "boolean"
+              "friendship": {
+                "$ref": "#/components/schemas/Friendship"
               },
               "isFriend": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "`friendship` is `friends`."
               },
               "canMessage": {
                 "type": "boolean",
@@ -2051,8 +2067,7 @@
             },
             "required": [
               "friendsCount",
-              "isFollowing",
-              "followsYou",
+              "friendship",
               "isFriend",
               "canMessage",
               "league",
@@ -3303,7 +3318,7 @@
           "me"
         ],
         "summary": "Delete the account and everything stored for it",
-        "description": "Also removes its blocks, chats with their messages (the other person loses the chat), shared divans, challenges with all their results, and its results on other people's challenges. Waiting games it made go; its active games end with the other player as winner (and the other keeps the finished game). Revokes the Apple token when there is one. If Apple cannot be reached the account is kept (502) so the call can be repeated.",
+        "description": "Also removes its friendships and friend requests, its blocks, chats with their messages (the other person loses the chat), shared divans, challenges with all their results, and its results on other people's challenges. Waiting games it made go; its active games end with the other player as winner (and the other keeps the finished game). Revokes the Apple token when there is one. If Apple cannot be reached the account is kept (502) so the call can be repeated.",
         "security": [
           {
             "bearerAuth": []
@@ -3708,7 +3723,7 @@
           "feed"
         ],
         "summary": "What my friends did: the home «دوستات» feed",
-        "description": "Newest first, 30 a page, from friends only (people who follow each other). A friend's likes and reposts are shown only when their `keptVisibility` is `friends` (the switch that also hides their divan). Their solved daily puzzles are shown only when their `dailyVisibility` is `friends`. Taking back a like, or ending the friendship, removes the item.",
+        "description": "Newest first, 30 a page, from friends only. A friend's likes and reposts are shown only when their `keptVisibility` is `friends` (the switch that also hides their divan). Their solved daily puzzles are shown only when their `dailyVisibility` is `friends`. Taking back a like, or ending the friendship, removes the item.",
         "security": [
           {
             "bearerAuth": []
@@ -3759,13 +3774,13 @@
         }
       }
     },
-    "/v1/follows/{username}": {
-      "put": {
+    "/v1/friend-requests/{username}": {
+      "post": {
         "tags": [
           "friends"
         ],
-        "summary": "Follow someone",
-        "description": "Idempotent. You need a username of your own (403 username_required). Two people who follow each other are friends. If either of you blocked the other, the person is not found (404).",
+        "summary": "Ask someone to be friends",
+        "description": "Idempotent: asking again changes nothing. If they already asked me, this accepts and we are friends; if we are friends, nothing happens. The receiver gets a live `friend.request` (and the sender of a request I accept, `friend.accepted`). If either of us blocked the other, the person is not found (404). A user may send 30 new requests an hour (429 rate_limited); repeats and acceptances do not count.",
         "security": [
           {
             "bearerAuth": []
@@ -3786,11 +3801,180 @@
         ],
         "responses": {
           "200": {
-            "description": "How we follow each other now.",
+            "description": "Where we stand now: `requested`, or `friends` when it was accepted or we already were.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Relationship"
+                  "$ref": "#/components/schemas/FriendshipState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: that is yourself.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required: set a username first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user with that username.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 120 calls a minute, or 30 new requests an hour, per user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "friends"
+        ],
+        "summary": "Cancel the request I sent",
+        "description": "Idempotent, silent. Does nothing to a request they sent me or to a friendship.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "example": "hafez_fan"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "invalid_request: that is yourself.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required: set a username first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user with that username.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (120 a minute per user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/friend-requests/{username}/accept": {
+      "post": {
+        "tags": [
+          "friends"
+        ],
+        "summary": "Accept the request they sent me",
+        "description": "We are friends now, and they get a live `friend.accepted`. Idempotent: 200 when we are already friends. 404 when they sent no request (or one of us blocked the other).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "example": "hafez_fan"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`friends`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendshipState"
                 }
               }
             }
@@ -3846,13 +4030,15 @@
             }
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/v1/friend-requests/{username}/reject": {
+      "post": {
         "tags": [
           "friends"
         ],
-        "summary": "Stop following someone",
-        "description": "Idempotent.",
+        "summary": "Reject the request they sent me",
+        "description": "Silent: the request just goes away, the sender is not told and may send a new one at once. Idempotent.",
         "security": [
           {
             "bearerAuth": []
@@ -3872,15 +4058,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "How we follow each other now.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Relationship"
-                }
-              }
-            }
+          "204": {
+            "description": "Done."
           },
           "400": {
             "description": "invalid_request: that is yourself.",
@@ -3894,6 +4073,16 @@
           },
           "401": {
             "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required: set a username first.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3925,13 +4114,13 @@
         }
       }
     },
-    "/v1/me/following": {
-      "get": {
+    "/v1/friends/{username}": {
+      "delete": {
         "tags": [
           "friends"
         ],
-        "summary": "People I follow, newest first, 50 a page",
-        "description": "`isFriend` is true when they follow me back.",
+        "summary": "Stop being friends",
+        "description": "Idempotent and silent: they are not told, and either of us may send a new request.",
         "security": [
           {
             "bearerAuth": []
@@ -3941,26 +4130,21 @@
           {
             "schema": {
               "type": "string",
-              "maxLength": 100
+              "minLength": 1,
+              "maxLength": 64,
+              "example": "hafez_fan"
             },
-            "required": false,
-            "name": "cursor",
-            "in": "query"
+            "required": true,
+            "name": "username",
+            "in": "path"
           }
         ],
         "responses": {
-          "200": {
-            "description": "A page of people.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PeoplePage"
-                }
-              }
-            }
+          "204": {
+            "description": "Done."
           },
           "400": {
-            "description": "A malformed cursor.",
+            "description": "invalid_request: that is yourself.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3978,46 +4162,9 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/v1/me/followers": {
-      "get": {
-        "tags": [
-          "friends"
-        ],
-        "summary": "People who follow me, newest first, 50 a page",
-        "description": "`isFriend` is true when I follow them back. People with no username yet are left out.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "maxLength": 100
-            },
-            "required": false,
-            "name": "cursor",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A page of people.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PeoplePage"
-                }
-              }
-            }
           },
-          "400": {
-            "description": "A malformed cursor.",
+          "403": {
+            "description": "username_required: set a username first.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4026,8 +4173,18 @@
               }
             }
           },
-          "401": {
-            "description": "Not signed in.",
+          "404": {
+            "description": "No user with that username.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (120 a minute per user).",
             "content": {
               "application/json": {
                 "schema": {
@@ -4044,8 +4201,8 @@
         "tags": [
           "friends"
         ],
-        "summary": "My friends (we follow each other), 50 a page",
-        "description": "Ordered by when I followed them, newest first. `isFriend` is always true.",
+        "summary": "My friends, 50 a page",
+        "description": "Ordered by when we became friends, newest first.",
         "security": [
           {
             "bearerAuth": []
@@ -4064,11 +4221,11 @@
         ],
         "responses": {
           "200": {
-            "description": "A page of people.",
+            "description": "A page of friends.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PeoplePage"
+                  "$ref": "#/components/schemas/FriendsPage"
                 }
               }
             }
@@ -4085,6 +4242,105 @@
           },
           "401": {
             "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/friend-requests": {
+      "get": {
+        "tags": [
+          "friends"
+        ],
+        "summary": "Friend requests I received or sent, newest first, 50 a page",
+        "description": "`direction=incoming` are the people who asked me (answer with accept or reject); `outgoing` are the people I asked (cancel with DELETE).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "incoming",
+                "outgoing"
+              ]
+            },
+            "required": true,
+            "name": "direction",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendRequestsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A malformed cursor, or no `direction`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "username_required: set a username first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user with that username.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (120 a minute per user).",
             "content": {
               "application/json": {
                 "schema": {
@@ -4102,7 +4358,7 @@
           "safety"
         ],
         "summary": "Block someone",
-        "description": "Idempotent. Removes the follows between the two, both ways. A blocked pair cannot follow, message or share a divan with each other (and cannot invite each other to games), and each is hidden from the other's profile lookup (404) and search. The blocked person is not told.",
+        "description": "Idempotent. Removes the friendship and the friend requests between the two. A blocked pair cannot send friend requests, message or share a divan with each other (and cannot invite each other to games), and each is hidden from the other's profile lookup (404) and search. The blocked person is not told.",
         "security": [
           {
             "bearerAuth": []
@@ -4182,7 +4438,7 @@
           "safety"
         ],
         "summary": "Unblock someone",
-        "description": "Idempotent. The follows removed by the block do not come back.",
+        "description": "Idempotent. The friendship and requests removed by the block do not come back.",
         "security": [
           {
             "bearerAuth": []
@@ -4607,8 +4863,8 @@
         "tags": [
           "messages"
         ],
-        "summary": "How many unread messages I have, for the tab badge",
-        "description": "The other people's messages after the last one I read, in all chats that nobody blocked. System lines and deleted messages do not count.",
+        "summary": "How many unread messages and friend requests I have, for the tab badge",
+        "description": "The other people's messages after the last one I read, in all chats that nobody blocked. System lines and deleted messages do not count. `friendRequests` is how many friend requests wait for my answer.",
         "security": [
           {
             "bearerAuth": []
@@ -6510,7 +6766,7 @@
           "friends"
         ],
         "summary": "A person's public profile",
-        "description": "Name, avatar, how many friends they have, how we follow each other. Their league tier and points this week are given only to a friend, to themselves and when they allow the global leaderboard.",
+        "description": "Name, avatar, how many friends they have, whether we are friends or a request is open (`friendship`). Their league tier and points this week are given only to a friend, to themselves and when they allow the global leaderboard.",
         "security": [
           {
             "bearerAuth": []
@@ -7126,7 +7382,7 @@
           "scores"
         ],
         "summary": "How my friends did in a day's puzzle",
-        "description": "Friends (people who follow each other) who reported that day, solved first, then by fewer tries, up to 100. A friend whose `dailyVisibility` is `me` is left out, and not counted. `solvedCount` is how many of the listed friends solved it.",
+        "description": "Friends who reported that day, solved first, then by fewer tries, up to 100. A friend whose `dailyVisibility` is `me` is left out, and not counted. `solvedCount` is how many of the listed friends solved it.",
         "security": [
           {
             "bearerAuth": []
@@ -7257,7 +7513,7 @@
           "leaderboard"
         ],
         "summary": "This week's points: me and my friends",
-        "description": "Friends are people who follow each other. Friends with no score are listed with 0. Best first, then by username; up to 100.",
+        "description": "Friends with no score are listed with 0. Best first, then by username; up to 100.",
         "security": [
           {
             "bearerAuth": []
