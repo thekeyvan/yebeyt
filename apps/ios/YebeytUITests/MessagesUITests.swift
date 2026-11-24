@@ -95,12 +95,12 @@ final class MessagesUITests: XCTestCase {
         XCTAssertTrue(app.textFields["composer"].waitForExistence(timeout: 10))
     }
 
-    @MainActor func testTheGamesButtonOfTheInboxGoesToTheGamesTab() {
+    @MainActor func testTheGamesButtonOfTheInboxOpensTheLobby() {
         let app = launch(["-beytRoute", "inbox"])
         let games = element(app, "inboxGames")
         XCTAssertTrue(games.waitForExistence(timeout: 10))
         games.tap()
-        XCTAssertTrue(app.staticTexts["بازی‌ها"].waitForExistence(timeout: 10))
+        XCTAssertTrue(element(app, "lobby").waitForExistence(timeout: 10))
     }
 
     @MainActor func testLongPressingACoupletCardOffersTheSharedDivanAndAddsTheCouplet() {

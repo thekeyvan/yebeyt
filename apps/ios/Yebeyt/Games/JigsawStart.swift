@@ -7,6 +7,8 @@ enum JigsawStart: Equatable, Sendable {
     case couplet(poem: String, index: Int)
     /// «بازی با این غزل»: the couplets of that poem first, then couplets from the deck.
     case poem(String)
+    /// A challenge: exactly these couplets, in this order.
+    case items([GameCouplet])
 }
 
 extension JigsawStart {
@@ -16,7 +18,7 @@ extension JigsawStart {
             GameCouplet(poem: poem.path, index: index, couplet: couplet, poetSlug: poetSlug, poetName: poetName, bookTitle: bookTitle)
         }
         switch self {
-        case .deck: return []
+        case .deck, .items: return []
         case .couplet(_, let index): return all.indices.contains(index) ? [all[index]] : []
         case .poem: return all
         }

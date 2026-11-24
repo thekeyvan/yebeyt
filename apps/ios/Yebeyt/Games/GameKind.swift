@@ -28,7 +28,7 @@ enum GameKind: String, CaseIterable, Sendable {
         case .book: "تکی · ۱۰ سؤال"
         case .match: "تکی · ۵ جفت · بی‌عجله"
         case .listen: "تکی · ۵ سؤال · با هدفون"
-        case .mosh: "با دوست یا «یه بیت» · تا وقتی کسی کم بیاره"
+        case .mosh: "با دوست · تا وقتی کسی کم بیاره"
         case .duel: "با دوست · ۵ دور · ۳ دقیقه"
         }
     }
@@ -62,8 +62,8 @@ enum GameKind: String, CaseIterable, Sendable {
     /// The games with a card on the games tab, in the order of the board.
     static let tabCards: [GameKind] = [.jigsaw, .poet, .misra, .book]
 
-    /// What opens for the game; nil for the games with friends, which wait for their slice (the card is dimmed).
-    var route: GameRoute? {
+    /// What opens for the game: the game itself, or for a game with a friend the lobby with that game chosen.
+    var route: GameRoute {
         switch self {
         case .daily: .daily
         case .jigsaw: .jigsaw(.deck)
@@ -72,11 +72,10 @@ enum GameKind: String, CaseIterable, Sendable {
         case .book: .quiz(.book)
         case .match: .match
         case .listen: .quiz(.listen)
-        case .mosh, .duel: nil
+        case .mosh: .lobby(LobbyStart(game: .mosh))
+        case .duel: .lobby(LobbyStart(game: .duel))
         }
     }
-
-    var isBuilt: Bool { route != nil }
 
     /// The sticker's background: one colour, or two split on the diagonal (games with friends).
     var background: (Color, Color?) {

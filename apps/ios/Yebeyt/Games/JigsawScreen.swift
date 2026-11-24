@@ -4,6 +4,10 @@ import SwiftUI
 /// sheet go into them. Nothing teaches while the clock runs: the meaning waits in the sheet after each answer.
 struct JigsawScreen: View {
     let start: JigsawStart
+    /// The friends a challenge made from this round goes to (picked in the lobby).
+    var invite: [String] = []
+    /// Set when the round answers a challenge: its end is the challenge's result.
+    var answering: ChallengeAnswer?
     @Environment(AppModel.self) private var app
     @Environment(PoetryStore.self) private var poetry
     @Environment(Library.self) private var library
@@ -17,7 +21,11 @@ struct JigsawScreen: View {
         ZStack {
             if let session {
                 if session.finished {
-                    RoundEndScreen(summary: session.round.summary)
+                    if let answering {
+                        ChallengeEndScreen(answering: answering, summary: session.round.summary, seconds: session.round.elapsed)
+                    } else {
+                        RoundEndScreen(summary: session.round.summary.inviting(invite))
+                    }
                 } else {
                     play(session)
                 }
@@ -36,6 +44,7 @@ struct JigsawScreen: View {
         var opening: [GameCouplet] = []
         switch start {
         case .deck: break
+        case .items(let couplets): opening = couplets
         case .couplet(let path, _), .poem(let path):
             if let poem = try? await poetry.poem(path: path) {
                 let slug = path.split(separator: "/").first.map(String.init) ?? ""

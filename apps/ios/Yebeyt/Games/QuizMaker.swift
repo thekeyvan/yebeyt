@@ -91,6 +91,15 @@ extension QuizRound {
         }
     }
 
+    /// حدس شاعر with these couplets, in this order (a challenge): a couplet whose question can't be made is left out.
+    static func poet(couplets: [GameCouplet], poets: [LibraryPoet], generator: inout SeededGenerator) -> QuizRound? {
+        var questions: [QuizQuestion] = []
+        for couplet in couplets {
+            if let made = QuizMaker.poet(couplet, poets: poets, generator: &generator) { questions.append(made) }
+        }
+        return QuizRound(kind: .poet, questions: questions)
+    }
+
     /// مصراع دوم: ten couplets of the deck, or of one poet only (a poet with few couplets gets a shorter round).
     static func second(deck: GameDeck, only poet: String?, generator: inout SeededGenerator) -> QuizRound? {
         let pool = poet.map { slug in deck.couplets.filter { $0.poetSlug == slug } } ?? deck.couplets

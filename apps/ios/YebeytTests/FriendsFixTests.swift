@@ -172,7 +172,7 @@ struct FriendsFixTests {
     }
 
     @Test func theFriendsListKeepsAskingWhenAWholePageIsBlocked() async {
-        func person(_ name: String) -> String { #"{"username":"\#(name)","displayName":null,"avatar":null,"isFriend":true}"# }
+        func person(_ name: String) -> String { #"{"username":"\#(name)","displayName":null,"avatar":null}"# }
         let (a, b, c) = (person("a"), person("bad"), person("c"))
         let env = SignedInStub { request in
             if request.query.contains("cursor=p2") { .json(200, #"{"items":[\#(b)],"nextCursor":"p3"}"#) }

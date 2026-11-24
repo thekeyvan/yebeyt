@@ -30,6 +30,8 @@ const config: NextConfig = {
   // The workspace root, so the standalone build traces files of the packages next to the app.
   outputFileTracingRoot: fileURLToPath(new URL("../../", import.meta.url)),
   poweredByHeader: false,
+  // One 404 page for URLs that match no route: with two root layouts (Persian and English) there is no layout to build it in.
+  experimental: { globalNotFound: true },
   headers: async () => [{ source: "/:path*", headers: securityHeaders }],
 };
 

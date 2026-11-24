@@ -1,27 +1,17 @@
 import type { ReactNode } from "react";
-import { Brand } from "./Brand";
+import { TopBar } from "./Brand";
 import { SiteFooter } from "./SiteFooter";
+import type { Doc, Lang } from "../lib/site";
 
-/** A page of text in two languages: Persian first, then English (`#en`). */
-export function DocPage({ fa, en }: { fa: ReactNode; en: ReactNode }) {
+/** A page of text (privacy, terms, support) in one language; the top bar links to the same page in the other. */
+export function DocPage({ lang, doc, children }: { lang: Lang; doc: Doc; children: ReactNode }) {
   return (
     <div className="page">
-      <div className="top">
-        <Brand />
-        <a className="lang" href="#en" lang="en">
-          English
-        </a>
-      </div>
+      <TopBar lang={lang} doc={doc} />
       <main>
-        <article className="doc card">
-          {fa}
-          <hr />
-          <section id="en" className="en" lang="en" dir="ltr">
-            {en}
-          </section>
-        </article>
+        <article className={lang === "en" ? "doc card en" : "doc card"}>{children}</article>
       </main>
-      <SiteFooter />
+      <SiteFooter lang={lang} />
     </div>
   );
 }

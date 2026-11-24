@@ -1,7 +1,6 @@
 import Foundation
 
-/// What the server sends over `/v1/live` that this app uses. Games and challenges (`game.*`, `duel.*`,
-/// `challenge.result`) are `.other` until the games with friends are built.
+/// What the server sends over `/v1/live` that this app uses.
 enum LiveEvent: Equatable, Sendable {
     case ready
     case message(ChatMessage)
@@ -13,6 +12,14 @@ enum LiveEvent: Equatable, Sendable {
     case friendRequest(from: PersonShort)
     /// Someone accepted the request I sent.
     case friendAccepted(from: PersonShort)
+    case gameStarted(FriendGame)
+    case gameMove(gameId: String, move: MoshMove, scores: [GameScore])
+    case gameTurn(gameId: String, username: String, deadline: Date)
+    case gameEnded(gameId: String, winner: String?, reason: FriendGame.EndReason, scores: [GameScore], couplets: [DuelResult])
+    case duelQuestion(DuelQuestion)
+    case duelAnswered(gameId: String, round: Int, username: String)
+    case duelRound(gameId: String, round: Int, winner: String?, rightOption: Int, scores: [GameScore])
+    case challengeResult(code: String, game: ChallengeGame, result: ChallengeLiveResult)
     case other(String)
 
     /// The event of a text frame; nil when it is not JSON or its fields are not as the contract says.
@@ -51,7 +58,7 @@ enum LiveEvent: Equatable, Sendable {
         case "friend.accepted":
             return frame.from.map(LiveEvent.friendAccepted)
         default:
-            return .other(frame.type)
+            return decodeGame(type: frame.type, data: Data(text.utf8)) ?? .other(frame.type)
         }
     }
 }

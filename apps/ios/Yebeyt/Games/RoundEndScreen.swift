@@ -1,17 +1,32 @@
 import SwiftUI
 
-/// ChallengeSend, for every solo game: the points, «n از ۱۰», and — until challenges and links exist — the round's
-/// couplets as rows that open the reader.
-struct RoundEndScreen: View {
+/// ChallengeSend, for every game: the points, «n از ۱۰», and then the challenge card (جورچین and حدس شاعر, for a signed-in
+/// person), a card of the caller's (the result of a challenge), or the round's couplets as rows that open the reader.
+struct RoundEndScreen<Card: View>: View {
     @Environment(AppModel.self) private var app
+    @Environment(Session.self) private var session
+    @Environment(GameDeck.self) private var deck
     let summary: RoundSummary
+    let card: Card
+
+    init(summary: RoundSummary, @ViewBuilder card: () -> Card) {
+        self.summary = summary
+        self.card = card()
+    }
+
+    private var offer: ChallengeOffer? { session.isSignedIn ? summary.offer.flatMap { $0.isInDeck(deck) ? $0 : nil } : nil }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
                 topBar
                 scoreRow
-                couplets
+                if let offer {
+                    ChallengeSendCard(offer: offer)
+                } else {
+                    card
+                    if summary.showsCouplets { couplets }
+                }
             }
             .padding(.horizontal, 18)
             .padding(.top, 8)
@@ -28,12 +43,14 @@ struct RoundEndScreen: View {
             }
             .accessibilityIdentifier("roundEndBack")
             Spacer()
-            Text("+\(PersianDigits.string(summary.points)) امتیاز")
-                .font(.title(16)).foregroundStyle(Tokens.Colors.ink)
-                .padding(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
-                .padding(.bottom, 2)
-                .sticker(fill: Tokens.Colors.amber, radius: Tokens.Sticker.Radius.pill, border: 3, shadow: ShadowToken(y: 2, blur: 6, opacity: 0.18))
-                .accessibilityIdentifier("roundEndPoints")
+            if summary.showsPoints {
+                Text("+\(PersianDigits.string(summary.points)) امتیاز")
+                    .font(.title(16)).foregroundStyle(Tokens.Colors.ink)
+                    .padding(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
+                    .padding(.bottom, 2)
+                    .sticker(fill: Tokens.Colors.amber, radius: Tokens.Sticker.Radius.pill, border: 3, shadow: ShadowToken(y: 2, blur: 6, opacity: 0.18))
+                    .accessibilityIdentifier("roundEndPoints")
+            }
         }
     }
 
@@ -50,8 +67,9 @@ struct RoundEndScreen: View {
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("roundEndScore")
             VStack(alignment: .leading, spacing: 4) {
-                Text("تموم شد!").font(.title(28)).foregroundStyle(Tokens.Colors.ink)
+                Text(summary.title).font(.title(28)).foregroundStyle(Tokens.Colors.ink)
                     .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("roundEndTitle")
                 Text(summary.subtitle).font(.ui(13)).foregroundStyle(Tokens.Colors.muted)
             }
             Spacer(minLength: 0)
@@ -75,6 +93,9 @@ struct RoundEndScreen: View {
                     Text(TextNormalizer.plain(couplet.m1)).font(.poem(16))
                     Text(TextNormalizer.plain(couplet.m2)).font(.poem(16))
                     Text(couplet.source).font(.ui(11)).foregroundStyle(Color(hex: 0x8A8698)).padding(.top, 4)
+                    if summary.showsMeanings, let meaning = couplet.meaning {
+                        Text(meaning).font(.ui(12)).foregroundStyle(Tokens.Colors.muted).padding(.top, 2).fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .foregroundStyle(Tokens.Colors.ink)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -102,5 +123,11 @@ struct RoundEndScreen: View {
             Circle().fill(Tokens.Colors.trackLight).frame(width: 14, height: 14).frame(width: 28, height: 28)
                 .accessibilityLabel("نرسیدی")
         }
+    }
+}
+
+extension RoundEndScreen where Card == EmptyView {
+    init(summary: RoundSummary) {
+        self.init(summary: summary) { EmptyView() }
     }
 }

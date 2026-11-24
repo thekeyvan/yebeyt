@@ -24,6 +24,10 @@ final class MessagesCenter {
     @ObservationIgnored private var published = 0
     /// Pushes a chat on the «پیام‌ها» tab and switches to it.
     @ObservationIgnored var show: (@MainActor (String) -> Void)?
+    /// Every live event, after the messages have taken theirs (the games with friends take the `game.*` ones).
+    @ObservationIgnored var onLive: (@MainActor (LiveEvent) -> Void)?
+    /// The socket is ready (again): what the screens show was not kept while it was closed.
+    @ObservationIgnored var onLiveReady: (@MainActor () -> Void)?
 
     @ObservationIgnored private var chats: [String: ChatModel] = [:]
     @ObservationIgnored private var divans: [String: SharedDivanModel] = [:]
@@ -74,6 +78,7 @@ final class MessagesCenter {
     /// Events are not kept while the socket is closed: every connect reads again what is on screen (a screen that
     /// comes back reads its own list when it appears).
     func reconnected() async {
+        onLiveReady?()
         await refreshUnread()
         if inbox.isVisible { await inbox.load() }
         if requests.isVisible { await requests.load() }
@@ -103,6 +108,12 @@ final class MessagesCenter {
         if inbox.apply(event, viewing: viewing) { Task { await inbox.load() } }
         chats.values.forEach { $0.apply(event) }
         divans.values.forEach { $0.apply(event) }
+        onLive?(event)
+    }
+
+    /// Sends a frame over the live socket (an answer in رودررو); false when it is not open.
+    func sendLive(_ text: String) async -> Bool {
+        await live?.send(text) ?? false
     }
 
     // MARK: Friendships changed outside the requests screen
@@ -164,6 +175,21 @@ final class MessagesCenter {
             let conversation = try await session.authorized { try await self.session.api.openConversation(username: username, token: $0) }
             _ = chat(for: conversation)
             show?(conversation.id)
+            return nil
+        } catch let error as APIError {
+            return MessageCopy.toast(for: error)
+        } catch {
+            return nil
+        }
+    }
+
+    /// Sends a text to a person without leaving the screen: finds or makes the chat, then sends. A chat that is open
+    /// gets the message from the live event. Returns the line to show when it could not be sent.
+    func sendText(_ text: String, to username: String) async -> String? {
+        do {
+            let conversation = try await session.authorized { try await self.session.api.openConversation(username: username, token: $0) }
+            let outgoing = OutgoingMessage(clientId: UUID().uuidString.lowercased(), content: .text(text))
+            _ = try await session.authorized { try await self.session.api.sendMessage(outgoing, conversation: conversation.id, token: $0) }
             return nil
         } catch let error as APIError {
             return MessageCopy.toast(for: error)

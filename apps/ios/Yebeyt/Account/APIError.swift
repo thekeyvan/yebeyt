@@ -27,6 +27,13 @@ enum APIErrorCode: String, Sendable {
     case alreadyUploaded = "already_uploaded"
     case uploadTimeout = "upload_timeout"
     case messagesClosed = "messages_closed"
+    case wrongLetter = "wrong_letter"
+    case alreadyPlayed = "already_played"
+    case turnOver = "turn_over"
+    case badCouplet = "bad_couplet"
+    case notYourTurn = "not_your_turn"
+    case gameNotActive = "game_not_active"
+    case gameFull = "game_full"
 }
 
 /// What went wrong with a call to the server.

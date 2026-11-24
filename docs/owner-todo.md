@@ -1,88 +1,33 @@
 # Owner to-do
 
-Things only the owner can do: they need accounts or devices the agents don't have here (the corporate proxy on this laptop blocks `gcloud`, Cloudflare and the simulator's network). None of them blocks the build; tick them off on the other laptop.
+Only what is still open. These need accounts or devices the agents don't have here (the corporate proxy on this laptop blocks Cloudflare, `gcloud` and the simulator's network). None of them blocks the build. What's already done is listed at the end.
 
-## 1. Cloudflare: point api.yebeyt.com at the new server
+## 0. App Store Connect: an API key for TestFlight uploads
 
-In Cloudflare → yebeyt.com → DNS, edit the `api` record:
+So the lead can upload TestFlight builds from this Mac: appstoreconnect.apple.com → Users and Access → Integrations → App Store Connect API → Team Keys → «+». Name `yebeyt ci`, access **Admin** (needed so Xcode can create the distribution certificate). Download the `.p8` (only once; keep a copy with the push key) and tell the lead the **Key ID** and the **Issuer ID**. The lead keeps the file in `~/.appstoreconnect/private_keys/`, never in the repo. Then in the app's TestFlight tab, add yourself to an Internal Testing group.
 
-| Type | Name | Target | Proxy |
-|---|---|---|---|
-| CNAME | `api` | `1kdy3n7t.up.railway.app` | DNS only (grey cloud) |
-
-It still points at `al3flpv4.up.railway.app`, the deleted 1.0 service. The `_railway-verify.api` TXT record is already right; leave it. Check afterwards: `curl https://api.yebeyt.com/health` answers `{"status":"ok"}`. Until then the server answers at https://server-production-98f46b7e.up.railway.app, and sign-in on a phone doesn't work.
-
-## 1b. Cloudflare: point yebeyt.com at the new website
-
-The new site (`apps/web`) runs on Railway and answers at https://web-production-83a0b542.up.railway.app. The old Cloudflare Pages site (1.0) still owns yebeyt.com; detach it from Pages first, then in Cloudflare → yebeyt.com → DNS:
-
-| Type | Name | Target / value | Proxy |
-|---|---|---|---|
-| CNAME | `@` (yebeyt.com) | `j45dzw62.up.railway.app` | DNS only (grey cloud) |
-| CNAME | `www` | `uqy7gib1.up.railway.app` | DNS only |
-| TXT | `_railway-verify` | `railway-verify=0ff77988ea9c89a144c79c87ed28059d6c156bbce03877270de6863b4e5ea5e6` | — |
-| TXT | `_railway-verify.www` | `railway-verify=99e2ec4d1178f00db1b97a3a1af74764917aa999f3af124375c99495eba2d7fa` | — |
-
-Keep any MX/TXT records for Zoho mail (hello@yebeyt.com) as they are. Check afterwards: `curl https://yebeyt.com/.well-known/apple-app-site-association` returns the JSON. Universal Links and the App Clip need this.
-
-Also set the App Store id in `apps/web/lib/config.ts` (`APP_STORE_ID`) once the app record exists; until then the store buttons open an App Store search.
-
-## 2. Google Cloud ✅ (done 24 Nov)
-
-New project **yebeyt** (account accounts@ksco.nl) with the consent screen («یه بیت», support accounts@ksco.nl, contact hello@yebeyt.com, yebeyt.com links, no logo so no verification needed), published. The iOS client `461381422799-sfbege1fi9tirookg2rp7utukvdtathq.apps.googleusercontent.com` (bundle `com.yebeyt.app`, team `95YDC2AP63`) is in `apps/ios/project.yml` and in the server's `GOOGLE_CLIENT_IDS` on Railway.
+## 1. Google Cloud
 
 - Once Google sign-in works on a phone, shut down the old project `beyt-515410` (IAM & Admin → Settings → Shut down).
-- Add the App Store id to the iOS client when the app record exists.
 
-## 3. Apple
+## 2. Test on a real phone
 
-- developer.apple.com → Identifiers → `com.yebeyt.app`: the **Sign in with Apple** capability is on.
-- The Sign in with Apple key `ZBLL8ASYCU` (team `95YDC2AP63`) is still valid; the server uses it to revoke tokens when an account is deleted.
-- App Store Connect: the app record for `com.yebeyt.app` exists; version 2.0.0 will be uploaded there.
-
-## 3b. Apple: a key for push notifications
-
-«تا فردا» games and new messages need push notifications. On developer.apple.com → Certificates, IDs & Profiles → Keys → «+»: name it «yebeyt push», tick **Apple Push Notifications service (APNs)**, choose «Sandbox & Production», continue, register, and download the `.p8` file (it can be downloaded only once). Then in Railway → project yebeyt → service `server` → Variables add:
-
-- `APNS_KEY`: the whole text of the `.p8` file
-- `APNS_KEY_ID`: the key's 10-character id shown on the page
-
-Never commit the `.p8`. Tell the lead when it's there; push comes in its own slice after that.
-
-## 4. Test on a real phone
-
-These can't be tested in the simulator here:
+These can't be tested in the simulator here (build from Xcode onto the phone):
 
 - A recitation plays and the reader follows it (Hafez, any ghazal, ▶).
-- «ادامه با اپل» and «ادامه با گوگل» sign in (after item 1), and then the username step.
+- «ادامه با اپل» and «ادامه با گوگل» sign in, and then the username step. api.yebeyt.com works now, so this can be tested.
 - Poet pictures appear on Explore (Hafez, Saadi, …) after a moment online.
 - Feedback: shake the phone on any screen and the sheet opens; the «بازخورد» row in settings opens it too. Send a bug with a screenshot and a screen recording («دوباره انجامش بده، ما فیلم می‌گیریم»): iOS asks once to allow recording, then the red «در حال ضبط · تموم» pill shows. The simulator gives ReplayKit no frames, so recording can only be tested on a real phone. The report should appear in `GET /v1/admin/feedback` with the screenshot and the recording.
+- With a second account (another phone, or a friend): send a friend request and accept it, send a message, and play a game together.
 
-## 5. Read when there's time
+## 3. Read when there's time
 
 - The lead's decisions in [yebeyt-2.md](yebeyt-2.md) («Decisions the lead made while the owner was away»).
 - `tools/ganjoor/curation.json` (poet bios and book blurbs) and `tools/ganjoor/glossary.json` (word meanings): both written by an agent; please check the Persian.
 
-## 6. Questions (the lead decided something for now; change anything)
+## 4. App Store Connect: the privacy label (don't fill it in yet)
 
-1. ✅ **Levels:** (owner: OK, 24 Nov) نوآموز 0 · بیت‌خوان 500 · غزل‌باز 2000 · سخن‌دان 5000 · استاد سخن 12000 points. Names and thresholds OK?
-2. **Badges:** ۷ روز, اولین مشاعره, حافظ‌شناس (50 right answers on Hafez), ۱۰۰ بیت (100 couplets read). More badges, other rules?
-3. ✅ **Avatar parts:** (owner: as is, 24 Nov) the board draws one face and six accessories. For now: skin, hair and background are colour choices; eyes and mouth have three simple variants. Do you want to design more parts (or have them drawn)?
-4. ✅ **Settings screen** (owner: plain list, 24 Nov) (the gear on Profile) has no board. It holds the account (name, username, sign out, delete account), text, privacy, about. Is a quick board worth making, or is a plain list fine?
-5. **Delete account copy:** «حسابت و همه‌ی چیزهایی که جمع کردی پاک می‌شه. مطمئنی؟» — «پاک کن» / «نه».
-6. **Invite texts:** the board has the رفیقانه text; the lead writes شاعرانه and کوتاه. Please read them in the app.
-7. **Divan «موضوع»:** grouped by the mood words (عشق, دلتنگی, امید, بهار, جوونی, دوستی, else بقیه). Other topics?
-8. **Feedback storage:** screenshots and recordings are kept in Postgres for now (screenshot ≤3 MB, recording ≤25 MB). If many arrive, move them to a Railway bucket. OK?
-9. ✅ **Feedback after deleting an account:** (owner: stays anonymous, 24 Nov) the text stays, without the user (anonymous). Or should it be deleted too?
-10. **Reading feedback:** there is no admin screen yet; feedback is read through the admin API (`GET /v1/admin/feedback` with `ADMIN_TOKEN`). Should a simple page come before the admin dashboard?
-11. ✅ **Friends:** (owner, 24 Nov: friend requests with acceptance; reject is silent; no cooldown) ~~Friends = mutual follows.~~ Following is one-way; two people following each other are friends. OK, or should friend requests need acceptance?
-12. ✅ **League tiers** (owner: OK, 24 Nov) reuse the level names (نوآموز … استاد سخن), weekly from Saturday, groups of 30, top 5 up, bottom 5 down. OK?
-13. **Notifications:** (owner will add the key; steps in 3b) «تا فردا» games and messages need push notifications. That needs an APNs key (Apple Developer → Keys → a key with Apple Push Notifications). Please create one and put it in Railway as `APNS_KEY` (with its key id as `APNS_KEY_ID`), or tell the lead to do without push for now.
-14. **Scores come from the phone,** so a determined cheater could fake them. The server caps points per round, and the daily and onboarding points count once. Good enough for now?
-15. **Privacy policy (slice 9, the new website):** a reported message keeps a copy of its text for moderation, even if its sender later deletes their account. The policy needs a line about that (and about feedback, see the feedback section).
-16. ✅ **Another person's page** (owner: plain layout is fine, 24 Nov) has no board; for now it is the Profile layout without the private parts, plus «دنبال کن», «پیام بده», and «بلاک» / «گزارش». Want a board for it?
-
-## 7. App Store Connect: the privacy label for feedback
+This table covers only feedback. Accounts, the divan sync, friends, messages and game scores also send data, and those rows are still missing. The lead will finish the full table before the first upload; fill in the label then, all at once.
 
 The app has a privacy manifest (`apps/ios/Yebeyt/PrivacyInfo.xcprivacy`): no tracking, UserDefaults (reason CA92.1, the app's own settings), and the data that feedback sends. In App Store Connect → the app → App Privacy → Data Types, tick (for the lead to review; Apple's names):
 
@@ -96,4 +41,16 @@ Notes:
 - Reports also keep nothing about the connection: no IP address, location or device id (the server logs only method, route, status and time).
 - The manifest can only say «linked», not «linked when signed in», so it says linked. In the label, answer «Yes, linked to the user» as above.
 - Questions for the lead's review: should the report text be filed under **Customer Support** and screenshots/recordings under **Photos or Videos** instead of Other User Content? Sign-in and sync already send a name, a username and a user id, the divan and game scores: the manifest and the label need those entries too when the accounts slices are reviewed for the App Store (this slice added only the feedback ones).
-- The privacy policy (slice 9) needs this clause: «اگه بازخورد بفرستی، متن، عکس صفحه و (اگه بخوای) فیلم صفحه‌ات رو می‌گیریم. اگه باگ گزارش کنی، اطلاعات فنی گوشی (نسخه‌ی اپ، مدل و نسخه‌ی سیستم، صفحه‌ای که بودی، چند صفحه‌ی قبلش، کدهای خطاهای اخیر) هم همراهشه. اگه وارد حساب شده باشی، گزارش به نام کاربریت ثبت می‌شه؛ اگه نه، بی‌نام. چیزی که جای دیگه تایپ کردی، پیام‌هات، شماره‌ات، آی‌پی یا مکانت هیچ‌وقت همراهش نمی‌ره.»
+- The privacy policy on the new website already has this clause: «اگه بازخورد بفرستی، متن، عکس صفحه و (اگه بخوای) فیلم صفحه‌ات رو می‌گیریم. اگه باگ گزارش کنی، اطلاعات فنی گوشی (نسخه‌ی اپ، مدل و نسخه‌ی سیستم، صفحه‌ای که بودی، چند صفحه‌ی قبلش، کدهای خطاهای اخیر) هم همراهشه. اگه وارد حساب شده باشی، گزارش به نام کاربریت ثبت می‌شه؛ اگه نه، بی‌نام. چیزی که جای دیگه تایپ کردی، پیام‌هات، شماره‌ات، آی‌پی یا مکانت هیچ‌وقت همراهش نمی‌ره.»
+
+## Done
+
+- 24 Nov: `yebeyt.com` and `www.yebeyt.com` point at the new website on Railway (certificates valid); the old Pages site is detached.
+- 24 Nov: `api.yebeyt.com` points at the new server (CNAME `1kdy3n7t.up.railway.app`, certificate valid).
+- 24 Nov: new Google Cloud project **yebeyt** (account accounts@ksco.nl), consent screen published, iOS client `461381422799-sfbege1fi9tirookg2rp7utukvdtathq.apps.googleusercontent.com` in the app and in the server's `GOOGLE_CLIENT_IDS`.
+- 24 Nov: App ID `com.yebeyt.app` (description yebeyt) with Associated Domains, Push Notifications and Sign in with Apple. The Sign in with Apple key `ZBLL8ASYCU` is valid.
+- 24 Nov: App Clip ID `com.yebeyt.app.Clip` registered (Associated Domains). App Store Apple ID `6837700208` (the lead turns it on in the website's store buttons when 2.0 is live; until then the id has no store page). The old Pages project is deleted.
+- 24 Nov: App Store Connect Privacy Policy URL https://yebeyt.com/en/privacy and Support URL https://yebeyt.com/en/support; Google consent screen links (/en, /en/privacy, /en/terms) and the App Store id on the Google iOS client.
+- 24 Nov: push key «yebeyt push» (`K95YXBLYY5`) in Railway as `APNS_KEY`, `APNS_KEY_ID`, `APNS_TEAM_ID`.
+- Answered 24 Nov: badges (the four), delete-account copy, the three invite texts, divan topics, feedback in Postgres, feedback read through the admin API until the dashboard, score caps are enough for now, the friend-requests copy; the English home adds "(poetry duels)" after mosha'ere.
+- Answered earlier: levels, avatar parts, settings as a plain list, feedback stays anonymous after account deletion, league tiers, push notifications, another person's page in a plain layout, friend requests instead of mutual follows. The privacy policy has the lines about reported messages and feedback.

@@ -297,30 +297,22 @@ h3 {
   font-size: 14px;
 }
 
-.doc hr {
-  border: 0;
-  border-top: 2px dashed var(--color-ring);
-  margin: 44px 0;
-}
-
-.doc .en {
-  direction: ltr;
-  text-align: left;
+.doc.en {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.7;
 }
 
-.doc .en h1,
-.doc .en h2 {
+.doc.en h1,
+.doc.en h2 {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   font-weight: 800;
 }
 
-.doc .en h1 {
+.doc.en h1 {
   font-size: 30px;
 }
 
-.doc .en h2 {
+.doc.en h2 {
   font-size: 20px;
 }
 

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import NotFound from "../app/not-found";
-import ErrorPage from "../app/error";
+import NotFound from "../app/global-not-found";
+import ErrorPage from "../app/(fa)/error";
 import { LinkPage } from "../components/LinkPage";
 import { Missing, Unavailable } from "../components/Missing";
 import { challengeView } from "../lib/links";
@@ -17,6 +17,10 @@ describe("pages that find nothing, or fail", () => {
     }
     expect(renderToStaticMarkup(<Missing title="این چالش پیدا نشد" hint="x" />)).toContain("<h1>این چالش پیدا نشد</h1>");
     expect(renderToStaticMarkup(<Unavailable />)).toContain("<h1>الان نشد</h1>");
+  });
+
+  it("show the Persian 404 for any unknown URL, in its own <html>", () => {
+    expect(renderToStaticMarkup(<NotFound />)).toMatch(/^<html lang="fa" dir="rtl">/);
   });
 
   it("get a title and no indexing from their metadata", () => {

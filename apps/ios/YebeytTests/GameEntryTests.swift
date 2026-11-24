@@ -2,9 +2,10 @@ import Testing
 @testable import Yebeyt
 
 struct GameEntryTests {
-    @Test func everyGameButTheOnesWithFriendsOpens() {
-        #expect(GameKind.allCases.filter { !$0.isBuilt } == [.mosh, .duel])
-        #expect(GameKind.tabCards.allSatisfy { $0.isBuilt })
+    @Test func everyGameOpensAndTheOnesWithFriendsOpenTheLobbyWithThatGame() {
+        #expect(GameKind.mosh.route == .lobby(LobbyStart(game: .mosh)))
+        #expect(GameKind.duel.route == .lobby(LobbyStart(game: .duel)))
+        #expect(!GameKind.mosh.meta.contains("یه بیت"))  // no bot opponent
         #expect(GameKind.poet.route == .quiz(.poet))
         #expect(GameKind.misra.route == .quiz(.misra(poet: nil)))
         #expect(GameKind.book.route == .quiz(.book))

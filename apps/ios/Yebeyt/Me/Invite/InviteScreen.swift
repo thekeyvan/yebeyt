@@ -8,15 +8,9 @@ struct InviteScreen: View {
     @State private var tone: InviteTone? = .friendly
     @State private var text = InviteTone.friendly.body
     @State private var writing = false
-    @State private var sharing: Sharing?
     @State private var toast: String?
     @State private var toastTask: Task<Void, Never>?
     @FocusState private var editing: Bool
-
-    private struct Sharing: Identifiable {
-        let id = UUID()
-        let items: [Any]
-    }
 
     private var username: String? { session.user?.username }
     private var link: String { username.map(InviteLink.display(username:)) ?? "yebeyt.com" }
@@ -44,7 +38,6 @@ struct InviteScreen: View {
         .toolbar(.hidden, for: .navigationBar)
         .overlay(alignment: .bottom) { toastView }
         .animation(.snappy, value: toast)
-        .sheet(item: $sharing) { ShareSheet(items: $0.items).presentationDetents([.medium, .large]) }
         .task { await session.restore() }
     }
 
@@ -140,65 +133,14 @@ struct InviteScreen: View {
     }
 
     private var shareRow: some View {
-        HStack(alignment: .top, spacing: 4) {
-            channel(.sms) { LineIcon(shape: SMSIcon(), size: 22, lineWidth: 2.2, fill: nil) }
-            channel(.telegram) { LineIcon(shape: MessagesIcon(), size: 22, lineWidth: 2.2, fill: nil) }
-            channel(.whatsApp) { LineIcon(shape: WhatsAppIcon(), size: 22, lineWidth: 2.2, fill: nil) }
-            action("استوری", id: "story", fill: Tokens.Colors.white, ink: Tokens.Colors.ink, perform: shareStory) { StoryIcon() }
-            action("کپی لینک", id: "copyLink", fill: Tokens.Colors.lapis, ink: Tokens.Colors.white, perform: copyLink) {
-                LineIcon(shape: LinkIcon(), size: 22, lineWidth: 2.2, fill: nil)
-            }
-            action("بیشتر", id: "more", fill: Tokens.Colors.white, ink: Tokens.Colors.ink, perform: { sharing = Sharing(items: [message]) }) {
-                LineIcon(shape: MoreIcon(), size: 22, lineWidth: 2.2, fill: nil)
-            }
-        }
-        .frame(maxWidth: .infinity)
+        ShareRow(
+            style: .labelled,
+            prepare: { SharePayload(text: message, url: username.map(InviteLink.url(username:)) ?? "https://yebeyt.com") },
+            story: { _ in InviteStoryCard.image(link: link) },
+            copied: { showToast("کپی شد") }
+        )
         .disabled(username == nil)
         .opacity(username == nil ? 0.5 : 1)
-    }
-
-    private func channel(_ channel: InviteChannel, @ViewBuilder icon: () -> some View) -> some View {
-        action(channel.title, id: "channel-\(channel.scheme)", fill: Tokens.Colors.white, ink: Tokens.Colors.ink, perform: { open(channel) }, icon: icon)
-    }
-
-    private func action(
-        _ title: String, id: String, fill: Color, ink: Color, perform: @escaping () -> Void, @ViewBuilder icon: () -> some View
-    ) -> some View {
-        Button(action: perform) {
-            VStack(spacing: 5) {
-                icon().foregroundStyle(ink)
-                    .frame(width: 50, height: 50)
-                    .background(Circle().fill(fill).stickerShadow(ShadowToken(y: 2, blur: 8, opacity: 0.1)))
-                Text(title).font(.ui(11, weight: .medium)).foregroundStyle(Tokens.Colors.ink)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier(id)
-    }
-
-    // MARK: Sending
-
-    /// The messenger's compose screen with the text; when it isn't installed, the share sheet.
-    private func open(_ channel: InviteChannel) {
-        let sent = message
-        guard let url = channel.url(for: sent) else { sharing = Sharing(items: [sent]); return }
-        if channel == .sms {
-            UIApplication.shared.open(url) { opened in if !opened { Task { @MainActor in sharing = Sharing(items: [sent]) } } }
-        } else if UIApplication.shared.canOpenURL(url) {
-            UIApplication.shared.open(url)
-        } else {
-            sharing = Sharing(items: [sent])
-        }
-    }
-
-    private func shareStory() {
-        if let image = InviteStoryCard.image(link: link) { sharing = Sharing(items: [image]) }
-    }
-
-    private func copyLink() {
-        UIPasteboard.general.string = username.map(InviteLink.url(username:)) ?? "https://yebeyt.com"
-        showToast("کپی شد")
     }
 
     private func showToast(_ line: String) {

@@ -98,6 +98,11 @@ enum MessagesStub {
                 message("k2", conversation, kind: "system", payload: #"{"event":"divan_add","key":"/khayyam/robaee/sh2#0"}"#, at: at(1, 21, 4)),
                 message("k1", conversation, mine: true, text: "این رباعی رو ببین", at: at(1, 21, 0)),
             ]
+        case "c-mahsa.m":
+            chat = [
+                message("h2", conversation, mine: true, text: "فردا معما رو با هم حل کنیم؟", at: at(1, 18, 30)),
+                message("h1", conversation, text: "مهسا تو رو به جورچین بیت چالش کشید · yebeyt.com/c/7KQ2", at: at(1, 18, 0)),
+            ]
         default:
             chat = [message("x1", conversation, text: "سلام", at: at(0, 9, 10))]
         }
@@ -173,6 +178,11 @@ enum MessagesStub {
 extension DebugBackend {
     /// The answer for a messages request, nil when the request is about something else.
     static func messagesAnswer(_ request: URLRequest) -> (Int, String)? {
+        MessagesStub.answer(method: request.httpMethod ?? "GET", path: request.url?.path ?? "", query: request.url?.query ?? "", body: bodyOf(request))
+    }
+
+    /// The body of a request, also when it comes as a stream.
+    static func bodyOf(_ request: URLRequest) -> Data {
         var body = request.httpBody ?? Data()
         if body.isEmpty, let stream = request.httpBodyStream {
             stream.open()
@@ -184,7 +194,7 @@ extension DebugBackend {
                 body.append(buffer, count: count)
             }
         }
-        return MessagesStub.answer(method: request.httpMethod ?? "GET", path: request.url?.path ?? "", query: request.url?.query ?? "", body: body)
+        return body
     }
 }
 #endif

@@ -68,6 +68,21 @@ struct LiveConnectionTests {
         rig.connection.stop()
     }
 
+    @Test func aFrameIsSentOnlyWhileTheSocketIsReady() async {
+        let rig = Rig()
+        #expect(await rig.connection.send("early") == false)  // not open yet
+        rig.connection.start()
+        #expect(await eventually { rig.sockets.sockets.first != nil })
+        let socket = rig.sockets.sockets[0]
+        #expect(await rig.connection.send("not ready") == false)  // the server has not said ready
+        socket.readyFrame()
+        #expect(await eventually { rig.connection.state == .ready })
+        #expect(await rig.connection.send(#"{"type":"duel.answer"}"#))
+        #expect(socket.sent.last == #"{"type":"duel.answer"}"#)
+        rig.connection.stop()
+        #expect(await rig.connection.send("late") == false)
+    }
+
     @Test func eventsAreHandedOnAndUnknownFramesAreSkipped() async {
         let rig = Rig()
         rig.connection.start()

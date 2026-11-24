@@ -39,6 +39,10 @@ enum ScreenName: String, Sendable, CaseIterable {
     case bookGame = "از کدوم کتاب؟"
     case match = "معنی‌یاب"
     case listen = "گوش کن"
+    case lobby = "بازی با دوست"
+    case mosh = "مشاعره"
+    case duel = "بازی رودررو"
+    case challenge = "چالش"
 
     init(_ tab: Tab) {
         switch tab {
@@ -82,9 +86,14 @@ enum ScreenName: String, Sendable, CaseIterable {
         case .daily: self = .daily
         case .jigsaw: self = .jigsaw
         case .match: self = .match
+        case .lobby: self = .lobby
+        case .mosh: self = .mosh
+        case .duel: self = .duel
+        case .challenge: self = .challenge
+        case .challengeRound(let game, _): self = game == .jigsaw ? .jigsaw : .poetGame
         case .quiz(let start):
             switch start {
-            case .poet: self = .poetGame
+            case .poet, .poetItems: self = .poetGame
             case .misra: self = .second
             case .book: self = .bookGame
             case .listen: self = .listen

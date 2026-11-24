@@ -284,9 +284,8 @@ final class ChatModel {
 
     // MARK: What the list draws
 
-    /// Day labels, messages and sends on their way, oldest first. Of the lines that are not texts or couplets only two
-    /// are shown: a couplet added to the shared divan and a game invitation; the rest (a game that ended, a result)
-    /// wait for the games with friends (slice 8c).
+    /// Day labels, messages and sends on their way, oldest first. Of the lines that are not texts or couplets these are
+    /// shown: a couplet added to the shared divan, a game that ended, an invitation and a challenge's result.
     func entries(now: Date? = nil, calendar: Calendar = .current) -> [Entry] {
         let today = now ?? self.now()
         let seen = seenMessageID
@@ -312,8 +311,8 @@ final class ChatModel {
     static func isShown(_ message: ChatMessage) -> Bool {
         switch message.kind {
         case .text, .couplet: true
-        case .system: message.payload?.event == "divan_add"
-        case .game: message.payload?.event == "game_invite"
+        case .system: message.payload?.event == "divan_add" || message.payload?.event == "game_ended"
+        case .game: message.payload?.event == "game_invite" || message.payload?.event == "challenge_result"
         }
     }
 

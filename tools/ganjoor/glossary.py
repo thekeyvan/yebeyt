@@ -6,11 +6,11 @@ An entry is {path, couplet, words: [{text, m, gloss}]}: `couplet` is 0-based as 
 (1 or 2) and `text` is one or more whole words of it, matched after the same normalisation the app uses."""
 import unicodedata
 
-FOLDED = {0x64A: "ی", 0x649: "ی", 0x643: "ک", 0x622: "ا", 0x623: "ا", 0x625: "ا", 0x629: "ه"}
+FOLDED = {0x64A: "ی", 0x649: "ی", 0x626: "ی", 0x643: "ک", 0x622: "ا", 0x623: "ا", 0x625: "ا", 0x671: "ا", 0x629: "ه", 0x6C0: "ه"}
 
 
 def normalize(text):
-    """The app's TextNormalizer: no diacritics or tatweel, Arabic letters folded, half-space and punctuation to space."""
+    """The app's TextNormalizer (and the server's normalizeText): no diacritics or tatweel, Arabic letters folded (ي ى ئ ك أ إ آ ٱ ة ۀ), half-space and punctuation to space."""
     out = []
     for ch in text:
         code = ord(ch)
