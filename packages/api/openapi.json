@@ -2061,6 +2061,54 @@
           }
         ]
       },
+      "PublicUser": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
+          }
+        },
+        "required": [
+          "username",
+          "displayName",
+          "avatar"
+        ]
+      },
+      "PublicGame": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "mosh",
+              "duel"
+            ]
+          },
+          "creator": {
+            "$ref": "#/components/schemas/PersonShort"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "creator",
+          "status"
+        ]
+      },
       "ReactionCounts": {
         "type": "object",
         "properties": {
@@ -6514,6 +6562,128 @@
           },
           "404": {
             "description": "No user with that username, or one of us blocked the other.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/users/{username}": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Who an invite link is from, for yebeyt.com/i/<username>",
+        "description": "No account needed. Only the username, the display name and the face.",
+        "security": [
+          {}
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "example": "hafez_fan"
+            },
+            "required": true,
+            "name": "username",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The person.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicUser"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such username.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 600 lookups a minute for the whole server, both endpoints together.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/games/{code}": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Who a game link is from, for yebeyt.com/g/<code>",
+        "description": "No account needed. Only a game that still waits for its second player; the code is read in any case, with O as 0 and I or L as 1.",
+        "security": [
+          {}
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 10
+            },
+            "required": true,
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The kind of game and who made it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicGame"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: not a game code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No waiting game with this code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: 600 lookups a minute for the whole server, both endpoints together.",
             "content": {
               "application/json": {
                 "schema": {

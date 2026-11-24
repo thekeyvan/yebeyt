@@ -69,6 +69,8 @@ describe("OpenAPI document", () => {
       "/v1/messages/{id}",
       "/v1/poets/pictures",
       "/v1/poets/{slug}/picture",
+      "/v1/public/games/{code}",
+      "/v1/public/users/{username}",
       "/v1/reactions/counts",
       "/v1/reactions/{kind}",
       "/v1/reports",

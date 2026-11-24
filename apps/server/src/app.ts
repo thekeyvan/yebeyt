@@ -25,6 +25,7 @@ import { peopleRoutes } from "./routes/people.js";
 import { pictureRoutes } from "./routes/pictures.js";
 import { privacyRoutes } from "./routes/privacy.js";
 import { progressRoutes } from "./routes/progress.js";
+import { publicRoutes } from "./routes/public.js";
 import { reactionRoutes } from "./routes/reactions.js";
 import { reportRoutes } from "./routes/reports.js";
 import { scoreRoutes } from "./routes/scores.js";
@@ -92,6 +93,7 @@ export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
   app.route("/", gameRoutes(deps));
   app.route("/", challengeRoutes(deps));
   app.route("/", peopleRoutes(deps));
+  app.route("/", publicRoutes(deps));
   app.route("/", reactionRoutes(deps));
   app.route("/", scoreRoutes(deps));
   app.route("/", leaderboardRoutes(deps));
