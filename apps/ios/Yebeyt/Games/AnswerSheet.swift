@@ -113,7 +113,7 @@ struct AnswerSheet: View {
     private func action(_ title: String, _ icon: some Shape, fill: Bool = false, id: String, perform: @escaping () -> Void) -> some View {
         Button(action: perform) {
             VStack(spacing: 4) {
-                LineIcon(shape: icon, size: 22, lineWidth: 2.2, fill: fill ? Tokens.Colors.ink : nil)
+                LineIcon(shape: icon, size: 22, lineWidth: 2.2, fill: fill ? Tokens.Colors.ink : nil).markMotion(on: fill)
                 Text(title).font(.ui(13, weight: .medium))
             }
             .foregroundStyle(Tokens.Colors.ink)
@@ -121,7 +121,7 @@ struct AnswerSheet: View {
             .padding(.vertical, 10)
             .background(RoundedRectangle(cornerRadius: 16).fill(Tokens.Colors.boardPaper))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .accessibilityIdentifier(id)
     }
 }

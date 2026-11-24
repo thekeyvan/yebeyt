@@ -90,5 +90,6 @@ private struct DailyButtonStyle: ButtonStyle {
             .padding(EdgeInsets(top: 4, leading: 10, bottom: 0, trailing: 10))
             .sticker(fill: Tokens.Colors.amber, radius: 14, border: 3, shadow: ShadowToken(y: 2, blur: 6, opacity: 0.3))
             .opacity(configuration.isPressed ? 0.85 : 1)
+            .pressSquish(configuration.isPressed)
     }
 }

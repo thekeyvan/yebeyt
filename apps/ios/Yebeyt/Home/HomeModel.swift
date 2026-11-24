@@ -5,13 +5,15 @@ import Observation
 /// after leaving the app; a new day starts again from its own first couplet).
 @MainActor @Observable
 final class HomeModel {
-    struct Pick: Sendable {
+    struct Pick: Sendable, Identifiable {
         var path: String
         var index: Int
         var couplet: Couplet
         var poet: String
         /// «غزل ۳»
         var title: String
+
+        var id: String { "\(path)#\(index)" }
     }
 
     static let defaultsKey = "home.rejected"

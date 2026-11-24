@@ -28,6 +28,11 @@ enum Motion {
         .asymmetric(insertion: .offset(y: -28).combined(with: .scale(scale: 0.9)).combined(with: .opacity), removal: .opacity)
     }
 
+    /// The next card of the deck springs in, a little smaller; the thrown one is already gone.
+    static var deal: AnyTransition {
+        .asymmetric(insertion: .scale(scale: 0.8).combined(with: .opacity), removal: .identity)
+    }
+
     // MARK: Pop
 
     /// One stop of a keyframe track: go to `value` in `duration` seconds.

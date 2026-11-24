@@ -71,9 +71,9 @@ struct DailyCard: View {
 
     private func iconButton(_ label: String, on: Bool, action: @escaping () -> Void, @ViewBuilder icon: () -> some View) -> some View {
         Button(action: action) {
-            icon().padding(4).contentShape(Rectangle())
+            icon().markMotion(on: on).padding(4).contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .accessibilityLabel(label)
         .accessibilityAddTraits(on ? .isSelected : [])
     }
@@ -90,20 +90,20 @@ struct DailyCard: View {
                 .frame(maxWidth: .infinity, minHeight: 48, maxHeight: 48)
                 .background(RoundedRectangle(cornerRadius: 16).fill(Tokens.Colors.paper))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.press)
             .accessibilityIdentifier("reject")
             Button {
                 marks.toggle(.kept, poemPath: pick.path, couplet: pick.index)
             } label: {
                 HStack(spacing: 6) {
-                    LineIcon(shape: BookmarkIcon(), size: 18, lineWidth: 2.4, fill: kept ? Tokens.Colors.white : nil)
+                    LineIcon(shape: BookmarkIcon(), size: 18, lineWidth: 2.4, fill: kept ? Tokens.Colors.white : nil).markMotion(on: kept)
                     Text("نگه دار").font(.ui(15, weight: .bold))
                 }
                 .foregroundStyle(Tokens.Colors.white)
                 .frame(maxWidth: .infinity, minHeight: 42, maxHeight: 42)
                 .sticker(fill: Tokens.Colors.lapis, radius: 16, border: 3, shadow: ShadowToken(y: 2, blur: 8, opacity: 0.22))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.press)
             .accessibilityAddTraits(kept ? .isSelected : [])
             .accessibilityIdentifier("keep")
         }

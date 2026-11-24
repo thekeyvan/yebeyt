@@ -86,6 +86,7 @@ struct WholePoemView: View {
                 marks.toggle(.kept, poemPath: model.path, couplet: model.topIndex)
             } icon: {
                 LineIcon(shape: BookmarkIcon(), size: 20, lineWidth: 2.2, fill: kept ? Tokens.Colors.ink : nil)
+                    .markMotion(on: kept, id: model.topIndex)
             }
             round("بفرست") {
                 model.shareCouplet(model.topIndex)
@@ -130,7 +131,7 @@ struct WholePoemView: View {
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(Tokens.Colors.paper))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .accessibilityLabel(label)
     }
 }

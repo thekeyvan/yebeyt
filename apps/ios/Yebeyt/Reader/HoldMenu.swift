@@ -142,10 +142,11 @@ struct HoldMenu: View {
     private func round(_ label: String, on: Bool, @ViewBuilder icon: () -> some View, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             icon()
+                .markMotion(on: on)
                 .frame(width: 52, height: 52)
                 .background(Circle().fill(Tokens.Colors.paper))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .accessibilityLabel(label)
         .accessibilityAddTraits(on ? .isSelected : [])
     }

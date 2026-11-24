@@ -160,14 +160,14 @@ private struct FeedCard: View {
     private func action(_ label: String, on: Bool, count: Int?, color: Color, id: String, @ViewBuilder icon: () -> some View, tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
             HStack(spacing: 4) {
-                icon()
+                icon().markMotion(on: on)
                 if let count, count > 0 { Text(PersianDigits.string(count)).font(.ui(12, weight: .bold)) }
             }
             .foregroundStyle(color)
             .padding(4)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .accessibilityLabel(label)
         .accessibilityAddTraits(on ? .isSelected : [])
         .accessibilityIdentifier(id)

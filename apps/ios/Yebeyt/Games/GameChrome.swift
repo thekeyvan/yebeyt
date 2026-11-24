@@ -30,6 +30,7 @@ struct GameBigButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity, minHeight: height - 2 * border, maxHeight: height - 2 * border)
             .sticker(fill: Tokens.Colors.lapis, radius: 20, border: border, shadow: shadow)
             .opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : 0.45)
+            .pressSquish(configuration.isPressed)
     }
 }
 
@@ -52,7 +53,7 @@ struct GameRoundButton<Content: View>: View {
                 }
                 .opacity(isEnabled ? 1 : 0.45)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .accessibilityLabel(label)
     }
 }

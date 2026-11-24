@@ -3,8 +3,9 @@ import SwiftUI
 /// The views of the motion vocabulary (`Motion.swift`).
 extension View {
     /// A like or a keep: turning on pops with a wiggle, flies a burst and taps medium; turning off only pops a little.
-    func markMotion(on: Bool) -> some View {
-        modifier(MarkMotion(on: on))
+    /// `id` says which thing the mark is on: when it changes (a page scrolled to another couplet) nothing pops.
+    func markMotion(on: Bool, id: AnyHashable = 0) -> some View {
+        modifier(MarkMotion(on: on, id: id))
     }
 
     /// Pops (and, when asked, bursts and gives `feedback`) when `condition` turns true: a tab's icon, a right answer.
@@ -184,7 +185,13 @@ private extension Burst.Tint {
 // MARK: The modifiers
 
 private struct MarkMotion: ViewModifier {
+    struct Snapshot: Equatable {
+        var on: Bool
+        var id: AnyHashable
+    }
+
     let on: Bool
+    let id: AnyHashable
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pops = 0
     @State private var bursts = 0
@@ -195,12 +202,13 @@ private struct MarkMotion: ViewModifier {
         content
             .modifier(PopEffect(trigger: pops, pop: turnedOn ? .turningOn(variant) : .turningOff(variant)))
             .modifier(BurstEffect(trigger: bursts, style: .small))
-            .onChange(of: on) { _, isOn in
-                turnedOn = isOn
+            .onChange(of: Snapshot(on: on, id: id)) { old, new in
+                guard old.id == new.id, old.on != new.on else { return }
+                turnedOn = new.on
                 pops += 1
-                if isOn, Motion.bursts(variant) { bursts += 1 }
+                if new.on, Motion.bursts(variant) { bursts += 1 }
             }
-            .sensoryFeedback(.impact(weight: .medium), trigger: on) { _, isOn in isOn }
+            .sensoryFeedback(.impact(weight: .medium), trigger: pops) { _, _ in turnedOn }
     }
 }
 

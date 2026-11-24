@@ -39,6 +39,7 @@ struct StickerButtonStyle: ButtonStyle {
                      border: primary ? Tokens.Sticker.BorderWidth.button : 0,
                      shadow: primary ? Tokens.Sticker.Shadow.button : Tokens.Sticker.Shadow.secondaryButton)
             .opacity(configuration.isPressed ? 0.85 : 1)
+            .pressSquish(configuration.isPressed)
     }
 }
 

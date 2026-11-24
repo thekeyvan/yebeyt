@@ -8,6 +8,8 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var home = HomeModel()
     @State private var share: ReaderModel.Share?
+    /// True while a thrown card is being replaced: only then does the next card spring in (never on launch).
+    @State private var dealing = false
 
     var body: some View {
         ScrollView {
@@ -17,16 +19,26 @@ struct HomeView: View {
                     Text("بیتِ امروز").font(.title(32)).foregroundStyle(Tokens.Colors.ink)
                         .accessibilityAddTraits(.isHeader)
                 }
-                if let pick = home.pick {
-                    DailyCard(
-                        pick: pick,
-                        open: { app.openReader(ReaderRoute(path: pick.path, couplet: pick.index)) },
-                        send: {
-                            share = ReaderModel.Share(text: ReaderText.shareText(pick.couplet, poet: pick.poet, title: pick.title))
-                        },
-                        reject: { Task { await home.reject(poetry: poetry, library: library) } }
-                    )
+                ZStack {
+                    if let pick = home.pick {
+                        DeckCard(
+                            pick: pick,
+                            open: { app.openReader(ReaderRoute(path: pick.path, couplet: pick.index)) },
+                            send: {
+                                share = ReaderModel.Share(text: ReaderText.shareText(pick.couplet, poet: pick.poet, title: pick.title))
+                            },
+                            reject: {
+                                dealing = true
+                                await home.reject(poetry: poetry, library: library)
+                                try? await Task.sleep(for: .seconds(0.6))
+                                dealing = false
+                            }
+                        )
+                        .id(pick.id)
+                        .transition(Motion.deal)
+                    }
                 }
+                .animation(dealing ? Motion.bouncy : nil, value: home.pick?.id)
                 FriendsFeedSection()
             }
             .padding(.horizontal, 18)

@@ -73,9 +73,9 @@ struct ReaderActionRow: View {
 
     private func button(_ label: String, on: Bool, action: @escaping () -> Void, @ViewBuilder icon: () -> some View) -> some View {
         Button(action: action) {
-            icon().frame(width: 43, height: 44).contentShape(Rectangle())
+            icon().markMotion(on: on, id: "\(model.path)#\(couplet)").frame(width: 43, height: 44).contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .accessibilityLabel(label)
         .accessibilityAddTraits(on ? .isSelected : [])
     }

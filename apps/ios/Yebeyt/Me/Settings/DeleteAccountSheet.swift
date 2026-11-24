@@ -66,5 +66,6 @@ struct DangerButtonStyle: ButtonStyle {
             .padding(EdgeInsets(top: 9, leading: 22, bottom: 5, trailing: 22))
             .sticker(fill: Tokens.Colors.fire, radius: Tokens.Sticker.Radius.button, border: Tokens.Sticker.BorderWidth.button, shadow: Tokens.Sticker.Shadow.button)
             .opacity(configuration.isPressed ? 0.85 : 1)
+            .pressSquish(configuration.isPressed)
     }
 }

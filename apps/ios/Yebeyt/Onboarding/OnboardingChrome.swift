@@ -12,6 +12,7 @@ struct OnbButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
             .sticker(fill: Tokens.Colors.lapis, radius: 20, border: 4, shadow: ShadowToken(y: 6, blur: 16, opacity: 0.3))
             .opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : 0.45)
+            .pressSquish(configuration.isPressed)
     }
 }
 

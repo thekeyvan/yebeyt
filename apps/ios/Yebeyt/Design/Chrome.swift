@@ -12,7 +12,7 @@ struct RoundButton<Content: View>: View {
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(Tokens.Colors.white).shadow(color: Tokens.Colors.ink.opacity(0.16), radius: 4, x: 0, y: 2))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .accessibilityLabel(label)
     }
 }

@@ -16,6 +16,7 @@ struct TabBar: View {
             }
         }
         .frame(height: 64)
+        .sensoryFeedback(.selection, trigger: model.selectedTab)
         .padding(.top, 6)
         .background {
             RoundedRectangle(cornerRadius: Tokens.Sticker.Radius.tabBar)
@@ -39,7 +40,7 @@ struct TabBar: View {
             }
         } label: {
             VStack(spacing: 3) {
-                icon(tab, on: on)
+                icon(tab, on: on).popWhen(on)
                 Text(tab.title).font(.ui(11, weight: on ? .bold : .medium, scaled: false))
                 RoundedRectangle(cornerRadius: 2)
                     .fill(on ? Tokens.Colors.lapis : .clear)
@@ -48,11 +49,11 @@ struct TabBar: View {
             .foregroundStyle(on ? Tokens.Colors.lapis : Tokens.Colors.muted)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(alignment: .top) {
-                if tab == .games { gamesButton(on: on).offset(y: -RaisedGamesButton.rise) }
+                if tab == .games { gamesButton(on: on).popWhen(on).offset(y: -RaisedGamesButton.rise) }
             }
             .background { if tab != .games { Color.clear.contentShape(Rectangle()) } }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.press)
         .accessibilityLabel(tab.title)
         .accessibilityValue(tab == .messages ? (model.unreadAccessibilityLabel ?? "") : tab == .me ? avatar.parts.spoken : "")
         .accessibilityAddTraits(on ? .isSelected : [])
