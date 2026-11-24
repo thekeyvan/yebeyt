@@ -87,6 +87,12 @@ export async function mayMessage(db: Db, from: string, to: string, conversationI
   return (await relationOf(db, from, to)).isFriend;
 }
 
+/** May `from` start or go on writing to `to` now: the same rule as sending (for a chat that exists, the reply rule too). Never to oneself. */
+export async function canMessage(db: Db, from: string, to: string): Promise<boolean> {
+  if (from === to) return false;
+  return mayMessage(db, from, to, await findConversationOf(db, from, to));
+}
+
 /** Of these users, the ones who let others see when they are online (the default). */
 export async function showingOnline(db: Db, ids: string[]): Promise<Set<string>> {
   if (ids.length === 0) return new Set();

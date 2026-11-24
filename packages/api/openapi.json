@@ -2012,6 +2012,10 @@
               "isFriend": {
                 "type": "boolean"
               },
+              "canMessage": {
+                "type": "boolean",
+                "description": "I may write to them now: nobody blocked the other, and their «بهم پیام بده» lets me (or they already wrote to me in our chat). Never for myself."
+              },
               "league": {
                 "type": [
                   "object",
@@ -2042,6 +2046,7 @@
               "isFollowing",
               "followsYou",
               "isFriend",
+              "canMessage",
               "league",
               "weekPoints"
             ]

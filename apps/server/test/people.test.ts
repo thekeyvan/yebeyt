@@ -34,7 +34,7 @@ describe("GET /v1/users/{username}", () => {
     const res = await profile(ali.token, "SARA");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
-      username: "sara", displayName: "سارا", avatar, friendsCount: 0, isFollowing: false, followsYou: false, isFriend: false, league: null, weekPoints: null,
+      username: "sara", displayName: "سارا", avatar, friendsCount: 0, isFollowing: false, followsYou: false, isFriend: false, canMessage: false, league: null, weekPoints: null,
     });
   });
 
@@ -51,6 +51,47 @@ describe("GET /v1/users/{username}", () => {
     await h.request("/v1/follows/ali", { method: "PUT", token: sara.token });
     expect(await (await profile(ali.token, "sara")).json()).toMatchObject({ friendsCount: 3, isFriend: true, followsYou: true });
     expect(await (await profile(sara.token, "ali")).json()).toMatchObject({ friendsCount: 1, isFollowing: true, followsYou: true });
+  });
+
+  describe("canMessage", () => {
+    const open = (from: User, username: string) => h.request("/v1/conversations", { method: "POST", token: from.token, json: { username } });
+    const write = (from: User, id: string, text: string) =>
+      h.request(`/v1/conversations/${id}/messages`, { method: "POST", token: from.token, json: { clientId: randomUUID(), kind: "text", text } });
+    const can = async (viewer: User, username: string) => ((await (await profile(viewer.token, username)).json()) as { canMessage: boolean }).canMessage;
+
+    it("follows «بهم پیام بده»: friends only by default, everyone when they say so, and never myself", async () => {
+      const ali = await h.signUp("ali");
+      const sara = await h.signUp("sara");
+      expect(await can(ali, "sara")).toBe(false); // a stranger, and sara takes messages from friends
+      await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { messagesFrom: "all" } });
+      expect(await can(ali, "sara")).toBe(true);
+      await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { messagesFrom: "friends" } });
+      await befriend(ali, sara);
+      expect(await can(ali, "sara")).toBe(true);
+      expect(await can(ali, "ali")).toBe(false);
+    });
+
+    it("lets me answer someone who already wrote to me, as sending does", async () => {
+      const ali = await h.signUp("ali");
+      const sara = await h.signUp("sara");
+      await befriend(ali, sara);
+      const id = ((await (await open(sara, "ali")).json()) as { id: string }).id;
+      await write(sara, id, "salam");
+      await h.request("/v1/follows/ali", { method: "DELETE", token: sara.token });
+      await h.request("/v1/follows/sara", { method: "DELETE", token: ali.token });
+      expect(await can(ali, "sara")).toBe(true); // sara wrote here; ali answers even though sara takes friends only
+      expect(await can(sara, "ali")).toBe(false); // ali has not written, and takes friends' messages only
+    });
+
+    it("is false when no chat allows it, and a block hides the person altogether", async () => {
+      const ali = await h.signUp("ali");
+      const sara = await h.signUp("sara");
+      await h.request("/v1/me/privacy", { method: "PUT", token: sara.token, json: { messagesFrom: "all" } });
+      expect(await can(ali, "sara")).toBe(true);
+      await h.request("/v1/blocks/sara", { method: "PUT", token: ali.token });
+      expect((await profile(ali.token, "sara")).status).toBe(404);
+      expect((await profile(sara.token, "ali")).status).toBe(404);
+    });
   });
 
   it("shows the league tier like the points: to a friend or when they allow the global list, else null", async () => {
