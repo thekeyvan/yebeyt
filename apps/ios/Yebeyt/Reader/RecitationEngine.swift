@@ -34,15 +34,10 @@ typealias MakeRecitationEngine = @MainActor (URL, ListenClip?, RecitationEngineE
     static let make: MakeRecitationEngine = { url, clip, events in AVRecitationEngine(url: url, clip: clip, events: events) }
 
     init(url: URL, clip: ListenClip?, events: RecitationEngineEvents) {
-        let item: AVPlayerItem
-        if let clip {
-            // Precise timing, so the seek lands on the clip's start; the item ends at the clip's end, exactly, and
-            // the end notification below finishes the clip.
-            item = AVPlayerItem(asset: AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]))
-            item.forwardPlaybackEndTime = CMTime(seconds: clip.end, preferredTimescale: 600)
-        } else {
-            item = AVPlayerItem(url: url)
-        }
+        // Precise timing, so a seek lands on the clip's start or the couplet's, also in a streamed mp3 with a variable
+        // bit rate. A clip's item ends at the clip's end, exactly, and the end notification below finishes the clip.
+        let item = AVPlayerItem(asset: AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]))
+        if let clip { item.forwardPlaybackEndTime = Self.time(clip.end) }
         player = AVPlayer(playerItem: item)
         statusObserver = item.observe(\.status) { item, _ in
             switch item.status {
@@ -72,7 +67,13 @@ typealias MakeRecitationEngine = @MainActor (URL, ListenClip?, RecitationEngineE
     func pause() { player.pause() }
 
     func seek(to seconds: Double) async -> Bool {
-        await player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+        await player.seek(to: Self.time(seconds), toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+
+    /// Whole milliseconds, which is what Ganjoor's timing files are in: a 600 timescale would round some starts down
+    /// (3.347 s to 3.34667 s) and the first tick would read the couplet before.
+    nonisolated static func time(_ seconds: Double) -> CMTime {
+        CMTime(value: Int64((seconds * 1000).rounded()), timescale: 1000)
     }
 
     func stop() {

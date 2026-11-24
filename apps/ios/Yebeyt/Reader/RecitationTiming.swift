@@ -29,7 +29,7 @@ struct RecitationTiming: Equatable, Sendable {
     /// a verse past the text sticks to the last couplet. Nil only when there are no couplets.
     func couplet(at seconds: Double, in couplets: [Couplet]) -> Int? {
         guard !couplets.isEmpty else { return nil }
-        let milliseconds = seconds * 1000
+        let milliseconds = (seconds * 1000).rounded()  // 1.001 × 1000 is 1000.9999…: a position at a start is that couplet
         let verse = starts.last { Double($0.milliseconds) <= milliseconds }?.verse ?? 0
         var first = 0
         for (index, couplet) in couplets.enumerated() {

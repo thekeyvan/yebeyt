@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import Testing
 @testable import Yebeyt
@@ -103,6 +104,29 @@ struct RecitationTimingTests {
         for index in 0..<3 {
             let start = try #require(timing.start(ofCouplet: index, in: ghazal))
             #expect(timing.couplet(at: start, in: ghazal) == index)
+        }
+    }
+
+    /// Starts whose milliseconds don't divide evenly in binary (1.001 × 1000 is 1000.9999…) or in the 600 timescale
+    /// (3.347 s is 3.34667 s) must still read as their own couplet at exactly their start.
+    @Test func aPositionAtAStartIsThatCouplet() {
+        let timing = RecitationTiming(starts: [
+            .init(verse: 0, milliseconds: 0), .init(verse: 2, milliseconds: 1001), .init(verse: 4, milliseconds: 3347),
+            .init(verse: 6, milliseconds: 5002),
+        ])
+        let couplets = (0..<4).map { Couplet(m1: "الف\($0)", m2: "ب\($0)") }
+        for (index, milliseconds) in [0, 1001, 3347, 5002].enumerated() {
+            let seconds = Double(milliseconds) / 1000
+            #expect(timing.couplet(at: seconds, in: couplets) == index)
+            #expect(timing.couplet(at: AVRecitationEngine.time(seconds).seconds, in: couplets) == index)
+        }
+    }
+
+    @Test func theSeekTimeIsExactToTheMillisecond() {
+        for milliseconds in [3347, 3344, 5002, 1001, 29886] {
+            let time = AVRecitationEngine.time(Double(milliseconds) / 1000)
+            #expect(time.timescale == 1000)
+            #expect(time.value == Int64(milliseconds))
         }
     }
 

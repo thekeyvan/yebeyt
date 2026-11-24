@@ -37,6 +37,9 @@ final class RecitationPlayer {
     @ObservationIgnored private var pendingStart: Double?
     /// Seeks under way. Until they are done the position is not where the audio is going, so it does not move `activeCouplet`.
     @ObservationIgnored private var seeksInFlight = 0
+    /// The user moved to a couplet the timing has no start for, so the audio could not follow. Until the user presses play
+    /// again or moves to a couplet with a start, the audio does not move the page: it would snap back.
+    @ObservationIgnored private var apart = false
     @ObservationIgnored private var startTask: Task<Void, Never>?
     /// Counts starts and cancels, so a load that was cancelled and finishes late can tell it is stale and does nothing.
     @ObservationIgnored private var generation = 0
@@ -87,6 +90,7 @@ final class RecitationPlayer {
             state = .paused
             publishNowPlaying()
         case .paused:
+            apart = false
             engine?.play()
             state = .playing
             publishNowPlaying()
@@ -97,6 +101,7 @@ final class RecitationPlayer {
         case .idle:
             generation += 1
             wantedCouplet = couplet
+            apart = false
             state = .loading  // at once, so a second tap before the task runs cancels instead of starting another
             let current = generation
             startTask = Task { await start(current) }
@@ -113,7 +118,13 @@ final class RecitationPlayer {
         case .loading:
             wantedCouplet = couplet
         case .playing, .paused:
-            guard let engine, let seconds = timing?.start(ofCouplet: couplet, in: couplets) else { return }
+            guard let engine, let timing else { return }
+            guard let seconds = timing.start(ofCouplet: couplet, in: couplets) else {
+                apart = true
+                activeCouplet = nil
+                return
+            }
+            apart = false
             activeCouplet = couplet
             if pendingStart != nil {
                 pendingStart = seconds  // the item is not ready yet: it will seek there
@@ -175,6 +186,7 @@ final class RecitationPlayer {
             // Couplet 0 starts the poem from the beginning, as an untimed recitation does.
             let start = wantedCouplet.flatMap { $0 > 0 ? timing?.start(ofCouplet: $0, in: couplets) : nil }
             begin(recitation.mp3Url, at: start)
+            apart = start == nil && (wantedCouplet ?? 0) > 0 && timing != nil  // after `begin`, whose teardown clears it
         } catch {
             // Stopped while loading, or a newer start took over: nothing went wrong, so no «خوانش باز نشد».
             guard current == generation else { return }
@@ -222,7 +234,9 @@ final class RecitationPlayer {
                 guard let self else { return false }
                 return ClipStart.shouldPlay(generation: self.generation, started: started, samePlayer: self.engine === engine, state: self.state)
             })
-            if self.engine === engine { self.seeksInFlight -= 1 }
+            guard self.engine === engine else { return }
+            self.seeksInFlight -= 1
+            self.publishNowPlaying()
         }
     }
 
@@ -243,7 +257,7 @@ final class RecitationPlayer {
         guard seconds.isFinite else { return }
         if clip != nil { position = seconds }
         // While the audio is still going to where it was asked to, its position says nothing about the reader.
-        guard let timing, pendingStart == nil, seeksInFlight == 0 else { return }
+        guard let timing, !apart, pendingStart == nil, seeksInFlight == 0 else { return }
         let couplet = timing.couplet(at: seconds, in: couplets)
         if couplet != activeCouplet { activeCouplet = couplet }
     }
@@ -263,6 +277,7 @@ final class RecitationPlayer {
     }
 
     private func teardown() {
+        apart = false
         pendingStart = nil
         seeksInFlight = 0
         if let engine {

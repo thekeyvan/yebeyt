@@ -267,4 +267,59 @@ struct RecitationPlayerTests {
         #expect(info?[MPNowPlayingInfoPropertyElapsedPlaybackTime] as? Double == 29.886)
         player.stop()
     }
+
+    @Test func startingPartWayInShowsTheTimeOnTheLockScreen() async throws {
+        let player = try timedPlayer()
+        let engine = try await play(player, at: 2)
+        try await settle(player) { MPNowPlayingInfoCenter.default().nowPlayingInfo?[MPNowPlayingInfoPropertyElapsedPlaybackTime] as? Double == 29.886 }
+        let info = MPNowPlayingInfoCenter.default().nowPlayingInfo
+        #expect(info?[MPNowPlayingInfoPropertyElapsedPlaybackTime] as? Double == 29.886)
+        #expect(engine.seconds == 29.886)
+        player.stop()
+    }
+
+    // Couplet 3 has no start in the fixture's timing (it ends at verse 5).
+
+    @Test func movingToACoupletWithoutAStartStopsFollowingTheAudio() async throws {
+        let player = try timedPlayer()
+        let engine = try await play(player, at: 0)
+        player.seek(toCouplet: 3)
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(engine.seeks.isEmpty, "there is nowhere to move the audio to")
+        engine.events.tick(16)  // the audio is at the second couplet: the page would snap back to it
+        #expect(player.activeCouplet == nil)
+        engine.events.tick(30)
+        #expect(player.activeCouplet == nil)
+    }
+
+    @Test func followingStartsAgainWhenTheUserMovesToACoupletWithAStart() async throws {
+        let player = try timedPlayer()
+        let engine = try await play(player, at: 0)
+        player.seek(toCouplet: 3)
+        player.seek(toCouplet: 1)
+        try await settle(player) { engine.seeks == [15.486] }
+        try await Task.sleep(for: .milliseconds(20))
+        engine.events.tick(30)
+        #expect(player.activeCouplet == 2)
+    }
+
+    @Test func followingStartsAgainWhenTheUserPressesPlay() async throws {
+        let player = try timedPlayer()
+        let engine = try await play(player, at: 0)
+        player.seek(toCouplet: 3)
+        player.toggle()  // pause
+        player.toggle()  // play again
+        engine.events.tick(16)
+        #expect(player.activeCouplet == 1)
+    }
+
+    @Test func startingAtACoupletWithoutAStartPlaysFromTheTopWithoutFollowing() async throws {
+        let player = try timedPlayer()
+        player.toggle(startingAt: 3)
+        try await settle(player) { engines.last?.isPlaying == true }
+        let engine = try #require(engines.last)
+        #expect(engine.seeks.isEmpty)
+        engine.events.tick(16)
+        #expect(player.activeCouplet == nil)
+    }
 }
