@@ -66,7 +66,7 @@ function Persian() {
 
       <h2>چیزی که با سرویس‌های دیگه رد و بدل می‌شه</h2>
       <ul>
-        <li><b>گنجور:</b> متن شعرهایی که داخل اپ نیستن از مخزن عمومی گنجور روی گیت‌هاب (raw.githubusercontent.com) میاد، و فایل صوتی خوانش‌ها از api.ganjoor.net. این درخواست‌ها هیچ اطلاعاتی از حسابت ندارن، ولی اون سرویس‌ها، مثل هر سایتی، آی‌پی و مرورگر درخواست‌دهنده رو می‌بینن.</li>
+        <li><b>گنجور:</b> متن شعرهایی که داخل اپ نیستن از مخزن عمومی گنجور روی گیت‌هاب (raw.githubusercontent.com) میاد؛ فهرست خوانش‌ها از api.ganjoor.net و خود فایل‌های صوتی از i.ganjoor.net میاد. این درخواست‌ها هیچ اطلاعاتی از حسابت ندارن، ولی اون سرویس‌ها، مثل هر سایتی، آی‌پی و مرورگر درخواست‌دهنده رو می‌بینن.</li>
         <li><b>عکس شاعرها</b> از سرور خودمون میاد و هیچ اطلاعاتی از حسابت همراهش نیست.</li>
         <li><b>اپل و گوگل</b>: فقط وقتی خودت ورود با اون‌ها رو بزنی.</li>
       </ul>
@@ -150,7 +150,7 @@ function English() {
 
       <h2>What passes through other services</h2>
       <ul>
-        <li><b>Ganjoor:</b> the text of poems that are not bundled comes from Ganjoor&apos;s public repository on GitHub (raw.githubusercontent.com), and the recitation audio from api.ganjoor.net. These requests carry no account information, but those services, like any website, see the IP address and browser of whoever asks.</li>
+        <li><b>Ganjoor:</b> the text of poems that are not bundled comes from Ganjoor&apos;s public repository on GitHub (raw.githubusercontent.com), the list of recitations from api.ganjoor.net, and the audio files themselves from i.ganjoor.net. These requests carry no account information, but those services, like any website, see the IP address and browser of whoever asks.</li>
         <li><b>Poets' pictures</b> come from our own server and carry no account information.</li>
         <li><b>Apple and Google:</b> only when you choose to sign in with them.</li>
       </ul>

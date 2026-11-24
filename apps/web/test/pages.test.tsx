@@ -33,12 +33,14 @@ describe("LinkPage", () => {
   it("leaves out «همین‌جا بازی کن» until the App Clip ships", () => {
     const html = renderToStaticMarkup(<LinkPage view={view} />);
     expect(html).not.toContain("همین‌جا بازی کن");
-    expect(html).toContain("نصب «یه بیت» از اپ‌استور");
+    expect(html).toMatch(/class="button primary"[^>]*>نصب «یه بیت» از اپ‌استور/);
     expect(html).toContain("7KQ2");
   });
 
   it("shows it once the flag is on", () => {
-    expect(renderToStaticMarkup(<LinkPage view={view} appClip />)).toContain("همین‌جا بازی کن");
+    const html = renderToStaticMarkup(<LinkPage view={view} appClip />);
+    expect(html).toContain("همین‌جا بازی کن");
+    expect(html).toMatch(/class="button secondary"[^>]*>نصب «یه بیت» از اپ‌استور/);
   });
 });
 

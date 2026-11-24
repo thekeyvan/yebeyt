@@ -47,7 +47,7 @@ export function LinkPage({ view, appClip = APP_CLIP_READY }: { view: LinkView | 
             <p className="note">بدون نصب؛ چند ثانیه طول می‌کشه</p>
           </>
         )}
-        <StoreButton pageUrl={view.url} />
+        <StoreButton pageUrl={view.url} primary={!appClip} />
         <p className="after">
           {view.after}
           <br />

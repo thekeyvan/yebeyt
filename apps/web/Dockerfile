@@ -18,9 +18,10 @@ FROM node:24-slim
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=8080
 WORKDIR /repo
 # Next's standalone output: its own server and only the packages it needs. The static files and public/ are copied beside it.
-COPY --from=build /repo/apps/web/.next/standalone ./
-COPY --from=build /repo/apps/web/.next/static apps/web/.next/static
-COPY --from=build /repo/apps/web/public apps/web/public
+# Owned by node, so the server (which runs as node) can write .next/cache.
+COPY --chown=node:node --from=build /repo/apps/web/.next/standalone ./
+COPY --chown=node:node --from=build /repo/apps/web/.next/static apps/web/.next/static
+COPY --chown=node:node --from=build /repo/apps/web/public apps/web/public
 USER node
 EXPOSE 8080
 CMD ["node", "apps/web/server.js"]
