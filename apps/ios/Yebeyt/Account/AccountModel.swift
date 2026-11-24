@@ -129,7 +129,7 @@ final class AccountModel {
         } catch SignInError.canceled {
             return .canceled
         } catch let error as APIError {
-            return .failed(error.persianMessage)
+            return .failed(FeedbackLog.shared.shown(error))
         } catch {
             return .failed(APIError.badResponse.persianMessage)
         }
@@ -161,7 +161,7 @@ final class AccountModel {
             providerName = nil
             return nil
         } catch let error as APIError {
-            return error.persianMessage
+            return FeedbackLog.shared.shown(error)
         } catch {
             return APIError.badResponse.persianMessage
         }

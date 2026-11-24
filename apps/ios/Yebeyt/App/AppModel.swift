@@ -75,6 +75,20 @@ final class AppModel {
         reader = nil
     }
 
+    /// The screen in front, by name, for bug reports: the reader or a game over the tabs, else the top screen of the
+    /// selected tab.
+    var currentScreen: ScreenName {
+        if reader != nil { return .reader }
+        if let game { return ScreenName(game) }
+        let top: Destination? = switch selectedTab {
+        case .explore: explorePath.last
+        case .games: gamesPath.last
+        case .me: mePath.last
+        case .home, .messages: nil
+        }
+        return top.map(ScreenName.init) ?? ScreenName(selectedTab)
+    }
+
     /// The reader's poet button: leaves the reader and opens the poet's page in the کاوش tab.
     func openPoet(slug: String) {
         reader = nil

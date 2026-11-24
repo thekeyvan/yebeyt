@@ -69,7 +69,7 @@ struct AccountDeletion {
         do {
             try await session.authorized { try await api.deleteAccount(token: $0) }
         } catch let error as APIError {
-            return error.persianMessage
+            return FeedbackLog.shared.shown(error)
         } catch {
             return APIError.badResponse.persianMessage
         }

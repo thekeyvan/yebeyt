@@ -102,6 +102,20 @@ struct API: Sendable {
         return try await data(for: URLRequest(url: url))
     }
 
+    /// A report. Signed in (a `token`) it carries the user; as a guest it carries nobody.
+    func postFeedback(_ payload: FeedbackPayload, token: String?) async throws -> FeedbackCreated {
+        try await call("POST", "/v1/feedback", body: payload, token: token)
+    }
+
+    /// Attaches a file to a report with the `uploadToken` that came with it. 503 `busy` is `APIError.busy`.
+    func uploadAttachment(_ kind: FeedbackAttachment, reportID: String, uploadToken: String, data: Data) async throws {
+        var request = try request("PUT", "/v1/feedback/\(reportID)/\(kind.path)", query: [], body: nil, token: nil)
+        request.setValue(kind.contentType, forHTTPHeaderField: "Content-Type")
+        request.setValue(uploadToken, forHTTPHeaderField: "X-Upload-Token")
+        request.timeoutInterval = 90
+        _ = try await self.data(for: request, upload: data)
+    }
+
     // MARK: Plumbing
 
     private func call<Answer: Decodable>(_ method: String, _ path: String, query: [URLQueryItem] = [], token: String? = nil) async throws -> Answer {
@@ -139,11 +153,15 @@ struct API: Sendable {
         return request
     }
 
-    private func data(for request: URLRequest) async throws -> Data {
+    private func data(for request: URLRequest, upload: Data? = nil) async throws -> Data {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await session.data(for: request)
+            if let upload {
+                (data, response) = try await session.upload(for: request, from: upload)
+            } else {
+                (data, response) = try await session.data(for: request)
+            }
         } catch let error as URLError where error.code == .cancelled {
             throw CancellationError()
         } catch {
@@ -153,6 +171,9 @@ struct API: Sendable {
         guard (200..<300).contains(http.statusCode) else {
             struct Body: Decodable { var error: String?; var allowedAt: String? }
             let body = try? JSONDecoder().decode(Body.self, from: data)
+            if http.statusCode == 503, body?.error == APIErrorCode.busy.rawValue {
+                throw APIError.busy(retryAfter: http.value(forHTTPHeaderField: "Retry-After").flatMap { Int($0) } ?? 2)
+            }
             throw APIError.server(status: http.statusCode, code: body?.error.flatMap(APIErrorCode.init(rawValue:)), allowedAt: body?.allowedAt)
         }
         return data

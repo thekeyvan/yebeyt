@@ -58,3 +58,17 @@ struct PoetPictureEntry: Codable, Equatable, Sendable {
     /// A path on the server, to be resolved against its address.
     var url: String
 }
+
+/// `FeedbackCreated`: the report's id and the token that lets the phone attach files to it for 15 minutes.
+struct FeedbackCreated: Decodable, Equatable, Sendable {
+    var id: String
+    var uploadToken: String
+}
+
+/// A file that goes with a report: the screenshot (JPEG) or the recording (MP4).
+enum FeedbackAttachment: Sendable {
+    case screenshot, recording
+
+    var path: String { self == .screenshot ? "screenshot" : "recording" }
+    var contentType: String { self == .screenshot ? "image/jpeg" : "video/mp4" }
+}
