@@ -39,7 +39,7 @@ export function meRoutes(deps: Deps) {
       path: "/v1/me",
       tags: ["me"],
       summary: "Delete the account and everything stored for it",
-      description: "Revokes the Apple token when there is one. If Apple cannot be reached the account is kept (502) so the call can be repeated.",
+      description: "Also removes its blocks, chats with their messages (the other person loses the chat) and shared divans. Revokes the Apple token when there is one. If Apple cannot be reached the account is kept (502) so the call can be repeated.",
       security,
       responses: {
         204: { description: "Deleted." },
