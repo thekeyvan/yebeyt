@@ -61,6 +61,9 @@ final class FakeLiveSocket: LiveSocket, @unchecked Sendable {
     private var wasClosedByClient = false
     /// Whether a ping is answered.
     var answersPings = true
+    /// A ping that never comes back (until the socket is closed).
+    var hangsPings = false
+    private var hungPing: CheckedContinuation<Void, Error>?
 
     var sent: [String] { lock.withLock { sentFrames } }
     var closedByClient: Bool { lock.withLock { wasClosedByClient } }
@@ -82,6 +85,11 @@ final class FakeLiveSocket: LiveSocket, @unchecked Sendable {
     }
 
     func ping() async throws {
+        if hangsPings {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                lock.withLock { hungPing = continuation }
+            }
+        }
         if !answersPings { throw LiveClosed(code: nil) }
     }
 
@@ -102,6 +110,12 @@ final class FakeLiveSocket: LiveSocket, @unchecked Sendable {
 
     /// The server closes with this code (nil: the connection is lost).
     func end(code: Int?) {
+        let hung: CheckedContinuation<Void, Error>? = lock.withLock {
+            let hung = hungPing
+            hungPing = nil
+            return hung
+        }
+        hung?.resume(throwing: LiveClosed(code: code))
         let waiter: CheckedContinuation<String, Error>? = lock.withLock {
             if closed == nil { closed = LiveClosed(code: code) }
             let waiter = waiting
@@ -118,12 +132,14 @@ final class FakeLiveSockets: LiveSocketFactory, @unchecked Sendable {
     private let lock = NSLock()
     private var opened: [FakeLiveSocket] = []
     var answersPings = true
+    var hangsPings = false
 
     var sockets: [FakeLiveSocket] { lock.withLock { opened } }
 
     func open(_ url: URL) -> any LiveSocket {
         let socket = FakeLiveSocket()
         socket.answersPings = answersPings
+        socket.hangsPings = hangsPings
         lock.withLock { opened.append(socket) }
         return socket
     }

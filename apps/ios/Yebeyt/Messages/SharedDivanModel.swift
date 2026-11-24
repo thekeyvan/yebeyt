@@ -34,6 +34,8 @@ final class SharedDivanModel {
     /// The poets of the couplets seen so far, the most frequent first; the poet chips.
     private(set) var poetSlugs: [String] = []
     var toast: String?
+    /// The screen is showing: a reconnect reads it again.
+    var isVisible = false
 
     @ObservationIgnored private let session: Session
     @ObservationIgnored private var cursor: String?
@@ -146,14 +148,16 @@ final class SharedDivanModel {
 
     // MARK: Adding
 
-    /// «+»: a couplet goes into this divan. A couplet already there is not added twice.
+    /// «+»: a couplet goes into this divan.
     func add(key: String, note: String?) async {
         guard let divan else { return }
         let trimmed = note?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let text = trimmed?.isEmpty == false ? trimmed.map { String($0.prefix(ChatModel.maxNoteLength)) } : nil
+        let text = trimmed?.isEmpty == false ? trimmed?.limited(toUTF16: ChatModel.maxNoteLength) : nil
         do {
-            let item = try await session.authorized { try await self.session.api.addSharedDivanItem(id: divan.id, key: key, note: text, token: $0) }
-            apply(.divan(sharedDivanId: divan.id, item: item))
+            _ = try await session.authorized { try await self.session.api.addSharedDivanItem(id: divan.id, key: key, note: text, token: $0) }
+            // The answer doesn't say whether it was new (a couplet already there is a 200 and changes nothing), and the
+            // live event of my own add may come too: the list and the counts are read again, never counted by hand.
+            await load()
         } catch let error as APIError {
             toast = MessageCopy.toast(for: error, sharedDivan: true)
         } catch {}

@@ -113,8 +113,24 @@ struct InboxAndCenterTests {
         #expect(line(.couplet) == "یه بیت فرستاد")
         #expect(line(.couplet, fromMe: true) == "تو: یه بیت فرستادی")
         #expect(line(.game) == "دعوتت کرد به بازی")
-        #expect(line(.system) == "یه بیت به دیوان مشترک اضافه کرد")
+        #expect(line(.system) == "یه بیت به دیوان مشترک اضافه کرد")  // the list doesn't name the event: read as the divan's
         #expect(line(.text, deleted: true) == "این پیام پاک شد")
+    }
+
+    @Test func aSystemLineIsReadByItsEventAndOthersShowNothing() {
+        func last(_ event: String?) -> ConversationLast { ConversationLast(kind: .system, at: MessageClock.now, fromMe: false, event: event) }
+        #expect(InboxModel.preview(last("divan_add")) == "یه بیت به دیوان مشترک اضافه کرد")
+        #expect(InboxModel.preview(last("game_ended")) == "")
+    }
+
+    @Test func aLiveSystemLineKeepsItsEventInTheRow() async throws {
+        let (model, _) = inbox { _ in .json(200, Self.first) }
+        await model.load()
+        let line = try MessageJSON.decoded(MessageJSON.message(id: "s1", conversation: "c2", kind: "system", payload: #"{"event":"game_ended","kind":"mosh"}"#))
+        model.apply(.message(line), viewing: [])
+        #expect(model.rows[0].last.event == "game_ended")
+        #expect(InboxModel.preview(model.rows[0].last) == "")
+        #expect(model.rows[0].unread == 0)  // a system line is never unread
     }
 
     // MARK: The center
@@ -135,8 +151,8 @@ struct InboxAndCenterTests {
         center.handle(.message(try MessageJSON.decoded(MessageJSON.message(id: "m2", conversation: "c1", fromMe: true, text: "جواب"))))
         center.handle(.message(try MessageJSON.decoded(MessageJSON.message(id: "m3", conversation: "c1", kind: "system", payload: #"{"event":"divan_add"}"#))))
         center.handle(.message(try MessageJSON.decoded(MessageJSON.message(id: "m4", conversation: "c1", kind: "game", payload: #"{"event":"game_invite"}"#))))
-        #expect(center.unread == 3)  // mine, system lines and game lines don't count
-        #expect(badge == [2, 3])
+        #expect(center.unread == 4)  // a game line of theirs counts (as on the server); mine and system lines don't
+        #expect(badge == [2, 3, 4])
     }
 
     @Test func aMessageInTheOpenChatIsReadAsItComesAndMovesTheBadgeBack() async throws {
@@ -179,6 +195,7 @@ struct InboxAndCenterTests {
         let sockets = FakeLiveSockets()
         let (center, stub) = center({ request in request.path == "/v1/me/unread" ? .json(200, #"{"total":1}"#) : .json(200, Self.first) }, sockets: sockets)
         await center.inbox.load()
+        center.inbox.isVisible = true
         center.setActive(true)
         #expect(await eventually { sockets.sockets.count == 1 })
         sockets.sockets[0].readyFrame()
@@ -189,6 +206,30 @@ struct InboxAndCenterTests {
         #expect(stub.requests.filter { $0.path == "/v1/conversations" }.count >= 2)
         center.setActive(false)
         #expect(sockets.sockets[0].closedByClient)
+    }
+
+    @Test func aConnectReadsOnlyWhatIsOnScreen() async {
+        let sockets = FakeLiveSockets()
+        let (center, stub) = center({ request in
+            switch request.path {
+            case "/v1/me/unread": .json(200, #"{"total":0}"#)
+            case "/v1/conversations": .json(200, Self.first)
+            default: .json(200, MessageJSON.page([]))
+            }
+        }, sockets: sockets)
+        await center.inbox.load()
+        let open = center.chat(for: Conversation(id: "c1", other: ChatPerson(username: "sara", displayName: nil, avatar: nil, online: nil)))
+        let away = center.chat(for: Conversation(id: "c2", other: ChatPerson(username: "arian_k", displayName: nil, avatar: nil, online: nil)))
+        await open.load()
+        await away.load()
+        open.isVisible = true
+        let before = stub.requests.count
+        await center.reconnected()
+        let paths = stub.requests.dropFirst(before).map(\.path)
+        #expect(paths.contains("/v1/me/unread"))
+        #expect(paths.contains("/v1/conversations/c1/messages"))
+        #expect(!paths.contains("/v1/conversations/c2/messages"))  // not on screen
+        #expect(!paths.contains("/v1/conversations"))  // the inbox is not on screen either
     }
 
     @Test func signedOutThereIsNoSocket() {

@@ -49,6 +49,29 @@ final class MessagesUITests: XCTestCase {
         XCTAssertFalse((composer.value as? String ?? "").contains("salam"))  // the field is empty again
     }
 
+    @MainActor func testTheComposeButtonFindsAPersonAndOpensTheirChat() {
+        let app = launch(["-beytRoute", "inbox"])
+        let compose = element(app, "inboxCompose")
+        XCTAssertTrue(compose.waitForExistence(timeout: 10))
+        compose.tap()
+        let field = app.textFields["newChatSearch"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText("sar")
+        let person = element(app, "newChat-sara")
+        XCTAssertTrue(person.waitForExistence(timeout: 10))
+        person.tap()
+        XCTAssertTrue(app.textFields["composer"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor func testTheGamesButtonOfTheInboxGoesToTheGamesTab() {
+        let app = launch(["-beytRoute", "inbox"])
+        let games = element(app, "inboxGames")
+        XCTAssertTrue(games.waitForExistence(timeout: 10))
+        games.tap()
+        XCTAssertTrue(app.staticTexts["بازی‌ها"].waitForExistence(timeout: 10))
+    }
+
     @MainActor func testLongPressingACoupletCardOffersTheSharedDivanAndAddsTheCouplet() {
         let app = launch(["-beytRoute", "chat:sara"])
         let card = element(app, "coupletCard-m1")

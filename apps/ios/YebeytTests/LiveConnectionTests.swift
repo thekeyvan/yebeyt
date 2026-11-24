@@ -14,6 +14,9 @@ struct LiveConnectionTests {
         var tokenCalls = 0
         var refreshError: APIError?
         var tokenError: APIError?
+        /// When set, the token of the next call waits for `releaseToken`.
+        var holdsToken = false
+        var tokenWaiter: CheckedContinuation<Void, Never>?
         var connection: LiveConnection!
 
         init(pingEvery: Duration = .seconds(1000)) {
@@ -23,7 +26,12 @@ struct LiveConnectionTests {
                 token: { [unowned self] in
                     if let tokenError { throw tokenError }
                     tokenCalls += 1
-                    return "t\(tokenCalls)"
+                    let mine = "t\(tokenCalls)"
+                    if holdsToken {
+                        holdsToken = false
+                        await withCheckedContinuation { tokenWaiter = $0 }
+                    }
+                    return mine
                 },
                 refresh: { [unowned self] in
                     refreshes += 1
@@ -33,6 +41,11 @@ struct LiveConnectionTests {
                 wait: { waits.add($0); try await Task.sleep(for: .milliseconds(2)) },
                 onEvent: { [unowned self] in events.append($0) }, onReady: { [unowned self] in readyCount += 1 }
             )
+        }
+
+        func releaseToken() {
+            tokenWaiter?.resume()
+            tokenWaiter = nil
         }
 
         func authToken(of socket: FakeLiveSocket) -> String? {
@@ -199,6 +212,35 @@ struct LiveConnectionTests {
         #expect(await eventually { rig.sockets.sockets.count >= 2 })
         #expect(rig.sockets.sockets[0].closedByClient)
         rig.connection.stop()
+    }
+
+    @Test func aPingThatNeverComesBackClosesTheSocketAndReconnects() async {
+        let rig = Rig(pingEvery: .milliseconds(10))
+        rig.sockets.hangsPings = true
+        rig.connection.start()
+        #expect(await eventually { rig.sockets.sockets.count == 1 })
+        rig.sockets.sockets[0].readyFrame()
+        // The timeout is 200 ms in the rig: the ping is given up, the socket is closed, and a new one opens.
+        #expect(await eventually { rig.sockets.sockets.count >= 2 })
+        #expect(rig.sockets.sockets[0].closedByClient)
+        rig.connection.stop()
+    }
+
+    @Test func aRunStoppedWhileItsTokenWasComingOpensNothingAndLeavesTheNewRunAlone() async {
+        let rig = Rig()
+        rig.holdsToken = true
+        rig.connection.start()  // its token is held
+        #expect(await eventually { rig.tokenCalls == 1 })
+        rig.connection.stop()  // the app goes away …
+        rig.connection.start()  // … and comes back: a new run, with its own token
+        #expect(await eventually { rig.sockets.sockets.count == 1 })
+        rig.releaseToken()  // the old token arrives late
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(rig.sockets.sockets.count == 1)  // the old run opened no socket of its own
+        rig.sockets.sockets[0].readyFrame()
+        #expect(await eventually { rig.connection.state == .ready })
+        rig.connection.stop()
+        #expect(rig.sockets.sockets[0].closedByClient)  // stop reaches the new run's socket
     }
 
     @Test func startingTwiceOpensOneSocket() async {

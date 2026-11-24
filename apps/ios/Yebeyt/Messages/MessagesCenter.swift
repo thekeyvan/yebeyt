@@ -51,12 +51,13 @@ final class MessagesCenter {
         return connection
     }
 
-    /// Events are not kept while the socket is closed: every connect reads the lists again.
+    /// Events are not kept while the socket is closed: every connect reads again what is on screen (a screen that
+    /// comes back reads its own list when it appears).
     func reconnected() async {
         await refreshUnread()
-        if inbox.phase == .loaded { await inbox.load() }
-        for chat in chats.values where chat.phase == .loaded { await chat.load() }
-        for divan in divans.values where divan.phase == .loaded { await divan.load() }
+        if inbox.isVisible { await inbox.load() }
+        for chat in chats.values where chat.isVisible { await chat.load() }
+        for divan in divans.values where divan.isVisible { await divan.load() }
     }
 
     func handle(_ event: LiveEvent) {

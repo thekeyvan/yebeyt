@@ -143,6 +143,10 @@ enum MessagesStub {
         case ("GET", "/v1/me/friends"):
             let friends = people.prefix(4).map { #"{"username":"\#($0.username)","displayName":"\#($0.name)","avatar":null,"isFriend":true}"# }
             return (200, #"{"items":[\#(friends.joined(separator: ","))],"nextCursor":null}"#)
+        case ("GET", "/v1/users/search"):
+            let wanted = (query.removingPercentEncoding ?? query).replacingOccurrences(of: "q=", with: "")
+            let found = people.filter { $0.username.contains(wanted.lowercased()) || $0.name.contains(wanted) }.map { person($0.username).json }
+            return (200, #"{"items":[\#(found.joined(separator: ","))]}"#)
         case ("POST", "/v1/reports"): return (204, "")
         case ("GET", "/v1/shared-divans"): return (200, #"{"items":[\#(divan("sara")),\#(divan("kian"))],"nextCursor":null}"#)
         case ("POST", "/v1/shared-divans"): return (200, divan(json["username"] as? String ?? "sara"))

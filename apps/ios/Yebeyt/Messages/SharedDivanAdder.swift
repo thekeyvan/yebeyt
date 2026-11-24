@@ -82,7 +82,7 @@ final class SharedDivanAdder {
         phase = .adding
         failure = nil
         let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        let text = trimmed.isEmpty ? nil : String(trimmed.prefix(Self.maxNoteLength))
+        let text = trimmed.isEmpty ? nil : trimmed.limited(toUTF16: Self.maxNoteLength)
         do {
             let divanID: String
             if let known = divans.first(where: { $0.other.username == chosen.username }) {

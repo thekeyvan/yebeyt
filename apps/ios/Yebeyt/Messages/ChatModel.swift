@@ -11,6 +11,8 @@ final class ChatModel {
         let content: OutgoingMessage.Content
         let createdAt: Date
         var failed = false
+        /// The server closed the chat (`messages_closed`): the text stays here, not lost, but cannot be sent again.
+        var refused = false
 
         var id: String { clientId }
     }
@@ -132,18 +134,18 @@ final class ChatModel {
     func send(text: String) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
-        return enqueue(.text(String(trimmed.prefix(Self.maxTextLength))))
+        return enqueue(.text(trimmed.limited(toUTF16: Self.maxTextLength)))
     }
 
     @discardableResult
     func sendCouplet(key: String, note: String?) -> Bool {
         let trimmed = note?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return enqueue(.couplet(key: key, note: trimmed?.isEmpty == false ? String(trimmed!.prefix(Self.maxNoteLength)) : nil))
+        return enqueue(.couplet(key: key, note: trimmed?.isEmpty == false ? trimmed!.limited(toUTF16: Self.maxNoteLength) : nil))
     }
 
     /// «نرسید · دوباره»: the same send again, with the same `clientId`, so the server never makes two of it.
     func retry(_ clientId: String) {
-        guard let index = pending.firstIndex(where: { $0.clientId == clientId }), pending[index].failed else { return }
+        guard let index = pending.firstIndex(where: { $0.clientId == clientId }), pending[index].failed, !pending[index].refused else { return }
         pending[index].failed = false
         run { await $0.deliver(clientId) }
     }
@@ -170,7 +172,10 @@ final class ChatModel {
         } catch let error as APIError {
             if error.code == .messagesClosed {
                 isClosed = true
-                pending.removeAll { $0.clientId == clientId }
+                if let index = pending.firstIndex(where: { $0.clientId == clientId }) {
+                    pending[index].failed = true
+                    pending[index].refused = true  // kept, so what was typed isn't lost
+                }
                 return
             }
             if let index = pending.firstIndex(where: { $0.clientId == clientId }) { pending[index].failed = true }
@@ -256,11 +261,7 @@ final class ChatModel {
     /// came after the last mark.
     func markRead() {
         guard isVisible, let newest = messages.last, let unread = messages.lastIndex(where: \.countsAsUnread) else { return }
-        if let sent = lastReadSent {
-            if let sentIndex = messages.firstIndex(where: { $0.id == sent }), sentIndex >= unread { return }
-        } else if let own = messages.lastIndex(where: \.fromMe), own > unread {
-            return  // an answer of mine came after it: it was read
-        }
+        if let sent = lastReadSent, let sentIndex = messages.firstIndex(where: { $0.id == sent }), sentIndex >= unread { return }
         let before = lastReadSent
         lastReadSent = newest.id
         run { model in

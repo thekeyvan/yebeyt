@@ -25,6 +25,12 @@ private struct ChatContent: View {
     @State private var deleting: ChatMessage?
     @State private var reporting: ChatMessage?
     @State private var keyboardUp = false
+    /// The bottom of the list is on screen: new messages scroll into view; otherwise a pill says there is one.
+    @State private var atBottom = true
+    @State private var newBelow = false
+
+    /// The chat is looked at: on screen, the app in front, and no poem opened over it.
+    private var isLooked: Bool { scenePhase == .active && model.reader == nil }
 
     var body: some View {
         VStack(spacing: 10) {
@@ -54,9 +60,9 @@ private struct ChatContent: View {
             }
             Button("بیخیال", role: .cancel) {}
         }
-        .onAppear { chat.isVisible = scenePhase == .active }
+        .onAppear { chat.isVisible = isLooked }
         .onDisappear { chat.isVisible = false }
-        .onChange(of: scenePhase) { _, phase in chat.isVisible = phase == .active }
+        .onChange(of: isLooked) { _, looked in chat.isVisible = looked }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardUp = true }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardUp = false }
         .task {
@@ -112,6 +118,12 @@ private struct ChatContent: View {
                     ForEach(entries) { entry in
                         row(entry).id(entry.id)
                     }
+                    Color.clear.frame(height: 1).id(Self.bottomID)
+                        .onAppear {
+                            atBottom = true
+                            newBelow = false
+                        }
+                        .onDisappear { atBottom = false }
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 6)
@@ -120,10 +132,43 @@ private struct ChatContent: View {
             .defaultScrollAnchor(.bottom)
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: chat.entries().last?.id) { _, last in
-                guard let last else { return }
-                withAnimation(.snappy) { proxy.scrollTo(last, anchor: .bottom) }
+            .onChange(of: chat.entries().last?.id) { _, _ in
+                guard let last = chat.entries().last else { return }
+                // What I send scrolls into view; what comes while I am reading higher up only shows the pill.
+                if atBottom || isMine(last) {
+                    withAnimation(.snappy) { proxy.scrollTo(Self.bottomID, anchor: .bottom) }
+                } else {
+                    newBelow = true
+                }
             }
+            .overlay(alignment: .bottom) {
+                if newBelow {
+                    Button {
+                        withAnimation(.snappy) { proxy.scrollTo(Self.bottomID, anchor: .bottom) }
+                    } label: {
+                        Text(MessageCopy.newMessage)
+                            .font(.ui(13, weight: .bold))
+                            .foregroundStyle(Tokens.Colors.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Capsule().fill(Tokens.Colors.lapis))
+                            .overlay(Capsule().strokeBorder(Tokens.Colors.white, lineWidth: 2))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 8)
+                    .accessibilityIdentifier("newMessagePill")
+                }
+            }
+        }
+    }
+
+    private static let bottomID = "bottom"
+
+    private func isMine(_ entry: ChatModel.Entry) -> Bool {
+        switch entry.content {
+        case .pending: true
+        case .message(let message): message.fromMe
+        case .day: false
         }
     }
 
@@ -152,9 +197,9 @@ private struct ChatContent: View {
         case .message(let message):
             switch message.kind {
             case .text:
-                TextMessageView(message: message, seen: entry.seen, delete: { deleting = message }, report: { reporting = message })
+                TextMessageView(message: message, senderName: chat.other.name, seen: entry.seen, delete: { deleting = message }, report: { reporting = message })
             case .couplet where message.deleted:
-                TextMessageView(message: message, seen: entry.seen, delete: {}, report: {})
+                TextMessageView(message: message, senderName: chat.other.name, seen: entry.seen, delete: {}, report: {})
             case .couplet:
                 CoupletMessageView(
                     message: message, seen: entry.seen, other: chat.other, hold: hold, open: open,

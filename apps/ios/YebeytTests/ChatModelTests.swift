@@ -93,6 +93,28 @@ struct ChatModelTests {
         #expect((rig.sends()[0].json["text"] as? String)?.count == 1000)
     }
 
+    @Test func limitsCountUTF16UnitsLikeTheServer() async {
+        let rig = Rig { _ in .json(201, MessageJSON.message(id: "m1", fromMe: true, text: "x")) }
+        rig.model.send(text: String(repeating: "😀", count: 700))  // 2 units each: 500 fit in 1000
+        rig.model.sendCouplet(key: "/hafez/ghazal/sh3#0", note: String(repeating: "😀", count: 150) + "ا")
+        await rig.model.settle()
+        let bodies = rig.sends().map(\.json)
+        let text = bodies.compactMap { $0["text"] as? String }.first ?? ""
+        #expect(text.utf16.count == 1000 && text.count == 500)
+        let note = bodies.compactMap { $0["note"] as? String }.first ?? ""
+        #expect(note.utf16.count == 200 && note.count == 100)
+        #expect("ab😀".limited(toUTF16: 3) == "ab")  // never half an emoji
+    }
+
+    @Test func eachBubbleIsReadAloudWithItsSender() throws {
+        let theirs = try MessageJSON.decoded(MessageJSON.message(id: "m1", text: "سلام", at: "2026-11-24T09:40:00Z"))
+        let view = TextMessageView(message: theirs, senderName: "سارا", seen: false, delete: {}, report: {})
+        #expect(view.spoken.hasPrefix("سارا: سلام، "))
+        let mine = try MessageJSON.decoded(MessageJSON.message(id: "m2", fromMe: true, text: "ممنون"))
+        let seen = TextMessageView(message: mine, senderName: "سارا", seen: true, delete: {}, report: {})
+        #expect(seen.spoken.hasPrefix("تو: ممنون، ") && seen.spoken.hasSuffix("دیده شد"))
+    }
+
     @Test func aCoupletGoesWithItsKeyAndTheNoteOnlyWhenThereIsOne() async {
         let rig = Rig { _ in .json(201, MessageJSON.message(id: "m1", kind: "couplet", fromMe: true, key: "/hafez/ghazal/sh3#0")) }
         rig.model.sendCouplet(key: "/hafez/ghazal/sh3#0", note: "  اینو دیدم  ")
@@ -157,8 +179,12 @@ struct ChatModelTests {
         rig.model.send(text: "سلام")
         await rig.model.settle()
         #expect(rig.model.isClosed)
-        #expect(rig.model.pending.isEmpty)
         #expect(!rig.model.send(text: "دوباره"))
+        #expect(rig.sends().count == 1)
+        // What was typed stays in the list, refused, and cannot be sent again.
+        #expect(rig.model.pending.map(\.refused) == [true])
+        rig.model.retry("new-1")
+        await rig.model.settle()
         #expect(rig.sends().count == 1)
     }
 
@@ -238,13 +264,23 @@ struct ChatModelTests {
         #expect(rig.reads().count == 2)
     }
 
-    @Test func myAnswerAfterTheirMessageMeansItWasRead() async {
+    @Test func theFirstVisibleLoadAlwaysSendsTheReadMarkEvenAfterAnAnswerOfMine() async {
         let page = MessageJSON.page([Self.message("m2", mine: true, at: "2026-11-24T09:02:00Z"), Self.message("m1", at: "2026-11-24T09:01:00Z")])
-        let rig = Rig { _ in .json(200, page) }
+        let rig = Rig { request in request.method == "PUT" ? .json(204, "") : .json(200, page) }
         rig.model.isVisible = true
         await rig.model.load()
         await rig.model.settle()
-        #expect(rig.reads().isEmpty)
+        #expect(rig.reads().map { $0.json["messageId"] as? String } == ["m2"])
+    }
+
+    @Test func aGameLineOfTheirsIsUnreadAndGetsMarkedRead() async {
+        let page = MessageJSON.page([MessageJSON.message(id: "g1", kind: "game", payload: #"{"event":"game_invite","kind":"duel"}"#, at: "2026-11-24T09:02:00Z")])
+        let rig = Rig { request in request.method == "PUT" ? .json(204, "") : .json(200, page) }
+        rig.model.isVisible = true
+        await rig.model.load()
+        await rig.model.settle()
+        #expect(rig.model.messages[0].countsAsUnread)
+        #expect(rig.reads().map { $0.json["messageId"] as? String } == ["g1"])
     }
 
     // MARK: Deleting and reporting

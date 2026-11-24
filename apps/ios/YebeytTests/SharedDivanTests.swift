@@ -144,19 +144,59 @@ struct SharedDivanTests {
         #expect(model.counts == SharedDivanCounts(total: 25, mine: 11, theirs: 14))  // the list read again (24), plus this one
     }
 
-    @Test func addingFromTheDivanPutsMyCoupletAtTheTop() async throws {
+    @Test func addingFromTheDivanReadsTheListAndTheCountsAgain() async throws {
+        let posted = Recorded<String>()
         let (model, stub) = model { request in
-            request.method == "POST" ? .json(201, MessageJSON.item(id: "i9", key: "/hafez/ghazal/sh3#0", mine: true, note: "یاد تو")) : Self.server(request)
+            switch (request.method, request.path) {
+            case ("POST", "/v1/shared-divans/d1/items"):
+                posted.add("i9")
+                return .json(201, MessageJSON.item(id: "i9", key: "/hafez/ghazal/sh3#0", mine: true, note: "یاد تو"))
+            case ("GET", "/v1/shared-divans/d1/items") where !posted.all.isEmpty:
+                return .json(200, Self.items([MessageJSON.item(id: "i9", key: "/hafez/ghazal/sh3#0", mine: true, note: "یاد تو"), Self.hafez], total: 25, mine: 12, theirs: 13))
+            default:
+                return Self.server(request)
+            }
         }
         await model.load()
         await model.add(key: "/hafez/ghazal/sh3#0", note: " یاد تو ")
         #expect(model.items.first?.id == "i9")
         #expect(model.counts == SharedDivanCounts(total: 25, mine: 12, theirs: 13))
-        #expect(stub.requests.last?.json["note"] as? String == "یاد تو")
-        stub.respond { _ in .json(403, #"{"error":"forbidden"}"#) }
+        #expect(stub.requests.first { $0.method == "POST" }?.json["note"] as? String == "یاد تو")
+        // The live event of my own add arrives after the list was read: nothing is counted twice.
+        let own = try JSONDecoder().decode(SharedDivanItem.self, from: Data(MessageJSON.item(id: "i9", key: "/hafez/ghazal/sh3#0", mine: true).utf8))
+        model.apply(.divan(sharedDivanId: "d1", item: own))
+        #expect(model.counts == SharedDivanCounts(total: 25, mine: 12, theirs: 13))
+        #expect(model.items.filter { $0.id == "i9" }.count == 1)
+    }
+
+    @Test func aCoupletAlreadyThereIsNotCountedAgain() async {
+        // The server answers 200 with the item that was there, and the counts stay as they were.
+        let (model, _) = model { request in
+            request.method == "POST" ? .json(200, MessageJSON.item(id: "i1", key: "/hafez/ghazal/sh3#0", mine: false)) : Self.server(request)
+        }
+        await model.load()
+        await model.add(key: "/hafez/ghazal/sh3#0", note: nil)
+        #expect(model.counts == SharedDivanCounts(total: 24, mine: 11, theirs: 13))
+        #expect(model.items.count == 4)
+    }
+
+    @Test func aRefusedAddSaysWhy() async {
+        let (model, _) = model { request in
+            request.method == "POST" ? .json(403, #"{"error":"forbidden"}"#) : Self.server(request)
+        }
+        await model.load()
         await model.add(key: "/hafez/ghazal/sh4#0", note: nil)
         #expect(model.toast == "فقط با دوستات می‌شه دیوان مشترک داشت")
-        #expect(model.items.count == 5)
+        #expect(model.items.count == 4)
+    }
+
+    @Test func aNoteIsCutAtTwoHundredUTF16Units() async {
+        let (model, stub) = model { request in
+            request.method == "POST" ? .json(201, MessageJSON.item(id: "i9", key: "/hafez/ghazal/sh3#0", mine: true)) : Self.server(request)
+        }
+        await model.load()
+        await model.add(key: "/hafez/ghazal/sh3#0", note: String(repeating: "😀", count: 150))
+        #expect((stub.requests.first { $0.method == "POST" }?.json["note"] as? String)?.utf16.count == 200)
     }
 
     // MARK: «به دیوان مشترک» in the hold menu
@@ -232,6 +272,16 @@ struct SharedDivanTests {
         }
         #expect(await adder.add())
         #expect(adder.failure == nil)
+    }
+
+    @Test func theSheetsNoteIsCutAtTwoHundredUTF16Units() async {
+        let kian = ChatPerson(username: "kian", displayName: "کیان", avatar: nil, online: nil)
+        let (adder, stub) = adder(person: kian) { request in
+            request.path == "/v1/shared-divans" ? .json(200, #"{"id":"d2","other":{"username":"kian","displayName":"کیان","avatar":null},"counts":{"total":0,"mine":0,"theirs":0}}"#) : .json(201, MessageJSON.item(id: "i1", key: "/hafez/ghazal/sh3#0", mine: true))
+        }
+        adder.note = String(repeating: "😀", count: 150)
+        await adder.add()
+        #expect((stub.requests.last?.json["note"] as? String)?.utf16.count == 200)
     }
 
     @Test func nothingIsAddedUntilSomeoneIsChosen() async {

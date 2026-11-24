@@ -160,7 +160,7 @@ struct HoldMenu: View {
             rule
             row("بازی با این بیت", GamesIcon()) { playWithCouplet(held.index) }
             rule
-            row("به دیوان مشترک", SharedDivanIcon()) { account.require(.messages) { addToSharedDivan() } }
+            row("به دیوان مشترک", SharedDivanBooksIcon()) { account.require(.messages) { addToSharedDivan() } }
             rule
             row("کپی متن", CopyIcon()) {
                 UIPasteboard.general.string = held.copyText

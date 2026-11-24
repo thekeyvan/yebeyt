@@ -242,6 +242,8 @@ struct DivanLineView: View {
 /// A text of either person: the bubble and its time; long-press reports it (theirs) or takes it back (mine).
 struct TextMessageView: View {
     let message: ChatMessage
+    /// Who wrote it, for VoiceOver (the bubble itself carries no name).
+    let senderName: String
     let seen: Bool
     let delete: () -> Void
     let report: () -> Void
@@ -262,8 +264,18 @@ struct TextMessageView: View {
             MessageMeta(time: ChatTime.clock(message.createdAt), mine: mine, seen: seen)
         }
         .frame(maxWidth: .infinity, alignment: mine ? .trailing : .leading)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spoken)
         .accessibilityIdentifier("bubble-\(message.id)")
+    }
+}
+
+extension TextMessageView {
+    /// «سارا: سلام، ۹:۴۰» · «تو: سلام، ۹:۴۲، دیده شد»
+    var spoken: String {
+        let body = message.deleted ? MessageCopy.deletedMessage : message.text ?? ""
+        let who = message.fromMe ? "تو" : senderName
+        return "\(who): \(body)، \(ChatTime.clock(message.createdAt))\(seen ? "، \(MessageCopy.seen)" : "")"
     }
 }
 
@@ -272,6 +284,13 @@ struct PendingMessageView: View {
     let pending: ChatModel.Pending
     let retry: () -> Void
     let discard: () -> Void
+
+    private static func text(of pending: ChatModel.Pending) -> String {
+        switch pending.content {
+        case .text(let text): text
+        case .couplet(_, let note): note ?? "یه بیت"
+        }
+    }
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 3) {
@@ -282,7 +301,9 @@ struct PendingMessageView: View {
                 CoupletCardView(key: key, id: pending.clientId, mine: true, hold: { _ in }, open: { _ in }).opacity(pending.failed ? 0.7 : 0.85)
                 if let note { TextBubble(text: note, mine: true).opacity(pending.failed ? 0.7 : 0.85) }
             }
-            if pending.failed {
+            if pending.refused {
+                Text("نرسید").font(.ui(11, weight: .bold)).foregroundStyle(Tokens.Colors.fire)
+            } else if pending.failed {
                 Button(action: retry) {
                     Text(MessageCopy.notSent).font(.ui(11, weight: .bold)).foregroundStyle(Tokens.Colors.fire)
                 }
@@ -296,7 +317,10 @@ struct PendingMessageView: View {
         .contextMenu {
             if pending.failed { Button("پاک کن", role: .destructive, action: discard) }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("تو: \(Self.text(of: pending))، \(pending.refused ? "نرسید" : pending.failed ? MessageCopy.notSent : MessageCopy.sending)")
+        .accessibilityAddTraits(pending.failed && !pending.refused ? .isButton : [])
+        .accessibilityAction { if pending.failed && !pending.refused { retry() } }
         .accessibilityIdentifier("pending-\(pending.clientId)")
     }
 }

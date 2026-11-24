@@ -98,7 +98,7 @@ struct CoupletPickerSheet: View {
                 .padding(.horizontal, 16)
                 .frame(height: 48)
                 .background(Capsule().fill(Tokens.Colors.white).stickerShadow(ShadowToken(y: 2, blur: 8, opacity: 0.12)))
-                .onChange(of: note) { _, new in if new.count > ChatModel.maxNoteLength { note = String(new.prefix(ChatModel.maxNoteLength)) } }
+                .onChange(of: note) { _, new in if new.utf16.count > ChatModel.maxNoteLength { note = new.limited(toUTF16: ChatModel.maxNoteLength) } }
                 .accessibilityIdentifier("pickerNote")
             HStack(spacing: 10) {
                 Button(action) {

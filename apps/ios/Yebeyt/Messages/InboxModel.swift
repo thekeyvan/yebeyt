@@ -14,6 +14,8 @@ final class InboxModel {
     private(set) var phase = Phase.loading
     private(set) var isLoadingMore = false
     var query = ""
+    /// The inbox is showing: a reconnect reads it again.
+    var isVisible = false
 
     @ObservationIgnored private let session: Session
     @ObservationIgnored private var nextCursor: String?
@@ -68,7 +70,7 @@ final class InboxModel {
             var row = rows.remove(at: index)
             row.last = ConversationLast(
                 kind: message.kind, text: message.text, key: message.key, note: message.note, deleted: message.deleted,
-                at: message.createdAt, fromMe: message.fromMe
+                at: message.createdAt, fromMe: message.fromMe, event: message.payload?.event
             )
             if message.countsAsUnread, !viewing.contains(message.conversationId) { row.unread += 1 }
             rows.insert(row, at: 0)
@@ -112,6 +114,9 @@ final class InboxModel {
         case (.game, _):
             body = last.fromMe ? "به بازی دعوتش کردی" : "دعوتت کرد به بازی"
         case (.system, _):
+            // The list doesn't name a system line's event: without one it is read as the shared divan's, the only
+            // one the chat shows. Other events (a game that ended) wait for slice 8c and show nothing.
+            guard last.event == nil || last.event == "divan_add" else { return "" }
             body = last.fromMe ? "یه بیت به دیوان مشترک اضافه کردی" : "یه بیت به دیوان مشترک اضافه کرد"
         }
         return last.fromMe ? "تو: \(body)" : body

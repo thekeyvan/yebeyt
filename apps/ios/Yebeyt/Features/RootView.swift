@@ -66,9 +66,11 @@ struct RootView: View {
         }
         .task(id: session.user?.id) { await avatar.reconcile(with: session.user) }
         // The live socket is open while the app is in front and someone is signed in; signing out forgets the chats.
-        .task(id: session.isSignedIn && scenePhase != .background) {
-            messages.setActive(session.isSignedIn && scenePhase != .background)
-            if session.isSignedIn { await messages.refreshUnread() }
+        // The socket needs a username (without one the server closes it with 4403).
+        .task(id: session.isSignedIn && session.user?.username != nil && scenePhase != .background) {
+            let active = session.isSignedIn && session.user?.username != nil && scenePhase != .background
+            messages.setActive(active)
+            if active { await messages.refreshUnread() }
         }
         .onChange(of: session.isSignedIn) { _, signedIn in if !signedIn { messages.reset() } }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }

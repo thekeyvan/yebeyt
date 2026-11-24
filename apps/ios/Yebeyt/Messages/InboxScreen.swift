@@ -4,15 +4,13 @@ import SwiftUI
 struct InboxScreen: View {
     @Environment(MessagesCenter.self) private var center
     @Environment(AppModel.self) private var model
+    @Environment(Session.self) private var session
+    @State private var composing = false
 
     var body: some View {
         @Bindable var inbox = center.inbox
         VStack(alignment: .leading, spacing: 16) {
-            Text("پیام‌ها")
-                .font(.title(30))
-                .foregroundStyle(Tokens.Colors.ink)
-                .accessibilityAddTraits(.isHeader)
-                .padding(.top, 4)
+            header
             SearchBox(text: $inbox.query, placeholder: "جستجو بین دوستات", style: .round)
                 .accessibilityIdentifier("inboxSearch")
             content(inbox)
@@ -22,7 +20,37 @@ struct InboxScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $composing) { NewChatSheet(session: session, center: center) }
+        .onAppear { inbox.isVisible = true }
+        .onDisappear { inbox.isVisible = false }
         .task { await inbox.load() }
+    }
+
+    /// The title, «بازی با دوست» (the بازی tab, until the games with friends are built) and «پیام تازه».
+    private var header: some View {
+        HStack(spacing: 12) {
+            Text("پیام‌ها")
+                .font(.title(30))
+                .foregroundStyle(Tokens.Colors.ink)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.top, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            RoundButton(label: "بازی با دوست", action: { model.select(.games) }) {
+                LineIcon(shape: GamesIcon(), size: 20, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.ink)
+            }
+            .accessibilityIdentifier("inboxGames")
+            Button { composing = true } label: {
+                LineIcon(shape: PencilIcon(), size: 20, lineWidth: 2.4, fill: nil)
+                    .foregroundStyle(Tokens.Colors.white)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(Tokens.Colors.lapis))
+                    .overlay(Circle().strokeBorder(Tokens.Colors.white, lineWidth: 3))
+                    .stickerShadow(ShadowToken(y: 2, blur: 16, opacity: 0.22))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("پیام تازه")
+            .accessibilityIdentifier("inboxCompose")
+        }
     }
 
     @ViewBuilder private func content(_ inbox: InboxModel) -> some View {

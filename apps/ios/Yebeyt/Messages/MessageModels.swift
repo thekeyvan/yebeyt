@@ -25,10 +25,12 @@ struct ConversationLast: Equatable, Sendable, Decodable {
     var deleted: Bool
     var at: Date
     var fromMe: Bool
+    /// The event of a system line. The server's list doesn't say it (nil); a live message does.
+    var event: String?
 
     enum CodingKeys: String, CodingKey { case kind, text, key, note, deleted, at, fromMe }
 
-    init(kind: ChatMessage.Kind, text: String? = nil, key: String? = nil, note: String? = nil, deleted: Bool = false, at: Date, fromMe: Bool) {
+    init(kind: ChatMessage.Kind, text: String? = nil, key: String? = nil, note: String? = nil, deleted: Bool = false, at: Date, fromMe: Bool, event: String? = nil) {
         self.kind = kind
         self.text = text
         self.key = key
@@ -36,6 +38,7 @@ struct ConversationLast: Equatable, Sendable, Decodable {
         self.deleted = deleted
         self.at = at
         self.fromMe = fromMe
+        self.event = event
     }
 
     init(from decoder: any Decoder) throws {
@@ -131,9 +134,10 @@ struct ChatMessage: Equatable, Identifiable, Sendable, Decodable {
         createdAt = try values.decode(APIDate.self, forKey: .createdAt).date
     }
 
-    /// Counts toward «نخونده»: the other person's text or couplet, not deleted.
+    /// Counts toward «نخونده», as on the server: anything the other person sent (text, couplet, game), not deleted;
+    /// system lines have no sender and never count.
     var countsAsUnread: Bool {
-        !fromMe && !deleted && (kind == .text || kind == .couplet)
+        !fromMe && !deleted && kind != .system
     }
 }
 

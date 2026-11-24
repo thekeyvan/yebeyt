@@ -131,8 +131,10 @@ final class LiveConnection {
         } catch {
             return .noToken(.network)
         }
+        // Stopped while the token was coming: this run is old; it must not open a socket or touch the new run's.
+        if Task.isCancelled { return .lost(wasReady: false, code: nil) }
         let socket = factory.open(url)
-        self.socket = socket
+        self.socket = socket  // only the current run gets here: a cancelled one returned above
         var ready = false
         let pinger = Task { [pingEvery, pingTimeout] in
             while !Task.isCancelled {
@@ -180,6 +182,7 @@ final class LiveConnection {
             group.addTask { (try? await socket.ping()) != nil }
             group.addTask {
                 try? await Task.sleep(for: timeout)
+                socket.close()  // a ping that never comes back would keep this group waiting: closing ends it
                 return false
             }
             let first = await group.next() ?? false

@@ -16,7 +16,7 @@ struct MessagesAPITests {
         #expect(decoded.otherReadMessageId == "m1")
         #expect(decoded.items[0].kind == .couplet && decoded.items[0].key == "/hafez/ghazal/sh3#0" && decoded.items[0].note == "اینو دیدم")
         #expect(decoded.items[0].countsAsUnread)
-        #expect(decoded.items[1].payload?.kind == "duel" && !decoded.items[1].countsAsUnread)
+        #expect(decoded.items[1].payload?.kind == "duel" && decoded.items[1].countsAsUnread)
         #expect(decoded.items[2].payload?.event == "divan_add" && decoded.items[2].payload?.key == "/saadi/golestan/sh1#2")
         #expect(decoded.items[3].deleted && !decoded.items[3].countsAsUnread)
         #expect(decoded.items[4].kind == .system)

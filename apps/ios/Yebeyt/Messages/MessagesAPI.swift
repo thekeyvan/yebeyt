@@ -76,6 +76,13 @@ extension API {
         try await call("GET", "/v1/me/friends", query: Self.items(("cursor", cursor)), token: token)
     }
 
+    /// People by username or name (the sheet of a new chat). At most 20.
+    func searchChatPeople(query: String, token: String) async throws -> [ChatPerson] {
+        struct Found: Decodable { var items: [ChatPerson] }
+        let found: Found = try await call("GET", "/v1/users/search", query: [URLQueryItem(name: "q", value: query)], token: token)
+        return found.items
+    }
+
     private static func items(_ pairs: (String, String?)...) -> [URLQueryItem] {
         pairs.compactMap { name, value in value.map { URLQueryItem(name: name, value: $0) } }
     }

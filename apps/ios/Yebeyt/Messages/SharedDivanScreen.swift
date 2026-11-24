@@ -37,6 +37,8 @@ private struct SharedDivanContent: View {
                 Task { await model.add(key: key, note: note) }
             }
         }
+        .onAppear { model.isVisible = true }
+        .onDisappear { model.isVisible = false }
         .task { await model.load() }
     }
 
@@ -134,6 +136,7 @@ private struct SharedDivanContent: View {
             Spacer()
         case .failed(let reason):
             VStack(alignment: .leading, spacing: 10) {
+                Text(MessageCopy.divanOpenFailed).font(.ui(15, weight: .bold)).foregroundStyle(Tokens.Colors.ink)
                 Text(reason).font(.ui(14)).foregroundStyle(Tokens.Colors.muted)
                 Button("دوباره") { Task { await model.load() } }.font(.ui(14, weight: .bold)).foregroundStyle(Tokens.Colors.lapis)
             }

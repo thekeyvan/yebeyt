@@ -10,6 +10,7 @@ enum MessageCopy {
     static let deletedMessage = "این پیام پاک شد"
     static let reported = "گزارشت رسید"
     static let seen = "دیده شد"
+    static let newMessage = "پیام تازه"
     static let divanOpenFailed = "دیوان مشترک باز نشد"
 
     /// «سارا یه بیت به دیوان مشترک اضافه کرد»
@@ -104,5 +105,21 @@ enum CoupletKey {
         guard let hash = key.lastIndex(of: "#"), let index = Int(key[key.index(after: hash)...]), index >= 0 else { return nil }
         let path = String(key[..<hash])
         return path.hasPrefix("/") && path.count > 1 ? (path, index) : nil
+    }
+}
+
+extension String {
+    /// The longest start of the text that is at most `limit` UTF-16 code units (how the server counts the 1000 and
+    /// 200), never cutting a letter or an emoji in half.
+    func limited(toUTF16 limit: Int) -> String {
+        var result = ""
+        var used = 0
+        for character in self {
+            let size = character.utf16.count
+            if used + size > limit { break }
+            result.append(character)
+            used += size
+        }
+        return result
     }
 }

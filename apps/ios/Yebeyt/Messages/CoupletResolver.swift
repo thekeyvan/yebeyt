@@ -39,9 +39,6 @@ final class CoupletResolver {
         self.store = store
     }
 
-    /// The couplet already found, without waiting.
-    func cached(_ key: String) -> ResolvedCouplet? { found[key] }
-
     /// Nil when the key is not a couplet of a poem the phone can load (no network and not cached).
     func resolve(_ key: String) async -> ResolvedCouplet? {
         if let known = found[key] { return known }

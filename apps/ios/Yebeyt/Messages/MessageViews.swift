@@ -38,6 +38,15 @@ struct SharedDivanIcon: Shape {
     }
 }
 
+/// «به دیوان مشترک» in the hold menu: two books, one in front of the other (our own icon).
+struct SharedDivanBooksIcon: Shape {
+    var layoutDirectionBehavior: LayoutDirectionBehavior { .fixed }
+
+    func path(in rect: CGRect) -> Path {
+        SVGShape(d: "M4 8.5A2 2 0 0 1 6 6.5H13A2 2 0 0 1 15 8.5V18.5A2 2 0 0 1 13 20.5H6A2 2 0 0 1 4 18.5ZM7.5 6.5V20.5M9 6.5V6A2 2 0 0 1 11 4H18A2 2 0 0 1 20 6V16A2 2 0 0 1 18 18H15").path(in: rect)
+    }
+}
+
 /// A line that says something for a moment, over the bottom of a screen: ink capsule, white text.
 struct MessageToast: View {
     let text: String
@@ -51,6 +60,8 @@ struct MessageToast: View {
             .background(Capsule().fill(Tokens.Colors.ink))
             .transition(.opacity)
             .accessibilityAddTraits(.isStaticText)
+            // VoiceOver can't see it come and go: it is said aloud.
+            .onChange(of: text, initial: true) { _, line in AccessibilityNotification.Announcement(line).post() }
     }
 }
 
