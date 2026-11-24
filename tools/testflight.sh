@@ -31,6 +31,10 @@ if [[ "$FORCE" -eq 0 ]]; then
     echo "Refusing: HEAD is not origin/main (use --force to override)." >&2
     exit 1
   fi
+  if [[ -e "$ROOT/apps/ios/Config/Local.xcconfig" ]]; then
+    echo "Refusing: Config/Local.xcconfig exists and can override the team or bundle id (use --force to override)." >&2
+    exit 1
+  fi
 fi
 
 BUILD="$(date +%Y%m%d%H%M)"
@@ -45,8 +49,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Team and bundle ID are set on the command line so a developer's gitignored
-# Config/Local.xcconfig cannot change what gets released.
+# The team is pinned on the command line. The bundle id can't be: command-line
+# settings reach the package bundles too, so they would get the app's id and
+# the upload would fail. That is why a Local.xcconfig is refused above.
 xcodebuild -project Yebeyt.xcodeproj -scheme Yebeyt -configuration Release \
   -destination 'generic/platform=iOS' \
   -archivePath "$WORK/Yebeyt.xcarchive" \
@@ -54,7 +59,6 @@ xcodebuild -project Yebeyt.xcodeproj -scheme Yebeyt -configuration Release \
   -allowProvisioningUpdates \
   CURRENT_PROJECT_VERSION="$BUILD" \
   DEVELOPMENT_TEAM=95YDC2AP63 \
-  PRODUCT_BUNDLE_IDENTIFIER=com.yebeyt.app \
   archive
 
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
