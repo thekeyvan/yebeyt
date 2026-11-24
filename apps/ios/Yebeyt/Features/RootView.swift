@@ -32,11 +32,13 @@ struct RootView: View {
             if let game = model.game {
                 GameHost(route: game)
                     .id(game.id)
-                    .transition(.move(edge: .bottom))
+                    .motionTransition(Motion.cover)
             }
         }
+        .accessibilityHidden(model.reader != nil)
         .messageToast($model.toast, undo: model.toastUndo, serial: model.toastSerial, bottom: 110)
-        .animation(.snappy, value: model.game)
+        .animation(Motion.bouncy, value: model.game)
+        .animation(Motion.bouncy, value: model.reader)
         // The bar sits 18pt above the screen edge, as on the board; the pages reserve its height.
         .ignoresSafeArea(.container, edges: .bottom)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardUp = true }
@@ -91,20 +93,27 @@ struct RootView: View {
         .leaveGameQuestion(model, active: model.reader == nil)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
         .sharedDivanSheet(item: $model.sharedTarget) { model.showToast($0) }
-        .fullScreenCover(item: $model.reader) { route in
+        // The reader is drawn over everything, not as a system cover, so that it can rise with a spring like the game.
+        .overlay { reader }
+    }
+
+    @ViewBuilder private var reader: some View {
+        if let route = model.reader {
             ReaderView(
                 route: route, close: { model.closeReader() },
                 playWithPoem: { model.playWithPoem(route.path) },
                 playWithCouplet: { model.playWithCouplet(poem: route.path, index: $0) },
                 openPoet: { model.openPoet(slug: $0) }
             )
+            .id(route.id)
+            .motionTransition(Motion.cover)
         }
     }
 
     /// A long press on a couplet outside the reader (the divan): the same menu as in the reader.
     private func holdMenu(_ held: HeldCouplet) -> some View {
         HoldMenu(
-            held: held, dismiss: { withAnimation(.snappy) { model.hold = nil } },
+            held: held, dismiss: { withAnimation(Motion.bouncy) { model.hold = nil } },
             share: { model.share = ReaderModel.Share(text: held.shareText) },
             openCouplet: { withMeaning in model.openReader(ReaderRoute(path: held.path, couplet: held.index, meaning: withMeaning)) },
             playWithCouplet: { index in
@@ -119,6 +128,6 @@ struct RootView: View {
             },
             offerUndo: { model.showToast($0, undo: $1) }
         )
-        .transition(.opacity)
+        .motionTransition { Motion.menu($0, anchor: HoldMenu.origin) }
     }
 }
