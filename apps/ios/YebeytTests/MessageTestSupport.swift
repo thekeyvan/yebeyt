@@ -24,6 +24,23 @@ enum MessageJSON {
         return #"{"items":[\#(messages.joined(separator: ","))],"nextBefore":\#(cursor),"otherReadMessageId":\#(read)}"#
     }
 
+    /// A row of the inbox.
+    static func row(
+        id: String, username: String, name: String? = nil, kind: String = "text", text: String? = "سلام", key: String? = nil, fromMe: Bool = false,
+        unread: Int = 0, at: String = "2026-11-24T09:45:00.000Z", online: String = "null"
+    ) -> String {
+        func string(_ value: String?) -> String { value.map { "\"\($0)\"" } ?? "null" }
+        return """
+        {"id":"\(id)","other":{"username":"\(username)","displayName":\(string(name)),"avatar":null,"online":\(online)},\
+        "last":{"kind":"\(kind)","text":\(string(text)),"key":\(string(key)),"note":null,"deleted":false,"at":"\(at)","fromMe":\(fromMe)},"unread":\(unread)}
+        """
+    }
+
+    static func rows(_ rows: [String], next: String? = nil) -> String {
+        let cursor = next.map { "\"\($0)\"" } ?? "null"
+        return #"{"items":[\#(rows.joined(separator: ","))],"nextCursor":\#(cursor)}"#
+    }
+
     static func decoded(_ json: String) throws -> ChatMessage {
         try JSONDecoder().decode(ChatMessage.self, from: Data(json.utf8))
     }

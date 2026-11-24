@@ -67,8 +67,16 @@ enum ChatTime {
         calendar.isDate(date, inSameDayAs: now) ? clock(date, calendar: calendar) : day(date, now: now, calendar: calendar)
     }
 
-    static func sameDay(_ a: Date, _ b: Date, calendar: Calendar = .current) -> Bool {
-        calendar.isDate(a, inSameDayAs: b)
+    /// The time on a card of the shared divan: «امروز», «دیروز», «۳ روز پیش», «هفته‌ی پیش» (up to two weeks), then «۹ مهر».
+    static func added(_ date: Date, now: Date, calendar: Calendar = .current) -> String {
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day ?? 0
+        switch days {
+        case ...0: return "امروز"
+        case 1: return "دیروز"
+        case 2...6: return "\(PersianDigits.string(days)) روز پیش"
+        case 7...13: return "هفته‌ی پیش"
+        default: return PersianDate.short(for: date, timeZone: calendar.timeZone)
+        }
     }
 
     private static func weekday(_ date: Date, calendar: Calendar) -> String {
