@@ -89,10 +89,11 @@ final class AppModel {
         if reader != nil { return .reader }
         if let game { return ScreenName(game) }
         let top: Destination? = switch selectedTab {
+        case .home: homePath.last
         case .explore: explorePath.last
         case .games: gamesPath.last
         case .me: mePath.last
-        case .home, .messages: nil
+        case .messages: nil
         }
         return top.map(ScreenName.init) ?? ScreenName(selectedTab)
     }

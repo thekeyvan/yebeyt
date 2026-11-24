@@ -29,7 +29,7 @@ extension FollowList {
             return nil
         } catch {
             if let now = people.firstIndex(where: { $0.username == username }) { people[now].isFollowing = wasFollowing }
-            return (error as? APIError)?.persianMessage ?? APIError.badResponse.persianMessage
+            return FeedbackLog.shared.shown(error as? APIError ?? .badResponse)
         }
     }
 }
@@ -90,7 +90,7 @@ final class PeopleSearchModel: FollowList {
             } catch {
                 guard !Task.isCancelled else { return }
                 people = []
-                phase = .failed((error as? APIError)?.persianMessage ?? APIError.badResponse.persianMessage)
+                phase = .failed(FeedbackLog.shared.shown(error as? APIError ?? .badResponse))
             }
         }
     }
@@ -148,7 +148,7 @@ final class FriendsListModel: FollowList {
             nextCursor = page.nextCursor
             phase = .loaded
         } catch {
-            if cursor == nil { phase = .failed((error as? APIError)?.persianMessage ?? APIError.badResponse.persianMessage) }
+            if cursor == nil { phase = .failed(FeedbackLog.shared.shown(error as? APIError ?? .badResponse)) }
         }
     }
 }

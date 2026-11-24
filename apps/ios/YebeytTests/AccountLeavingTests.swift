@@ -250,15 +250,19 @@ struct AccountLeavingTests {
         defer { f.keychain.delete() }
         let stats = f.data.stats
         stats.award(100)
+        stats.raiseBest(.jigsaw, to: 90)
+        stats.record(DailyRecord(tries: ["مصام"], outcome: .solved, points: 100), on: stats.today)
         #expect(stats.claim(for: "first"))
-        #expect(stats.guestPoints == 100)
+        #expect(stats.guestPoints == 200 && stats.streak == 1 && stats.best(.jigsaw) == 90)
 
         await f.signOut.signOut()
         #expect(stats.owner == nil && stats.guestPoints == 0, "what the first account earned is not offered to the next")
+        #expect(stats.streak == 0 && stats.bestStreak == 0 && stats.best(.jigsaw) == 0, "nor its streak or best scores")
+        #expect(ProgressPayload(stats: stats).isEmpty)
         stats.award(30)  // earned as a guest afterwards
         #expect(stats.guestPoints == 30)
         #expect(stats.claim(for: "second") && !stats.claim(for: "first"))
-        #expect(stats.points == 130 && stats.guestPoints == 30)
+        #expect(stats.points == 230 && stats.guestPoints == 30)
         // It survives a restart.
         let reopened = GameStats(defaults: f.defaults)
         #expect(reopened.owner == "second" && reopened.guestPoints == 30)

@@ -55,7 +55,7 @@ final class LeaderboardModel {
             }
             phases[tab] = .loaded
         } catch {
-            if phases[tab] != .loaded { phases[tab] = .failed((error as? APIError)?.persianMessage ?? APIError.badResponse.persianMessage) }
+            if phases[tab] != .loaded { phases[tab] = .failed(FeedbackLog.shared.shown(error as? APIError ?? .badResponse)) }
         }
     }
 

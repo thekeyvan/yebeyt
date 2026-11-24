@@ -64,7 +64,7 @@ final class PersonModel {
         } catch let error as APIError where error.code == .notFound {
             phase = .notFound
         } catch {
-            if profile == nil { phase = .failed((error as? APIError)?.persianMessage ?? APIError.badResponse.persianMessage) }
+            if profile == nil { phase = .failed(FeedbackLog.shared.shown(error as? APIError ?? .badResponse)) }
         }
     }
 
@@ -83,7 +83,7 @@ final class PersonModel {
             profile = current
             await load()  // the friends count and the league follow the relationship
         } catch {
-            toast = (error as? APIError)?.persianMessage ?? APIError.badResponse.persianMessage
+            toast = FeedbackLog.shared.shown(error as? APIError ?? .badResponse)
         }
     }
 
@@ -95,7 +95,7 @@ final class PersonModel {
             try await session.authorized { try await api.block(username, token: $0) }
             return true
         } catch {
-            toast = (error as? APIError)?.persianMessage ?? APIError.badResponse.persianMessage
+            toast = FeedbackLog.shared.shown(error as? APIError ?? .badResponse)
             return false
         }
     }
@@ -110,7 +110,7 @@ final class PersonModel {
             toast = "گزارشت رسید"
             return true
         } catch {
-            toast = (error as? APIError)?.persianMessage ?? APIError.badResponse.persianMessage
+            toast = FeedbackLog.shared.shown(error as? APIError ?? .badResponse)
             return false
         }
     }

@@ -52,12 +52,16 @@ final class GameStats {
     }
 
     /// The account leaves the phone (signing out, deleting it): the points so far stay its own and are not offered to the
-    /// next account; points earned from now on are a guest's again and the next account may claim them.
+    /// next account, and its streak and best scores go (they would be carried to the next account as its own); what is
+    /// earned from now on is a guest's again and the next account may claim it. The day records of the puzzle stay.
     func release() {
         owner = nil
         claimedPoints = saved.points
+        saved.solvedDays = []
+        saved.best = [:]
         defaults.removeObject(forKey: Self.ownerKey)
         defaults.set(claimedPoints, forKey: Self.claimedKey)
+        persist()
     }
 
     /// The days in a row the daily puzzle was solved, up to today. A day not played yet doesn't break it
