@@ -3,32 +3,33 @@ import Foundation
 
 /// What `-beytSignedIn` answers for messages and shared divans: five friends (sara, arian, kian, mahsa, bardia),
 /// their chats as on the boards, one shared divan with Sara (24 couplets, 13 hers and 11 mine) and one with Kian.
-/// Sending echoes the message back; likes flip. People, friends, search and reports are the friends stub's (`DebugFriendsBackend`). Times are today and the
+/// Sending echoes the message back; likes flip. People (the same ones, with the same faces), friends, search, profiles and reports are the friends stub's (`DebugFriendsBackend`). Times are today and the
 /// days before, so the chats look as on the boards on any day.
 enum MessagesStub {
     private struct Person {
         let username: String
         let name: String
-        let background: String
+        let skin: String
         let hair: String
-        let accessory: String
+        let background: String
         /// `online` as JSON: true, false or null (hidden).
         let online: String
     }
 
+    /// The same people (and faces) as the friends stub, so one Sara is everywhere.
     private static let people = [
-        Person(username: "sara", name: "سارا", background: "rose", hair: "dark", accessory: "rose", online: "true"),
-        Person(username: "arian", name: "آرین", background: "mint", hair: "black", accessory: "none", online: "null"),
-        Person(username: "kian", name: "کیان", background: "sun", hair: "fire", accessory: "none", online: "null"),
-        Person(username: "mahsa", name: "مهسا", background: "sun", hair: "black", accessory: "candle", online: "false"),
-        Person(username: "bardia", name: "بردیا", background: "sky", hair: "amber", accessory: "ney", online: "null"),
+        Person(username: "sara.ghazal", name: "سارا", skin: "peach", hair: "dark", background: "rose", online: "true"),
+        Person(username: "aryan", name: "آرین", skin: "sand", hair: "black", background: "mint", online: "null"),
+        Person(username: "kian_k", name: "کیان", skin: "sand", hair: "fire", background: "sun", online: "null"),
+        Person(username: "mahsa.m", name: "مهسا", skin: "tan", hair: "black", background: "lapis", online: "false"),
+        Person(username: "bardia", name: "بردیا", skin: "peach", hair: "amber", background: "sun", online: "null"),
     ]
 
     static func person(_ username: String) -> (name: String, json: String) {
         let known = people.first { $0.username == username }
         let name = known?.name ?? username
         let avatar = known.map {
-            #"{"face":"ivory","eyes":"round","hair":"\#($0.hair)","mouth":"smile","accessory":"\#($0.accessory)","background":"\#($0.background)"}"#
+            #"{"face":"\#($0.skin)","eyes":"round","hair":"\#($0.hair)","mouth":"smile","accessory":"none","background":"\#($0.background)"}"#
         } ?? "null"
         return (name, #"{"username":"\#(username)","displayName":"\#(name)","avatar":\#(avatar),"online":\#(known?.online ?? "null")}"#)
     }
@@ -70,10 +71,10 @@ enum MessagesStub {
 
     private static var conversations: String {
         let rows = [
-            row("sara", kind: "game", text: nil, unread: 1, at: at(0, 9, 45)),
-            row("arian", kind: "game", text: nil, unread: 1, at: at(0, 9, 10)),
-            row("kian", kind: "text", text: "بیت قشنگی بود", unread: 0, at: at(1, 21, 5)),
-            row("mahsa", kind: "text", text: "فردا معما رو با هم حل کنیم؟", mine: true, unread: 0, at: at(1, 18, 30)),
+            row("sara.ghazal", kind: "game", text: nil, unread: 1, at: at(0, 9, 45)),
+            row("aryan", kind: "game", text: nil, unread: 1, at: at(0, 9, 10)),
+            row("kian_k", kind: "text", text: "بیت قشنگی بود", unread: 0, at: at(1, 21, 5)),
+            row("mahsa.m", kind: "text", text: "فردا معما رو با هم حل کنیم؟", mine: true, unread: 0, at: at(1, 18, 30)),
             row("bardia", kind: "couplet", text: nil, unread: 0, at: at(3, 12, 0)),
         ]
         return #"{"items":[\#(rows.joined(separator: ","))],"nextCursor":null}"#
@@ -84,14 +85,14 @@ enum MessagesStub {
         let chat: [String]
         var otherRead = "null"
         switch conversation {
-        case "c-sara":
+        case "c-sara.ghazal":
             chat = [
                 message("g1", conversation, kind: "game", payload: #"{"event":"game_invite","kind":"mosh","gameId":"g1","code":"ABCD"}"#, at: at(0, 9, 45)),
                 message("m3", conversation, mine: true, text: "وای چقدر قشنگه! ممنون", at: at(0, 9, 42)),
                 message("m1", conversation, kind: "couplet", key: "/hafez/ghazal/sh8#4", note: "اینو دیدم یاد تو افتادم", at: at(0, 9, 40)),
             ]
             otherRead = "\"m3\""
-        case "c-kian":
+        case "c-kian_k":
             chat = [
                 message("k3", conversation, text: "بیت قشنگی بود", at: at(1, 21, 5)),
                 message("k2", conversation, kind: "system", payload: #"{"event":"divan_add","key":"/khayyam/robaee/sh2#0"}"#, at: at(1, 21, 4)),
@@ -104,7 +105,7 @@ enum MessagesStub {
     }
 
     static var liveMessageFrame: String {
-        #"{"type":"message","message":\#(message("live1", "c-sara", text: "یه پیام زنده از سارا", at: now))}"#
+        #"{"type":"message","message":\#(message("live1", "c-sara.ghazal", text: "یه پیام زنده از سارا", at: now))}"#
     }
 
     // MARK: Shared divans
@@ -113,7 +114,7 @@ enum MessagesStub {
 
     private static func divan(_ username: String) -> String {
         let named = person(username)
-        return #"{"id":"d-\#(username)","other":\#(named.json),"counts":\#(username == "sara" ? counts : #"{"total":3,"mine":1,"theirs":2}"#)}"#
+        return #"{"id":"d-\#(username)","other":\#(named.json),"counts":\#(username == "sara.ghazal" ? counts : #"{"total":3,"mine":1,"theirs":2}"#)}"#
     }
 
     private static func item(_ id: String, _ key: String, mine: Bool, note: String? = nil, likedByMe: Bool = false, likedByThem: Bool = false, at: String) -> String {
@@ -134,19 +135,16 @@ enum MessagesStub {
     /// nil for a request that is not about messages.
     static func answer(method: String, path: String, query: String, body: Data) -> (Int, String)? {
         let json = (try? JSONSerialization.jsonObject(with: body) as? [String: Any]) ?? [:]
-        let parts = path.split(separator: "/").map(String.init)  // v1, conversations, c-sara, messages
+        let parts = path.split(separator: "/").map(String.init)  // v1, conversations, c-sara.ghazal, messages
         switch (method, path) {
         case ("GET", "/v1/me/unread"): return (200, #"{"total":2}"#)
         case ("GET", "/v1/conversations"): return (200, conversations)
         case ("POST", "/v1/conversations"):
-            let username = json["username"] as? String ?? "sara"
+            let username = json["username"] as? String ?? "sara.ghazal"
             return (200, #"{"id":"c-\#(username)","other":\#(person(username).json)}"#)
-        case ("GET", "/v1/shared-divans"): return (200, #"{"items":[\#(divan("sara")),\#(divan("kian"))],"nextCursor":null}"#)
-        case ("POST", "/v1/shared-divans"): return (200, divan(json["username"] as? String ?? "sara"))
+        case ("GET", "/v1/shared-divans"): return (200, #"{"items":[\#(divan("sara.ghazal")),\#(divan("kian_k"))],"nextCursor":null}"#)
+        case ("POST", "/v1/shared-divans"): return (200, divan(json["username"] as? String ?? "sara.ghazal"))
         default: break
-        }
-        if method == "GET", parts.count == 3, parts[1] == "users", people.contains(where: { $0.username == parts[2] }) {
-            return (200, #"{"username":"\#(parts[2])","league":{"tier":\#(parts[2] == "sara" ? 2 : 1)}}"#)
         }
         if parts.count == 4, parts[1] == "conversations", parts[3] == "messages" {
             if method == "GET" { return (200, query.contains("before=") ? #"{"items":[],"nextBefore":null,"otherReadMessageId":null}"# : messages(of: parts[2])) }

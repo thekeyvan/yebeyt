@@ -19,20 +19,20 @@ final class MessagesUITests: XCTestCase {
 
     @MainActor func testTheInboxOpensAChatAndASentTextAppears() {
         let app = launch(["-beytRoute", "inbox"])
-        let sara = element(app, "inboxRow-sara")
+        let sara = element(app, "inboxRow-sara.ghazal")
         XCTAssertTrue(sara.waitForExistence(timeout: 10))
-        XCTAssertTrue(element(app, "inboxRow-kian").exists)
+        XCTAssertTrue(element(app, "inboxRow-kian_k").exists)
 
         // The search only filters the rows that are there.
         let search = app.textFields.firstMatch
         search.tap()
         search.typeText("kian")
-        XCTAssertTrue(element(app, "inboxRow-kian").exists)
-        XCTAssertFalse(element(app, "inboxRow-sara").exists)
+        XCTAssertTrue(element(app, "inboxRow-kian_k").exists)
+        XCTAssertFalse(element(app, "inboxRow-sara.ghazal").exists)
         search.clearText()
-        XCTAssertTrue(element(app, "inboxRow-sara").waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, "inboxRow-sara.ghazal").waitForExistence(timeout: 5))
 
-        element(app, "inboxRow-sara").tap()
+        element(app, "inboxRow-sara.ghazal").tap()
         let composer = app.textFields["composer"]
         XCTAssertTrue(composer.waitForExistence(timeout: 10))
         XCTAssertTrue(element(app, "coupletCard-m1").waitForExistence(timeout: 10))
@@ -81,7 +81,7 @@ final class MessagesUITests: XCTestCase {
     }
 
     @MainActor func testLongPressingACoupletCardOffersTheSharedDivanAndAddsTheCouplet() {
-        let app = launch(["-beytRoute", "chat:sara"])
+        let app = launch(["-beytRoute", "chat:sara.ghazal"])
         let card = element(app, "coupletCard-m1")
         XCTAssertTrue(card.waitForExistence(timeout: 10))
         card.press(forDuration: 1.0)
@@ -103,18 +103,18 @@ final class MessagesUITests: XCTestCase {
         let toDivan = app.buttons["به دیوان مشترک"]
         XCTAssertTrue(toDivan.waitForExistence(timeout: 10))
         toDivan.tap()
-        XCTAssertTrue(element(app, "divanWith-sara").waitForExistence(timeout: 5))
-        XCTAssertTrue(element(app, "divanWith-kian").exists)
+        XCTAssertTrue(element(app, "divanWith-sara.ghazal").waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, "divanWith-kian_k").exists)
         XCTAssertTrue(app.buttons["otherFriend"].exists)
         app.buttons["otherFriend"].tap()
         XCTAssertTrue(element(app, "divanWith-mahsa.m").waitForExistence(timeout: 5))
-        XCTAssertTrue(element(app, "divanWith-sara").exists)  // the friends with a divan stay listed above
-        element(app, "divanWith-sara").tap()
+        XCTAssertTrue(element(app, "divanWith-sara.ghazal").exists)  // the friends with a divan stay listed above
+        element(app, "divanWith-sara.ghazal").tap()
         XCTAssertTrue(app.buttons["divanAdd"].waitForExistence(timeout: 5))
     }
 
     @MainActor func testTheDivanLineInAChatOpensTheSharedDivan() {
-        let app = launch(["-beytRoute", "chat:kian"])
+        let app = launch(["-beytRoute", "chat:kian_k"])
         let line = element(app, "divanLine-k2")
         XCTAssertTrue(line.waitForExistence(timeout: 10))
         line.tap()
@@ -122,7 +122,7 @@ final class MessagesUITests: XCTestCase {
     }
 
     @MainActor func testTheSharedDivanFiltersByWhoAddedAndByPoetAndLikes() {
-        let app = launch(["-beytRoute", "shared:sara"])
+        let app = launch(["-beytRoute", "shared:sara.ghazal"])
         XCTAssertTrue(element(app, "sharedItem-i1").waitForExistence(timeout: 10))
         XCTAssertTrue(element(app, "sharedItem-i2").exists)
         XCTAssertTrue(element(app, "sharedItem-i3").exists)

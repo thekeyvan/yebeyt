@@ -56,7 +56,9 @@ final class MessagesCenter {
     func reconnected() async {
         await refreshUnread()
         if inbox.isVisible { await inbox.load() }
-        for chat in chats.values where chat.isVisible { await chat.load() }
+        for chat in chats.values {
+            if chat.isVisible { await chat.load() } else if chat.phase == .loaded { chat.needsReload = true }
+        }
         for divan in divans.values where divan.isVisible { await divan.load() }
     }
 

@@ -181,8 +181,10 @@ final class LiveConnection {
         await withTaskGroup(of: Bool.self) { group in
             group.addTask { (try? await socket.ping()) != nil }
             group.addTask {
-                try? await Task.sleep(for: timeout)
-                socket.close()  // a ping that never comes back would keep this group waiting: closing ends it
+                // Cancelled (the ping was answered): nothing to do. Only a real timeout closes the socket, and that ends
+                // a ping that never comes back, which would keep this group waiting.
+                do { try await Task.sleep(for: timeout) } catch { return false }
+                socket.close()
                 return false
             }
             let first = await group.next() ?? false

@@ -288,7 +288,7 @@ struct PendingMessageView: View {
     private static func text(of pending: ChatModel.Pending) -> String {
         switch pending.content {
         case .text(let text): text
-        case .couplet(_, let note): note ?? "یه بیت"
+        case .couplet(_, let note): note ?? MessageCopy.couplet
         }
     }
 
@@ -302,7 +302,7 @@ struct PendingMessageView: View {
                 if let note { TextBubble(text: note, mine: true).opacity(pending.failed ? 0.7 : 0.85) }
             }
             if pending.refused {
-                Text("نرسید").font(.ui(11, weight: .bold)).foregroundStyle(Tokens.Colors.fire)
+                Text(MessageCopy.refused).font(.ui(11, weight: .bold)).foregroundStyle(Tokens.Colors.fire)
             } else if pending.failed {
                 Button(action: retry) {
                     Text(MessageCopy.notSent).font(.ui(11, weight: .bold)).foregroundStyle(Tokens.Colors.fire)
@@ -318,7 +318,7 @@ struct PendingMessageView: View {
             if pending.failed { Button("پاک کن", role: .destructive, action: discard) }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("تو: \(Self.text(of: pending))، \(pending.refused ? "نرسید" : pending.failed ? MessageCopy.notSent : MessageCopy.sending)")
+        .accessibilityLabel("تو: \(Self.text(of: pending))، \(pending.refused ? MessageCopy.refused : pending.failed ? MessageCopy.notSent : MessageCopy.sending)")
         .accessibilityAddTraits(pending.failed && !pending.refused ? .isButton : [])
         .accessibilityAction { if pending.failed && !pending.refused { retry() } }
         .accessibilityIdentifier("pending-\(pending.clientId)")

@@ -112,6 +112,8 @@ final class InboxModel {
         case (.couplet, _):
             body = last.fromMe ? "یه بیت فرستادی" : "یه بیت فرستاد"
         case (.game, _):
+            // Only an invitation is shown; other game lines (a result) wait for slice 8c.
+            guard last.event == "game_invite" else { return "" }
             body = last.fromMe ? "به بازی دعوتش کردی" : "دعوتت کرد به بازی"
         case (.system, _):
             // Only the shared divan's line is shown; other events (a game that ended) wait for slice 8c.

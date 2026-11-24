@@ -243,6 +243,19 @@ struct LiveConnectionTests {
         #expect(rig.sockets.sockets[0].closedByClient)  // stop reaches the new run's socket
     }
 
+    @Test func anAnsweredPingKeepsTheSameSocket() async {
+        let rig = Rig(pingEvery: .milliseconds(10))  // pings are answered at once
+        rig.connection.start()
+        #expect(await eventually { rig.sockets.sockets.count == 1 })
+        rig.sockets.sockets[0].readyFrame()
+        #expect(await eventually { rig.connection.state == .ready })
+        try? await Task.sleep(for: .milliseconds(300))  // many pings and a ping timeout (200 ms) have gone by
+        #expect(rig.sockets.sockets.count == 1)
+        #expect(!rig.sockets.sockets[0].closedByClient)
+        #expect(rig.connection.state == .ready)
+        rig.connection.stop()
+    }
+
     @Test func startingTwiceOpensOneSocket() async {
         let rig = Rig()
         rig.connection.start()

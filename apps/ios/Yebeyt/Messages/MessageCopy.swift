@@ -4,6 +4,9 @@ import Foundation
 enum MessageCopy {
     static let sending = "در حال فرستادن"
     static let notSent = "نرسید · دوباره"
+    /// A send the server refused for good (the chat is closed): nothing to tap.
+    static let refused = "نرسید"
+    static let couplet = "یه بیت"
     static let closed = "دیگه نمی‌تونی به این گفتگو پیام بدی"
     static let slowDown = "یه کم آروم‌تر"
     static let friendsOnlyDivan = "فقط با دوستات می‌شه دیوان مشترک داشت"

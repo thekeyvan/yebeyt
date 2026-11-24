@@ -54,8 +54,15 @@ final class ChatModel {
     var toast: String?
     /// The chat is on screen with the app in front: new messages are marked read.
     var isVisible = false {
-        didSet { if isVisible { markRead() } }
+        didSet {
+            guard isVisible else { return }
+            // A reconnect skipped this chat while it was covered (a poem open over it): it catches up now.
+            if needsReload { run { await $0.load() } }
+            markRead()
+        }
     }
+    /// A reconnect found the chat covered and did not read it; it is read when it is looked at again.
+    var needsReload = false
     /// Called after a read mark reached the server, so the unread total can be asked again.
     @ObservationIgnored var onRead: (@MainActor () -> Void)?
 
@@ -95,6 +102,7 @@ final class ChatModel {
 
     /// The newest page. Also what a reconnect calls, to catch up on what the closed socket missed.
     func load() async {
+        needsReload = false
         if messages.isEmpty { phase = .loading }
         do {
             let page = try await session.authorized { try await self.session.api.messages(conversation: self.id, before: nil, token: $0) }

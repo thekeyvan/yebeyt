@@ -112,7 +112,10 @@ struct InboxAndCenterTests {
         #expect(line(.text, text: "بیت قشنگی بود") == "بیت قشنگی بود")
         #expect(line(.couplet) == "یه بیت فرستاد")
         #expect(line(.couplet, fromMe: true) == "تو: یه بیت فرستادی")
-        #expect(line(.game) == "دعوتت کرد به بازی")
+        #expect(line(.game, event: "game_invite") == "دعوتت کرد به بازی")
+        #expect(line(.game, fromMe: true, event: "game_invite") == "تو: به بازی دعوتش کردی")
+        #expect(line(.game, event: "challenge_result") == "")  // a result is not an invitation
+        #expect(line(.game) == "")
         #expect(line(.system, event: "divan_add") == "یه بیت به دیوان مشترک اضافه کرد")
         #expect(line(.text, deleted: true) == "این پیام پاک شد")
     }
@@ -239,6 +242,11 @@ struct InboxAndCenterTests {
         #expect(paths.contains("/v1/conversations/c1/messages"))
         #expect(!paths.contains("/v1/conversations/c2/messages"))  // not on screen
         #expect(!paths.contains("/v1/conversations"))  // the inbox is not on screen either
+        // The covered chat catches up as soon as it is looked at again (a poem opened over it was closed).
+        let again = stub.requests.count
+        away.isVisible = true
+        await away.settle()
+        #expect(stub.requests.dropFirst(again).contains { $0.path == "/v1/conversations/c2/messages" })
     }
 
     @Test func signedOutThereIsNoSocket() {
