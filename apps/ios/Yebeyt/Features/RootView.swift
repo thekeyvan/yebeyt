@@ -6,6 +6,7 @@ struct RootView: View {
     @Environment(GameStats.self) private var stats
     @Environment(Session.self) private var session
     @Environment(DivanSync.self) private var divanSync
+    @Environment(PrivacyStore.self) private var privacy
     @Environment(AvatarStore.self) private var avatar
     @Environment(\.scenePhase) private var scenePhase
     @State private var keyboardUp = false
@@ -46,12 +47,18 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 stats.refreshToday()
-                Task { await divanSync.syncNow() }
+                Task {
+                    await divanSync.syncNow()
+                    await privacy.flush()
+                }
             }
         }
-        // The divan syncs when the app starts signed in and right after a sign-in; the avatar is matched with the
+        // The divan and unsent privacy changes sync when the app starts signed in and right after a sign-in; the avatar is matched with the
         // server's once the user is known.
-        .task(id: session.isSignedIn) { await divanSync.syncNow() }
+        .task(id: session.isSignedIn) {
+            await divanSync.syncNow()
+            await privacy.flush()
+        }
         .task(id: session.user?.id) { await avatar.reconcile(with: session.user) }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }
         .accountPrompt(host: model.reader == nil)

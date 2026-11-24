@@ -6,6 +6,7 @@ struct DeleteAccountSheet: View {
     @Environment(ReaderMarks.self) private var marks
     @Environment(PrivacyStore.self) private var privacy
     @Environment(AvatarStore.self) private var avatar
+    @Environment(DivanSync.self) private var divanSync
     @Binding var isPresented: Bool
     @State private var busy = false
     @State private var error: String?
@@ -45,7 +46,7 @@ struct DeleteAccountSheet: View {
         busy = true
         error = nil
         Task {
-            let deletion = AccountDeletion(session: session, data: LocalAccountData(marks: marks, privacy: privacy, avatar: avatar))
+            let deletion = AccountDeletion(session: session, data: LocalAccountData(marks: marks, privacy: privacy, avatar: avatar), divanSync: divanSync)
             error = await deletion.delete()
             busy = false
             if error == nil { isPresented = false }

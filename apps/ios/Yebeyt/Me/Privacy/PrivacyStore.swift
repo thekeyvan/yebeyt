@@ -120,6 +120,11 @@ final class PrivacyStore {
         save()
     }
 
+    /// Waits for a send that is on its way (without sending anything new).
+    func settle() async {
+        await lastPush?.value
+    }
+
     /// Sends what is unsent and waits for it (before signing out, and for tests).
     func flush() async {
         await lastPush?.value

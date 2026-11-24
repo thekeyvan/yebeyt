@@ -135,7 +135,7 @@ struct LaunchOptions {
 
     @MainActor static let savedStateKeys = [
         ReaderMarks.defaultsKey, ReaderMarks.divanKey, ReadingProgress.defaultsKey, Follows.defaultsKey, HomeModel.defaultsKey, GameStats.defaultsKey,
-        PrivacyStore.defaultsKey, AvatarStore.defaultsKey, Achievements.defaultsKey,
+        PrivacyStore.defaultsKey, PrivacyStore.unsentKey, AvatarStore.defaultsKey, AvatarStore.unsentKey, Achievements.defaultsKey,
     ]
 
     @MainActor static func resetSavedState(in defaults: UserDefaults = .standard) {

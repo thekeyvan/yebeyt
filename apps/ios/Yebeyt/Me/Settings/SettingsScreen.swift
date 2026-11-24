@@ -14,6 +14,7 @@ struct SettingsScreen: View {
     @State private var textOpen = false
     @State private var confirmingDelete = false
     @State private var confirmingSignOut = false
+    @State private var signingOut = false
 
     static let termsURL = URL(string: "https://yebeyt.com/terms")!
     static let privacyURL = URL(string: "https://yebeyt.com/privacy")!
@@ -109,8 +110,13 @@ struct SettingsScreen: View {
 
     /// One last sync, then out; when it did not go through, the person is asked before anything is lost.
     private func signOut() {
+        guard !signingOut else { return }
+        signingOut = true
         let leaving = leaving
-        Task { if await leaving.signOut() == .unsynced { confirmingSignOut = true } }
+        Task {
+            if await leaving.signOut() == .unsynced { confirmingSignOut = true }
+            signingOut = false
+        }
     }
 
     private func card(title: String? = nil, @ViewBuilder rows: () -> some View) -> some View {

@@ -19,6 +19,13 @@ struct MeLaunchTests {
         #expect(LaunchOptions(["beytRoute": "library"]).mePath.isEmpty)
     }
 
+    @Test func syncFailsIsAFlagAndFreshAlsoForgetsTheUnsentMarks() {
+        #expect(AccountLaunchOptions(["beytSyncFails": "1"]).syncFails)
+        #expect(!AccountLaunchOptions([:]).syncFails)
+        #expect(LaunchOptions.savedStateKeys.contains(PrivacyStore.unsentKey))
+        #expect(LaunchOptions.savedStateKeys.contains(AvatarStore.unsentKey))
+    }
+
     @Test func seedDivanIsAFlag() {
         #expect(LaunchOptions(["beytSeedDivan": "1"]).seedDivan)
         #expect(!LaunchOptions(["beytSeedDivan": "0"]).seedDivan)

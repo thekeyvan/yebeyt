@@ -45,6 +45,11 @@ final class AvatarStore {
         }
     }
 
+    /// Waits for a send that is on its way (without sending anything new).
+    func settle() async {
+        await lastSend?.value
+    }
+
     /// Sends an unsent face now and waits for it (before signing out, and for tests).
     func flush() async {
         await lastSend?.value

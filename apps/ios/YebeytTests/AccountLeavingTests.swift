@@ -62,7 +62,7 @@ struct AccountLeavingTests {
         let data = LocalAccountData(marks: marks, privacy: PrivacyStore(session: session, defaults: defaults), avatar: AvatarStore(session: session, defaults: defaults))
         let sync = DivanSync(marks: marks, session: session, debounce: .seconds(600))
         return Fixture(
-            data: data, deletion: AccountDeletion(session: session, data: data),
+            data: data, deletion: AccountDeletion(session: session, data: data, divanSync: sync),
             signOut: AccountSignOut(session: session, data: data, divanSync: sync),
             sync: sync, session: session, stub: stub, server: server, keychain: keychain, defaults: defaults
         )
@@ -80,14 +80,18 @@ struct AccountLeavingTests {
         await f.avatar.flush()
     }
 
-    private func expectNothingLeft(_ f: Fixture) {
+    /// Nothing of the account is left on the phone. Likes and reposts go only with a deleted account (`likes: false`);
+    /// signing out keeps them, as they are not on the server yet.
+    private func expectNothingLeft(_ f: Fixture, likes: Bool = false) {
         #expect(f.marks.divanItems.isEmpty)
-        #expect(f.marks.keys(.kept).isEmpty && f.marks.keys(.liked).isEmpty && f.marks.keys(.reposted).isEmpty)
+        #expect(f.marks.keys(.kept).isEmpty)
+        if !likes { #expect(f.marks.keys(.liked).isEmpty && f.marks.keys(.reposted).isEmpty) }
         #expect(f.privacy.settings == PrivacySettings() && !f.privacy.hasUnsentChanges)
         #expect(f.avatar.parts == .standard && !f.avatar.isUnsent)
         // A restart finds the same: nothing is stored on the phone.
         let reopened = ReaderMarks(defaults: f.defaults)
-        #expect(reopened.divanItems.isEmpty && reopened.keys(.liked).isEmpty && reopened.keys(.reposted).isEmpty)
+        #expect(reopened.divanItems.isEmpty)
+        if !likes { #expect(reopened.keys(.liked).isEmpty && reopened.keys(.reposted).isEmpty) }
         #expect(PrivacyStore(session: f.session, defaults: f.defaults).settings == PrivacySettings())
         #expect(AvatarStore(session: f.session, defaults: f.defaults).parts == .standard)
     }
@@ -138,6 +142,25 @@ struct AccountLeavingTests {
         #expect(f.marks.keys(.kept).count == 1)
     }
 
+    @Test func deletingWaitsForASyncOnItsWayAndNothingLandsAfterTheClearing() async {
+        let f = fixture()
+        defer { f.keychain.delete() }
+        f.stub.delay = 0.2
+        f.stub.respond { request in
+            request.path == "/v1/me/divan" && request.method == "GET"
+                ? .json(200, #"{"items":[{"key":"/z/z/z#0","keptAt":"2026-11-23T08:00:00.000Z","removedAt":null}]}"#)
+                : f.server.handle(request)
+        }
+        let running = Task { await f.sync.syncNow() }
+        try? await Task.sleep(for: .milliseconds(60))  // the GET is on its way
+
+        let problem = await f.deletion.delete()
+        await running.value
+
+        #expect(problem == nil)
+        expectNothingLeft(f)  // the server's answer did not put the couplet back
+    }
+
     // MARK: Signing out
 
     @Test func signingOutSyncsOnceMoreThenForgetsTheAccountsData() async throws {
@@ -159,7 +182,8 @@ struct AccountLeavingTests {
         #expect(f.stub.requests(to: "/v1/me/avatar").contains { $0.method == "PUT" })
         #expect(!f.session.isSignedIn)
         #expect(f.stub.requests(to: "/v1/auth/logout").count == 1)
-        expectNothingLeft(f)
+        expectNothingLeft(f, likes: true)
+        #expect(f.marks.keys(.liked) == ["/a/b/c#1"])
     }
 
     @Test func ifTheLastSyncFailsSigningOutWaitsAndNothingIsLost() async {
@@ -184,11 +208,15 @@ struct AccountLeavingTests {
         f.stub.respond { request in request.path == "/v1/auth/refresh" ? f.server.handle(request) : .offline }
         #expect(await f.signOut.signOut() == .unsynced)
 
+        let requestsBefore = f.stub.requests.count
+
         let outcome = await f.signOut.signOut(force: true)
 
         #expect(outcome == .done)
         #expect(!f.session.isSignedIn)
-        expectNothingLeft(f)
+        expectNothingLeft(f, likes: true)
+        // Insisting does not try the sync again.
+        #expect(f.stub.requests.dropFirst(requestsBefore).allSatisfy { $0.path == "/v1/auth/logout" })
     }
 
     @Test func unsentPrivacyOrFaceAlsoHoldsBackSigningOut() async {
@@ -218,7 +246,7 @@ struct AccountLeavingTests {
         await f.data.avatar.reconcile(with: f.session.user)
 
         #expect(f.stub.requests.filter { $0.method == "PUT" }.count == putsBefore)  // nothing of the first account is sent
-        expectNothingLeft(f)
+        expectNothingLeft(f, likes: true)
         f.keychain.delete()
     }
 }

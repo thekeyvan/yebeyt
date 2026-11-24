@@ -113,6 +113,34 @@ final class MeUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["readerTitle"].waitForExistence(timeout: 10))
     }
 
+    @MainActor func testSigningOutWithAnUnsyncedDivanWarnsFirstAndOnlyInsistingLeaves() {
+        let app = launch(["-beytRoute", "settings", "-beytSignedIn", "1", "-beytSyncFails", "1", "-beytSeedDivan", "1"])
+        let signOut = app.buttons["signOut"]
+        XCTAssertTrue(signOut.waitForExistence(timeout: 10))
+        signOut.tap()
+        let title = app.staticTexts["unsyncedTitle"]
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        XCTAssertEqual(title.label, "همه‌ی بیت‌هات هنوز به حسابت نرسیده. اگه الان خارج بشی، از این گوشی پاک می‌شن.")
+
+        app.buttons["unsyncedStay"].tap()  // «بمونم»
+        XCTAssertTrue(waitForDisappearance(of: title))
+        XCTAssertTrue(signOut.exists)  // still signed in
+        XCTAssertFalse(app.buttons["settingsSignIn"].exists)
+
+        signOut.tap()
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        app.buttons["unsyncedLeave"].tap()  // «خروج»
+        XCTAssertTrue(app.buttons["settingsSignIn"].waitForExistence(timeout: 10))  // a guest now
+        XCTAssertFalse(app.buttons["signOut"].exists)
+    }
+
+    @MainActor func testSigningOutWhenTheSyncWorksNeedsNoWarning() {
+        let app = launch(["-beytRoute", "settings", "-beytSignedIn", "1", "-beytSeedDivan", "1"])
+        app.buttons["signOut"].tap()
+        XCTAssertTrue(app.buttons["settingsSignIn"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["unsyncedTitle"].exists)
+    }
+
     @MainActor func testAGuestSeesTheSignInRowInSettingsAndTheGuestProfile() {
         let app = launch(["-beytRoute", "settings"])
         XCTAssertTrue(app.buttons["settingsSignIn"].waitForExistence(timeout: 10))

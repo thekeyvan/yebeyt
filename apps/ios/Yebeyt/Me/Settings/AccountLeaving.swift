@@ -1,7 +1,7 @@
 import Foundation
 
-/// What on this phone belongs to an account: the divan with its times, the likes and reposts, the privacy settings
-/// and the face. It goes when the person signs out or deletes the account, so the next person to sign in on this
+/// What on this phone belongs to an account: the divan with its times, the privacy settings and the face (and, for
+/// deleting, the likes and reposts). It goes when the person signs out or deletes the account, so the next person to sign in on this
 /// phone starts clean and nothing is carried over to their account. What a guest has anyway (reading, game scores,
 /// text settings) stays.
 @MainActor
@@ -10,10 +10,18 @@ struct LocalAccountData {
     let privacy: PrivacyStore
     let avatar: AvatarStore
 
-    func clear() {
-        marks.clearAccountData()
+    /// Signing out: the divan, the privacy settings and the face go. The likes and reposts stay until they live on
+    /// the server.
+    func clearForSignOut() {
+        marks.clearDivan()
         privacy.clear()
         avatar.clear()
+    }
+
+    /// Deleting the account: all of it.
+    func clearAll() {
+        clearForSignOut()
+        marks.clearLikesAndReposts()
     }
 }
 
@@ -28,15 +36,20 @@ struct AccountSignOut {
     let data: LocalAccountData
     let divanSync: DivanSync
 
+    /// `force` is the person's answer to the warning: no more syncing, just out.
     @discardableResult
     func signOut(force: Bool = false) async -> Outcome {
-        let divanSent = await divanSync.syncNow()
-        await data.privacy.flush()
-        await data.avatar.flush()
-        let everythingSent = divanSent && !data.privacy.hasUnsentChanges && !data.avatar.isUnsent
-        guard everythingSent || force else { return .unsynced }
+        if !force {
+            let divanSent = await divanSync.syncNow()
+            await data.privacy.flush()
+            await data.avatar.flush()
+            guard divanSent, !data.privacy.hasUnsentChanges, !data.avatar.isUnsent else { return .unsynced }
+        }
+        await divanSync.stop()
+        await data.privacy.settle()
+        await data.avatar.settle()
         await session.signOut()
-        data.clear()
+        data.clearForSignOut()
         return .done
     }
 }
@@ -48,6 +61,7 @@ struct AccountSignOut {
 struct AccountDeletion {
     let session: Session
     let data: LocalAccountData
+    let divanSync: DivanSync
 
     /// Returns the line to show when it failed; nil when the account is gone.
     func delete() async -> String? {
@@ -60,7 +74,11 @@ struct AccountDeletion {
             return APIError.badResponse.persianMessage
         }
         await session.signOut(tellServer: false)
-        data.clear()
+        // Whatever was on its way when the account went must land (or fail) before the phone is cleared.
+        await divanSync.stop()
+        await data.privacy.settle()
+        await data.avatar.settle()
+        data.clearAll()
         return nil
     }
 }

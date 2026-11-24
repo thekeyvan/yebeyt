@@ -25,6 +25,13 @@ final class DivanSync {
         marks.keptDidChange = { [weak self] in self?.scheduleSync() }
     }
 
+    /// Cancels a waiting sync and waits for the one running, so nothing lands after the divan is cleared.
+    func stop() async {
+        scheduled?.cancel()
+        scheduled = nil
+        _ = await running?.value
+    }
+
     /// Runs a sync after the debounce; asking again meanwhile starts the wait over.
     func scheduleSync() {
         guard session.isSignedIn else { return }
