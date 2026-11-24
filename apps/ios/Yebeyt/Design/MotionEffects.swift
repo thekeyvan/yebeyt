@@ -33,7 +33,7 @@ extension View {
         modifier(ShakeEffect(trigger: trigger))
     }
 
-    /// A card thrown off the deck: it flies out to the left, tilted (with Reduce Motion it only fades).
+    /// A card thrown off the deck: it flies out to the side, tilted (with Reduce Motion it only fades).
     func thrown(_ thrown: Bool) -> some View {
         modifier(ThrownEffect(thrown: thrown))
     }
