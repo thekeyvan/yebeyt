@@ -26,6 +26,7 @@ if [[ "$FORCE" -eq 0 ]]; then
     echo "Refusing: uncommitted changes in the working tree (use --force to override)." >&2
     exit 1
   fi
+  git -C "$ROOT" fetch --quiet origin main
   if [[ "$(git -C "$ROOT" rev-parse HEAD)" != "$(git -C "$ROOT" rev-parse origin/main)" ]]; then
     echo "Refusing: HEAD is not origin/main (use --force to override)." >&2
     exit 1
@@ -44,13 +45,20 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Team and bundle ID are set on the command line so a developer's gitignored
+# Config/Local.xcconfig cannot change what gets released.
 xcodebuild -project Yebeyt.xcodeproj -scheme Yebeyt -configuration Release \
   -destination 'generic/platform=iOS' \
   -archivePath "$WORK/Yebeyt.xcarchive" \
   -derivedDataPath "$WORK/dd" \
   -allowProvisioningUpdates \
   CURRENT_PROJECT_VERSION="$BUILD" \
+  DEVELOPMENT_TEAM=95YDC2AP63 \
+  PRODUCT_BUNDLE_IDENTIFIER=com.yebeyt.app \
   archive
+
+VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
+  "$WORK/Yebeyt.xcarchive/Products/Applications/Yebeyt.app/Info.plist")"
 
 cat > "$WORK/export.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -77,6 +85,4 @@ xcodebuild -exportArchive \
   -exportPath "$WORK/up" \
   -allowProvisioningUpdates
 
-VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
-  "$WORK/Yebeyt.xcarchive/Products/Applications/Yebeyt.app/Info.plist")"
 echo "Uploaded $VERSION ($BUILD)"
