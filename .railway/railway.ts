@@ -14,8 +14,18 @@ export default defineRailway(() => {
     domains: ["api.yebeyt.com"],
   });
 
+  const web = service("web", {
+    source: { repo: "thekeyvan/yebeyt", branch: "main" },
+    build: { buildEnvironment: "V3", builder: "DOCKERFILE", dockerfilePath: "apps/web/Dockerfile", watchPatterns: ["apps/web/**", "packages/tokens/**", "assets/fonts/**", "pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"] },
+    healthcheckPath: "/",
+    healthcheckTimeout: 60,
+    replicas: { "europe-west4-drams3a": 1 },
+    // www.yebeyt.com is sent to the apex by the app's own proxy (apps/web/proxy.ts).
+    domains: ["yebeyt.com", "www.yebeyt.com"],
+  });
+
   return project("yebeyt", {
     variables: { managed: false },
-    resources: [PostgresExvV, server, postgresVolume1kOn],
+    resources: [PostgresExvV, server, web, postgresVolume1kOn],
   });
 });

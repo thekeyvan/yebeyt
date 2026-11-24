@@ -1,0 +1,16 @@
+.git
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+apps/ios
+apps/server
+apps/admin
+apps/android
+design
+docs
+tools
+assets/*
+!assets/fonts
+**/.env*
+**/*.p8
