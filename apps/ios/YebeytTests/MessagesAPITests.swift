@@ -41,7 +41,7 @@ struct MessagesAPITests {
             switch (request.method, request.path) {
             case ("GET", "/v1/conversations"): .json(200, #"{"items":[],"nextCursor":null}"#)
             case ("POST", "/v1/conversations"): .json(200, #"{"id":"c1","other":\#(MessageJSON.person)}"#)
-            case ("GET", "/v1/me/unread"): .json(200, #"{"total":3}"#)
+            case ("GET", "/v1/me/unread"): .json(200, #"{"total":3,"friendRequests":1}"#)
             case ("GET", "/v1/conversations/c1/messages"): .json(200, MessageJSON.page([]))
             case ("POST", "/v1/conversations/c1/messages"): .json(201, MessageJSON.message(id: "m1", fromMe: true, text: "x"))
             case ("PUT", "/v1/conversations/c1/read"), ("DELETE", "/v1/messages/m1"), ("POST", "/v1/reports"): .json(204, "")
@@ -50,14 +50,14 @@ struct MessagesAPITests {
             case ("GET", "/v1/shared-divans/d1/items"): .json(200, #"{"items":[],"nextCursor":null,"counts":{"total":24,"mine":11,"theirs":13}}"#)
             case ("POST", "/v1/shared-divans/d1/items"): .json(201, MessageJSON.item(id: "i1", key: "/hafez/ghazal/sh3#0", mine: true))
             case ("PUT", "/v1/shared-divans/d1/items/i1/like"), ("DELETE", "/v1/shared-divans/d1/items/i1/like"): .json(200, MessageJSON.item(id: "i1", key: "/hafez/ghazal/sh3#0", mine: true, likedByMe: request.method == "PUT"))
-            case ("GET", "/v1/me/friends"): .json(200, #"{"items":[{"username":"sara","displayName":"سارا","avatar":null,"isFriend":true}],"nextCursor":null}"#)
+            case ("GET", "/v1/me/friends"): .json(200, #"{"items":[{"username":"sara","displayName":"سارا","avatar":null}],"nextCursor":null}"#)
             default: .json(404, "{}")
             }
         }
         let api = stub.api
         _ = try await api.conversations(cursor: "next", token: "t")
         _ = try await api.openConversation(username: "sara", token: "t")
-        #expect(try await api.unreadTotal(token: "t") == 3)
+        #expect(try await api.unread(token: "t") == Unread(total: 3, friendRequests: 1))
         _ = try await api.messages(conversation: "c1", before: "m9", token: "t")
         _ = try await api.sendMessage(OutgoingMessage(clientId: "k", content: .couplet(key: "/hafez/ghazal/sh3#0", note: nil)), conversation: "c1", token: "t")
         try await api.markRead(conversation: "c1", messageId: "m1", token: "t")

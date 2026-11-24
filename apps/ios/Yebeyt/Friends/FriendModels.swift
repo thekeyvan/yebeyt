@@ -12,16 +12,17 @@ struct PersonShort: Codable, Equatable, Sendable {
     var name: String { displayName ?? username }
 }
 
-/// `FoundPerson` (search) and `Person` (a friends page): `isFollowing` is only in a search answer, a friend is always followed.
+/// `FoundPerson` (search): someone with where I stand with them. `isFriend` of the contract is `friendship == .friends`.
 struct FoundPerson: Codable, Equatable, Sendable {
     var username: String
     var displayName: String?
     var avatar: AvatarParts?
-    var isFollowing: Bool?
-    var isFriend: Bool
+    var friendship: Friendship
+
+    private enum CodingKeys: String, CodingKey { case username, displayName, avatar, friendship }
 
     var short: PersonShort { PersonShort(username: username, displayName: displayName, avatar: avatar) }
-    var followed: Bool { isFollowing ?? true }
+    var isFriend: Bool { friendship == .friends }
 }
 
 /// `UserSearch`.
@@ -29,20 +30,36 @@ struct UserSearch: Codable, Sendable {
     var items: [FoundPerson]
 }
 
-/// `PeoplePage`, `nextCursor` is nil on the last page.
+/// `FriendsPage`, `nextCursor` is nil on the last page.
 struct PeoplePage: Codable, Sendable {
-    var items: [FoundPerson]
+    var items: [PersonShort]
     var nextCursor: String?
 }
 
-/// `Relationship`: how I and another person follow each other.
-struct Relationship: Codable, Equatable, Sendable {
-    var isFollowing: Bool
-    var followsYou: Bool
-    var isFriend: Bool
+/// An item of `FriendRequestsPage`: who asked (or was asked), and when.
+struct FriendRequest: Codable, Equatable, Identifiable, Sendable {
+    var username: String
+    var displayName: String?
+    var avatar: AvatarParts?
+    var createdAt: String
+
+    var id: String { username }
+    var short: PersonShort { PersonShort(username: username, displayName: displayName, avatar: avatar) }
 }
 
-/// `PublicProfile`.
+/// `FriendRequestsPage`.
+struct FriendRequestsPage: Codable, Sendable {
+    var items: [FriendRequest]
+    var nextCursor: String?
+}
+
+/// `Unread`: the unread messages and the friend requests waiting for my answer.
+struct Unread: Codable, Equatable, Sendable {
+    var total: Int
+    var friendRequests: Int
+}
+
+/// `PublicProfile`. `isFriend` of the contract is `friendship == .friends`.
 struct PublicProfile: Codable, Equatable, Sendable {
     struct League: Codable, Equatable, Sendable { var tier: Int }
 
@@ -50,16 +67,16 @@ struct PublicProfile: Codable, Equatable, Sendable {
     var displayName: String?
     var avatar: AvatarParts?
     var friendsCount: Int
-    var isFollowing: Bool
-    var followsYou: Bool
-    var isFriend: Bool
+    var friendship: Friendship
     /// I may write to them now.
     var canMessage: Bool
     var league: League?
     var weekPoints: Int?
 
+    private enum CodingKeys: String, CodingKey { case username, displayName, avatar, friendsCount, friendship, canMessage, league, weekPoints }
+
     var short: PersonShort { PersonShort(username: username, displayName: displayName, avatar: avatar) }
-    var relation: Relationship { Relationship(isFollowing: isFollowing, followsYou: followsYou, isFriend: isFriend) }
+    var isFriend: Bool { friendship == .friends }
 }
 
 /// `LeaderboardRow`. A `hidden` row is a stranger who keeps off the global list: no name, no face.

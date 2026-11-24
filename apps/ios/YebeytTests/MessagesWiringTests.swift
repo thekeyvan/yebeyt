@@ -69,6 +69,7 @@ struct MessagesWiringTests {
     @Test func theDebugRoutesAreParsed() {
         func route(_ text: String) -> MessagesLaunchOptions.Route? { MessagesLaunchOptions(["beytRoute": text]).route }
         #expect(route("inbox") == .inbox)
+        #expect(route("requests") == .requests)
         #expect(route("chat:sara") == .chat("sara"))
         #expect(route("shared:kian") == .shared("kian"))
         #expect(route("chat:") == nil)
@@ -86,6 +87,9 @@ struct MessagesWiringTests {
         #expect(chat.selectedTab == .messages)
         #expect(chat.messagesPath == [.chat("c-sara.ghazal")])
         #expect(center.chat(id: "c-sara.ghazal")?.other.name == "سارا")
+        let requests = AppModel()
+        MessagesLaunchOptions(["beytRoute": "requests"]).prepare(center: center, app: requests)
+        #expect(requests.selectedTab == .messages && requests.messagesPath == [.friendRequests] && requests.currentScreen == .friendRequests)
         let shared = AppModel()
         MessagesLaunchOptions(["beytRoute": "shared:sara.ghazal"]).prepare(center: center, app: shared)
         #expect(shared.messagesPath == [.sharedDivan("sara.ghazal")])
@@ -120,7 +124,7 @@ struct MessagesWiringTests {
         #expect(try decode(SharedDivanItemPage.self, answer("GET", "/v1/shared-divans/d-sara.ghazal/items", query: "by=me")).items.map(\.id) == ["i2"])
         #expect(try decode(SharedDivanItemPage.self, answer("GET", "/v1/shared-divans/d-sara.ghazal/items", query: "by=them")).items.map(\.id) == ["i1", "i3"])
         #expect(try decode(SharedDivanItem.self, answer("PUT", "/v1/shared-divans/d-sara.ghazal/items/i3/like")).likedByMe)
-        #expect(try answer("GET", "/v1/me/unread") == #"{"total":2}"#)
+        #expect(try answer("GET", "/v1/me/unread") == #"{"total":2,"friendRequests":2}"#)
         #expect(MessagesStub.answer(method: "GET", path: "/v1/something/else", query: "", body: Data()) == nil)
     }
     #endif

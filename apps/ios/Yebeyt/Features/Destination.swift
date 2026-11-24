@@ -36,4 +36,6 @@ enum Destination: Hashable, Sendable {
     case chat(String)
     /// The divan shared with a person, by their username.
     case sharedDivan(String)
+    /// «درخواست‌های دوستی».
+    case friendRequests
 }

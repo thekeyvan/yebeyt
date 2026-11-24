@@ -1,43 +1,10 @@
 import Foundation
 import Observation
 
-/// A list of people with a «دنبال کن» button on each row (a search, my friends).
-@MainActor
-protocol FollowList: AnyObject {
-    var people: [FoundPerson] { get set }
-    var session: Session { get }
-    /// The usernames whose follow call is on its way: a second tap waits.
-    var pending: Set<String> { get set }
-}
-
-extension FollowList {
-    /// Follows or unfollows `username` (the row changes at once and goes back when the server refuses).
-    /// Returns the line to show when it failed.
-    func toggleFollow(_ username: String) async -> String? {
-        guard !pending.contains(username), let index = people.firstIndex(where: { $0.username == username }) else { return nil }
-        let wasFollowing = people[index].followed
-        pending.insert(username)
-        people[index].isFollowing = !wasFollowing
-        defer { pending.remove(username) }
-        do {
-            let api = session.api
-            let relation = try await session.authorized { try await api.follow(username, on: !wasFollowing, token: $0) }
-            if let now = people.firstIndex(where: { $0.username == username }) {
-                people[now].isFollowing = relation.isFollowing
-                people[now].isFriend = relation.isFriend
-            }
-            return nil
-        } catch {
-            if let now = people.firstIndex(where: { $0.username == username }) { people[now].isFollowing = wasFollowing }
-            return FeedbackLog.shared.shown(error as? APIError ?? .badResponse)
-        }
-    }
-}
-
 /// «پیدا کردن دوست»: people by the start of their username. The search waits for a short pause in typing, and an
 /// answer that arrives after the text changed is dropped.
 @MainActor @Observable
-final class PeopleSearchModel: FollowList {
+final class PeopleSearchModel {
     enum Phase: Equatable {
         case idle, loading, loaded
         case failed(String)
@@ -99,18 +66,35 @@ final class PeopleSearchModel: FollowList {
     func settle() async {
         await task?.value
     }
+
+    /// Does `action` to the row of `username`: the row changes at once and goes back when the server refuses. Returns
+    /// the line to show when it failed.
+    func perform(_ action: FriendAction, on username: String) async -> String? {
+        guard !pending.contains(username), let index = people.firstIndex(where: { $0.username == username }), people[index].friendship == action.requires else { return nil }
+        pending.insert(username)
+        people[index].friendship = action.result
+        defer { pending.remove(username) }
+        do {
+            let api = session.api
+            let state = try await session.authorized { try await api.friendAction(action, username: username, token: $0) }
+            if let now = people.firstIndex(where: { $0.username == username }) { people[now].friendship = state }
+            return nil
+        } catch {
+            if let now = people.firstIndex(where: { $0.username == username }) { people[now].friendship = action.requires }
+            return FriendCopy.toast(for: error as? APIError ?? .badResponse)
+        }
+    }
 }
 
-/// My friends, a page at a time.
+/// My friends (`/v1/me/friends`), a page at a time.
 @MainActor @Observable
-final class FriendsListModel: FollowList {
+final class FriendsListModel {
     enum Phase: Equatable {
         case loading, loaded
         case failed(String)
     }
 
-    var people: [FoundPerson] = []
-    var pending: Set<String> = []
+    private(set) var people: [FoundPerson] = []
     private(set) var phase = Phase.loading
     let session: Session
     @ObservationIgnored private var nextCursor: String?
@@ -140,11 +124,24 @@ final class FriendsListModel: FollowList {
         }
     }
 
+    /// Someone just accepted or asked (a live event): the first page is read again and replaces the list.
+    func reload() async {
+        guard phase == .loaded else { return }
+        let api = session.api
+        guard let page = try? await session.authorized({ try await api.friends(cursor: nil, token: $0) }) else { return }
+        people = Self.found(page.items)
+        nextCursor = page.nextCursor
+    }
+
+    private static func found(_ items: [PersonShort]) -> [FoundPerson] {
+        items.map { FoundPerson(username: $0.username, displayName: $0.displayName, avatar: $0.avatar, friendship: .friends) }
+    }
+
     private func fetch(cursor: String?) async {
         do {
             let api = session.api
             let page = try await session.authorized { try await api.friends(cursor: cursor, token: $0) }
-            people += page.items.filter { new in !people.contains { $0.username == new.username } }
+            people += Self.found(page.items.filter { new in !people.contains { $0.username == new.username } })
             nextCursor = page.nextCursor
             phase = .loaded
         } catch {

@@ -153,7 +153,7 @@ struct InboxAndCenterTests {
     }
 
     @Test func theUnreadTotalComesFromTheServerAndGrowsWithLiveMessages() async throws {
-        let (center, _) = center { request in request.path == "/v1/me/unread" ? .json(200, #"{"total":2}"#) : .json(404, "{}") }
+        let (center, _) = center { request in request.path == "/v1/me/unread" ? .json(200, #"{"total":2,"friendRequests":0}"#) : .json(404, "{}") }
         var badge: [Int] = []
         center.onUnread = { badge.append($0) }
         await center.refreshUnread()
@@ -170,7 +170,7 @@ struct InboxAndCenterTests {
     @Test func aMessageInTheOpenChatIsReadAsItComesAndMovesTheBadgeBack() async throws {
         let (center, stub) = center { request in
             switch (request.method, request.path) {
-            case ("GET", "/v1/me/unread"): .json(200, #"{"total":0}"#)
+            case ("GET", "/v1/me/unread"): .json(200, #"{"total":0,"friendRequests":0}"#)
             case ("PUT", "/v1/conversations/c1/read"): .json(204, "")
             default: .json(404, "{}")
             }
@@ -205,7 +205,7 @@ struct InboxAndCenterTests {
 
     @Test func theSocketBringsEventsAndEveryConnectReadsTheListsAgain() async throws {
         let sockets = FakeLiveSockets()
-        let (center, stub) = center({ request in request.path == "/v1/me/unread" ? .json(200, #"{"total":1}"#) : .json(200, Self.first) }, sockets: sockets)
+        let (center, stub) = center({ request in request.path == "/v1/me/unread" ? .json(200, #"{"total":1,"friendRequests":0}"#) : .json(200, Self.first) }, sockets: sockets)
         await center.inbox.load()
         center.inbox.isVisible = true
         center.setActive(true)
@@ -224,7 +224,7 @@ struct InboxAndCenterTests {
         let sockets = FakeLiveSockets()
         let (center, stub) = center({ request in
             switch request.path {
-            case "/v1/me/unread": .json(200, #"{"total":0}"#)
+            case "/v1/me/unread": .json(200, #"{"total":0,"friendRequests":0}"#)
             case "/v1/conversations": .json(200, Self.first)
             default: .json(200, MessageJSON.page([]))
             }
@@ -273,7 +273,7 @@ struct InboxAndCenterTests {
     }
 
     @Test func signingOutForgetsEverything() async throws {
-        let (center, _) = center { request in request.path == "/v1/me/unread" ? .json(200, #"{"total":4}"#) : .json(200, Self.first) }
+        let (center, _) = center { request in request.path == "/v1/me/unread" ? .json(200, #"{"total":4,"friendRequests":0}"#) : .json(200, Self.first) }
         await center.inbox.load()
         await center.refreshUnread()
         _ = center.chat(for: Conversation(id: "c1", other: ChatPerson(username: "sara", displayName: nil, avatar: nil, online: nil)))

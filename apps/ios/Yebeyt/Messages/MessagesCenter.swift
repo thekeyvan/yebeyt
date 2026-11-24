@@ -2,18 +2,24 @@ import Foundation
 import Observation
 
 /// The messages side of the app, built once at launch: the live socket, the inbox, the chats that were opened, the
-/// shared divans and the unread total for the tab badge. Live events and the lists meet here.
+/// shared divans, the friend requests and the unread total for the tab badge. Live events and the lists meet here.
 @MainActor @Observable
 final class MessagesCenter {
     let session: Session
     let inbox: InboxModel
-    /// The total for the «پیام‌ها» badge.
+    let requests: FriendRequestsModel
+    /// The unread messages.
     private(set) var unread = 0 {
-        didSet { if unread != oldValue { onUnread?(unread) } }
+        didSet { publishBadge() }
     }
+    /// Raised when someone asks or accepts, so a page of that person (or my friends) reads itself again.
+    private(set) var friendsRevision = 0
 
-    /// Told when the total changes (the tab bar's badge).
+    /// Told when the badge changes: the unread messages plus the incoming friend requests (the tab bar's badge).
     @ObservationIgnored var onUnread: (@MainActor (Int) -> Void)?
+    /// Shows a line («<name> درخواستت رو قبول کرد»).
+    @ObservationIgnored var onToast: (@MainActor (String) -> Void)?
+    @ObservationIgnored private var published = 0
     /// Pushes a chat on the «پیام‌ها» tab and switches to it.
     @ObservationIgnored var show: (@MainActor (String) -> Void)?
 
@@ -26,6 +32,15 @@ final class MessagesCenter {
         self.session = session
         self.sockets = sockets
         inbox = InboxModel(session: session)
+        requests = FriendRequestsModel(session: session)
+        requests.onCountChange = { [weak self] _ in self?.publishBadge() }
+    }
+
+    private func publishBadge() {
+        let badge = unread + requests.incomingCount
+        guard badge != published else { return }
+        published = badge
+        onUnread?(badge)
     }
 
     // MARK: The live socket
@@ -56,6 +71,7 @@ final class MessagesCenter {
     func reconnected() async {
         await refreshUnread()
         if inbox.isVisible { await inbox.load() }
+        if requests.isVisible { await requests.load() }
         for chat in chats.values {
             if chat.isVisible { await chat.load() } else if chat.phase == .loaded { chat.needsReload = true }
         }
@@ -68,6 +84,13 @@ final class MessagesCenter {
             if message.countsAsUnread, chats[message.conversationId]?.isVisible != true { unread += 1 }
         case .deleted:
             Task { await refreshUnread() }
+        case .friendRequest(let from):
+            requests.received(from: from)
+            friendsRevision += 1
+        case .friendAccepted(let from):
+            requests.removeSent(to: from.username)
+            friendsRevision += 1
+            onToast?(FriendCopy.accepted(by: from.name))
         default:
             break
         }
@@ -80,7 +103,9 @@ final class MessagesCenter {
     // MARK: Unread
 
     func refreshUnread() async {
-        if let total = try? await session.authorized({ try await self.session.api.unreadTotal(token: $0) }) { unread = total }
+        guard let answer = try? await session.authorized({ try await self.session.api.unread(token: $0) }) else { return }
+        requests.setCount(answer.friendRequests)
+        unread = answer.total
     }
 
     // MARK: Chats and divans
@@ -127,6 +152,7 @@ final class MessagesCenter {
         chats = [:]
         divans = [:]
         inbox.reset()
+        requests.reset()
         unread = 0
     }
 }

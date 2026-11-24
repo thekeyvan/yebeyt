@@ -1,6 +1,10 @@
 import Foundation
 
-/// The endpoints of friends, scores, reactions and the feed (see `packages/api/openapi.json`).
+/// The endpoints of friends, friend requests, scores, reactions and the feed (see `packages/api/openapi.json`).
+enum FriendRequestDirection: String, Sendable {
+    case incoming, outgoing
+}
+
 extension API {
     // MARK: Scores
 
@@ -47,12 +51,32 @@ extension API {
         try await call("GET", "/v1/users/\(username)", token: token)
     }
 
-    func follow(_ username: String, on: Bool, token: String) async throws -> Relationship {
-        try await call(on ? "PUT" : "DELETE", "/v1/follows/\(username)", token: token)
+    /// Does `action` to the friendship with `username` and answers the state it ended in (a request they had already
+    /// sent is accepted by sending one: the answer says `friends`).
+    func friendAction(_ action: FriendAction, username: String, token: String) async throws -> Friendship {
+        struct State: Decodable { var friendship: Friendship }
+        switch action {
+        case .send:
+            return try await (call("POST", "/v1/friend-requests/\(username)", token: token) as State).friendship
+        case .accept:
+            return try await (call("POST", "/v1/friend-requests/\(username)/accept", token: token) as State).friendship
+        case .cancel:
+            try await send("DELETE", "/v1/friend-requests/\(username)", token: token)
+        case .reject:
+            try await send("POST", "/v1/friend-requests/\(username)/reject", token: token)
+        case .unfriend:
+            try await send("DELETE", "/v1/friends/\(username)", token: token)
+        }
+        return action.result
     }
 
     func friends(cursor: String?, token: String) async throws -> PeoplePage {
         try await call("GET", "/v1/me/friends", query: cursor.map { [URLQueryItem(name: "cursor", value: $0)] } ?? [], token: token)
+    }
+
+    func friendRequests(_ direction: FriendRequestDirection, cursor: String?, token: String) async throws -> FriendRequestsPage {
+        let query = [URLQueryItem(name: "direction", value: direction.rawValue)] + (cursor.map { [URLQueryItem(name: "cursor", value: $0)] } ?? [])
+        return try await call("GET", "/v1/me/friend-requests", query: query, token: token)
     }
 
     func block(_ username: String, token: String) async throws {

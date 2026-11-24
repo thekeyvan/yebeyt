@@ -51,6 +51,8 @@ struct DestinationView: View {
             ChatScreen(id: id)
         case .sharedDivan(let username):
             SharedDivanScreen(username: username)
+        case .friendRequests:
+            RequestsScreen()
         }
     }
 }

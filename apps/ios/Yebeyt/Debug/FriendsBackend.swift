@@ -1,10 +1,64 @@
 #if DEBUG
 import Foundation
 
-/// What the fake server of `-beytSignedIn` answers for friends, scores, reactions, the leaderboard and the feed, so the
-/// screens can be seen without a network: three friends (سارا, کیان, مهسا, and 74 more on two pages of the friends list), a league
-/// of eight, a feed of three items (30 on the first page and one more on a second).
+/// What the fake server of `-beytSignedIn` answers for friends, friend requests, scores, reactions, the leaderboard and
+/// the feed, so the screens can be seen without a network: friends (سارا, کیان, مهسا, and 74 more on two pages of the
+/// friends list), two requests waiting for me (آرین, بردیا), one I sent (پریا), رها with nothing yet, a league of
+/// eight, a feed of three items (30 on the first page and one more on a second). The requests and friendships move as on
+/// the server (`Relations`); the friends list stays as it is, so the pages can be counted.
 enum DebugFriendsBackend {
+    /// Who I am a friend of, who asked me and whom I asked, in the order the server lists them (the requests newest first
+    /// for the server; here the order they were made).
+    final class Relations: @unchecked Sendable {
+        private let lock = NSLock()
+        private var friends: Set<String> = ["sara.ghazal", "kian_k", "mahsa.m"]
+        private var received = ["aryan", "bardia"]
+        private var sent = ["paria"]
+
+        func state(of username: String) -> Friendship {
+            lock.withLock {
+                if friends.contains(username) { .friends } else if received.contains(username) { .incoming } else if sent.contains(username) { .requested } else { .none }
+            }
+        }
+
+        var incoming: [String] { lock.withLock { received } }
+        var outgoing: [String] { lock.withLock { sent } }
+        var incomingCount: Int { lock.withLock { received.count } }
+
+        /// Sends a request; one they sent me is accepted instead. Answers the state.
+        func send(_ username: String) -> Friendship {
+            lock.withLock {
+                if friends.contains(username) { return .friends }
+                if let index = received.firstIndex(of: username) {
+                    received.remove(at: index)
+                    friends.insert(username)
+                    return .friends
+                }
+                if !sent.contains(username) { sent.append(username) }
+                return .requested
+            }
+        }
+
+        func cancel(_ username: String) { lock.withLock { sent.removeAll { $0 == username } } }
+
+        func accept(_ username: String) {
+            lock.withLock {
+                received.removeAll { $0 == username }
+                friends.insert(username)
+            }
+        }
+
+        func reject(_ username: String) { lock.withLock { received.removeAll { $0 == username } } }
+
+        func unfriend(_ username: String) { lock.withLock { _ = friends.remove(username) } }
+    }
+
+    /// The one the launched app answers from.
+    static let shared = Relations()
+
+    /// The requests waiting for me, for the unread answer.
+    static var incomingCount: Int { shared.incomingCount }
+
     /// How many pages the screens have asked for, so a UI test can see that a list loads one page at a time: «my»
     /// friends count (`/v1/users/niloofar`) is the friends pages served plus 100 for each page of the feed after the first.
     private final class Served: @unchecked Sendable {
@@ -25,24 +79,53 @@ enum DebugFriendsBackend {
     private static let sara = #"{"username":"sara.ghazal","displayName":"سارا","avatar":\#(face("peach", "dark", "rose"))}"#
     private static let kian = #"{"username":"kian_k","displayName":"کیان","avatar":\#(face("sand", "fire", "sun"))}"#
     private static let mahsa = #"{"username":"mahsa.m","displayName":"مهسا","avatar":\#(face("tan", "black", "lapis"))}"#
+    private static let aryan = #"{"username":"aryan","displayName":"آرین","avatar":\#(face("sand", "black", "mint"))}"#
+    private static let bardia = #"{"username":"bardia","displayName":"بردیا","avatar":\#(face("peach", "amber", "sun"))}"#
+    private static let paria = #"{"username":"paria","displayName":"پریا","avatar":\#(face("tan", "dark", "mint"))}"#
+    private static let raha = #"{"username":"raha","displayName":"رها","avatar":\#(face("ivory", "lapis", "sky"))}"#
+    private static let everyone = [sara, kian, mahsa, aryan, bardia, paria, raha]
 
-    private static func found(_ person: String, following: Bool) -> String {
-        String(person.dropLast()) + #","isFollowing":\#(following),"isFriend":false}"#
+    private static func person(_ username: String) -> String {
+        everyone.first { $0.contains("\"\(username)\"") } ?? sara
+    }
+
+    private static func found(_ person: String, _ state: Friendship) -> String {
+        String(person.dropLast()) + #","friendship":"\#(state.rawValue)","isFriend":\#(state == .friends)}"#
+    }
+
+    private static func usernameOf(_ path: String, after prefix: String) -> String {
+        String(path.dropFirst(prefix.count).prefix { $0 != "/" })
+    }
+
+    /// The requests of one direction, as the server pages them (one page).
+    private static func requests(_ usernames: [String], now: Date) -> String {
+        let items = usernames.enumerated().map { index, username in
+            String(person(username).dropLast()) + #","createdAt":"\#(iso(now.addingTimeInterval(-Double(index + 1) * 3600)))"}"#
+        }
+        return #"{"items":[\#(items.joined(separator: ","))],"nextCursor":null}"#
     }
 
     private static func iso(_ date: Date) -> String { ServerTime.string(from: date) }
 
     /// nil for a request this part doesn't know.
-    static func answer(method: String, path: String, query: String, now: Date = .now) -> (Int, String)? {
+    static func answer(method: String, path: String, query: String, now: Date = .now, relations: Relations = shared) -> (Int, String)? {
         switch (method, path) {
         case ("GET", "/v1/users/search"):
-            (200, #"{"items":[\#(found(sara, following: true)),\#(found(kian, following: false)),\#(found(mahsa, following: false))]}"#)
-        case ("PUT", let path) where path.hasPrefix("/v1/follows/"):
-            (200, #"{"isFollowing":true,"followsYou":false,"isFriend":false}"#)
-        case ("DELETE", let path) where path.hasPrefix("/v1/follows/"):
-            (200, #"{"isFollowing":false,"followsYou":false,"isFriend":false}"#)
+            (200, #"{"items":[\#(["sara.ghazal", "kian_k", "mahsa.m", "aryan", "paria", "raha"].map { found(person($0), relations.state(of: $0)) }.joined(separator: ","))]}"#)
+        case ("POST", let path) where path.hasPrefix("/v1/friend-requests/") && path.hasSuffix("/accept"):
+            (200, { relations.accept(usernameOf(path, after: "/v1/friend-requests/")); return #"{"friendship":"friends"}"# }())
+        case ("POST", let path) where path.hasPrefix("/v1/friend-requests/") && path.hasSuffix("/reject"):
+            (204, { relations.reject(usernameOf(path, after: "/v1/friend-requests/")); return "" }())
+        case ("POST", let path) where path.hasPrefix("/v1/friend-requests/"):
+            (200, #"{"friendship":"\#(relations.send(usernameOf(path, after: "/v1/friend-requests/")).rawValue)"}"#)
+        case ("DELETE", let path) where path.hasPrefix("/v1/friend-requests/"):
+            (204, { relations.cancel(usernameOf(path, after: "/v1/friend-requests/")); return "" }())
+        case ("DELETE", let path) where path.hasPrefix("/v1/friends/"):
+            (204, { relations.unfriend(usernameOf(path, after: "/v1/friends/")); return "" }())
+        case ("GET", "/v1/me/friend-requests"):
+            (200, requests(query.contains("outgoing") ? relations.outgoing : relations.incoming, now: now))
         case ("GET", let path) where path.hasPrefix("/v1/users/"):
-            (200, profile(username: String(path.dropFirst("/v1/users/".count))))
+            (200, profile(username: String(path.dropFirst("/v1/users/".count)), relations: relations))
         case ("GET", "/v1/me/friends"):
             (200, { served.friendsPage(); return friends(query: query) }())
         case ("GET", "/v1/reactions/counts"):
@@ -74,13 +157,12 @@ enum DebugFriendsBackend {
         }
     }
 
-    private static func friend(_ person: String) -> String { String(person.dropLast()) + #","isFriend":true}"# }
-
-    private static func profile(username: String) -> String {
-        let person = [sara, kian, mahsa].first { $0.contains("\"\(username)\"") } ?? sara
-        let isFriend = person == kian  // kian is a friend, so «پیام بده» shows on his page
+    /// A person's page: kian is a friend, so «پیام بده» shows on his page; رها has nothing, آرین asked me, پریا I asked.
+    private static func profile(username: String, relations: Relations) -> String {
+        let state = relations.state(of: username)
         let count = username == "niloofar" ? served.friendsCount : 12
-        return String(person.dropLast()) + #","friendsCount":\#(count),"isFollowing":\#(isFriend),"followsYou":true,"isFriend":\#(isFriend),"canMessage":\#(isFriend),"league":{"tier":2},"weekPoints":2640}"#
+        return String(person(username).dropLast())
+            + #","friendsCount":\#(count),"friendship":"\#(state.rawValue)","isFriend":\#(state == .friends),"canMessage":\#(state == .friends),"league":{"tier":2},"weekPoints":2640}"#
     }
 
     private static func row(_ rank: Int, _ person: String?, _ points: Int, me: Bool = false) -> String {
@@ -109,9 +191,9 @@ enum DebugFriendsBackend {
         let named = second ? [] : [sara, kian, mahsa]
         let range = second ? 38...77 : 1...37
         let generated = range.map { n in
-            friend(#"{"username":"friend\#(String(format: "%02d", n))","displayName":"دوست \#(PersianDigits.string(n))","avatar":\#(face("sand", "dark", "sky"))}"#)
+            #"{"username":"friend\#(String(format: "%02d", n))","displayName":"دوست \#(PersianDigits.string(n))","avatar":\#(face("sand", "dark", "sky"))}"#
         }
-        return #"{"items":[\#((named.map(friend) + generated).joined(separator: ","))],"nextCursor":\#(second ? "null" : #""2""#)}"#
+        return #"{"items":[\#((named + generated).joined(separator: ","))],"nextCursor":\#(second ? "null" : #""2""#)}"#
     }
 
     /// Counts for the keys asked (`keys=a,b` with the `#` percent-encoded): 4 likes and 2 reposts each, none mine.

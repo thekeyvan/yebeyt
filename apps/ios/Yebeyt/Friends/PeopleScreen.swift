@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// «پیدا کردن دوست»: a field for a username and the people found, each with «دنبال کن».
+/// «پیدا کردن دوست»: a field for a username and the people found, each with the button of its friendship.
 struct PeopleScreen: View {
     @Environment(Session.self) private var session
 
@@ -50,7 +50,7 @@ struct PeopleSearchSection: View {
     let opens: Bool
     @Binding var toast: String?
     var focus: FocusState<Bool>.Binding?
-    /// Set to choose someone instead of following (the sheet of a new chat).
+    /// Set to choose someone instead of asking them (the sheet of a new chat).
     var pick: ((FoundPerson) -> Void)?
     @Environment(BlockedPeople.self) private var blocked
 
@@ -77,8 +77,8 @@ struct PeopleSearchSection: View {
         default:
             PeopleCard {
                 ForEach(blocked.visible(model.people), id: \.username) { person in
-                    PersonRow(person: person, busy: model.pending.contains(person.username), opens: opens, pick: pick) {
-                        Task { toast = await model.toggleFollow(person.username) }
+                    PersonRow(person: person, busy: model.pending.contains(person.username), opens: opens, pick: pick) { action in
+                        Task { toast = await model.perform(action, on: person.username) }
                     }
                 }
             }
@@ -86,7 +86,7 @@ struct PeopleSearchSection: View {
     }
 }
 
-/// The same search under the invite card of OnbFriends: the rows follow but don't open a page, as onboarding has no stack.
+/// The same search under the invite card of OnbFriends: the rows ask but don't open a page, as onboarding has no stack.
 struct OnboardingPeopleSearch: View {
     @Environment(Session.self) private var session
 

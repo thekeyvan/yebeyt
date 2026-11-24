@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Another person's page: their public profile, following them, blocking and reporting.
+/// Another person's page: their public profile, the friendship with them, blocking and reporting.
 @MainActor @Observable
 final class PersonModel {
     enum Phase: Equatable {
@@ -33,8 +33,8 @@ final class PersonModel {
     let username: String
     private(set) var profile: PublicProfile?
     private(set) var phase = Phase.loading
-    private(set) var isFollowPending = false
-    /// A short message for the person (a failed follow, «گزارشت رسید»).
+    private(set) var isBusy = false
+    /// A short message for the person (a failed request, «گزارشت رسید»).
     var toast: String?
     @ObservationIgnored private let session: Session
 
@@ -44,6 +44,8 @@ final class PersonModel {
     }
 
     var name: String { profile?.short.name ?? username }
+
+    var friendship: Friendship { profile?.friendship ?? .none }
 
     /// «پیام بده» shows when the server says I may write to them.
     var canMessage: Bool { profile?.canMessage == true }
@@ -68,22 +70,23 @@ final class PersonModel {
         }
     }
 
-    func toggleFollow() async {
-        guard var current = profile, !isFollowPending else { return }
-        isFollowPending = true
-        defer { isFollowPending = false }
+    /// Does `action` to the friendship: the page shows the new state at once and goes back, with a toast, when the
+    /// server refuses. An action that doesn't fit the state does nothing.
+    func perform(_ action: FriendAction) async {
+        guard var current = profile, current.friendship == action.requires, !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        current.friendship = action.result
+        profile = current
         let api = session.api
         let username = username
-        let on = !current.isFollowing
         do {
-            let relation = try await session.authorized { try await api.follow(username, on: on, token: $0) }
-            current.isFollowing = relation.isFollowing
-            current.followsYou = relation.followsYou
-            current.isFriend = relation.isFriend
-            profile = current
-            await load()  // the friends count and the league follow the relationship
+            let state = try await session.authorized { try await api.friendAction(action, username: username, token: $0) }
+            profile?.friendship = state
+            await load()  // the friends count, the league and «پیام بده» follow the friendship
         } catch {
-            toast = FeedbackLog.shared.shown(error as? APIError ?? .badResponse)
+            profile?.friendship = action.requires
+            toast = FriendCopy.toast(for: error as? APIError ?? .badResponse)
         }
     }
 

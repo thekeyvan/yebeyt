@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Another person's page: Profile without the private parts. Face, name, @username, «<n> دوست», the league, then
-/// «دنبال کن» and «پیام بده», and a ⋯ menu with «بلاک» and «گزارش».
+/// Another person's page: Profile without the private parts. Face, name, @username, «<n> دوست», the league, then the
+/// button of the friendship («درخواست دوستی», «درخواست فرستادی», «قبول» with «رد», or the chip «دوستین») and «پیام بده»,
+/// and a ⋯ menu with «حذف از دوستا» (for a friend), «بلاک» and «گزارش».
 struct PersonScreen: View {
     @Environment(Session.self) private var session
     let username: String
@@ -18,6 +19,7 @@ private struct PersonScreenBody: View {
     @Environment(BlockedPeople.self) private var blocked
     @State private var model: PersonModel
     @State private var confirmingBlock = false
+    @State private var confirmingUnfriend = false
     @State private var reporting = false
 
     init(username: String, session: Session) {
@@ -50,13 +52,23 @@ private struct PersonScreenBody: View {
         .toolbar(.hidden, for: .navigationBar)
         .toast(Binding(get: { model.toast }, set: { model.toast = $0 }))
         .task { await model.load() }
+        .onChange(of: messages.friendsRevision) { Task { await model.load() } }
         .sheet(isPresented: $confirmingBlock) {
-            BlockSheet(name: model.name, isPresented: $confirmingBlock) {
+            ConfirmSheet(
+                title: "\(model.name) بلاک بشه؟", message: "دیگه نمی‌تونه بهت پیام بده یا درخواست دوستی بفرسته.", confirm: "بلاک کن",
+                prefix: "block", isPresented: $confirmingBlock
+            ) {
                 if await model.block() {
                     blocked.add(model.username)
                     dismiss()
                 }
             }
+        }
+        .sheet(isPresented: $confirmingUnfriend) {
+            ConfirmSheet(
+                title: FriendCopy.confirmUnfriend(name: model.name), message: nil, confirm: FriendCopy.confirmUnfriendButton,
+                prefix: "unfriend", isPresented: $confirmingUnfriend
+            ) { await model.perform(.unfriend) }
         }
         .sheet(isPresented: $reporting) {
             ReportSheet(name: model.name, isPresented: $reporting) { reason, note in await model.report(reason, note: note) }
@@ -68,6 +80,9 @@ private struct PersonScreenBody: View {
             BackButton()
             Spacer(minLength: 0)
             Menu {
+                if model.friendship == .friends {
+                    Button(FriendCopy.title(.unfriend)) { confirmingUnfriend = true }.accessibilityIdentifier("unfriendItem")
+                }
                 Button("بلاک") { confirmingBlock = true }.accessibilityIdentifier("blockItem")
                 Button("گزارش") { reporting = true }.accessibilityIdentifier("reportItem")
             } label: {
@@ -111,12 +126,18 @@ private struct PersonScreenBody: View {
                 Spacer(minLength: 0)
             }
             HStack(spacing: 10) {
-                Button { Task { await model.toggleFollow() } } label: {
-                    Text(profile.isFollowing ? "دنبالش می‌کنی" : "دنبال کن").frame(maxWidth: .infinity)
+                if profile.friendship == .friends {
+                    Text(FriendCopy.friends).font(.ui(15, weight: .bold)).foregroundStyle(Tokens.Colors.muted)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .background(Capsule().fill(Tokens.Colors.trackLight))
+                        .accessibilityIdentifier("personFriendChip")
                 }
-                .buttonStyle(.sticker(profile.isFollowing ? .secondary : .primary))
-                .disabled(model.isFollowPending)
-                .accessibilityIdentifier("personFollow")
+                ForEach(profile.friendship.buttons, id: \.self) { action in
+                    Button { Task { await model.perform(action) } } label: { Text(FriendCopy.title(action)).frame(maxWidth: .infinity) }
+                        .buttonStyle(.sticker(action == profile.friendship.buttons.first ? .primary : .secondary))
+                        .disabled(model.isBusy)
+                        .accessibilityIdentifier("person-\(action)")
+                }
                 if model.canMessage {
                     Button { Task { model.toast = await messages.openChat(username: model.username) } } label: { Text("پیام بده").frame(maxWidth: .infinity) }
                         .buttonStyle(.sticker(.secondary))
@@ -127,34 +148,40 @@ private struct PersonScreenBody: View {
     }
 }
 
-/// «<name> بلاک بشه؟»
-struct BlockSheet: View {
-    let name: String
+/// A question with «نه» and a red confirm button: «<name> بلاک بشه؟», «<name> از دوستات حذف بشه؟». The identifiers are
+/// `<prefix>Title`, `<prefix>Cancel` and `<prefix>Confirm`.
+struct ConfirmSheet: View {
+    let title: String
+    let message: String?
+    /// The confirm button: «بلاک کن», «حذف کن».
+    let confirm: String
+    let prefix: String
     @Binding var isPresented: Bool
-    /// «بلاک کن».
-    let block: () async -> Void
+    let action: () async -> Void
     @State private var busy = false
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("\(name) بلاک بشه؟").font(.title(24)).foregroundStyle(Tokens.Colors.ink).multilineTextAlignment(.center)
-                .accessibilityIdentifier("blockTitle")
-            Text("دیگه نمی‌تونه بهت پیام بده یا دنبالت کنه.").font(.ui(14)).foregroundStyle(Tokens.Colors.muted).multilineTextAlignment(.center)
+            Text(title).font(.title(24)).foregroundStyle(Tokens.Colors.ink).multilineTextAlignment(.center)
+                .accessibilityIdentifier("\(prefix)Title")
+            if let message {
+                Text(message).font(.ui(14)).foregroundStyle(Tokens.Colors.muted).multilineTextAlignment(.center)
+            }
             HStack(spacing: 12) {
                 Button { isPresented = false } label: { Text("نه").frame(maxWidth: .infinity) }
                     .buttonStyle(.sticker(.secondary))
-                    .accessibilityIdentifier("blockCancel")
+                    .accessibilityIdentifier("\(prefix)Cancel")
                 Button {
                     busy = true
                     Task {
-                        await block()
+                        await action()
                         busy = false
                         isPresented = false
                     }
-                } label: { Text("بلاک کن").frame(maxWidth: .infinity) }
+                } label: { Text(confirm).frame(maxWidth: .infinity) }
                     .buttonStyle(DangerButtonStyle())
                     .disabled(busy)
-                    .accessibilityIdentifier("blockConfirm")
+                    .accessibilityIdentifier("\(prefix)Confirm")
             }
         }
         .padding(EdgeInsets(top: 28, leading: 22, bottom: 16, trailing: 22))

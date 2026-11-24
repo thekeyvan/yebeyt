@@ -11,10 +11,9 @@ extension API {
         try await call("POST", "/v1/conversations", body: ["username": username], token: token)
     }
 
-    func unreadTotal(token: String) async throws -> Int {
-        struct Unread: Decodable { var total: Int }
-        let answer: Unread = try await call("GET", "/v1/me/unread", token: token)
-        return answer.total
+    /// The unread messages and the friend requests waiting for me, for the tab badge.
+    func unread(token: String) async throws -> Unread {
+        try await call("GET", "/v1/me/unread", token: token)
     }
 
     func messages(conversation: String, before: String?, token: String) async throws -> MessagePage {

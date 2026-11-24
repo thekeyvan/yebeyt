@@ -12,6 +12,9 @@ struct InboxScreen: View {
             header
             SearchBox(text: $inbox.query, placeholder: "جستجو بین دوستات", style: .round)
                 .accessibilityIdentifier("inboxSearch")
+            if center.requests.incomingCount > 0 {
+                RequestsRow(count: center.requests.incomingCount) { model.messagesPath.append(.friendRequests) }
+            }
             content(inbox)
         }
         .padding(.horizontal, 18)
@@ -145,5 +148,39 @@ private struct InboxRow: View {
         .accessibilityLabel("\(row.other.name)، \(InboxModel.preview(row.last))")
         .accessibilityValue(unread ? "نخونده" : "")
         .accessibilityIdentifier("inboxRow-\(row.other.username)")
+    }
+}
+
+/// «درخواست‌های دوستی» with how many wait, at the top of the inbox; it opens the requests.
+private struct RequestsRow: View {
+    let count: Int
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                LineIcon(shape: SVGShape(d: "M4 19.5c0-3.3 2.4-5.5 5.5-5.5s5.5 2.2 5.5 5.5M9.5 4.5a3.4 3.4 0 1 1 0 6.8 3.4 3.4 0 0 1 0-6.8M19 7.5v5M16.5 10h5"), size: 22, lineWidth: 2.2, fill: nil)
+                    .foregroundStyle(Tokens.Colors.ink)
+                    .frame(width: 48, height: 48)
+                    .background(Circle().fill(Tokens.Colors.amber))
+                    .overlay(Circle().strokeBorder(Tokens.Colors.white, lineWidth: 3))
+                    .stickerShadow(ShadowToken(y: 2, blur: 8, opacity: 0.18))
+                Text(FriendCopy.requestsTitle).font(.ui(15, weight: .bold)).foregroundStyle(Tokens.Colors.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(PersianDigits.string(count))
+                    .font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.white)
+                    .frame(minWidth: 26, minHeight: 26)
+                    .padding(.horizontal, 4)
+                    .background(Capsule().fill(Tokens.Colors.lapis))
+                    .accessibilityIdentifier("requestsCount")
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+            .background { RoundedRectangle(cornerRadius: 24).fill(Tokens.Colors.white).stickerShadow(ShadowToken(y: 3, blur: 12, opacity: 0.08)) }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(FriendCopy.requestsTitle)، \(PersianDigits.string(count))")
+        .accessibilityIdentifier("requestsRow")
     }
 }

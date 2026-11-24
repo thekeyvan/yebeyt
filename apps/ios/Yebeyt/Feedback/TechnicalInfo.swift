@@ -30,6 +30,7 @@ enum ScreenName: String, Sendable, CaseIterable {
     case person = "صفحه‌ی یه آدم"
     case leaderboard = "رده‌بندی"
     case friends = "دوستا"
+    case friendRequests = "درخواست‌های دوستی"
     case reader = "خوندن شعر"
     case daily = "معمای امروز"
     case jigsaw = "جورچین بیت"
@@ -72,6 +73,7 @@ enum ScreenName: String, Sendable, CaseIterable {
         case .person: self = .person  // never the username
         case .leaderboard: self = .leaderboard
         case .friends: self = .friends
+        case .friendRequests: self = .friendRequests
         }
     }
 

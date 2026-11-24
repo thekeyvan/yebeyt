@@ -9,6 +9,10 @@ enum LiveEvent: Equatable, Sendable {
     case deleted(conversationId: String, messageId: String)
     case presence(username: String, online: Bool)
     case divan(sharedDivanId: String, item: SharedDivanItem)
+    /// Someone asked me to be friends.
+    case friendRequest(from: PersonShort)
+    /// Someone accepted the request I sent.
+    case friendAccepted(from: PersonShort)
     case other(String)
 
     /// The event of a text frame; nil when it is not JSON or its fields are not as the contract says.
@@ -22,6 +26,7 @@ enum LiveEvent: Equatable, Sendable {
             var online: Bool?
             var sharedDivanId: String?
             var item: SharedDivanItem?
+            var from: PersonShort?
         }
         guard let frame = try? JSONDecoder().decode(Frame.self, from: Data(text.utf8)) else { return nil }
         switch frame.type {
@@ -41,6 +46,10 @@ enum LiveEvent: Equatable, Sendable {
         case "divan":
             guard let id = frame.sharedDivanId, let item = frame.item else { return nil }
             return .divan(sharedDivanId: id, item: item)
+        case "friend.request":
+            return frame.from.map(LiveEvent.friendRequest)
+        case "friend.accepted":
+            return frame.from.map(LiveEvent.friendAccepted)
         default:
             return .other(frame.type)
         }

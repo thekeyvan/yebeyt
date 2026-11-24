@@ -206,7 +206,7 @@ struct SharedDivanTests {
         return (SharedDivanAdder(target: SharedDivanTarget(key: "/hafez/ghazal/sh3#0", person: person), session: signedInSession(stub.api)), stub)
     }
 
-    nonisolated static let friends = #"{"items":[{"username":"sara","displayName":"سارا","avatar":null,"isFriend":true},{"username":"kian","displayName":"کیان","avatar":null,"isFriend":true},{"username":"mahsa","displayName":null,"avatar":null,"isFriend":true}],"nextCursor":null}"#
+    nonisolated static let friends = #"{"items":[{"username":"sara","displayName":"سارا","avatar":null},{"username":"kian","displayName":"کیان","avatar":null},{"username":"mahsa","displayName":null,"avatar":null}],"nextCursor":null}"#
 
     @Test func theSheetListsFriendsWithADivanAndThenTheOtherFriends() async {
         let (adder, _) = adder { request in

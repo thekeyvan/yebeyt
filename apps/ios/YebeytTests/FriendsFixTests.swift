@@ -123,7 +123,7 @@ struct FriendsFixTests {
         defer { env.cleanUp() }
         await env.session.restore()
         let blocked = BlockedPeople(session: env.session)
-        let people = [FoundPerson(username: "a", displayName: nil, avatar: nil, isFollowing: false, isFriend: false), FoundPerson(username: "b", displayName: nil, avatar: nil, isFollowing: true, isFriend: true)]
+        let people = [FoundPerson(username: "a", displayName: nil, avatar: nil, friendship: .none), FoundPerson(username: "b", displayName: nil, avatar: nil, friendship: .friends)]
         let entry = { (user: String) in
             FeedModel.Entry(id: user, item: FeedItem(type: .like, user: PersonShort(username: user, displayName: nil, avatar: nil), key: "/a/b#0", date: nil, tries: nil, at: "2026-11-24T08:00:00.000Z"))
         }

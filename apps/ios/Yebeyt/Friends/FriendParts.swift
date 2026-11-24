@@ -23,20 +23,21 @@ struct FaceCircle: View {
     }
 }
 
-/// «دنبال کن» (lapis) or «دنبالش می‌کنی» (grey).
-struct FollowButton: View {
-    let following: Bool
+/// A small capsule button of a row: lapis for the main action, grey for the quiet one.
+struct FriendButton: View {
+    let title: String
+    var quiet = false
     var busy = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(following ? "دنبالش می‌کنی" : "دنبال کن")
+            Text(title)
                 .font(.ui(13, weight: .bold))
-                .foregroundStyle(following ? Tokens.Colors.muted : Tokens.Colors.white)
-                .padding(.horizontal, 18)
+                .foregroundStyle(quiet ? Tokens.Colors.muted : Tokens.Colors.white)
+                .padding(.horizontal, 14)
                 .frame(height: 38)
-                .background(Capsule().fill(following ? Tokens.Colors.trackLight : Tokens.Colors.lapis))
+                .background(Capsule().fill(quiet ? Tokens.Colors.trackLight : Tokens.Colors.lapis))
                 .opacity(busy ? 0.6 : 1)
         }
         .buttonStyle(.plain)
@@ -44,43 +45,52 @@ struct FollowButton: View {
     }
 }
 
-/// A person in a list (search, friends): face, name, @username and the follow button. In a stack, the row opens
-/// the person's page; in onboarding (`opens: false`) it doesn't.
-struct PersonRow: View {
-    let person: FoundPerson
+/// What a row shows at its end for the friendship: «درخواست دوستی», «درخواست فرستادی» (tap to cancel), «قبول» with
+/// «رد», or the chip «دوستین» for a friend.
+struct FriendControl: View {
+    let username: String
+    let friendship: Friendship
     var busy = false
-    var opens = true
-    /// Set when the list is for choosing someone (a new chat): a tap picks, and there is no follow button.
-    var pick: ((FoundPerson) -> Void)?
-    let toggle: () -> Void
+    let act: (FriendAction) -> Void
+
+    var body: some View {
+        if friendship.buttons.isEmpty {
+            Text(FriendCopy.friends)
+                .font(.ui(13, weight: .bold))
+                .foregroundStyle(Tokens.Colors.muted)
+                .padding(.horizontal, 14)
+                .frame(height: 38)
+                .background(Capsule().fill(Tokens.Colors.trackLight))
+                .accessibilityIdentifier("friends-\(username)")
+        } else {
+            HStack(spacing: 8) {
+                ForEach(friendship.buttons, id: \.self) { action in
+                    FriendButton(title: FriendCopy.title(action), quiet: action != friendship.buttons.first, busy: busy) { act(action) }
+                        .accessibilityIdentifier("\(Self.identifier(action))-\(username)")
+                }
+            }
+        }
+    }
+
+    private static func identifier(_ action: FriendAction) -> String {
+        switch action {
+        case .send, .cancel: "friend"
+        case .accept: "accept"
+        case .reject: "reject"
+        case .unfriend: "unfriend"
+        }
+    }
+}
+
+/// A person's face, name and @username.
+struct PersonIdentity: View {
+    let person: PersonShort
 
     var body: some View {
         HStack(spacing: 12) {
-            if let pick {
-                Button { pick(person) } label: { identity }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("newChat-\(person.username)")
-            } else if opens {
-                NavigationLink(value: Destination.person(person.username)) { identity }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("person-\(person.username)")
-            } else {
-                identity
-            }
-            if pick == nil {
-                FollowButton(following: person.followed, busy: busy, action: toggle)
-                    .accessibilityIdentifier("follow-\(person.username)")
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-    }
-
-    private var identity: some View {
-        HStack(spacing: 12) {
             FaceCircle(parts: person.avatar, size: 48)
             VStack(alignment: .leading, spacing: 0) {
-                Text(person.short.name).font(.ui(15, weight: .bold)).foregroundStyle(Tokens.Colors.ink).lineLimit(1)
+                Text(person.name).font(.ui(15, weight: .bold)).foregroundStyle(Tokens.Colors.ink).lineLimit(1)
                 Text("@\(person.username)").font(.ui(12)).foregroundStyle(Tokens.Colors.muted).lineLimit(1)
                     .environment(\.layoutDirection, .leftToRight)
             }
@@ -88,6 +98,38 @@ struct PersonRow: View {
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// A person in a list (search, friends): face, name, @username and what the friendship offers. In a stack, the row
+/// opens the person's page; in onboarding (`opens: false`) it doesn't.
+struct PersonRow: View {
+    let person: FoundPerson
+    var busy = false
+    var opens = true
+    /// Set when the list is for choosing someone (a new chat): a tap picks, and there are no buttons.
+    var pick: ((FoundPerson) -> Void)?
+    let act: (FriendAction) -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            if let pick {
+                Button { pick(person) } label: { PersonIdentity(person: person.short) }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("newChat-\(person.username)")
+            } else if opens {
+                NavigationLink(value: Destination.person(person.username)) { PersonIdentity(person: person.short) }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("person-\(person.username)")
+            } else {
+                PersonIdentity(person: person.short)
+            }
+            if pick == nil {
+                FriendControl(username: person.username, friendship: person.friendship, busy: busy, act: act)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 }
 

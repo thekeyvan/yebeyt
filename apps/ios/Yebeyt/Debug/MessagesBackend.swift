@@ -3,7 +3,7 @@ import Foundation
 
 /// What `-beytSignedIn` answers for messages and shared divans: five friends (sara, arian, kian, mahsa, bardia),
 /// their chats as on the boards, one shared divan with Sara (24 couplets, 13 hers and 11 mine) and one with Kian.
-/// Sending echoes the message back; likes flip. People (the same ones, with the same faces), friends, search, profiles and reports are the friends stub's (`DebugFriendsBackend`). Times are today and the
+/// Sending echoes the message back; likes flip. People (the same ones, with the same faces), friends, friend requests, search, profiles and reports are the friends stub's (`DebugFriendsBackend`; the unread answer counts its requests). Times are today and the
 /// days before, so the chats look as on the boards on any day.
 enum MessagesStub {
     private struct Person {
@@ -137,7 +137,7 @@ enum MessagesStub {
         let json = (try? JSONSerialization.jsonObject(with: body) as? [String: Any]) ?? [:]
         let parts = path.split(separator: "/").map(String.init)  // v1, conversations, c-sara.ghazal, messages
         switch (method, path) {
-        case ("GET", "/v1/me/unread"): return (200, #"{"total":2}"#)
+        case ("GET", "/v1/me/unread"): return (200, #"{"total":2,"friendRequests":\#(DebugFriendsBackend.incomingCount)}"#)
         case ("GET", "/v1/conversations"): return (200, conversations)
         case ("POST", "/v1/conversations"):
             let username = json["username"] as? String ?? "sara.ghazal"

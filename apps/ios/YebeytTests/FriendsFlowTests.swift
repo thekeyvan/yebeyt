@@ -91,16 +91,12 @@ struct FeedModelTests {
     }
 }
 
-// MARK: Search and follow
+// MARK: Search
 
 @MainActor
 struct PeopleSearchTests {
-    private func person(_ username: String, following: Bool = false) -> String {
-        #"{"username":"\#(username)","displayName":null,"avatar":null,"isFollowing":\#(following),"isFriend":false}"#
-    }
-
     @Test func theSearchWaitsForAPauseInTypingAndSendsOnlyTheLastText() async {
-        let env = SignedInStub { request in .json(200, #"{"items":[\#(request.query.contains("q=sara") ? #"{"username":"sara.ghazal","displayName":"سارا","avatar":null,"isFollowing":false,"isFriend":false}"# : "")]}"#) }
+        let env = SignedInStub { request in .json(200, #"{"items":[\#(request.query.contains("q=sara") ? #"{"username":"sara.ghazal","displayName":"سارا","avatar":null,"friendship":"none","isFriend":false}"# : "")]}"#) }
         defer { env.cleanUp() }
         let search = PeopleSearchModel(session: env.session, debounce: .milliseconds(80))
         search.queryChanged("sa")
@@ -134,54 +130,18 @@ struct PeopleSearchTests {
         #expect(search.phase == .failed(APIError.server(status: 429, code: .rateLimited, allowedAt: nil).persianMessage))
     }
 
-    @Test func followingChangesTheRowAtOnceAndTheServersAnswerStands() async {
-        let env = SignedInStub { request in
-            switch (request.method, request.path) {
-            case ("GET", "/v1/users/search"): .json(200, #"{"items":[{"username":"sara","displayName":"سارا","avatar":null,"isFollowing":false,"isFriend":false}]}"#)
-            case ("PUT", "/v1/follows/sara"): .json(200, #"{"isFollowing":true,"followsYou":true,"isFriend":true}"#)
-            case ("DELETE", "/v1/follows/sara"): .json(200, #"{"isFollowing":false,"followsYou":true,"isFriend":false}"#)
-            default: .json(404, "{}")
-            }
-        }
-        defer { env.cleanUp() }
-        let search = PeopleSearchModel(session: env.session, debounce: .milliseconds(1))
-        search.queryChanged("sara")
-        await search.settle()
-        #expect(search.people[0].followed == false)
-        #expect(await search.toggleFollow("sara") == nil)
-        #expect(search.people[0].followed && search.people[0].isFriend)
-        #expect(await search.toggleFollow("sara") == nil)
-        #expect(!search.people[0].followed && !search.people[0].isFriend)
-        #expect(env.stub.requests.filter { $0.path == "/v1/follows/sara" }.map(\.method) == ["PUT", "DELETE"])
-    }
-
-    @Test func aRefusedFollowGoesBackAndGivesTheMessage() async {
-        let env = SignedInStub { request in
-            request.method == "GET"
-                ? .json(200, #"{"items":[{"username":"sara","displayName":null,"avatar":null,"isFollowing":false,"isFriend":false}]}"#)
-                : .json(403, #"{"error":"username_required"}"#)
-        }
-        defer { env.cleanUp() }
-        let search = PeopleSearchModel(session: env.session, debounce: .milliseconds(1))
-        search.queryChanged("sara")
-        await search.settle()
-        let message = await search.toggleFollow("sara")
-        #expect(message != nil)
-        #expect(search.people[0].followed == false)
-    }
-
-    @Test func myFriendsAreListedByPagesAndAlreadyFollowed() async {
+    @Test func myFriendsAreListedByPages() async {
         let env = SignedInStub { request in
             request.query.isEmpty
-                ? .json(200, #"{"items":[{"username":"a","displayName":null,"avatar":null,"isFriend":true}],"nextCursor":"2"}"#)
-                : .json(200, #"{"items":[{"username":"b","displayName":null,"avatar":null,"isFriend":true}],"nextCursor":null}"#)
+                ? .json(200, #"{"items":[{"username":"a","displayName":null,"avatar":null}],"nextCursor":"2"}"#)
+                : .json(200, #"{"items":[{"username":"b","displayName":null,"avatar":null}],"nextCursor":null}"#)
         }
         defer { env.cleanUp() }
         await env.session.restore()
         let nobody = BlockedPeople(session: env.session)
         let friends = FriendsListModel(session: env.session)
         await friends.load()
-        #expect(friends.people.map(\.username) == ["a"] && friends.hasMore && friends.people[0].followed)
+        #expect(friends.people.map(\.username) == ["a"] && friends.hasMore && friends.people[0].friendship == .friends)
         await friends.loadMore(hiding: nobody)
         #expect(friends.people.map(\.username) == ["a", "b"] && !friends.hasMore)
     }
@@ -191,7 +151,7 @@ struct PeopleSearchTests {
 
 @MainActor
 struct PersonModelTests {
-    private let profile = #"{"username":"sara","displayName":"سارا","avatar":null,"friendsCount":12,"isFollowing":false,"followsYou":true,"isFriend":false,"canMessage":false,"league":{"tier":2},"weekPoints":300}"#
+    private let profile = #"{"username":"sara","displayName":"سارا","avatar":null,"friendsCount":12,"friendship":"none","isFriend":false,"canMessage":false,"league":{"tier":2},"weekPoints":300}"#
 
     private func model(_ routes: @escaping @Sendable (StubServer.Request) -> StubServer.Response) -> (PersonModel, SignedInStub) {
         let env = SignedInStub(routes)
@@ -212,18 +172,6 @@ struct PersonModelTests {
         defer { env.cleanUp() }
         await person.load()
         #expect(person.phase == .notFound)
-    }
-
-    @Test func followingMakesFriendsAndShowsTheMessageButton() async {
-        let before = profile
-        let after = profile.replacingOccurrences(of: #""isFollowing":false"#, with: #""isFollowing":true"#).replacingOccurrences(of: #""isFriend":false"#, with: #""isFriend":true"#).replacingOccurrences(of: #""canMessage":false"#, with: #""canMessage":true"#)
-        let (person, env) = model { _ in .json(200, before) }
-        defer { env.cleanUp() }
-        await person.load()
-        env.respond { request in request.method == "PUT" ? .json(200, #"{"isFollowing":true,"followsYou":true,"isFriend":true}"#) : .json(200, after) }
-        await person.toggleFollow()
-        #expect(person.profile?.isFollowing == true && person.canMessage)
-        #expect(env.stub.requests.filter { $0.path == "/v1/follows/sara" }.map(\.method) == ["PUT"])
     }
 
     @Test func blockingCallsTheServerAndSaysWhenItWorked() async {
@@ -324,7 +272,7 @@ struct MyStatsTests {
     }
 
     @Test func myFriendsCountComesFromMyOwnProfile() async {
-        let env = SignedInStub { _ in .json(200, #"{"username":"niloofar","displayName":null,"avatar":null,"friendsCount":12,"isFollowing":false,"followsYou":false,"isFriend":false,"canMessage":false,"league":null,"weekPoints":null}"#) }
+        let env = SignedInStub { _ in .json(200, #"{"username":"niloofar","displayName":null,"avatar":null,"friendsCount":12,"friendship":"none","isFriend":false,"canMessage":false,"league":null,"weekPoints":null}"#) }
         defer { env.cleanUp() }
         await env.session.restore()
         let stats = MyStats(local: local(), session: env.session)

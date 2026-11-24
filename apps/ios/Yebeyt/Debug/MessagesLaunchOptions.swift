@@ -1,13 +1,14 @@
 #if DEBUG
 import Foundation
 
-/// Debug launch arguments of the messages slice: `-beytRoute inbox|chat:<username>|shared:<username>` opens the
-/// پیام‌ها tab (the inbox, a chat, or a shared divan) and, with `-beytSignedIn 1`, is answered by `MessagesStub` on the
+/// Debug launch arguments of the messages slice: `-beytRoute inbox|requests|chat:<username>|shared:<username>` opens the
+/// پیام‌ها tab (the inbox, the friend requests, a chat, or a shared divan) and, with `-beytSignedIn 1`, is answered by `MessagesStub` on the
 /// phone. `-beytLive 1` also lets the fake live socket send a message from Sara and her going offline, a moment
 /// after the app is ready; `-beytDivanSheet 1` opens the sheet of «به دیوان مشترک». The usernames of the stub are sara, arian, kian, mahsa and bardia.
 struct MessagesLaunchOptions {
     enum Route: Equatable {
         case inbox
+        case requests
         case chat(String)
         case shared(String)
 
@@ -15,6 +16,7 @@ struct MessagesLaunchOptions {
             let parts = text.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
             switch (parts[0], parts.count > 1 ? parts[1] : nil) {
             case ("inbox", nil): self = .inbox
+            case ("requests", nil): self = .requests
             case ("chat", let name?) where !name.isEmpty: self = .chat(name)
             case ("shared", let name?) where !name.isEmpty: self = .shared(name)
             default: return nil
@@ -51,6 +53,9 @@ struct MessagesLaunchOptions {
         switch route {
         case .inbox:
             app.select(.messages)
+        case .requests:
+            app.select(.messages)
+            app.messagesPath = [.friendRequests]
         case .chat(let username):
             let conversation = MessagesStub.conversation(username)
             _ = center.chat(for: conversation)

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// «<n> دوست»: the people who follow me back, with the same rows as the search.
+/// «<n> دوست»: my friends, with the same rows as the search.
 struct FriendsScreen: View {
     @Environment(Session.self) private var session
 
@@ -11,8 +11,8 @@ struct FriendsScreen: View {
 
 private struct FriendsScreenBody: View {
     @State private var model: FriendsListModel
-    @State private var toast: String?
     @Environment(BlockedPeople.self) private var blocked
+    @Environment(MessagesCenter.self) private var messages
 
     init(session: Session) {
         _model = State(initialValue: FriendsListModel(session: session))
@@ -31,8 +31,8 @@ private struct FriendsScreenBody: View {
         .scrollIndicators(.hidden)
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
-        .toast($toast)
         .task { await model.load() }
+        .onChange(of: messages.friendsRevision) { Task { await model.reload() } }
     }
 
     @ViewBuilder private var content: some View {
@@ -50,9 +50,7 @@ private struct FriendsScreenBody: View {
             PeopleCard {
                 let visible = blocked.visible(model.people)
                 ForEach(visible, id: \.username) { person in
-                    PersonRow(person: person, busy: model.pending.contains(person.username)) {
-                        Task { toast = await model.toggleFollow(person.username) }
-                    }
+                    PersonRow(person: person) { _ in }
                     .onAppear { if person.username == visible.last?.username { Task { await model.loadMore(hiding: blocked) } } }
                 }
             }

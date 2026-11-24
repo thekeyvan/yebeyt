@@ -119,6 +119,7 @@ struct YebeytApp: App {
         #endif
         center.onUnread = { appModel.unreadCount = $0 }
         center.show = { appModel.showChat($0) }
+        center.onToast = { appModel.showToast($0) }
         _messages = State(initialValue: center)
     }
 
