@@ -2,6 +2,7 @@ import { createRemoteJWKSet } from "jose";
 import { ConfigError, loadConfig } from "./config.js";
 import { connectAndMigrate } from "./db/connect.js";
 import type { Deps } from "./deps.js";
+import { loadGameData } from "./gameData.js";
 import { createHub } from "./hub.js";
 import { startServer } from "./server.js";
 
@@ -12,6 +13,7 @@ async function main() {
     config,
     db,
     hub: createHub(),
+    data: loadGameData(),
     now: () => new Date(),
     fetch,
     appleKeys: createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys")),

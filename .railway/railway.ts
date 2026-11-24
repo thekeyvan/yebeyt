@@ -7,7 +7,7 @@ export default defineRailway(() => {
   const postgresVolume1kOn = volume("postgres-volume-1kOn", { alerts: { usage: { "100": {}, "80": {}, "95": {} } }, allowOnlineResize: true, region: "europe-west4-drams3a", sizeMB: 5000 });
   const server = service("server", {
     source: { repo: "thekeyvan/yebeyt", branch: "main" },
-    build: { buildEnvironment: "V3", builder: "DOCKERFILE", dockerfilePath: "apps/server/Dockerfile", watchPatterns: ["apps/server/**", "packages/**", "pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"] },
+    build: { buildEnvironment: "V3", builder: "DOCKERFILE", dockerfilePath: "apps/server/Dockerfile", watchPatterns: ["apps/server/**", "packages/**", "apps/ios/Yebeyt/Resources/Data/games.json", "apps/ios/Yebeyt/Resources/Data/library.json", "apps/ios/Yebeyt/Resources/Data/poets.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"] },
     healthcheckPath: "/health",
     healthcheckTimeout: 60,
     replicas: { "europe-west4-drams3a": 1 },

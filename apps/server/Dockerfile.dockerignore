@@ -3,6 +3,9 @@
 **/dist
 **/.turbo
 apps/ios
+!apps/ios/Yebeyt/Resources/Data/games.json
+!apps/ios/Yebeyt/Resources/Data/library.json
+!apps/ios/Yebeyt/Resources/Data/poets.json
 apps/web
 apps/admin
 apps/android

@@ -11,6 +11,7 @@ import type { Config } from "../src/config.js";
 import type { Db } from "../src/db/index.js";
 import * as schema from "../src/db/schema.js";
 import type { Deps } from "../src/deps.js";
+import { loadGameData } from "../src/gameData.js";
 import { createHub } from "../src/hub.js";
 import type { UploadBudgets } from "../src/routes/feedback.js";
 
@@ -65,6 +66,8 @@ export async function resetDb(db: Db) {
   await db.execute(sql`truncate users, poet_pictures, feedback, league_groups, league_closures cascade`);
 }
 
+const gameData = loadGameData();
+
 export type Harness = Awaited<ReturnType<typeof makeHarness>>;
 
 export async function makeHarness(uploadBudgets?: UploadBudgets) {
@@ -79,6 +82,7 @@ export async function makeHarness(uploadBudgets?: UploadBudgets) {
     config: await testConfig(),
     db,
     hub: createHub(),
+    data: gameData,
     now: () => clock.time,
     fetch: fetchMock,
     appleKeys: apple.keys,

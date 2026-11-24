@@ -21,6 +21,8 @@ COPY --from=prod-deps /repo/node_modules /repo/node_modules
 COPY --from=prod-deps /repo/apps/server/node_modules ./node_modules
 COPY --from=build /repo/apps/server/dist ./dist
 COPY --from=build /repo/apps/server/drizzle ./drizzle
+# The game deck, the poets and books for its questions, and the pinned ganjoor-data commit: the app's own data files (see src/gameData.ts).
+COPY apps/ios/Yebeyt/Resources/Data/games.json apps/ios/Yebeyt/Resources/Data/library.json apps/ios/Yebeyt/Resources/Data/poets.json ./data/
 COPY apps/server/package.json ./
 USER node
 EXPOSE 8080
