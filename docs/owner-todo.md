@@ -27,11 +27,12 @@ Keep any MX/TXT records for Zoho mail (hello@yebeyt.com) as they are. Check afte
 
 Also set the App Store id in `apps/web/lib/config.ts` (`APP_STORE_ID`) once the app record exists; until then the store buttons open an App Store search.
 
-## 2. Google Cloud (project `beyt-515410`, account accounts@ksco.nl)
+## 2. Google Cloud ✅ (done 24 Nov)
 
-- IAM & Admin → Settings: rename the project to **yebeyt** (the id `beyt-515410` can't change; that's fine).
-- Google Auth Platform → Branding: app name «یه بیت», support email accounts@ksco.nl, developer contact hello@yebeyt.com, home page https://yebeyt.com, privacy https://yebeyt.com/privacy, terms https://yebeyt.com/terms, authorised domain yebeyt.com.
-- Clients: check that the iOS client `587119002915-eosraa9cam7d314kt6s86t0bnbd6e4fa` has bundle id `com.yebeyt.app`. The app and the server already use that id.
+New project **yebeyt** (account accounts@ksco.nl) with the consent screen («یه بیت», support accounts@ksco.nl, contact hello@yebeyt.com, yebeyt.com links, no logo so no verification needed), published. The iOS client `461381422799-sfbege1fi9tirookg2rp7utukvdtathq.apps.googleusercontent.com` (bundle `com.yebeyt.app`, team `95YDC2AP63`) is in `apps/ios/project.yml` and in the server's `GOOGLE_CLIENT_IDS` on Railway.
+
+- Once Google sign-in works on a phone, shut down the old project `beyt-515410` (IAM & Admin → Settings → Shut down).
+- Add the App Store id to the iOS client when the app record exists.
 
 ## 3. Apple
 

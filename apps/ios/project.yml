@@ -73,9 +73,9 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         ITSAppUsesNonExemptEncryption: false
         YebeytAPIURL: https://api.yebeyt.com
-        GIDClientID: 587119002915-eosraa9cam7d314kt6s86t0bnbd6e4fa.apps.googleusercontent.com
+        GIDClientID: 461381422799-sfbege1fi9tirookg2rp7utukvdtathq.apps.googleusercontent.com
         CFBundleURLTypes:
-          - CFBundleURLSchemes: [com.googleusercontent.apps.587119002915-eosraa9cam7d314kt6s86t0bnbd6e4fa]
+          - CFBundleURLSchemes: [com.googleusercontent.apps.461381422799-sfbege1fi9tirookg2rp7utukvdtathq]
   YebeytTests:
     type: bundle.unit-test
     platform: iOS
