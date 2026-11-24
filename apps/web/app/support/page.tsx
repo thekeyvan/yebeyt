@@ -26,7 +26,7 @@ function Persian() {
       <p><b>چطور وارد بشم؟</b><br />فقط با اپل یا گوگل. ایمیل و شماره‌ی تلفن نمی‌خوایم، و ایمیلت رو ذخیره هم نمی‌کنیم.</p>
       <p><b>چطور حسابم رو پاک کنم؟</b><br />از اپ: من ← تنظیمات ← پاک کردن حساب. حسابت و همه‌ی چیزهایی که جمع کردی پاک می‌شه. اگه نشد، به hello@yebeyt.com ایمیل بزن و نام کاربریت رو بنویس.</p>
       <p><b>می‌خوام باگ بگم یا ایده بدم.</b><br />گوشی رو تکون بده تا «می‌خوای چیزی بگی؟» باز بشه. می‌تونی باگ، چیزی که اذیتت کرد، ایده، پیشنهاد بازی یا چیزی که خوشت اومد رو بفرستی. می‌تونی همین‌جا هم به hello@yebeyt.com ایمیل بزنی.</p>
-      <p><b>یه نفر اذیتم می‌کنه.</b><br />توی صفحه‌ی اون آدم یا کنار پیامش، «بلاک» یا «گزارش» رو بزن. بلاک‌شده دیگه نمی‌تونه بهت پیام بده یا دنبالت کنه.</p>
+      <p><b>یه نفر اذیتم می‌کنه.</b><br />توی صفحه‌ی اون آدم یا کنار پیامش، «بلاک» یا «گزارش» رو بزن. بلاک‌شده دیگه نمی‌تونه بهت پیام بده یا بهت درخواست دوستی بفرسته.</p>
       <p><b>لینک چالش باز نمی‌شه.</b><br />چالش‌ها ۳۰ روز می‌مونن. اگه لینک قدیمی باشه، از دوستت بخواه یه چالش تازه بفرسته.</p>
       <p><b>معنی‌ها از کجا میان؟</b><br />از گنجور. بعضی‌ها با کمک هوش مصنوعی نوشته شدن و کنارشون نشونه‌ی ✦ هست.</p>
       <p><b>صدا پخش نمی‌شه.</b><br />خوانش‌ها از اینترنت پخش می‌شن؛ اتصالت رو چک کن و دکمه‌ی بی‌صدای گوشی رو هم ببین.</p>
@@ -47,7 +47,7 @@ function English() {
       <p><b>How do I sign in?</b><br />With Apple or Google only. We don&apos;t ask for an email or a phone number, and we don&apos;t store your email address.</p>
       <p><b>How do I delete my account?</b><br />In the app: Me → Settings → Delete account. Your account and everything you collected is deleted. If that doesn&apos;t work, email hello@yebeyt.com with your username.</p>
       <p><b>I want to report a bug or share an idea.</b><br />Shake your phone to open «می‌خوای چیزی بگی؟» («anything to say?»). You can send a bug, something that annoyed you, an idea, a game suggestion, or something you liked. You can also email hello@yebeyt.com.</p>
-      <p><b>Someone is bothering me.</b><br />On that person&apos;s page or next to their message, tap Block or Report. A blocked person can no longer message you or follow you.</p>
+      <p><b>Someone is bothering me.</b><br />On that person&apos;s page or next to their message, tap Block or Report. A blocked person can no longer message you or send you a friend request.</p>
       <p><b>A challenge link doesn&apos;t open.</b><br />Challenges last 30 days. If the link is old, ask your friend to send a new challenge.</p>
       <p><b>Where do the meanings come from?</b><br />From Ganjoor. Some were written with AI help and are marked with ✦.</p>
       <p><b>Audio doesn&apos;t play.</b><br />Recitations stream from the internet; check your connection and your phone&apos;s silent switch.</p>

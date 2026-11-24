@@ -8,7 +8,7 @@ import { areFriends, findByUsername, friendshipSchema, PAGE, parseTimeCursor, sh
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
 import { usernameSchema } from "../schemas.js";
-import { isBlocked, orderedPair } from "../social.js";
+import { lockPair, orderedPair } from "../social.js";
 
 const security = [{ bearerAuth: [] }];
 const cursorDescription = "Pass as `cursor` for the next page; null on the last page.";
@@ -39,11 +39,6 @@ export function friendRoutes(deps: Deps) {
   const person = async (userId: string) => {
     const [row] = await db.select({ username: users.username, displayName: users.displayName, avatar: users.avatar }).from(users).where(eq(users.id, userId));
     return { username: row!.username!, displayName: row!.displayName, avatar: row!.avatar };
-  };
-  /** Two people answer each other's requests at the same time: one at a time per pair. */
-  const lockPair = async (tx: Db, a: string, b: string) => {
-    const { userLow, userHigh } = orderedPair(a, b);
-    await tx.execute(sql`select pg_advisory_xact_lock(3, hashtext(${`${userLow}:${userHigh}`}))`);
   };
   /** Takes the request away in both directions and makes the friendship. */
   const makeFriends = async (tx: Db, a: string, b: string) => {
@@ -84,9 +79,8 @@ export function friendRoutes(deps: Deps) {
     async (c) => {
       const me = c.get("userId");
       const other = await target(me, c.req.valid("param").username);
-      if (await isBlocked(db, me, other.id)) throw new ApiError(404, "not_found");
       const outcome = await db.transaction(async (tx) => {
-        await lockPair(tx, me, other.id);
+        if ((await lockPair(tx, me, other.id)).blocked) throw new ApiError(404, "not_found");
         if (await areFriends(tx, me, other.id)) return "friends" as const;
         if (await requestFrom(tx, other.id, me)) {
           await makeFriends(tx, me, other.id);
@@ -141,9 +135,8 @@ export function friendRoutes(deps: Deps) {
     async (c) => {
       const me = c.get("userId");
       const other = await target(me, c.req.valid("param").username);
-      if (await isBlocked(db, me, other.id)) throw new ApiError(404, "not_found");
       const accepted = await db.transaction(async (tx) => {
-        await lockPair(tx, me, other.id);
+        if ((await lockPair(tx, me, other.id)).blocked) throw new ApiError(404, "not_found");
         if (await areFriends(tx, me, other.id)) return false;
         if (!(await requestFrom(tx, other.id, me))) throw new ApiError(404, "not_found");
         await makeFriends(tx, me, other.id);
@@ -223,6 +216,7 @@ export function friendRoutes(deps: Deps) {
         200: { description: "A page of friends.", content: { "application/json": { schema: friendsPageSchema } } },
         400: errorResponse("A malformed cursor."),
         401: errorResponse("Not signed in."),
+        403: errorResponse("username_required: set a username first."),
       },
     }),
     async (c) => {
@@ -245,7 +239,8 @@ export function friendRoutes(deps: Deps) {
       responses: {
         200: { description: "A page of requests.", content: { "application/json": { schema: requestsPageSchema } } },
         400: errorResponse("A malformed cursor, or no `direction`."),
-        ...common,
+        401: common[401],
+        403: common[403],
       },
     }),
     async (c) => {

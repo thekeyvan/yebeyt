@@ -7,7 +7,7 @@ import { findByUsername, PAGE, parseTimeCursor, shortPersonSchema, timeCursor, t
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
 import { usernameSchema } from "../schemas.js";
-import { orderedPair } from "../social.js";
+import { lockPair, orderedPair } from "../social.js";
 
 const security = [{ bearerAuth: [] }];
 const pageSchema = z
@@ -53,6 +53,7 @@ export function blockRoutes(deps: Deps) {
       const userId = c.get("userId");
       const other = await target(userId, c.req.valid("param").username);
       await db.transaction(async (tx) => {
+        await lockPair(tx, userId, other.id);
         await tx.insert(blocks).values({ blockerId: userId, blockedId: other.id, createdAt: deps.now() }).onConflictDoNothing();
         const { userLow, userHigh } = orderedPair(userId, other.id);
         await tx.delete(friendships).where(and(eq(friendships.userLow, userLow), eq(friendships.userHigh, userHigh)));

@@ -53,6 +53,7 @@ describe("friend requests", () => {
       expect(await res.json()).toEqual({ error: "username_required" });
     }
     expect((await h.request("/v1/me/friend-requests?direction=incoming", { token })).status).toBe(403);
+    expect((await h.request("/v1/me/friends", { token })).status).toBe(403);
   });
 
   it("sends a request by username, ignoring case; it shows on both pages and in the profiles", async () => {
@@ -219,6 +220,15 @@ describe("friend requests", () => {
     expect((await send(sara.token, "ali")).status).toBe(200);
   });
 
+  it("makes one friendship when both send at the same time", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    const answers = await Promise.all([send(ali.token, "sara"), send(sara.token, "ali")]);
+    expect(answers.map((r) => r.status)).toEqual([200, 200]);
+    expect(await rows("friendships")).toHaveLength(1);
+    expect(await rows("friend_requests")).toEqual([]);
+  });
+
   it("lists friends newest first with a cursor, 50 a page", async () => {
     const ali = await h.signUp("ali");
     for (let i = 0; i < 53; i++) {
@@ -332,6 +342,15 @@ describe("friend requests", () => {
       expect((await send(from.token, to.username)).status).toBe(404);
       expect((await accept(from.token, to.username)).status).toBe(404);
     }
+  });
+
+  it("a block and a request at the same time never leave a request or friendship behind", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    await send(sara.token, "ali");
+    await Promise.all([h.request("/v1/blocks/sara", { method: "PUT", token: ali.token }), accept(ali.token, "sara"), send(sara.token, "ali")]);
+    expect(await rows("friendships")).toEqual([]);
+    expect(await rows("friend_requests")).toEqual([]);
   });
 
   it("removes a deleted account's requests and friendships", async () => {

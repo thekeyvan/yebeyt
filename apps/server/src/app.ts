@@ -69,7 +69,7 @@ export function createApp(deps: Deps, uploadBudgets?: UploadBudgets) {
   const named = requireUsername(deps);
   // Making a challenge needs a username too; looking one up and answering one do not need an account (routes/challenges.ts).
   app.use("/v1/challenges", user);
-  for (const path of [...messaging, "/v1/friend-requests/*", "/v1/friends/*", "/v1/me/blocks", "/v1/me/friend-requests", "/v1/me/unread", "/v1/me/games", "/v1/me/challenges", "/v1/challenges"]) app.use(path, named);
+  for (const path of [...messaging, "/v1/friend-requests/*", "/v1/friends/*", "/v1/me/blocks", "/v1/me/friends", "/v1/me/friend-requests", "/v1/me/unread", "/v1/me/games", "/v1/me/challenges", "/v1/challenges"]) app.use(path, named);
   // The first request of a new week closes the leagues of the weeks before it (see src/leagues.ts), before anything reads tiers or standings.
   const closeWeeks = createWeekCloser(deps);
   const afterClose = createMiddleware(async (_c, next) => {

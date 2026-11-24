@@ -45,7 +45,7 @@ function Persian() {
       <ul>
         <li><b>دیوان:</b> کدوم بیت‌ها رو نگه داشتی و کی، تا روی همه‌ی گوشی‌هات باشه.</li>
         <li><b>امتیاز و لیگ:</b> امتیازها، بهترین نتیجه‌ی هر بازی، روزهای پشت‌سرهم، نتیجه‌ی معمای روز و جای تو در لیگ هفتگی. توی فهرست «همه» فقط وقتی هستی که خودت بخوای.</li>
-        <li><b>دنبال‌کردن و دوست‌ها:</b> کسایی که دنبال می‌کنی و دنبالت می‌کنن (دو نفری که همدیگه رو دنبال کنن دوست‌اند)، و کسایی که بلاک کردی.</li>
+        <li><b>دوست‌ها و درخواست‌های دوستی:</b> دوستات، درخواست‌هایی که فرستادی و درخواست‌هایی که برات اومده (رد کردن یه درخواست فقط اون رو پاک می‌کنه)، و کسایی که بلاک کردی.</li>
         <li><b>پسند و بازنشر:</b> بیت‌هایی که پسندیدی یا بازنشر کردی؛ دوستات اون‌ها رو می‌بینن، مگه اینکه توی تنظیمات حریم خصوصی نخوای.</li>
         <li><b>پیام‌ها و دیوان مشترک:</b> متن پیام‌ها، بیت‌هایی که فرستادی (با یادداشتی که کنارش نوشتی)، دعوت بازی‌ها و بیت‌های دیوان مشترک با یه دوست. این‌ها برای رسوندن به طرف مقابل روی سرور ذخیره می‌شن، و با پاک شدن حسابت پاک می‌شن. می‌تونی پیام خودت رو هم جداگونه پاک کنی.</li>
         <li><b>بازی با دوستان و چالش‌ها:</b> مشاعره و بازی رودررو با حرکت‌هاشون، و چالش‌هایی که می‌سازی با نتیجه‌ی کسایی که بازی کردن. چالش بعد از ۳۰ روز با نتیجه‌هاش پاک می‌شه.</li>
@@ -87,7 +87,7 @@ function Persian() {
 
       <h2>پاک کردن حساب</h2>
       <p>
-        از اپ: من ← تنظیمات ← پاک کردن حساب. این کار ورودت با اپل رو باطل می‌کنه و اینا رو از سرور پاک می‌کنه: حسابت، دیوان، امتیازها و لیگ، دنبال‌کردن‌ها، پسندها و بازنشرها، بلاک‌ها، چالش‌هات و نتیجه‌هات روی چالش‌های دیگران، دیوان‌های مشترک، و همه‌ی چت‌هایی که توشون بودی با همه‌ی پیام‌هاشون (طرف مقابل هم اون چت رو از دست می‌ده). بازی‌ای که منتظر نفر دوم بود پاک می‌شه و بازی در جریان با برد حریفت تموم می‌شه. بازی‌های تموم‌شده برای حریفت می‌مونن، ولی بیت‌هایی که تو گفتی دیگه به تو وصل نیستن. چیزهایی که می‌مونن: گزارش‌هایی که دادی یا درباره‌ات دادن، و بازخوردهات؛ بدون اتصال به حسابت.
+        از اپ: من ← تنظیمات ← پاک کردن حساب. این کار ورودت با اپل رو باطل می‌کنه و اینا رو از سرور پاک می‌کنه: حسابت، دیوان، امتیازها و لیگ، دوستی‌ها و درخواست‌های دوستی، پسندها و بازنشرها، بلاک‌ها، چالش‌هات و نتیجه‌هات روی چالش‌های دیگران، دیوان‌های مشترک، و همه‌ی چت‌هایی که توشون بودی با همه‌ی پیام‌هاشون (طرف مقابل هم اون چت رو از دست می‌ده). بازی‌ای که منتظر نفر دوم بود پاک می‌شه و بازی در جریان با برد حریفت تموم می‌شه. بازی‌های تموم‌شده برای حریفت می‌مونن، ولی بیت‌هایی که تو گفتی دیگه به تو وصل نیستن. چیزهایی که می‌مونن: گزارش‌هایی که دادی یا درباره‌ات دادن، و بازخوردهات؛ بدون اتصال به حسابت.
       </p>
       <p>
         اگه نمی‌تونی از اپ پاک کنی، به <a href="mailto:hello@yebeyt.com">hello@yebeyt.com</a> ایمیل بزن و نام کاربریت رو بنویس.
@@ -129,7 +129,7 @@ function English() {
       <ul>
         <li><b>Divan:</b> which couplets you kept and when, so they are on all your devices.</li>
         <li><b>Points and leagues:</b> points, your best result in each game, your streak of days, the result of the daily puzzle and your place in the weekly league. You are on the «everyone» list only if you allow it.</li>
-        <li><b>Follows and friends:</b> who you follow and who follows you (two people who follow each other are friends), and who you blocked.</li>
+        <li><b>Friends and friend requests:</b> your friends, the requests you sent and the ones you received (rejecting a request just deletes it), and who you blocked.</li>
         <li><b>Likes and reposts:</b> couplets you liked or reposted; your friends see them unless you turn that off in the privacy settings.</li>
         <li><b>Messages and shared divans:</b> the text of messages, couplets you sent (with the note you wrote), game invitations, and the couplets of a shared divan with a friend. They are stored on the server so they can be delivered, and they are deleted with your account. You can also delete a message of yours on its own.</li>
         <li><b>Games with friends and challenges:</b> مشاعره and the live duel with their moves, and the challenges you make with the results of the people who played them. A challenge and its results are deleted after 30 days.</li>
@@ -171,7 +171,7 @@ function English() {
 
       <h2>Deleting your account</h2>
       <p>
-        In the app: Me → Settings → Delete account. This revokes your Sign in with Apple and deletes from our server: your account, divan, points and league places, follows, likes and reposts, blocks, your challenges and your results on other people's challenges, shared divans, and every chat you were in with all its messages (the other person loses that chat too). A game waiting for a second player is deleted, and a game in progress ends with your opponent as the winner. Finished games stay for your opponent, but the couplets you played are no longer linked to you. What stays: reports you filed or that name you, and your feedback; neither is linked to your account any more.
+        In the app: Me → Settings → Delete account. This revokes your Sign in with Apple and deletes from our server: your account, divan, points and league places, friendships and friend requests, likes and reposts, blocks, your challenges and your results on other people's challenges, shared divans, and every chat you were in with all its messages (the other person loses that chat too). A game waiting for a second player is deleted, and a game in progress ends with your opponent as the winner. Finished games stay for your opponent, but the couplets you played are no longer linked to you. What stays: reports you filed or that name you, and your feedback; neither is linked to your account any more.
       </p>
       <p>
         If you cannot delete it from the app, email <a href="mailto:hello@yebeyt.com">hello@yebeyt.com</a> with your username.

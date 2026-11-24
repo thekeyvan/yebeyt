@@ -4249,6 +4249,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "username_required: set a username first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -4321,26 +4331,6 @@
           },
           "403": {
             "description": "username_required: set a username first.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No user with that username.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests (120 a minute per user).",
             "content": {
               "application/json": {
                 "schema": {
