@@ -51,7 +51,8 @@ struct ScreenHeader: View {
 
 /// Pins a screen's top navigation (back or close, and the title row with it) above the content, which scrolls under it.
 /// The pinned area is the page's own dotted paper (or `paper`, a flat colour, on the feedback boards), so nothing shows
-/// through, and a thin shadow appears once something has scrolled under it. Put it on the screen's `ScrollView`; the header keeps its place in VoiceOver order, first.
+/// through, and a thin shadow appears once something has scrolled under it. Put it on the screen's `ScrollView`; the
+/// header keeps its place in VoiceOver order, first.
 struct StickyHeader<Header: View>: ViewModifier {
     let header: Header
     var paper: Color?

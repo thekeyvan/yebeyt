@@ -27,6 +27,8 @@ struct FeedbackHeader: View {
                     .foregroundStyle(Tokens.Colors.ink)
                     .frame(width: 40, height: 40)
                     .background(Circle().fill(Tokens.Colors.white).shadow(color: Tokens.Colors.ink.opacity(0.1), radius: 4, x: 0, y: 2))
+                    .frame(width: 44, height: 44)  // the hit area; the circle stays 40
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("بستن")

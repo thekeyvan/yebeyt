@@ -75,9 +75,10 @@ final class StickyHeaderUITests: XCTestCase {
         XCTAssertTrue(app.buttons["poem-1"].waitForExistence(timeout: 10))
         for _ in 0..<4 { app.swipeUp(velocity: .fast) }
         sleep(1)  // let the scroll settle
-        let edge = back.frame.maxY + 6
-        XCTAssertTrue(app.buttons.allElementsBoundByIndex.contains { $0.identifier.hasPrefix("poem-") && $0.frame.minY < edge && $0.frame.maxY > edge },
-                      "a row is under the header's lower edge")
+        // the first point under the button, inside the header's bottom padding, that has a row behind it (rows are 8 pt apart)
+        let rows = app.buttons.allElementsBoundByIndex.filter { $0.identifier.hasPrefix("poem-") }.map(\.frame)
+        let edge = (Int(back.frame.maxY) + 2...Int(back.frame.maxY) + 14).map(CGFloat.init).first { y in rows.contains { $0.minY < y && $0.maxY > y } }
+        guard let edge else { return XCTFail("no row is under the header's lower edge") }
         app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: app.frame.midX, dy: edge)).tap()
         XCTAssertFalse(app.staticTexts["readerTitle"].waitForExistence(timeout: 3), "the tap opened the row under the header")
         XCTAssertTrue(back.exists)
