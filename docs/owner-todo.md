@@ -12,6 +12,21 @@ In Cloudflare → yebeyt.com → DNS, edit the `api` record:
 
 It still points at `al3flpv4.up.railway.app`, the deleted 1.0 service. The `_railway-verify.api` TXT record is already right; leave it. Check afterwards: `curl https://api.yebeyt.com/health` answers `{"status":"ok"}`. Until then the server answers at https://server-production-98f46b7e.up.railway.app, and sign-in on a phone doesn't work.
 
+## 1b. Cloudflare: point yebeyt.com at the new website
+
+The new site (`apps/web`) runs on Railway and answers at https://web-production-83a0b542.up.railway.app. The old Cloudflare Pages site (1.0) still owns yebeyt.com; detach it from Pages first, then in Cloudflare → yebeyt.com → DNS:
+
+| Type | Name | Target / value | Proxy |
+|---|---|---|---|
+| CNAME | `@` (yebeyt.com) | `j45dzw62.up.railway.app` | DNS only (grey cloud) |
+| CNAME | `www` | `uqy7gib1.up.railway.app` | DNS only |
+| TXT | `_railway-verify` | `railway-verify=0ff77988ea9c89a144c79c87ed28059d6c156bbce03877270de6863b4e5ea5e6` | — |
+| TXT | `_railway-verify.www` | `railway-verify=99e2ec4d1178f00db1b97a3a1af74764917aa999f3af124375c99495eba2d7fa` | — |
+
+Keep any MX/TXT records for Zoho mail (hello@yebeyt.com) as they are. Check afterwards: `curl https://yebeyt.com/.well-known/apple-app-site-association` returns the JSON. Universal Links and the App Clip need this.
+
+Also set the App Store id in `apps/web/lib/config.ts` (`APP_STORE_ID`) once the app record exists; until then the store buttons open an App Store search.
+
 ## 2. Google Cloud (project `beyt-515410`, account accounts@ksco.nl)
 
 - IAM & Admin → Settings: rename the project to **yebeyt** (the id `beyt-515410` can't change; that's fine).
