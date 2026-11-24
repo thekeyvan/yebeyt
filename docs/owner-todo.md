@@ -31,6 +31,7 @@ These can't be tested in the simulator here:
 - A recitation plays and the reader follows it (Hafez, any ghazal, ▶).
 - «ادامه با اپل» and «ادامه با گوگل» sign in (after item 1), and then the username step.
 - Poet pictures appear on Explore (Hafez, Saadi, …) after a moment online.
+- Feedback: shake the phone on any screen and the sheet opens; the «بازخورد» row in settings opens it too. Send a bug with a screenshot and a screen recording («دوباره انجامش بده، ما فیلم می‌گیریم»): iOS asks once to allow recording, then the red «در حال ضبط · تموم» pill shows. The simulator gives ReplayKit no frames, so recording can only be tested on a real phone. The report should appear in `GET /v1/admin/feedback` with the screenshot and the recording.
 
 ## 5. Read when there's time
 
@@ -56,3 +57,18 @@ These can't be tested in the simulator here:
 15. **Privacy policy (slice 9, the new website):** a reported message keeps a copy of its text for moderation, even if its sender later deletes their account. The policy needs a line about that (and about feedback, see the feedback section).
 16. **Another person's page** has no board; for now it is the Profile layout without the private parts, plus «دنبال کن», «پیام بده», and «بلاک» / «گزارش». Want a board for it?
 
+## 7. App Store Connect: the privacy label for feedback
+
+The app has a privacy manifest (`apps/ios/Yebeyt/PrivacyInfo.xcprivacy`): no tracking, UserDefaults (reason CA92.1, the app's own settings), and the data that feedback sends. In App Store Connect → the app → App Privacy → Data Types, tick (for the lead to review; Apple's names):
+
+| Data type (Apple's group) | What it is here | Linked to the user | Tracking | Purpose |
+|---|---|---|---|---|
+| Diagnostics → Other Diagnostic Data | The «اطلاعات فنی» of a bug report (screen, couplet, reader mode, recitation position, text settings, network type, account state, recent error codes), plus app version, phone model and system version on every report | Yes (the report carries the user when signed in; a guest's report carries nobody) | No | App Functionality |
+| Usage Data → Product Interaction | The last ≤20 screen names visited, sent only with a bug report (names only, never text) | Yes (same) | No | App Functionality |
+| User Content → Other User Content | The text of a report, its screenshot (the person may draw on or cover parts of it) and the optional screen recording | Yes (same) | No | App Functionality |
+
+Notes:
+- Reports also keep nothing about the connection: no IP address, location or device id (the server logs only method, route, status and time).
+- The manifest can only say «linked», not «linked when signed in», so it says linked. In the label, answer «Yes, linked to the user» as above.
+- Questions for the lead's review: should the report text be filed under **Customer Support** and screenshots/recordings under **Photos or Videos** instead of Other User Content? Sign-in and sync already send a name, a username and a user id, the divan and game scores: the manifest and the label need those entries too when the accounts slices are reviewed for the App Store (this slice added only the feedback ones).
+- The privacy policy (slice 9) needs this clause: «اگه بازخورد بفرستی، متن، عکس صفحه و (اگه بخوای) فیلم صفحه‌ات رو می‌گیریم. اگه باگ گزارش کنی، اطلاعات فنی گوشی (نسخه‌ی اپ، مدل و نسخه‌ی سیستم، صفحه‌ای که بودی، چند صفحه‌ی قبلش، کدهای خطاهای اخیر) هم همراهشه. اگه وارد حساب شده باشی، گزارش به نام کاربریت ثبت می‌شه؛ اگه نه، بی‌نام. چیزی که جای دیگه تایپ کردی، پیام‌هات، شماره‌ات، آی‌پی یا مکانت هیچ‌وقت همراهش نمی‌ره.»

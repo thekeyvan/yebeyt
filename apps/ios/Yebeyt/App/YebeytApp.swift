@@ -10,7 +10,7 @@ struct YebeytApp: App {
     @State private var follows: Follows
     @State private var corpus = CorpusStore()
     @State private var marks: ReaderMarks
-    @State private var textSettings = TextSettingsStore()
+    @State private var textSettings: TextSettingsStore
     @State private var deck: GameDeck
     @State private var gameStats: GameStats
     @State private var accounts: AccountSetup
@@ -22,8 +22,10 @@ struct YebeytApp: App {
     @State private var scoreSync: ScoreSync
     @State private var myStats: MyStats
     @State private var blocked: BlockedPeople
+    @State private var feedback: FeedbackCenter
     #if DEBUG
     private let showsStickers: Bool
+    private let feedbackOpen: FeedbackLaunchOptions.Open?
     #endif
 
     init() {
@@ -31,6 +33,10 @@ struct YebeytApp: App {
         let options = LaunchOptions.fromProcess
         if options.fresh { LaunchOptions.resetSavedState() }
         #endif
+        NetworkMonitor.shared.start()
+        ScreenRecorder.removeStaleFiles()
+        let textSettings = TextSettingsStore()
+        _textSettings = State(initialValue: textSettings)
         _progress = State(initialValue: ReadingProgress())
         _follows = State(initialValue: Follows())
         let marks = ReaderMarks()
@@ -56,20 +62,20 @@ struct YebeytApp: App {
         #if DEBUG
         showsStickers = options.route == .stickers
         let screens = options.destinations(in: library)
-        let model = AppModel(
+        let appModel = AppModel(
             tab: options.tab ?? (options.route?.isMe == true ? .me : options.route.map(\.isGames) == true ? .games : screens.isEmpty ? .home : .explore),
             unreadCount: options.unread ?? 0, reader: options.reader, homePath: options.homePath, explorePath: screens, gamesPath: options.gamesPath,
             mePath: options.mePath, game: options.game
         )
-        model.autoplay = options.autoplay
-        model.leaderboardStart = options.board
-        model.peopleStart = options.peopleText
-        _model = State(initialValue: model)
+        appModel.autoplay = options.autoplay
+        appModel.leaderboardStart = options.board
+        appModel.peopleStart = options.peopleText
         let stats = options.today.map { today in GameStats(now: { today.noon }) } ?? GameStats()
         #else
-        _model = State(initialValue: AppModel())
+        let appModel = AppModel()
         let stats = GameStats()
         #endif
+        _model = State(initialValue: appModel)
         _gameStats = State(initialValue: stats)
         let accounts = AccountSetup(stats: stats)
         _accounts = State(initialValue: accounts)
@@ -93,7 +99,14 @@ struct YebeytApp: App {
         _blocked = State(initialValue: BlockedPeople(session: accounts.session))
         #if DEBUG
         if options.seedDivan { marks.seedDivan() }
+        let feedbackOptions = FeedbackLaunchOptions.fromProcess
+        feedbackOpen = feedbackOptions.open
+        let feedback = feedbackOptions.makeCenter(app: appModel, text: textSettings, session: accounts.session)
+        #else
+        let feedback = FeedbackCenter(app: appModel, text: textSettings, session: accounts.session)
         #endif
+        feedback.presenter = FeedbackSheetPresenter()
+        _feedback = State(initialValue: feedback)
     }
 
     var body: some Scene {
@@ -117,6 +130,7 @@ struct YebeytApp: App {
                 .environment(scoreSync)
                 .environment(myStats)
                 .environment(blocked)
+                .environment(feedback)
                 .environment(accounts.session)
                 .environment(accounts.account)
                 .environment(accounts.pictures)
@@ -128,10 +142,18 @@ struct YebeytApp: App {
                 .font(.ui(16))
                 .tint(Tokens.Colors.lapis)
                 .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
+                .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
+                    if !accounts.onboarding.isRunning { feedback.shake() }
+                }
                 .task {
                     await accounts.session.restore()
                     await accounts.pictures.refreshIfNeeded()
                 }
+                #if DEBUG
+                .task {
+                    if let feedbackOpen { await feedback.debugOpen(feedbackOpen) }
+                }
+                #endif
         }
     }
 

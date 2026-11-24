@@ -2,7 +2,8 @@ import Foundation
 
 /// What on this phone belongs to an account: the divan with its times, the likes and reposts, the privacy settings and
 /// the face, and the scores and reactions not sent yet. It goes when the person signs out or deletes the account, so
-/// nothing of it is carried over to the next account on this phone. What a guest has anyway (reading, game scores,
+/// nothing of it is carried over to the next account on this phone (the game points stay on the phone, but only as the
+/// leaving account's: the next one may claim just what is earned after). What a guest has anyway (reading, game scores,
 /// text settings) stays.
 @MainActor
 struct LocalAccountData {
@@ -11,8 +12,10 @@ struct LocalAccountData {
     let avatar: AvatarStore
     let reactions: ReactionsSync
     let scores: ScoreSync
+    let stats: GameStats
 
     func clearForSignOut() {
+        stats.release()
         marks.clearDivan()
         marks.clearLikesAndReposts()
         reactions.clear()
@@ -70,7 +73,7 @@ struct AccountDeletion {
         do {
             try await session.authorized { try await api.deleteAccount(token: $0) }
         } catch let error as APIError {
-            return error.persianMessage
+            return FeedbackLog.shared.shown(error)
         } catch {
             return APIError.badResponse.persianMessage
         }

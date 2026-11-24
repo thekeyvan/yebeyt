@@ -12,6 +12,9 @@ struct SettingsScreen: View {
     @Environment(DivanSync.self) private var divanSync
     @Environment(ReactionsSync.self) private var reactions
     @Environment(ScoreSync.self) private var scores
+    @Environment(GameStats.self) private var gameStats
+    @Environment(FeedbackCenter.self) private var feedback
+    @AppStorage(FeedbackSettings.shakeKey) private var shakeForFeedback = true
     @State private var editingProfile = false
     @State private var textOpen = false
     @State private var confirmingDelete = false
@@ -36,6 +39,13 @@ struct SettingsScreen: View {
                     row("متن", id: "settingsText") { textOpen = true }
                     divider
                     row("حریم خصوصی", id: "settingsPrivacy") { model.mePath.append(.privacy) }
+                    divider
+                    Toggle(isOn: $shakeForFeedback) {
+                        Text("تکون دادن برای بازخورد").font(.ui(14, weight: .medium)).foregroundStyle(Tokens.Colors.ink)
+                    }
+                    .toggleStyle(MeSwitchStyle())
+                    .padding(.vertical, 10)
+                    .accessibilityIdentifier("settingsShake")
                 }
                 aboutCard
             }
@@ -100,6 +110,8 @@ struct SettingsScreen: View {
             divider
             linkRow("سیاست حریم خصوصی", Self.privacyURL, id: "privacyPolicy")
             divider
+            row("بازخورد", id: "settingsFeedback") { feedback.open(source: .settings) }
+            divider
             row("مجوزها", id: "licenses") { model.mePath.append(.licenses) }
         }
     }
@@ -107,7 +119,7 @@ struct SettingsScreen: View {
     private var divider: some View { Tokens.Colors.chipBorder.frame(height: 1) }
 
     private var leaving: AccountSignOut {
-        AccountSignOut(session: session, data: LocalAccountData(marks: marks, privacy: privacy, avatar: avatar, reactions: reactions, scores: scores), divanSync: divanSync)
+        AccountSignOut(session: session, data: LocalAccountData(marks: marks, privacy: privacy, avatar: avatar, reactions: reactions, scores: scores, stats: gameStats), divanSync: divanSync)
     }
 
     /// One last sync, then out; when it did not go through, the person is asked before anything is lost.

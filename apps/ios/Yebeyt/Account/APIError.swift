@@ -23,6 +23,9 @@ enum APIErrorCode: String, Sendable {
     case pointsTooHigh = "points_too_high"
     case badTimestamp = "bad_timestamp"
     case usernameRequired = "username_required"
+    case busy
+    case alreadyUploaded = "already_uploaded"
+    case uploadTimeout = "upload_timeout"
 }
 
 /// What went wrong with a call to the server.
@@ -33,6 +36,8 @@ enum APIError: Error, Equatable, Sendable {
     case network
     /// The answer was not what the contract says.
     case badResponse
+    /// 503 `busy`: too many uploads at once; try again after this many seconds (the `Retry-After` header).
+    case busy(retryAfter: Int)
 
     var code: APIErrorCode? {
         if case .server(_, let code, _) = self { code } else { nil }
@@ -54,6 +59,7 @@ enum APIError: Error, Equatable, Sendable {
         switch self {
         case .network: "اینترنت نیست؛ یه بار دیگه امتحان کن."
         case .badResponse: "یه مشکلی پیش اومد؛ یه بار دیگه امتحان کن."
+        case .busy: "الان سرور شلوغه؛ یه کم بعد دوباره امتحان کن."
         case .server(_, let code, _):
             switch code {
             case .usernameTaken: "قبلاً گرفته شده"

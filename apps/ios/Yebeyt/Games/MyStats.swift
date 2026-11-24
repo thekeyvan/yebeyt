@@ -21,7 +21,7 @@ final class MyStats {
     /// The phone's points are the signed-in account's own (or nobody's yet).
     private var localIsMine: Bool { local.owner == nil || local.owner == session.user?.id }
 
-    var points: Int { session.isSignedIn ? max(remote?.totalPoints ?? 0, localIsMine ? local.points : 0) : local.points }
+    var points: Int { session.isSignedIn ? max(remote?.totalPoints ?? 0, localIsMine ? local.guestPoints : 0) : local.points }
     var streak: Int { session.isSignedIn ? max(remote?.streakDays ?? 0, localIsMine ? local.streak : 0) : local.streak }
 
     /// «۳ تا از دوستات حلش کردن», only when someone did.

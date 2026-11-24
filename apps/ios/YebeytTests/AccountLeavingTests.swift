@@ -83,7 +83,7 @@ struct AccountLeavingTests {
         let reactions = ReactionsSync(marks: marks, session: session, defaults: defaults)
         let data = LocalAccountData(
             marks: marks, privacy: PrivacyStore(session: session, defaults: defaults), avatar: AvatarStore(session: session, defaults: defaults),
-            reactions: reactions, scores: ScoreSync(session: session, defaults: defaults)
+            reactions: reactions, scores: ScoreSync(session: session, defaults: defaults), stats: GameStats(defaults: defaults)
         )
         let sync = DivanSync(marks: marks, session: session, debounce: .seconds(600))
         return Fixture(
@@ -243,6 +243,34 @@ struct AccountLeavingTests {
         expectNothingLeft(f)
         // Insisting does not try the sync again.
         #expect(f.stub.requests.dropFirst(requestsBefore).allSatisfy { $0.path == "/v1/auth/logout" })
+    }
+
+    @Test func theGamePointsStayWithTheAccountThatLeftAndOnlyNewOnesGoToTheNext() async {
+        let f = fixture()
+        defer { f.keychain.delete() }
+        let stats = f.data.stats
+        stats.award(100)
+        #expect(stats.claim(for: "first"))
+        #expect(stats.guestPoints == 100)
+
+        await f.signOut.signOut()
+        #expect(stats.owner == nil && stats.guestPoints == 0, "what the first account earned is not offered to the next")
+        stats.award(30)  // earned as a guest afterwards
+        #expect(stats.guestPoints == 30)
+        #expect(stats.claim(for: "second") && !stats.claim(for: "first"))
+        #expect(stats.points == 130 && stats.guestPoints == 30)
+        // It survives a restart.
+        let reopened = GameStats(defaults: f.defaults)
+        #expect(reopened.owner == "second" && reopened.guestPoints == 30)
+    }
+
+    @Test func deletingTheAccountAlsoReleasesItsPoints() async {
+        let f = fixture()
+        defer { f.keychain.delete() }
+        f.data.stats.award(50)
+        f.data.stats.claim(for: "first")
+        _ = await f.deletion.delete()
+        #expect(f.data.stats.owner == nil && f.data.stats.guestPoints == 0)
     }
 
     @Test func unsentLikesAlsoHoldBackSigningOutAndTheWarningLetsThemGoOnlyWhenInsistedOn() async {

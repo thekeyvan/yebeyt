@@ -92,3 +92,25 @@ struct AppModelTests {
         #expect(model.unreadAccessibilityLabel == "۱۲ پیام نخونده")
     }
 }
+
+@MainActor
+struct CurrentScreenTests {
+    @Test func theCurrentScreenIsTheTopOfTheSelectedTabOrWhatIsOverIt() {
+        let model = AppModel(tab: .home)
+        #expect(model.currentScreen == .home)
+        model.select(.me)
+        #expect(model.currentScreen == .me)
+        model.mePath = [.settings]
+        #expect(model.currentScreen == .settings)
+        model.select(.explore)
+        model.explorePath = [.library, .book(1)]
+        #expect(model.currentScreen == .book)
+        model.openReader(ReaderRoute(path: "/hafez/ghazal/sh3"))
+        #expect(model.currentScreen == .reader)
+        model.closeReader()
+        model.play(.quiz(.misra(poet: nil)))
+        #expect(model.currentScreen == .second)
+        model.closeGame()
+        #expect(model.currentScreen == .book)
+    }
+}

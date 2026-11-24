@@ -63,7 +63,7 @@ final class UsernameAvailability {
                     return
                 } catch {
                     guard !Task.isCancelled else { return }
-                    state = .failed((error as? APIError)?.persianMessage ?? APIError.badResponse.persianMessage)
+                    state = .failed((error as? APIError).map(FeedbackLog.shared.shown) ?? APIError.badResponse.persianMessage)
                 }
             }
         }

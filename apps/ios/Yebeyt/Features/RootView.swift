@@ -11,6 +11,7 @@ struct RootView: View {
     @Environment(MyStats.self) private var myStats
     @Environment(PrivacyStore.self) private var privacy
     @Environment(AvatarStore.self) private var avatar
+    @Environment(FeedbackCenter.self) private var feedback
     @Environment(\.scenePhase) private var scenePhase
     @State private var keyboardUp = false
 
@@ -48,6 +49,8 @@ struct RootView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
+            // ReplayKit stops by itself in the background: keep what was recorded and bring the form back.
+            if phase == .background { Task { await feedback.stopRecording() } }
             if phase == .active {
                 stats.refreshToday()
                 Task {
@@ -70,6 +73,7 @@ struct RootView: View {
         }
         .task(id: session.user?.id) { await avatar.reconcile(with: session.user) }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in stats.refreshToday() }
+        .onChange(of: model.currentScreen, initial: true) { _, screen in FeedbackLog.shared.visit(screen) }
         .accountPrompt(host: model.reader == nil)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
         .fullScreenCover(item: $model.reader) { route in

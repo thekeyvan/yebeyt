@@ -132,7 +132,7 @@ private struct FeedCard: View {
                 HStack(spacing: 14) {
                     action("پسند این بیت", on: liked, count: counts.map { FeedModel.shown($0.likes, serverMine: $0.likedByMe, localMine: liked) }, color: liked ? Tokens.Colors.magenta : Tokens.Colors.ink, id: "feedLike") {
                         LineIcon(shape: HeartIcon(), size: 20, lineWidth: 2.2, fill: liked ? Tokens.Colors.magenta : nil)
-                            } tap: {
+                    } tap: {
                         account.require(.likes, needed: !liked) { marks.toggle(.liked, poemPath: route.path, couplet: route.couplet) }
                     }
                     action("بازنشر این بیت", on: reposted, count: counts.map { FeedModel.shown($0.reposts, serverMine: $0.repostedByMe, localMine: reposted) }, color: reposted ? Tokens.Colors.lapis : Tokens.Colors.ink, id: "feedRepost") {
