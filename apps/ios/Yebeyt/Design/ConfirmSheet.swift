@@ -77,7 +77,7 @@ struct ConfirmSheet: View {
     }
 }
 
-/// Two buttons of the same width in a right-to-left row (the first on the right). It reports twice the widest button as
+/// Two buttons of the same width, placed left to right (SwiftUI mirrors the row in right-to-left, so the first is on the right). It reports twice the widest button as
 /// its natural width, so `ViewThatFits` takes it only when the widest label fits in half of the row.
 private struct EqualPair: Layout {
     let spacing: CGFloat
@@ -93,7 +93,7 @@ private struct EqualPair: Layout {
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         let half = max(0, (bounds.width - spacing) / 2)
         for (index, subview) in subviews.enumerated() {
-            let x = bounds.maxX - half - CGFloat(index) * (half + spacing)
+            let x = bounds.minX + CGFloat(index) * (half + spacing)
             subview.place(at: CGPoint(x: x, y: bounds.minY), anchor: .topLeading, proposal: ProposedViewSize(width: half, height: bounds.height))
         }
     }

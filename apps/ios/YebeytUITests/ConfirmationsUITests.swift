@@ -51,6 +51,16 @@ final class ConfirmationsUITests: XCTestCase {
         XCTAssertTrue(close.exists)
     }
 
+    @MainActor func testTheSafeButtonIsOnTheRightOfTheRedOneAtTheDefaultTextSize() {
+        let app = launch(["-beytRoute", "jigsaw"])
+        app.buttons["gameClose"].tap()
+        let cancel = app.buttons["leaveGameCancel"]
+        let confirm = app.buttons["leaveGameConfirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        XCTAssertEqual(cancel.frame.minY, confirm.frame.minY, accuracy: 2, "side by side at the default size")
+        XCTAssertGreaterThan(cancel.frame.minX, confirm.frame.minX, "«بمون» is on the right, the red button on the left")
+    }
+
     /// The app at one text size (`UICTContentSizeCategory…`), with a game or the settings in front.
     @MainActor private func launchSized(_ category: String, _ arguments: [String], signedIn: Bool = false) -> XCUIApplication {
         launch(arguments + ["-UIPreferredContentSizeCategoryName", category], signedIn: signedIn)
@@ -80,7 +90,7 @@ final class ConfirmationsUITests: XCTestCase {
         }
     }
 
-    @MainActor func testNoLabelIsCutAtExtraLargeText() {
+    @MainActor func testTheButtonsAreStackedOrTwoEqualHalvesAtExtraLargeText() {
         let app = launchSized("UICTContentSizeCategoryXL", ["-beytRoute", "settings", "-beytSeedDivan", "1"], signedIn: true)
         app.buttons["signOut"].tap()
         let cancel = app.buttons["signOutAskCancel"]
