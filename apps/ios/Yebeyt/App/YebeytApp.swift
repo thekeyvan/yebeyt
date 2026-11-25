@@ -38,8 +38,7 @@ struct YebeytApp: App {
         let options = LaunchOptions.fromProcess
         if options.fresh { LaunchOptions.resetSavedState() }
         #endif
-        // A shake while writing would otherwise be taken by the undo alert and never reach `UIWindow.motionEnded`.
-        UIApplication.shared.applicationSupportsShakeToEdit = false
+        FeedbackSettings.applyShakeToEdit()
         NetworkMonitor.shared.start()
         ScreenRecorder.removeStaleFiles()
         let textSettings = TextSettingsStore()
@@ -175,6 +174,7 @@ struct YebeytApp: App {
                 .font(.ui(16))
                 .tint(Tokens.Colors.lapis)
                 .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
+                .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in FeedbackSettings.applyShakeToEdit() }
                 .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
                     if !accounts.onboarding.isRunning { feedback.shake() }
                 }

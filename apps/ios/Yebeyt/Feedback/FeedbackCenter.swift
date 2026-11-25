@@ -20,6 +20,12 @@ enum FeedbackSettings {
     static func shakeEnabled(in defaults: UserDefaults = .standard) -> Bool {
         defaults.object(forKey: shakeKey) as? Bool ?? true
     }
+
+    /// While a shake opens the feedback sheet, UIKit's shake-to-undo must not take it (it would show the undo alert while
+    /// someone is typing); with the shake switched off, the system's own behaviour stays.
+    @MainActor static func applyShakeToEdit(in defaults: UserDefaults = .standard, to application: UIApplication = .shared) {
+        application.applicationSupportsShakeToEdit = !shakeEnabled(in: defaults)
+    }
 }
 
 /// The question before a report with something written is closed (docs/yebeyt-2.md, «Asking before it hurts»).
@@ -48,10 +54,7 @@ final class FeedbackCenter {
     private(set) var model: FeedbackModel?
     /// The little message over the app after sending («رسید، ممنون!»).
     private(set) var toast: String?
-    private(set) var isRecording = false {
-        // While the screen is recorded, private views (typed text, messages) are drawn covered.
-        didSet { FeedbackPrivacy.shared.covering = isRecording }
-    }
+    private(set) var isRecording = false
     /// The question «بازخوردت هنوز فرستاده نشده. ولش کنی؟» is on screen.
     var isConfirmingClose = false
     /// ReplayKit said no, or cannot record here: the bug screen hides the option.
@@ -65,6 +68,7 @@ final class FeedbackCenter {
     @ObservationIgnored private let capture: () -> UIImage?
     @ObservationIgnored private let recorder: any ScreenRecording
     @ObservationIgnored private let dismissKeyboard: () -> Void
+    @ObservationIgnored private let privacy: FeedbackPrivacy
     @ObservationIgnored private let network: () -> NetworkKind
     @ObservationIgnored private let device: () -> DeviceInfo
     @ObservationIgnored var presenter: (any FeedbackPresenting)?
@@ -75,7 +79,7 @@ final class FeedbackCenter {
     init(
         app: AppModel, text: TextSettingsStore, session: Session, defaults: UserDefaults = .standard, log: FeedbackLog = .shared,
         capture: @escaping () -> UIImage? = { ScreenshotCapture.keyWindow() }, recorder: any ScreenRecording = ScreenRecorder(),
-        dismissKeyboard: @escaping () -> Void = { Keyboard.dismiss() },
+        dismissKeyboard: @escaping () -> Void = { Keyboard.dismiss() }, privacy: FeedbackPrivacy = .shared,
         network: @escaping () -> NetworkKind = { NetworkMonitor.shared.current }, device: @escaping () -> DeviceInfo = { DeviceInfo.current() }
     ) {
         self.app = app
@@ -86,6 +90,7 @@ final class FeedbackCenter {
         self.capture = capture
         self.recorder = recorder
         self.dismissKeyboard = dismissKeyboard
+        self.privacy = privacy
         self.network = network
         self.device = device
     }
@@ -202,13 +207,18 @@ final class FeedbackCenter {
         guard let model, model.type.takesRecording, !isRecording else { return }
         model.removeRecording()
         await presenter?.dismiss()
+        // The private views are covered before the first frame is recorded: one frame later the covers are drawn.
+        privacy.covering = true
+        try? await Task.sleep(for: .milliseconds(50))
         switch await recorder.start() {
         case .started:
             beginRecordingState()
         case .denied:
+            privacy.covering = false
             recordingRefused = true
             presenter?.present(self)
         case .failed:
+            privacy.covering = false
             presenter?.present(self)
             showToast(Self.recordingNote)
         }
@@ -221,6 +231,7 @@ final class FeedbackCenter {
         isRecording = false
         overlay.hidePill()
         let clip = await recorder.stop()
+        privacy.covering = false  // only now: the last frames are recorded covered too
         model?.recording = clip.map { FeedbackModel.Recording(url: $0.url, seconds: $0.seconds) }
         if isOpen { presenter?.present(self) }
         if clip == nil { showToast(Self.recordingNote) }
@@ -240,6 +251,7 @@ final class FeedbackCenter {
     /// Debug launch (`-beytFeedback recording`): the pill, without recording anything.
     func debugShowRecordingPill() {
         isRecording = true
+        privacy.covering = true
         overlay.showPill(for: self)
     }
     #endif

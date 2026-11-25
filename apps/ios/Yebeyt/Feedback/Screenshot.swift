@@ -8,7 +8,9 @@ enum ScreenshotCapture {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         guard let window = scenes.flatMap(\.windows).first(where: \.isKeyWindow) else { return nil }
         let rects = FeedbackPrivacy.shared.rects(in: window)
+        #if DEBUG
         FeedbackPrivacy.shared.recordRedaction(rects)
+        #endif
         let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
         return renderer.image { context in
             window.drawHierarchy(in: window.bounds, afterScreenUpdates: false)

@@ -14,6 +14,7 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 - «ادامه با اپل» signs in, and then the username step. (Google ✅ 24 Nov: sign in, save a couplet, sign out and in again, the couplet is still there.)
 - Poet pictures appear on Explore (Hafez, Saadi, …) after a moment online.
 - Feedback: shake the phone on any screen and the sheet opens; the «بازخورد» row in settings opens it too. Send a bug with a screenshot and a screen recording («دوباره انجامش بده، ما فیلم می‌گیریم»): iOS asks once to allow recording, then the red «در حال ضبط · تموم» pill shows. The simulator gives ReplayKit no frames, so recording can only be tested on a real phone. The report should appear in `GET /v1/admin/feedback` with the screenshot and the recording.
+- Shake while typing in chat opens feedback; in a screen recording the keyboard's suggestion bar doesn't show your words (tell the lead if it does).
 - VoiceOver and the recording pill: start a screen recording from the bug form with VoiceOver on; the focus jumps to the red pill, and a double-tap stops the recording. Try it inside a game too (the pill must still be reachable and the form comes back).
 - With a second account (another phone, or a friend): send a friend request and accept it, send a message, and play a game together.
 - Build 202611241909 and later: in «بیت جورچین» a dragged word follows your finger; nothing hides under the tab bar; poet pictures are the new bold portraits and refresh on every launch.

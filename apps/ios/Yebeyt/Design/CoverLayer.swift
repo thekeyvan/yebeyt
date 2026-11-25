@@ -96,6 +96,9 @@ struct CoverLayer<Item: Identifiable & Equatable, Content: View>: View {
                 ZStack(alignment: .bottom) {
                     backdrop.frame(height: Self.reach).offset(y: Self.reach)
                     content(mounted).id(mounted.id)
+                        .environment(\.feedbackInCover, true)
+                        .onAppear { FeedbackPrivacy.shared.coverAppeared() }
+                        .onDisappear { FeedbackPrivacy.shared.coverDisappeared() }
                 }
                 .offset(y: Motion.coverOffset(risen: state.risen, height: height, variant))
                 .opacity(Motion.coverOpacity(risen: state.risen, variant))

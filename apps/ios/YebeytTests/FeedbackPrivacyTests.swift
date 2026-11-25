@@ -46,42 +46,137 @@ struct FeedbackPrivacyTests {
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
         let scroller = UIView(frame: CGRect(x: 0, y: 50, width: 100, height: 100))  // moved down: its children move with it
         window.addSubview(scroller)
-        let inside = UIView(frame: CGRect(x: 10, y: 10, width: 20, height: 20))
-        let half = UIView(frame: CGRect(x: 0, y: 40, width: 50, height: 30))  // reaches past the window's bottom edge
-        let away = UIView(frame: CGRect(x: 0, y: 500, width: 10, height: 10))
-        let hidden = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: 10))
+        let inside = PrivateAnchorView(frame: CGRect(x: 10, y: 10, width: 20, height: 20))
+        let half = PrivateAnchorView(frame: CGRect(x: 0, y: 40, width: 50, height: 30))  // reaches past the window's bottom edge
+        let away = PrivateAnchorView(frame: CGRect(x: 0, y: 500, width: 10, height: 10))
+        let hidden = PrivateAnchorView(frame: CGRect(x: 0, y: 0, width: 10, height: 10))
         hidden.isHidden = true
-        let loose = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: 10))  // not in the window
+        let loose = PrivateAnchorView(frame: CGRect(x: 0, y: 0, width: 10, height: 10))  // not in the window
         for view in [inside, half, away, hidden] { scroller.addSubview(view) }
         for view in [inside, half, away, hidden, loose] { privacy.register(view) }
         let rects = privacy.rects(in: window)
         #expect(Set(rects.map(\.debugDescription)) == Set([CGRect(x: 10, y: 60, width: 20, height: 20), CGRect(x: 0, y: 90, width: 50, height: 10)].map(\.debugDescription)))
     }
 
-    @Test func aRecordingCoversPrivateViewsAndStoppingUncoversThem() async {
+    @Test func viewsUnderACoverAreSkippedButTheCoversOwnAreNot() {
+        let privacy = FeedbackPrivacy()
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+        let page = PrivateAnchorView(frame: CGRect(x: 0, y: 0, width: 20, height: 20))
+        let cover = PrivateAnchorView(frame: CGRect(x: 50, y: 50, width: 20, height: 20))
+        cover.inCover = true
+        for view in [page, cover] {
+            window.addSubview(view)
+            privacy.register(view)
+        }
+        #expect(privacy.rects(in: window).count == 2)  // no cover: both are on screen
+        privacy.coverAppeared()
+        #expect(privacy.rects(in: window) == [cover.frame])
+        privacy.coverDisappeared()
+        #expect(privacy.rects(in: window).count == 2)
+    }
+
+    @Test func viewsUnderASheetAreSkippedWhereTheSheetIs() {
+        let privacy = FeedbackPrivacy()
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 200, height: 400))
+        let root = UIViewController()
+        window.rootViewController = root
+        window.isHidden = false
+        let top = PrivateAnchorView(frame: CGRect(x: 10, y: 10, width: 20, height: 20))
+        let bottom = PrivateAnchorView(frame: CGRect(x: 10, y: 300, width: 20, height: 20))
+        root.view.addSubview(top)
+        root.view.addSubview(bottom)
+        let sheet = UIViewController()
+        sheet.modalPresentationStyle = .overFullScreen
+        root.present(sheet, animated: false)
+        sheet.view.frame = CGRect(x: 0, y: 200, width: 200, height: 200)  // the lower half of the screen
+        for view in [top, bottom] { privacy.register(view) }
+        #expect(privacy.rects(in: window) == [top.frame], "the view above the sheet is still seen, the one under it is not")
+        window.isHidden = true
+    }
+
+    @Test func theBoxOfAFieldIsTheSmallestPrivateViewAroundIt() {
+        let privacy = FeedbackPrivacy()
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 200, height: 200))
+        let capsule = PrivateAnchorView(frame: CGRect(x: 10, y: 100, width: 180, height: 48))
+        let wide = PrivateAnchorView(frame: CGRect(x: 0, y: 90, width: 200, height: 100))
+        for view in [capsule, wide] {
+            window.addSubview(view)
+            privacy.register(view)
+        }
+        let line = CGRect(x: 30, y: 112, width: 140, height: 24)
+        #expect(privacy.box(around: line, in: window) == capsule.frame)
+        let elsewhere = CGRect(x: 30, y: 10, width: 140, height: 24)
+        #expect(privacy.box(around: elsewhere, in: window) == elsewhere)  // no box: the field itself
+    }
+
+    @Test func theCoverIsOnWhenTheRecorderStartsAndStopsAndOffAfterwards() async {
+        let privacy = FeedbackPrivacy()
+        let recorder = PrivacyRecorder(privacy: privacy)
+        let center = makeCenter(recorder: recorder, privacy: privacy)
+        center.open(source: .settings, type: .bug)
+        #expect(!privacy.covering)
+        await center.startRecording()
+        #expect(recorder.coveredAtStart == true, "covered before the first frame is recorded")
+        #expect(center.isRecording && privacy.covering)
+        await center.stopRecording()
+        #expect(recorder.coveredAtStop == true, "still covered while the recorder finishes")
+        #expect(!privacy.covering)
+    }
+
+    @Test func aRecordingThatCouldNotStartUncoversAtOnce() async {
+        for result in [ScreenRecorder.StartResult.denied, .failed] {
+            let privacy = FeedbackPrivacy()
+            let recorder = PrivacyRecorder(privacy: privacy)
+            recorder.result = result
+            let center = makeCenter(recorder: recorder, privacy: privacy)
+            center.open(source: .settings, type: .bug)
+            await center.startRecording()
+            #expect(recorder.coveredAtStart == true)
+            #expect(!privacy.covering && !center.isRecording)
+        }
+    }
+
+    @Test func shakeToEditFollowsTheShakeSetting() {
+        let defaults = UserDefaults(suiteName: "privacy.tests.\(UUID().uuidString)")!
+        let application = UIApplication.shared
+        let before = application.applicationSupportsShakeToEdit
+        defer { application.applicationSupportsShakeToEdit = before }
+        FeedbackSettings.applyShakeToEdit(in: defaults, to: application)
+        #expect(!application.applicationSupportsShakeToEdit)  // on by default: the shake is ours
+        defaults.set(false, forKey: FeedbackSettings.shakeKey)
+        FeedbackSettings.applyShakeToEdit(in: defaults, to: application)
+        #expect(application.applicationSupportsShakeToEdit)
+    }
+
+    private func makeCenter(recorder: PrivacyRecorder, privacy: FeedbackPrivacy) -> FeedbackCenter {
         let defaults = UserDefaults(suiteName: "privacy.tests.\(UUID().uuidString)")!
         let stub = StubServer { _ in .json(201, #"{"id":"6f1c2a52-0d0b-4a9e-8a52-3f3b1a2f9c11","uploadToken":"t"}"#) }
         let session = Session(api: stub.api, store: KeychainStore(service: "com.yebeyt.tests.\(UUID().uuidString)"))
-        let recorder = PrivacyRecorder()
         let center = FeedbackCenter(
             app: AppModel(), text: TextSettingsStore(defaults: defaults), session: session, defaults: defaults, log: FeedbackLog(),
-            capture: { nil }, recorder: recorder
+            capture: { nil }, recorder: recorder, privacy: privacy
         )
         center.presenter = PrivacyPresenter()
-        center.open(source: .settings, type: .bug)
-        #expect(!FeedbackPrivacy.shared.covering)
-        await center.startRecording()
-        #expect(center.isRecording && FeedbackPrivacy.shared.covering)
-        await center.stopRecording()
-        #expect(!FeedbackPrivacy.shared.covering)
+        return center
     }
 }
 
 @MainActor
 private final class PrivacyRecorder: ScreenRecording {
+    let privacy: FeedbackPrivacy
+    var result = ScreenRecorder.StartResult.started
+    private(set) var coveredAtStart: Bool?
+    private(set) var coveredAtStop: Bool?
+    init(privacy: FeedbackPrivacy) { self.privacy = privacy }
     var isAvailable: Bool { true }
-    func start() async -> ScreenRecorder.StartResult { .started }
-    func stop() async -> (url: URL, seconds: Int)? { nil }
+    func start() async -> ScreenRecorder.StartResult {
+        coveredAtStart = privacy.covering
+        return result
+    }
+    func stop() async -> (url: URL, seconds: Int)? {
+        coveredAtStop = privacy.covering
+        return nil
+    }
 }
 
 @MainActor

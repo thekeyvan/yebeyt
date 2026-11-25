@@ -47,6 +47,26 @@ final class KeyboardUITests: XCTestCase {
         XCTAssertTrue((composer.value as? String ?? "").contains("!"))  // still typing in it
     }
 
+    /// The field sits inside a bigger box (the search capsule, inside the scrolling page that closes the keyboard on a tap):
+    /// a tap on the box's padding or edge, outside the line of text, is a tap in the field.
+    @MainActor func testATapOnTheBoxAroundTheFieldKeepsTheKeyboard() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-beytFresh", "1", "-beytAPI", "http://127.0.0.1:9", "-beytSignedIn", "1", "-beytRoute", "people:ra"]
+        app.launch()
+        let field = app.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))
+        let box = field.frame  // the element is the whole capsule; the line of text is a part of it
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        for (name, point) in [("top edge", CGPoint(x: box.midX, y: box.minY + 5)), ("end padding", CGPoint(x: box.maxX - 8, y: box.midY))] {
+            origin.withOffset(CGVector(dx: point.x, dy: point.y)).tap()
+            XCTAssertFalse(waitForKeyboardToGo(app, timeout: 2), "a tap on the box's \(name) closed the keyboard")
+        }
+        // A tap well outside the box closes it.
+        origin.withOffset(CGVector(dx: box.midX, dy: box.maxY + 160)).tap()
+        XCTAssertTrue(waitForKeyboardToGo(app))
+    }
+
     @MainActor func testPullingTheMessagesDownClosesTheKeyboard() {
         let app = launchChat()
         _ = typeInComposer(app)

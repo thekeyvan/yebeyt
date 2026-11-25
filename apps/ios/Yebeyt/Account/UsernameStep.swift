@@ -88,7 +88,6 @@ struct UsernameStep: View {
                 .padding(.horizontal, 16)
                 .frame(height: 52)
                 .background(RoundedRectangle(cornerRadius: 16).fill(Tokens.Colors.white))
-                .feedbackPrivate()
                 .accessibilityIdentifier("displayName")
             if let problem = nameProblem {
                 Text(problem.message).font(.ui(12)).foregroundStyle(Tokens.Colors.fire).accessibilityIdentifier("nameProblem")
@@ -106,7 +105,6 @@ struct UsernameStep: View {
                     .autocorrectionDisabled()
                     .keyboardType(.asciiCapable)
                     .foregroundStyle(Tokens.Colors.ink)
-                    .feedbackPrivate()
                     .accessibilityIdentifier("username")
                 status
             }

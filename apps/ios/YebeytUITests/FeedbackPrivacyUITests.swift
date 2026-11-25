@@ -51,8 +51,24 @@ final class FeedbackPrivacyUITests: XCTestCase {
         let frame = bubble.frame
         shakeAndOpenTheForm(app)
 
+        // The element is the bubble and its time line under it: the blank covers the bubble's whole width and top.
         let rects = redactedRects(app)
-        XCTAssertTrue(rects.contains { $0.intersects(frame) }, "a message is covered: \(rects) over \(frame)")
+        XCTAssertTrue(
+            rects.contains { abs($0.minX - frame.minX) <= 2 && abs($0.maxX - frame.maxX) <= 2 && abs($0.minY - frame.minY) <= 2 && $0.height >= 36 && $0.maxY <= frame.maxY + 2 },
+            "the message is covered: \(rects) over \(frame)"
+        )
+    }
+
+    @MainActor func testTheScreenshotOverTheReaderOpenedFromTheChatHasNoBlanks() {
+        let app = launchChat(["-beytShakeButton", "1"])
+        let composer = app.textFields["composer"]
+        XCTAssertTrue(composer.waitForExistence(timeout: 10))
+        composer.tap()
+        composer.typeText("hi")
+        element(app, "coupletCard-m1").tap()
+        XCTAssertTrue(element(app, "readerCover").waitForExistence(timeout: 10))
+        shakeAndOpenTheForm(app)
+        XCTAssertEqual(redactedRects(app), [], "the chat under the reader is not in the picture")
     }
 
     @MainActor func testWhileRecordingTheMessagesAndTheFieldAreCovered() {

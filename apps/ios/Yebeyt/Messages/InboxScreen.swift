@@ -146,7 +146,7 @@ private struct InboxRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(row.other.name)، \(InboxModel.preview(row.last))")
+        .accessibilityLabel("\(row.other.name)، \(FeedbackPrivacy.shared.covering ? "پنهان" : InboxModel.preview(row.last))")
         .accessibilityValue(unread ? "نخونده" : "")
         .accessibilityIdentifier("inboxRow-\(row.other.username)")
     }

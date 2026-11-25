@@ -77,7 +77,7 @@ struct CoupletMessageView: View {
             CoupletCardView(key: message.key ?? "", id: message.id, mine: mine, hold: hold, open: open)
             if let note = message.note, !note.isEmpty {
                 TextBubble(text: note, mine: mine)
-                    .contextMenu { actions(mine: mine) }
+                    .contextMenu { actions(mine: mine) } preview: { TextBubble(text: note, mine: mine).feedbackPrivate() }
                 MessageMeta(time: time, mine: mine, seen: seen)
             } else if mine {
                 MessageMeta(time: time, mine: true, seen: seen)
@@ -226,6 +226,9 @@ struct TextMessageView: View {
                             Button("گزارش", action: report)
                         }
                     }
+                } preview: {
+                    // The long-press preview is a copy of the bubble: covered while recording, like the bubble.
+                    TextBubble(text: message.deleted ? MessageCopy.deletedMessage : message.text ?? "", mine: mine, muted: message.deleted).feedbackPrivate()
                 }
             MessageMeta(time: ChatTime.clock(message.createdAt), mine: mine, seen: seen)
         }
@@ -284,7 +287,7 @@ struct PendingMessageView: View {
             if pending.failed { Button("پاک کن", role: .destructive, action: discard) }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("تو: \(Self.text(of: pending))، \(pending.refused ? MessageCopy.refused : pending.failed ? MessageCopy.notSent : MessageCopy.sending)")
+        .accessibilityLabel("تو: \(FeedbackPrivacy.shared.covering ? "پنهان" : Self.text(of: pending))، \(pending.refused ? MessageCopy.refused : pending.failed ? MessageCopy.notSent : MessageCopy.sending)")
         .accessibilityAddTraits(pending.failed && !pending.refused ? .isButton : [])
         .accessibilityAction { if pending.failed && !pending.refused { retry() } }
         .accessibilityIdentifier("pending-\(pending.clientId)")

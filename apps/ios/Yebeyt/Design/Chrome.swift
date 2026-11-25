@@ -152,6 +152,7 @@ struct SearchBox: View {
                 .fill(Tokens.Colors.white)
                 .shadow(color: Tokens.Colors.ink.opacity(round ? 0.12 : 0.06), radius: round ? 5 : 4, x: 0, y: 2)
         }
+        .feedbackPrivate()
     }
 
     @ViewBuilder private var field: some View {
@@ -160,7 +161,6 @@ struct SearchBox: View {
             .foregroundStyle(Tokens.Colors.ink)
             .submitLabel(.search)
             .autocorrectionDisabled()
-            .feedbackPrivate()
         if let focus { input.focused(focus) } else { input }
     }
 }
