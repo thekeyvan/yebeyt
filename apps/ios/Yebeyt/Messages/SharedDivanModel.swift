@@ -40,8 +40,6 @@ final class SharedDivanModel {
     private(set) var toastSerial = 0
     /// The screen is showing: a reconnect reads it again.
     var isVisible = false
-    /// A live change the list could not take by itself came while the screen was away: it reads again when it shows.
-    @ObservationIgnored private(set) var needsReload = false
 
     @ObservationIgnored private let session: Session
     @ObservationIgnored private var cursor: String?
@@ -76,7 +74,6 @@ final class SharedDivanModel {
 
     /// Finds the divan with this person (made when there is none, which only friends can) and reads its couplets.
     func load() async {
-        needsReload = false
         if items.isEmpty { phase = .loading }
         do {
             if divan == nil { divan = try await findOrOpen() }
@@ -231,11 +228,12 @@ final class SharedDivanModel {
     }
 
     /// A couplet leaves the list and the counts move; when the list doesn't hold it (a chip hides it, or it is further
-    /// down) the list is read again for the counts, at once when the screen is showing, else when it shows.
+    /// down) the list is read again for the counts when the screen is showing.
     private func applyRemoval(of itemId: String, in divanId: String) {
         guard divanId == divan?.id, taken.insert(itemId).inserted else { return }
         guard let index = items.firstIndex(where: { $0.id == itemId }) else {
-            if isVisible { Task { await load() } } else { needsReload = true }
+            // Away, nothing is read: the screen's `.task` reads the list when it shows.
+            if isVisible { Task { await load() } }
             return
         }
         let gone = items.remove(at: index)

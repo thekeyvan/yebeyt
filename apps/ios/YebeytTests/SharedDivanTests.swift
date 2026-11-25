@@ -270,7 +270,7 @@ struct SharedDivanTests {
         #expect(stub.requests.filter { $0.path.hasSuffix("/items") }.count == before + 1)
     }
 
-    @Test func aLiveRemovalTheListDoesNotHoldWaitsForTheScreenWhenItIsAway() async {
+    @Test func aLiveRemovalTheListDoesNotHoldReadsNothingWhenTheScreenIsAway() async {
         let (model, stub) = model(Self.server)
         await model.load()
         await model.select(.me)
@@ -279,9 +279,8 @@ struct SharedDivanTests {
         model.apply(.divanRemoved(sharedDivanId: "d1", itemId: "i1"))
         await Task.yield()
         #expect(stub.requests.filter { $0.path.hasSuffix("/items") }.count == reads)
-        #expect(model.needsReload)
-        await model.load()  // the screen shows again
-        #expect(!model.needsReload)
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(stub.requests.filter { $0.path.hasSuffix("/items") }.count == reads)  // still nothing read
     }
 
     @Test func addingFromTheDivanReadsTheListAndTheCountsAgain() async throws {
