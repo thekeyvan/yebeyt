@@ -26,13 +26,17 @@ struct FeedbackToastView: View {
     }
 }
 
-/// The content of the pill's window.
+/// The content of the pill's window: the pill under the status bar, in the middle.
 struct RecordingPillHost: View {
     let center: FeedbackCenter
+    /// Where the pill is in the window, so that only there takes touches.
+    let pillFrame: (CGRect) -> Void
 
     var body: some View {
         RecordingPill { Task { await center.stopRecording() } }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { pillFrame($0) }
+            .padding(.top, 4)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .environment(\.layoutDirection, .rightToLeft)
             .environment(\.locale, Locale(identifier: "fa_IR"))
             .font(.ui(16))

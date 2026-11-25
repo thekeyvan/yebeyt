@@ -79,8 +79,19 @@ final class FeedbackSheetPresenter: NSObject, FeedbackPresenting, UIAdaptivePres
     }
 }
 
-/// Two small windows above everything: the recording pill (only as big as the pill, so every other touch goes to
-/// the app) and the toast after sending (full screen, but it takes no touches).
+/// A window above the app that takes touches only inside `touchRect` (its content): every other touch goes to the app
+/// below. (SwiftUI answers hit tests with its hosting view, so the content's own frame is what is compared.)
+final class PassthroughWindow: UIWindow {
+    var touchRect = CGRect.zero
+
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        touchRect.contains(point) ? super.hitTest(point, with: event) : nil
+    }
+}
+
+/// Two windows above everything, both as big as the screen so that no frame can drift from what is drawn: the recording
+/// pill (only the pill takes touches, every other touch goes to the app, over the games, the reader and sheets alike) and
+/// the toast after sending (it takes no touches).
 @MainActor
 final class FeedbackOverlay {
     private var pillWindow: UIWindow?
@@ -88,12 +99,9 @@ final class FeedbackOverlay {
 
     func showPill(for center: FeedbackCenter) {
         guard pillWindow == nil, let scene = Self.scene else { return }
-        let top = scene.windows.first(where: \.isKeyWindow)?.safeAreaInsets.top ?? 59
-        let width: CGFloat = 280
-        let window = UIWindow(windowScene: scene)
-        window.frame = CGRect(x: (scene.screen.bounds.width - width) / 2, y: top - 12, width: width, height: 64)
+        let window = PassthroughWindow(windowScene: scene)
         window.windowLevel = .alert + 1
-        window.rootViewController = Self.host(RecordingPillHost(center: center))
+        window.rootViewController = Self.host(RecordingPillHost(center: center) { [weak window] in window?.touchRect = $0 })
         window.isHidden = false
         pillWindow = window
     }

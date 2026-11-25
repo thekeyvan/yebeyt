@@ -147,4 +147,44 @@ final class FeedbackUITests: XCTestCase {
         app.buttons["recordingStop"].tap()
         XCTAssertTrue(waitForDisappearance(of: pill))
     }
+
+    /// Starts a recording with the fake recorder from the bug form that opens over the first screen.
+    @MainActor private func startRecording(over route: [String]) -> XCUIApplication {
+        let app = launch(["-beytFeedback", "bug", "-beytFakeRecorder", "1"] + route)
+        let record = app.buttons["feedbackRecord"]
+        XCTAssertTrue(record.waitForExistence(timeout: 15))
+        record.tap()
+        XCTAssertTrue(element(app, "recordingPill").waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["feedbackSend"].exists)  // the form went away while recording
+        return app
+    }
+
+    @MainActor private func stopRecording(_ app: XCUIApplication) {
+        let stop = app.buttons["recordingStop"]
+        XCTAssertTrue(stop.waitForExistence(timeout: 5))
+        stop.tap()
+        XCTAssertTrue(element(app, "feedbackRecorded").waitForExistence(timeout: 10), "the form is back with the recording")
+        XCTAssertFalse(element(app, "recordingPill").exists)
+    }
+
+    @MainActor func testDoneOnThePillStopsTheRecordingInAGame() {
+        let app = startRecording(over: ["-beytRoute", "jigsaw"])
+        XCTAssertTrue(app.buttons["gameClose"].exists)
+        let pill = element(app, "recordingPill").frame
+        XCTAssertLessThan(pill.height, 80, "only the pill takes touches, the rest of the window is the app's")
+        XCTAssertLessThan(pill.minY, 120)
+        stopRecording(app)
+    }
+
+    @MainActor func testDoneOnThePillStopsTheRecordingInTheReader() {
+        let app = startRecording(over: ["-beytRoute", "poem:/hafez/ghazal/sh3"])
+        stopRecording(app)
+    }
+
+    @MainActor func testDoneOnThePillStopsTheRecordingOverASheet() {
+        let app = startRecording(over: ["-beytRoute", "jigsaw"])
+        app.buttons["gameClose"].tap()
+        XCTAssertTrue(app.staticTexts["leaveGameTitle"].waitForExistence(timeout: 10))
+        stopRecording(app)
+    }
 }
