@@ -126,6 +126,7 @@ struct ChallengeSendCard: View {
                 Text(friends.prefix(3).map(\.name).joined(separator: "، ") + (friends.count > 3 ? "…" : ""))
                     .font(.ui(12)).foregroundStyle(Tokens.Colors.muted).lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("challengeFriends")
                 Button { picking = true } label: {
                     Text("انتخاب").font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.lapis)
                 }

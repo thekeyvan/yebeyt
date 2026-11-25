@@ -555,23 +555,7 @@
           "items": {
             "type": "array",
             "items": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/PersonShort"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "canPlay": {
-                      "type": "boolean",
-                      "description": "May be invited to a game. False for the built-in demo friend «یه بیت»: an invitation to it is skipped (`not_found`), so leave it out of invite pickers."
-                    }
-                  },
-                  "required": [
-                    "canPlay"
-                  ]
-                }
-              ]
+              "$ref": "#/components/schemas/Friend"
             }
           },
           "nextCursor": {
@@ -585,6 +569,25 @@
         "required": [
           "items",
           "nextCursor"
+        ]
+      },
+      "Friend": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PersonShort"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "canPlay": {
+                "type": "boolean",
+                "description": "Whether this person can be invited to a game; when false an invitation is skipped as `not_found`, so leave them out of invite pickers."
+              }
+            },
+            "required": [
+              "canPlay"
+            ]
+          }
         ]
       },
       "FriendRequestsPage": {
@@ -834,7 +837,7 @@
             "properties": {
               "canPlay": {
                 "type": "boolean",
-                "description": "May be invited to a game. False for the built-in demo friend «یه بیت»: an invitation to it is skipped (`not_found`), so leave it out of invite pickers."
+                "description": "Whether this person can be invited to a game; when false an invitation is skipped as `not_found`, so leave them out of invite pickers."
               },
               "online": {
                 "type": [
@@ -2027,7 +2030,7 @@
             "properties": {
               "canPlay": {
                 "type": "boolean",
-                "description": "May be invited to a game. False for the built-in demo friend «یه بیت»: an invitation to it is skipped (`not_found`), so leave it out of invite pickers."
+                "description": "Whether this person can be invited to a game; when false an invitation is skipped as `not_found`, so leave them out of invite pickers."
               },
               "friendship": {
                 "$ref": "#/components/schemas/Friendship"

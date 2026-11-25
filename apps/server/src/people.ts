@@ -17,8 +17,10 @@ export const shortPersonSchema = z
   .object({ username: z.string(), displayName: z.string().nullable(), avatar: avatarSchema.nullable() })
   .openapi("PersonShort");
 
-/** Whether a game invitation can reach them; false only for the built-in «یه بیت», so a client leaves it out of an invite picker without knowing why. */
-export const canPlaySchema = z.boolean().openapi({ description: "May be invited to a game. False for the built-in demo friend «یه بیت»: an invitation to it is skipped (`not_found`), so leave it out of invite pickers." });
+export const canPlaySchema = z.boolean().openapi({ description: "Whether this person can be invited to a game; when false an invitation is skipped as `not_found`, so leave them out of invite pickers." });
+
+/** Whether a game invitation can reach this user: not the built-in «یه بیت». The one place the rule lives, for the `canPlay` field and the invitation check. */
+export const canPlay = (user: { isHouse: boolean }): boolean => !user.isHouse;
 
 /** The ids of a user's friends, as a SQL subquery. */
 export const friendIds = (userId: string) => sql`(

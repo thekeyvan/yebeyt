@@ -5,7 +5,7 @@ import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { leagueOf } from "../leagues.js";
 import { canMessage } from "../messaging.js";
-import { canPlaySchema, findByUsername, friendshipOf, friendshipSchema, friendshipSql, shortPersonSchema } from "../people.js";
+import { canPlay, canPlaySchema, findByUsername, friendshipOf, friendshipSchema, friendshipSql, shortPersonSchema } from "../people.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
 import { isBlocked, notBlockedWith } from "../social.js";
@@ -75,7 +75,7 @@ export function peopleRoutes(deps: Deps) {
         .orderBy(asc(users.username))
         .limit(SEARCH_MAX_RESULTS);
       return c.json(
-        { items: rows.map((r) => ({ username: r.username!, displayName: r.displayName, avatar: r.avatar, canPlay: !r.isHouse, friendship: r.friendship, isFriend: r.friendship === "friends" })) },
+        { items: rows.map((r) => ({ username: r.username!, displayName: r.displayName, avatar: r.avatar, canPlay: canPlay(r), friendship: r.friendship, isFriend: r.friendship === "friends" })) },
         200,
       );
     },

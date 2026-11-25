@@ -194,6 +194,22 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(app.buttons["challengePick"].exists)
     }
 
+    @MainActor func testTheChallengeCardOffersNeitherInTheRowNorInThePickerTheDemoFriend() {
+        let app = launch(["-beytRoute", "challenge-send"])
+        let friends = element(app, "challengeFriends")
+        XCTAssertTrue(friends.waitForExistence(timeout: 15))
+        let loaded = NSPredicate(format: "label CONTAINS %@", "سارا")  // the first friend of the fake server is «یه بیت», which can't play
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: loaded, object: friends)], timeout: 10), .completed)
+        XCTAssertFalse(friends.label.contains("یه بیت"))
+        app.buttons["challengePick"].tap()
+        let field = app.textFields["peopleSearch"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.tap()
+        field.typeText("ye")
+        XCTAssertTrue(element(app, "newChat-sara.ghazal").waitForExistence(timeout: 10))  // the fake search answers the same list for any text
+        XCTAssertFalse(element(app, "newChat-yebeyt").exists)
+    }
+
     @MainActor func testAGuestAnswersAChallengeAndLeavesAName() {
         let app = launch(["-beytPlayStub", "1", "-beytRoute", "challenge:7KQ2", "-beytPlay", "10"], signedIn: false)
         XCTAssertTrue(element(app, "challengeAccept").waitForExistence(timeout: 10))

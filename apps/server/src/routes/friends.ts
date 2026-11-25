@@ -4,7 +4,7 @@ import type { Db } from "../db/index.js";
 import { friendRequests, friendships, users } from "../db/schema.js";
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
-import { areFriends, canPlaySchema, findByUsername, friendshipSchema, PAGE, parseTimeCursor, shortPersonSchema, timeCursor, timeCursorSchema } from "../people.js";
+import { areFriends, canPlay, canPlaySchema, findByUsername, friendshipSchema, PAGE, parseTimeCursor, shortPersonSchema, timeCursor, timeCursorSchema } from "../people.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
 import { usernameSchema } from "../schemas.js";
@@ -13,7 +13,8 @@ import { lockPair, orderedPair } from "../social.js";
 const security = [{ bearerAuth: [] }];
 const cursorDescription = "Pass as `cursor` for the next page; null on the last page.";
 const stateSchema = z.object({ friendship: friendshipSchema }).openapi("FriendshipState");
-const friendsPageSchema = z.object({ items: z.array(shortPersonSchema.extend({ canPlay: canPlaySchema })), nextCursor: z.string().nullable().openapi({ description: cursorDescription }) }).openapi("FriendsPage");
+const friendSchema = shortPersonSchema.extend({ canPlay: canPlaySchema }).openapi("Friend");
+const friendsPageSchema = z.object({ items: z.array(friendSchema), nextCursor: z.string().nullable().openapi({ description: cursorDescription }) }).openapi("FriendsPage");
 const requestsPageSchema = z
   .object({
     items: z.array(shortPersonSchema.extend({ createdAt: z.iso.datetime().openapi({ description: "When the request was sent." }) })),
@@ -229,7 +230,7 @@ export function friendRoutes(deps: Deps) {
       const me = c.get("userId");
       const other = sql<string>`case when ${friendships.userLow} = ${me} then ${friendships.userHigh} else ${friendships.userLow} end`;
       const { items, nextCursor } = await page(friendships, other, or(eq(friendships.userLow, me), eq(friendships.userHigh, me)), c.req.valid("query").cursor);
-      return c.json({ items: items.map((r) => ({ username: r.username!, displayName: r.displayName, avatar: r.avatar, canPlay: !r.isHouse })), nextCursor }, 200);
+      return c.json({ items: items.map((r) => ({ username: r.username!, displayName: r.displayName, avatar: r.avatar, canPlay: canPlay(r) })), nextCursor }, 200);
     },
   );
 

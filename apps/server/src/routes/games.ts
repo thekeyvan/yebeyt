@@ -8,7 +8,7 @@ import { ApiError, errorResponse } from "../errors.js";
 import { createGanjoor } from "../ganjoor.js";
 import { deadlineOf, endGame, endIfOverdue, gameSchema, gameSummarySchema, gameView, playersOf, summaryOf, turnSeatOf } from "../games.js";
 import { getOrCreateConversation, publishMessage } from "../messaging.js";
-import { areFriends, findByUsername } from "../people.js";
+import { areFriends, canPlay, findByUsername } from "../people.js";
 import { firstLetter, lastLetter, normalizeText } from "../persian.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
@@ -68,7 +68,7 @@ export function gameRoutes(deps: Deps) {
     const other = await findByUsername(db, username);
     if (!other) return "not_found";
     if (other.id === me) return "yourself";
-    if (other.isHouse || (await isBlocked(db, me, other.id))) return "not_found"; // «یه بیت» takes no games
+    if (!canPlay(other) || (await isBlocked(db, me, other.id))) return "not_found"; // «یه بیت» takes no games
     const [settings] = await db.select({ from: privacySettings.gameInvitesFrom }).from(privacySettings).where(eq(privacySettings.userId, other.id));
     if ((settings?.from ?? PRIVACY_DEFAULTS.gameInvitesFrom) === "friends" && !(await areFriends(db, me, other.id))) return "friends_only";
     const conversationId = await getOrCreateConversation(db, me, other.id);
