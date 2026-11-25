@@ -65,6 +65,14 @@ struct DailyGameTests {
         #expect(game.tries == [Array("مقام")] && game.entry == [nil, nil, nil, nil])
     }
 
+    @Test func theSolvingTryIsNotAMiss() {
+        var game = game()
+        play(&game, "مقام")
+        #expect(game.misses == 1)
+        play(&game, "مرام")
+        #expect(game.outcome == .solved && game.misses == 1)
+    }
+
     @Test func solvingOnTheSecondTryEarns70() {
         var game = game()
         play(&game, "مقام")
@@ -76,7 +84,7 @@ struct DailyGameTests {
     @Test func threeWrongTriesFail() {
         var game = game()
         play(&game, "مقام"); play(&game, "مصام"); play(&game, "ممام")
-        #expect(game.outcome == .failed && game.points == 0)
+        #expect(game.outcome == .failed && game.points == 0 && game.misses == 3)
         game.type("م")
         let afterTheLast = game.submit()
         #expect(game.entry == [nil, nil, nil, nil], "nothing can be typed after the last try")

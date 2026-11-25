@@ -187,7 +187,7 @@ struct OnboardingGameTests {
         #expect(OnboardingGame.reward == 50)
     }
 
-    @Test func aWrongTryTakesTheWrongStickersBackAndGoesOn() throws {
+    @Test func aWrongTryShowsTheWrongStickerRedThenTakesItBackAndGoesOn() throws {
         let game = try makeGame()
         let question = game.board.question
         let wrong = game.board.onSheet.first { sticker in !question.missing.contains { question.words[$0] == sticker.word } }!
@@ -196,7 +196,12 @@ struct OnboardingGameTests {
             game.edit { $0.place(sticker, at: position) }
         }
         game.check()
-        #expect(game.outcome == nil)
+        #expect(game.outcome == nil && game.showsWrong && game.misses == 1)
+        #expect(game.board.mark(at: question.missing[0]) == .wrong)  // it stays, red, for a moment
+        game.edit { $0.remove(at: question.missing[0]) }
+        #expect(game.board.word(at: question.missing[0]) == wrong.word, "nothing changes while the red shows")
+        game.clearWrong()
+        #expect(!game.showsWrong)
         #expect(game.board.word(at: question.missing[0]) == nil)  // the wrong one went back to the sheet
         #expect(game.leftCount == 1)
     }

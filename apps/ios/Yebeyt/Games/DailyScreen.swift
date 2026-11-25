@@ -20,6 +20,9 @@ struct DailyScreen: View {
                 header
                 DailyCoupletCard(puzzle: session.puzzle, revealed: session.isOver)
                 DailyGrid(game: session.game)
+                    .shake(session.game.misses)
+                    // The last miss has the answer sheet's own error tap.
+                    .sensoryFeedback(.error, trigger: session.game.misses) { old, new in new > old && !session.isOver }
                 DailyKeyboard(keys: session.puzzle.keys, marks: session.game.keyMarks, type: session.type, erase: session.erase)
                 Spacer(minLength: 0)
                 bottomBar
@@ -31,6 +34,7 @@ struct DailyScreen: View {
             if sheetShown {
                 AnswerSheet(
                     couplet: session.puzzle.couplet, right: session.game.outcome == .solved,
+                    title: session.game.outcome == .solved ? nil : "نه، این بود", correction: session.puzzle.word,
                     detail: session.game.outcome == .solved ? "+\(PersianDigits.string(session.game.points))" : nil,
                     buttonTitle: "برگرد", buttonIdentifier: "dailyBack", next: { app.closeGame() }, celebrates: true
                 )

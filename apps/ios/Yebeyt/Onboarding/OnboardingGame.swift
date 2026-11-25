@@ -15,6 +15,10 @@ final class OnboardingGame {
     private(set) var board: JigsawBoard
     private(set) var timeLeft = OnboardingGame.duration
     private(set) var outcome: Outcome?
+    /// A wrong try is on the card, its wrong stickers red, until `clearWrong` takes them back.
+    private(set) var showsWrong = false
+    /// The wrong tries so far.
+    private(set) var misses = 0
 
     init(question: JigsawQuestion) {
         board = JigsawBoard(question)
@@ -48,7 +52,7 @@ final class OnboardingGame {
     }
 
     func edit(_ change: (inout JigsawBoard) -> Void) {
-        guard !isOver else { return }
+        guard !isOver, !showsWrong else { return }
         change(&board)
     }
 
@@ -59,15 +63,22 @@ final class OnboardingGame {
         if timeLeft <= 0 { outcome = .timedOut }
     }
 
-    /// «بچسبون!»: right ends the game; wrong takes the wrong stickers back to the sheet and lets the person try again.
+    /// «بچسبون!»: right ends the game; wrong shows the wrong stickers red (`showsWrong`), and `clearWrong` then takes them
+    /// back to the sheet so the person can try again.
     func check() {
-        guard !isOver, board.isFull else { return }
+        guard !isOver, !showsWrong, board.isFull else { return }
         if board.check().isRight {
             outcome = .won
             return
         }
-        for position in board.question.missing where board.word(at: position) != board.question.words[position] {
-            board.remove(at: position)
-        }
+        misses += 1
+        showsWrong = true
+    }
+
+    /// Takes the red stickers back to the sheet.
+    func clearWrong() {
+        guard showsWrong else { return }
+        for position in board.question.missing where board.mark(at: position) == .wrong { board.remove(at: position) }
+        showsWrong = false
     }
 }

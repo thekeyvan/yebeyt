@@ -20,6 +20,14 @@ struct OnbGameView: View {
         .coordinateSpace(name: JigsawSpace.name)
         .onbPage()
         .task { await run() }
+        .sensoryFeedback(.error, trigger: game?.misses) { old, new in (new ?? 0) > (old ?? 0) }
+        .onChange(of: game?.showsWrong) { _, shows in
+            guard shows == true, let game else { return }
+            Task {
+                try? await Task.sleep(for: .seconds(1.1))  // long enough to see which words were wrong
+                withAnimation(.snappy) { game.clearWrong() }
+            }
+        }
         .onChange(of: game?.outcome) { _, outcome in
             guard let outcome else { return }
             Task { await finish(won: outcome == .won) }
@@ -38,7 +46,7 @@ struct OnbGameView: View {
     }
 
     @ViewBuilder private func play(_ game: OnboardingGame) -> some View {
-        JigsawCard(board: game.board, revealed: game.outcome == .won, tapSlot: { position in game.edit { $0.tapSlot(position) } }, slotFrames: $slotFrames)
+        JigsawCard(board: game.board, revealed: game.outcome == .won || game.showsWrong, tapSlot: { position in game.edit { $0.tapSlot(position) } }, slotFrames: $slotFrames)
         Text(game.progressLine).font(.ui(13, weight: .bold))
         .foregroundStyle(Tokens.Colors.ink)
         .padding(.horizontal, 14).padding(.vertical, 4)

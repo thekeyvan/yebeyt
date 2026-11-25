@@ -72,6 +72,9 @@ struct DailyGame: Equatable, Sendable {
         return tries.count >= Self.maxTries ? .failed : .playing
     }
 
+    /// The tries that were not the word.
+    var misses: Int { tries.filter { $0 != answer }.count }
+
     /// Which try (1-based) found the word.
     var solvedOnTry: Int? { outcome == .solved ? tries.count : nil }
 

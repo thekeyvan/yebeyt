@@ -11,6 +11,8 @@ struct MatchScreen: View {
     @State private var session: MatchSession?
     /// How many times each meaning was tapped wrong: a change makes it shake.
     @State private var shakes: [Int: Int] = [:]
+    /// The meaning tapped wrong, red for a moment.
+    @State private var wrongMeaning: Int?
     /// The sheet comes a moment after the last pair, so its curve can be seen.
     @State private var sheetShown = false
 
@@ -71,7 +73,7 @@ struct MatchScreen: View {
                 VStack(spacing: 14) {
                     titleRow(round)
                     MatchCoupletCard(question: round.current)
-                    MatchBoard(round: round, shakes: shakes, selectWord: { session.selectWord($0) }, pick: { pick($0, in: session) })
+                    MatchBoard(round: round, shakes: shakes, wrongMeaning: wrongMeaning, selectWord: { session.selectWord($0) }, pick: { pick($0, in: session) })
                     Text("واژه رو بزن، بعد معنیش رو. اشتباه کنی، فقط تکون می‌خوره.")
                         .font(.ui(12)).foregroundStyle(Tokens.Colors.muted).multilineTextAlignment(.center)
                 }
@@ -112,7 +114,13 @@ struct MatchScreen: View {
     }
 
     private func pick(_ meaning: Int, in session: MatchSession) {
-        if session.pick(meaning: meaning) == .wrong { shakes[meaning, default: 0] += 1 }
+        guard session.pick(meaning: meaning) == .wrong else { return }
+        shakes[meaning, default: 0] += 1
+        withAnimation(.snappy) { wrongMeaning = meaning }
+        Task {
+            try? await Task.sleep(for: .seconds(0.7))
+            withAnimation(.snappy) { if wrongMeaning == meaning { wrongMeaning = nil } }
+        }
     }
 
     private func titleRow(_ round: MatchRound) -> some View {
