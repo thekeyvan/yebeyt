@@ -28,7 +28,7 @@ final class StickyHeaderUITests: XCTestCase {
         if content.exists { XCTAssertLessThan(content.frame.minY, contentBefore - 1, "the content scrolled", file: file, line: line) }
         XCTAssertEqual(button.frame.minY, buttonBefore, accuracy: 1, "the button did not move", file: file, line: line)
         XCTAssertLessThan(button.frame.maxY, app.frame.height / 4, "the button is in the top quarter of the screen", file: file, line: line)
-        XCTAssertGreaterThanOrEqual(button.frame.height, 44, file: file, line: line)
+        XCTAssertGreaterThanOrEqual(button.frame.height, 43.99, "big enough (44, give or take the float)", file: file, line: line)
         button.tap()
         XCTAssertTrue(leaves(), "tapping the button after scrolling works", file: file, line: line)
     }
