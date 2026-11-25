@@ -172,6 +172,7 @@ private struct SharedDivanContent: View {
                         }
                     }
                     .padding(.bottom, 24)
+                    .animation(Motion.bouncy, value: model.visibleItems.map(\.id))  // a couplet taken out (or put back) shrinks away (or in)
                 }
                 .scrollIndicators(.hidden)
                 .scrollClipDisabled()

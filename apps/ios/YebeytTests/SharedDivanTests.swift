@@ -148,6 +148,35 @@ struct SharedDivanTests {
         #expect(model.toast == APIError.network.persianMessage)
     }
 
+    @Test func aFailedRemovalGoesBackByItsDateEvenWhenTheListChangedMeanwhile() async throws {
+        let failed = Recorded<Int>()
+        let (model, _) = model { request in
+            if request.method == "DELETE" { failed.add(1); return .offline }
+            return failed.all.isEmpty ? Self.server(request) : .offline  // and the list can't be read again
+        }
+        await model.load()
+        let task = Task { await model.remove(model.items[1]) }  // i2
+        await Task.yield()
+        let newer = try JSONDecoder().decode(SharedDivanItem.self, from: Data(MessageJSON.item(id: "i9", key: "/hafez/ghazal/sh4#0", mine: false, at: "2026-11-25T09:00:00Z").utf8))
+        model.apply(.divan(sharedDivanId: "d1", item: newer))  // arrives at the top while the server is asked
+        await task.value
+        #expect(model.items.map(\.id) == ["i9", "i1", "i2", "i3", "i4"])
+        #expect(model.counts == SharedDivanCounts(total: 25, mine: 11, theirs: 14))
+    }
+
+    @Test func aFailedRemovalReadsTheCountsFromTheServer() async {
+        let failed = Recorded<Int>()
+        let (model, _) = model { request in
+            if request.method == "DELETE" { failed.add(1); return .json(500, #"{"error":"unavailable"}"#) }
+            return failed.all.isEmpty ? Self.server(request) : .json(200, Self.items([Self.hafez, Self.saadi, Self.molana, Self.hafez2], total: 30, mine: 15, theirs: 15))
+        }
+        await model.load()
+        await model.remove(model.items[1])
+        #expect(model.items.map(\.id) == ["i1", "i2", "i3", "i4"])
+        #expect(model.counts == SharedDivanCounts(total: 30, mine: 15, theirs: 15))
+        #expect(model.toast != nil)
+    }
+
     @Test func aRemovalTheServerAnswers404ToStaysRemovedWithoutAToast() async {
         let (model, _) = model { request in request.method == "DELETE" ? .json(404, #"{"error":"not_found"}"#) : Self.server(request) }
         await model.load()
@@ -234,10 +263,25 @@ struct SharedDivanTests {
         await model.load()
         await model.select(.me)  // «از من»: her couplets are not in the list, but the counts move
         let before = stub.requests.filter { $0.path.hasSuffix("/items") }.count
+        model.isVisible = true
         model.apply(.divanRemoved(sharedDivanId: "d1", itemId: "i1"))
         for _ in 0..<100 where model.counts?.total != 23 { try? await Task.sleep(for: .milliseconds(20)) }
         #expect(model.counts == SharedDivanCounts(total: 23, mine: 11, theirs: 12))
         #expect(stub.requests.filter { $0.path.hasSuffix("/items") }.count == before + 1)
+    }
+
+    @Test func aLiveRemovalTheListDoesNotHoldWaitsForTheScreenWhenItIsAway() async {
+        let (model, stub) = model(Self.server)
+        await model.load()
+        await model.select(.me)
+        let reads = stub.requests.filter { $0.path.hasSuffix("/items") }.count
+        model.isVisible = false
+        model.apply(.divanRemoved(sharedDivanId: "d1", itemId: "i1"))
+        await Task.yield()
+        #expect(stub.requests.filter { $0.path.hasSuffix("/items") }.count == reads)
+        #expect(model.needsReload)
+        await model.load()  // the screen shows again
+        #expect(!model.needsReload)
     }
 
     @Test func addingFromTheDivanReadsTheListAndTheCountsAgain() async throws {
