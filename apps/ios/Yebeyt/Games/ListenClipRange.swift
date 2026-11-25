@@ -27,7 +27,8 @@ enum ListenClipRange {
         max(start, end - fade)...end
     }
 
-    /// The fade as an audio mix for `asset`; nil when the asset has no audio track yet.
+    /// The fade as an audio mix for `asset`; nil when the tracks could not be loaded or there is no audio track (the clip
+    /// then plays without a fade).
     static func audioMix(for asset: AVAsset, clip: ListenClip) async -> AVAudioMix? {
         guard let track = try? await asset.loadTracks(withMediaType: .audio).first else { return nil }
         let range = fadeRange(start: clip.start, end: clip.end)

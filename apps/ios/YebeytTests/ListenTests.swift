@@ -73,12 +73,22 @@ struct ListenLoaderTests {
         #expect(abs(clip.end - (21.036 - ListenClipRange.margin)) < 0.0001, "it stops before the next hemistich's mark, not at it")
     }
 
-    @Test func aLastOrSingleLineCoupletHasNoClip() async throws {
-        // Four couplets are timed up to the last verse, which has no mark after it; a single line has no second hemistich.
+    @Test func theLastCoupletGetsAClipEndingBeforeItsSecondHemistichMark() async throws {
+        // Three two-line couplets use the fixture's six verses; the last one's second verse starts at 34.986.
+        let couplets = (0..<3).map { Couplet(m1: "الف\($0)", m2: "ب\($0)") }
+        let clip = try #require(await (try loader(couplets: couplets)).clip(for: hafez(1, index: 2)))
+        #expect(clip.start == 29.886)
+        #expect(abs(clip.end - (34.986 - ListenClipRange.margin)) < 0.0001)
+    }
+
+    @Test func aSingleLineOrUntimedSecondHemistichHasNoClip() async throws {
+        // A single line has no second hemistich; the fourth couplet's verses (5 and 6) have no mark for verse 6.
         let couplets = [Couplet(m1: "نثر", m2: ""), Couplet(m1: "الف", m2: "ب"), Couplet(m1: "پ", m2: "ت"), Couplet(m1: "ث", m2: "ج")]
         let loader = try loader(couplets: couplets)
         #expect(await loader.clip(for: hafez(1, index: 0)) == nil, "a single line")
-        #expect(await loader.clip(for: hafez(1, index: 1)) != nil)
+        let shifted = try #require(await loader.clip(for: hafez(1, index: 1)), "the verses shift after the single line")
+        #expect(shifted.start == 7.386)
+        #expect(abs(shifted.end - (15.486 - ListenClipRange.margin)) < 0.0001)
         #expect(await loader.clip(for: hafez(1, index: 3)) == nil, "no mark for the verse after the last")
     }
 
