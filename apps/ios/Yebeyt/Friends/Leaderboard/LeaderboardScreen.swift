@@ -14,6 +14,7 @@ private struct LeaderboardScreenBody: View {
     @Environment(AppModel.self) private var app
     @Environment(PrivacyStore.self) private var privacy
     @State private var model: LeaderboardModel
+    @State private var paging = SegmentPaging()
 
     init(session: Session) {
         _model = State(initialValue: LeaderboardModel(session: session))
@@ -26,10 +27,11 @@ private struct LeaderboardScreenBody: View {
             LazyVStack(alignment: .leading, spacing: 14) {
                 SegmentedControl(
                     options: LeaderboardModel.Tab.allCases.map { ($0, $0.title) }, selection: $model.tab,
-                    style: Self.tabStyle, label: "رده‌بندی", idPrefix: "board"
+                    style: Self.tabStyle, label: "رده‌بندی", idPrefix: "board", paging: paging
                 )
                 .shadow(color: Tokens.Colors.ink.opacity(0.12), radius: 4, x: 0, y: 2)
-                content
+                VStack(alignment: .leading, spacing: 14) { content }
+                    .segmentPage(paging, selection: model.tab)
             }
             .padding(.horizontal, 18)
             .padding(.top, 6)

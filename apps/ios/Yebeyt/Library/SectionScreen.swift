@@ -12,6 +12,9 @@ struct SectionScreen: View {
     @State private var shown: [IndexedPoem] = []
     @State private var query = ""
     @State private var sort = SectionSort.number
+    /// The sort `shown` was made with: the poems' page changes with it, once the list is ready.
+    @State private var shownSort = SectionSort.number
+    @State private var paging = SegmentPaging()
 
     /// What the shown list depends on; `.task(id:)` recomputes it when this changes.
     private struct Listing: Hashable {
@@ -28,11 +31,14 @@ struct SectionScreen: View {
                 sortControl
                     .padding(.vertical, 6)
                 if !section.children.isEmpty, TextNormalizer.normalize(query).isEmpty { childSections }
-                ForEach(shown) { poem in
-                    Button { app.openReader(ReaderRoute(path: poem.path)) } label: { PoemRow(poem: poem) }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("poem-\(poem.number)")
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    ForEach(shown) { poem in
+                        Button { app.openReader(ReaderRoute(path: poem.path)) } label: { PoemRow(poem: poem) }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("poem-\(poem.number)")
+                    }
                 }
+                .segmentPage(paging, selection: shownSort)
             }
             .padding(.horizontal, 18)
             .padding(.top, 6)
@@ -50,6 +56,7 @@ struct SectionScreen: View {
         .task(id: Listing(query: query, sort: sort, count: poems.count)) {
             let (poems, query, sort) = (poems, query, sort)
             shown = await Task.detached { SectionList.sorted(SectionList.filtered(poems, query: query), by: sort) }.value
+            shownSort = sort
         }
     }
 
@@ -63,25 +70,10 @@ struct SectionScreen: View {
     private var sortControl: some View {
         HStack(spacing: 10) {
             Text("ترتیب:").font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.muted)
-            HStack(spacing: 4) {
-                ForEach(SectionSort.allCases, id: \.self) { kind in
-                    let on = sort == kind
-                    Button { sort = kind } label: {
-                        Text(kind.title)
-                            .font(.ui(13, weight: on ? .bold : .medium))
-                            .foregroundStyle(on ? Tokens.Colors.white : Tokens.Colors.ink)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 7)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(on ? Tokens.Colors.lapis : .clear))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                }
-            }
-            .padding(4)
-            .background(RoundedRectangle(cornerRadius: 14).fill(Tokens.Colors.trackLight))
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel("ترتیب")
+            SegmentedControl(
+                options: SectionSort.allCases.map { ($0, $0.title) }, selection: $sort, style: .divan, label: "ترتیب",
+                idPrefix: "sort", paging: paging
+            )
         }
     }
 

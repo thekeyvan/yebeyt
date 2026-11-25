@@ -28,7 +28,8 @@ struct SegmentedStyle {
 }
 
 /// A row of choices where one is on: «شاعر · موضوع · تازه‌ترین», «دوستا · فقط من», the invite tones. The first
-/// option sits at the start (the right).
+/// option sits at the start (the right). The highlight slides from one option to the next (`Motion.bouncy`); give it a
+/// `paging` (and the page it swaps `segmentPage`) and that page slides too.
 struct SegmentedControl<Value: Hashable>: View {
     let options: [(value: Value, title: String)]
     @Binding var selection: Value
@@ -36,20 +37,29 @@ struct SegmentedControl<Value: Hashable>: View {
     var label: String
     /// Each option gets the accessibility identifier `<idPrefix>-<index>`.
     var idPrefix = "segment"
+    var paging: SegmentPaging?
+    @Namespace private var highlight
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: style.spacing) {
             ForEach(Array(options.enumerated()), id: \.offset) { index, option in
                 let on = option.value == selection
-                Button { selection = option.value } label: {
+                Button { choose(option.value, at: index) } label: {
                     Text(option.title)
                         .font(.ui(style.fontSize, weight: on ? .bold : .medium))
                         .foregroundStyle(on ? Tokens.Colors.white : Tokens.Colors.ink)
+                        .transaction { $0.animation = nil }
                         .lineLimit(1)
                         .padding(.vertical, style.vertical)
                         .padding(.horizontal, style.horizontal ?? 0)
                         .frame(maxWidth: style.horizontal == nil ? .infinity : nil)
-                        .background(RoundedRectangle(cornerRadius: style.itemRadius).fill(on ? Tokens.Colors.lapis : .clear))
+                        .background {
+                            if on {
+                                RoundedRectangle(cornerRadius: style.itemRadius).fill(Tokens.Colors.lapis)
+                                    .matchedGeometryEffect(id: "on", in: highlight)
+                            }
+                        }
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -57,10 +67,19 @@ struct SegmentedControl<Value: Hashable>: View {
                 .accessibilityIdentifier("\(idPrefix)-\(index)")
             }
         }
+        .animation(Motion.rises(Motion.variant(reduceMotion: reduceMotion)) ? Motion.bouncy : .easeOut(duration: 0.1), value: selection)
         .padding(style.trackPadding)
         .background(RoundedRectangle(cornerRadius: style.trackRadius).fill(style.track))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(label)
+    }
+
+    private func choose(_ value: Value, at index: Int) {
+        if let paging, let open = options.firstIndex(where: { $0.value == selection }) {
+            paging.select(index, from: open) { selection = value }
+        } else {
+            selection = value
+        }
     }
 }
 

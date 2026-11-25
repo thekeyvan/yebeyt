@@ -10,6 +10,7 @@ struct DivanScreen: View {
     @State private var divan = DivanModel()
     @State private var query = ""
     @State private var grouping = DivanGrouping.poet
+    @State private var paging = SegmentPaging()
     @State private var poet: String?
 
     private var keptKeys: [String] { marks.keptItems.map(\.key) }
@@ -45,6 +46,7 @@ struct DivanScreen: View {
                             sectionView(section)
                         }
                     }
+                    .segmentPage(paging, selection: grouping)
                     .animation(Motion.bouncy, value: keptKeys)  // a couplet taken out (or brought back by «برگردون») shrinks away (or in)
                 }
             }
@@ -92,7 +94,7 @@ struct DivanScreen: View {
             Text("دسته‌بندی:").font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.muted)
             SegmentedControl(
                 options: DivanGrouping.allCases.map { ($0, $0.title) }, selection: $grouping, style: .divan,
-                label: "دسته‌بندی", idPrefix: "grouping"
+                label: "دسته‌بندی", idPrefix: "grouping", paging: paging
             )
         }
     }
