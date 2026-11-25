@@ -30,6 +30,9 @@ The files were converted from WOFF2 to TTF without other changes.
   the poets and a few complete books so they work offline. The app fetches other poems from the
   same pinned commit and caches them on the phone.
 - Recitations are not stored here: the app asks Ganjoor's API for the list and plays the audio from Ganjoor's servers.
+  The only thing derived from recitation audio is times: `tools/ganjoor/build.py --refresh-clips` downloads the mp3s of the
+  game deck's Hafez couplets into a gitignored cache to find where each first hemistich ends, and commits only those
+  times (`tools/ganjoor/clips.json`, `clip` in `games.json`).
 - No recitation audio and no Ganjoor user data (comments, accounts) is stored in this repository.
 
 Thank you to Ganjoor and its contributors for making this poetry open and readable.
