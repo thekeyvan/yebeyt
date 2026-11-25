@@ -62,6 +62,7 @@ final class ConfirmationsUITests: XCTestCase {
         let screen = app.windows.firstMatch.frame.height
         for _ in 0..<3 where confirm.frame.maxY > screen || !confirm.isHittable { app.staticTexts["leaveGameTitle"].swipeUp() }
         XCTAssertTrue(confirm.isHittable, "the sheet scrolls when its content is more than the screen allows")
+        shot(app, "leave-game-largest-text")
     }
 
     @MainActor func testGoingOutOfAStartedSoloGameLeaves() {

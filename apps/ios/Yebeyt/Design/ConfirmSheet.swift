@@ -27,23 +27,10 @@ struct ConfirmSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("\(prefix)Message")
             }
-            HStack(spacing: 12) {
-                Button { isPresented = false } label: { Text(cancel).frame(maxWidth: .infinity) }
-                    .buttonStyle(.sticker(.secondary))
-                    .accessibilityLabel(cancel)
-                    .accessibilityIdentifier("\(prefix)Cancel")
-                Button {
-                    busy = true
-                    Task {
-                        await action()
-                        busy = false
-                        isPresented = false
-                    }
-                } label: { Text(confirm).frame(maxWidth: .infinity) }
-                    .buttonStyle(DangerButtonStyle())
-                    .disabled(busy)
-                    .accessibilityLabel(confirm)
-                    .accessibilityIdentifier("\(prefix)Confirm")
+            // Side by side; when a word would break (the largest text size), stacked with the safe button first.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { cancelButton(oneLine: true); confirmButton(oneLine: true) }
+                VStack(spacing: 12) { cancelButton(oneLine: false); confirmButton(oneLine: false) }
             }
         }
         .padding(EdgeInsets(top: 28, leading: 22, bottom: 16, trailing: 22))
@@ -51,5 +38,27 @@ struct ConfirmSheet: View {
         .fitsSheetHeight()
         .stickerSheet()
         .environment(\.layoutDirection, .rightToLeft)
+    }
+
+    private func cancelButton(oneLine: Bool) -> some View {
+        Button { isPresented = false } label: { Text(cancel).lineLimit(oneLine ? 1 : nil).frame(maxWidth: .infinity) }
+            .buttonStyle(.sticker(.secondary))
+            .accessibilityLabel(cancel)
+            .accessibilityIdentifier("\(prefix)Cancel")
+    }
+
+    private func confirmButton(oneLine: Bool) -> some View {
+        Button {
+            busy = true
+            Task {
+                await action()
+                busy = false
+                isPresented = false
+            }
+        } label: { Text(confirm).lineLimit(oneLine ? 1 : nil).frame(maxWidth: .infinity) }
+            .buttonStyle(DangerButtonStyle())
+            .disabled(busy)
+            .accessibilityLabel(confirm)
+            .accessibilityIdentifier("\(prefix)Confirm")
     }
 }

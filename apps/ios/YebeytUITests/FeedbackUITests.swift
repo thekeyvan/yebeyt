@@ -204,7 +204,7 @@ final class FeedbackUITests: XCTestCase {
     @MainActor func testAnyPartOfThePillStopsTheRecording() {
         let app = startRecording(over: ["-beytRoute", "jigsaw"])
         let pill = element(app, "recordingPill")
-        pill.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5)).tap()  // the dot's side, not the word «تموم»
+        pill.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()  // the right end (the dot and «در حال ضبط»), not the word «تموم» on the left
         XCTAssertTrue(element(app, "feedbackRecorded").waitForExistence(timeout: 10))
     }
 }
