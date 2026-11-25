@@ -13,6 +13,7 @@ import io
 import json
 import math
 import subprocess
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -100,7 +101,10 @@ def find_range(read, start_mark, next_mark):
 
 def decode(mp3, wav):
     """16 kHz mono 16-bit WAV of an mp3, with macOS afconvert."""
-    subprocess.run(["afconvert", "-f", "WAVE", "-d", "LEI16@16000", "-c", "1", str(mp3), str(wav)], check=True, capture_output=True)
+    try:
+        subprocess.run(["afconvert", "-f", "WAVE", "-d", "LEI16@16000", "-c", "1", str(mp3), str(wav)], check=True, capture_output=True)
+    except FileNotFoundError:
+        sys.exit("--refresh-clips needs macOS afconvert")
 
 
 def load_poem(poets_dir, path):

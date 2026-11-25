@@ -83,6 +83,19 @@ class FindSilence(unittest.TestCase):
         self.assertIsNotNone(found)
         self.assertAlmostEqual(found[0] * silence.WINDOW, 1.4, delta=0.04)
 
+    def test_a_short_dip_before_the_last_syllable_s_release_gives_way_to_the_real_gap(self):
+        db = db_of(tone(1.0), quiet(0.14, 5), tone(0.08, 3000), quiet(0.4, 100), tone(1.0))
+        found = silence.find_silence(db)
+        self.assertAlmostEqual(found[0] * silence.WINDOW, 1.0 + 0.14 + 0.08, delta=0.04, msg="the real gap, not the dip")
+
+    def test_a_short_dip_stays_when_no_longer_pause_follows_soon(self):
+        db = db_of(tone(1.0), quiet(0.14, 5), tone(0.5), quiet(0.4, 100), tone(1.0))
+        self.assertAlmostEqual(silence.find_silence(db)[0] * silence.WINDOW, 1.0, delta=0.04)
+
+    def test_a_long_pause_is_not_replaced_by_a_later_longer_one(self):
+        db = db_of(tone(1.0), quiet(0.25, 5), tone(0.08, 3000), quiet(0.5, 100), tone(1.0))
+        self.assertAlmostEqual(silence.find_silence(db)[0] * silence.WINDOW, 1.0, delta=0.04)
+
     def test_too_few_windows(self):
         self.assertIsNone(silence.find_silence([-10.0] * 3))
 

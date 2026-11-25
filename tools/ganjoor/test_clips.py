@@ -187,6 +187,11 @@ class Refresh(unittest.TestCase):
         self.run_refresh()
         self.assertTrue(all(u.endswith("/recitations") for u in self.urls), "files come from the cache; only the list is asked")
 
+    def test_a_missing_afconvert_says_so(self):
+        with mock.patch("subprocess.run", side_effect=FileNotFoundError), self.assertRaises(SystemExit) as error:
+            clips.decode(Path("a.mp3"), Path("a.wav"))
+        self.assertIn("afconvert", str(error.exception))
+
     def test_snapshot_text_is_sorted_and_round_trips(self):
         text = clips.dump_snapshot({"/b/x#10": None, "/a/y#2": {"recitation": 1, "start": 0.5, "end": 3.25}, "/b/x#9": None})
         self.assertEqual(text.splitlines()[1:-1], ['"/a/y#2":{"recitation":1,"start":0.5,"end":3.25},', '"/b/x#9":null,', '"/b/x#10":null'])

@@ -13,6 +13,8 @@ MIN_RUN = 0.12
 PAD = 0.08
 # Quiet means this far below the voice (the 90th percentile of the stretch).
 DEPTH = 15.0
+# A pause shorter than this may be a breath inside the hemistich; a longer one starting within RELEASE after it is taken instead.
+SHORT, RELEASE = 10, 10  # windows (0.2 s)
 
 
 def window_db(samples, rate):
@@ -54,7 +56,7 @@ def find_silence(db, onset_from=0, depth=DEPTH):
         return None
     voice = percentile(db, 0.9)
     limit = voice - depth
-    best = None
+    runs = []
     first = 0
     while first < len(db):
         if db[first] > limit:
@@ -65,7 +67,13 @@ def find_silence(db, onset_from=0, depth=DEPTH):
             last += 1
         if first > 0 and last < len(db) and last - first >= need and last >= onset_from:
             floor = min(sum(db[i:i + need]) / need for i in range(first, last - need + 1))
-            if best is None or floor <= best[2]:
-                best = (first, last, floor, voice)
+            runs.append((first, last, floor, voice))
         first = last
+    if not runs:
+        return None
+    best = min(runs, key=lambda run: (run[2], -run[0]))
+    # A short pause is often the breath before the last syllable's release: a longer pause that follows soon is the gap.
+    for run in runs:
+        if run[0] >= best[1] and run[0] - best[1] <= RELEASE and best[1] - best[0] < SHORT and run[1] - run[0] > best[1] - best[0]:
+            best = run
     return best

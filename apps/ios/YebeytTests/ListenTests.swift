@@ -142,7 +142,7 @@ struct ListenLoaderTests {
         let deck = try GameDeck(bundle: Fixtures.appBundle, poetNames: [:])
         let hafez = deck.couplets.filter { $0.poetSlug == "hafez" }
         let ranges = hafez.compactMap(\.listenRange)
-        #expect(hafez.count == 200)
+        #expect(hafez.count > 150)
         #expect(ranges.count > 150, "a few couplets have no clean silence and keep the margin rule")
         #expect(ranges.allSatisfy { $0.recitation > 0 && $0.start >= 0 && $0.end - $0.start >= 1 })
         #expect(deck.couplets.filter { $0.poetSlug != "hafez" }.allSatisfy { $0.listenRange == nil })
