@@ -1,18 +1,5 @@
 import SwiftUI
 
-/// A full-screen layer over the app (the reader, a game) that rises from the bottom edge and drops back down, as ONE
-/// piece: its background, its chrome and its content move with a single offset (`Motion.coverOffset`), so nothing in it
-/// is drawn or moved on its own, and nothing inside needs a transition of its own while it moves. (A `.transition` on
-/// the cover did not move all of it together: the content stayed in place while the paper wiped in, and the cover just
-/// vanished when it went.)
-///
-/// It rises with a firm spring (`Motion.coverRise`: it settles without going past the top) and drops quickly; under
-/// Reduce Motion it crossfades. It stays mounted while it drops (taps
-/// go through to nothing), so a sheet that closes with it (the question before leaving a game) goes down in the same
-/// motion. `backdrop` is drawn under its bottom edge, so any overshoot shows the cover's own paper, not the page below.
-/// A new cover is mounted below the edge first and rises from its own first appearance, so a frame is drawn before it
-/// moves. `covers` is true from the moment it is all the way up until it starts to go down: what it hides (the
-/// tab bar) stays underneath while it moves and can leave once it covers it.
 /// What a `CoverLayer` is doing, apart from drawing. Each animation's completion carries the `generation` it was
 /// started in and is ignored when something newer has happened since (a close during the rise, an opening during the
 /// drop), so a late completion can neither hide the tab bar for a game that is gone nor unmount a cover that came back.
@@ -69,6 +56,18 @@ struct CoverState<Item: Equatable>: Equatable {
     }
 }
 
+/// A full-screen layer over the app (the reader, a game) that rises from the bottom edge and drops back down, as ONE
+/// piece: its background, its chrome and its content move with a single offset (`Motion.coverOffset`), so nothing in it
+/// is drawn or moved on its own, and nothing inside needs a transition of its own while it moves. (A `.transition` on
+/// the cover did not move all of it together: the content stayed in place while the paper wiped in, and the cover just
+/// vanished when it went.)
+///
+/// It rises with a firm spring (`Motion.coverRise`: it settles without going past the top) and drops quickly; under
+/// Reduce Motion it crossfades. It stays mounted while it drops (taps go through to nothing), so a sheet that closes with it (the question before leaving a game) goes down in the same
+/// motion. `backdrop` is drawn under its bottom edge, so any overshoot shows the cover's own paper, not the page below.
+/// A new cover is mounted below the edge first and rises two frames later, so it is drawn there before it moves.
+/// `covers` is true from the moment it is all the way up until it starts to go down: what it hides (the tab bar) stays
+/// underneath while it moves and can leave once it covers it.
 struct CoverLayer<Item: Identifiable & Equatable, Content: View>: View {
     let item: Item?
     let backdrop: Color
@@ -102,7 +101,7 @@ struct CoverLayer<Item: Identifiable & Equatable, Content: View>: View {
                 .opacity(Motion.coverOpacity(risen: state.risen, variant))
                 .allowsHitTesting(item != nil)
                 .accessibilityHidden(item == nil)
-                .onAppear { rise(variant) }  // the first frame is drawn below the edge; the rise starts from it
+                .task { await riseAfterFirstFrame(variant) }
             }
         }
         .onGeometryChange(for: Double.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { height = $0 }
@@ -115,6 +114,14 @@ struct CoverLayer<Item: Identifiable & Equatable, Content: View>: View {
             }
             covers = state.covers
         }
+    }
+
+    /// A rise started in the same update as the mounting (`.onAppear`, or no wait at all) is merged with it: the layer is
+    /// first drawn already up, with its paper and its content settling separately, which looked like a page drawn in
+    /// pieces. Two frames later the layer has been drawn below the edge, and the rise starts from there.
+    private func riseAfterFirstFrame(_ variant: Motion.Variant) async {
+        try? await Task.sleep(for: .milliseconds(34))
+        rise(variant)
     }
 
     private func rise(_ variant: Motion.Variant) {
