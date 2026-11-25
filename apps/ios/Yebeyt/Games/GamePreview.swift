@@ -9,11 +9,13 @@ struct GamePreview: View {
     /// The picture is drawn in this box and scaled down to the card when the card is narrower (small phones).
     private static let designWidth: CGFloat = 88
     private static let height: CGFloat = 72
+    /// Room kept at each side inside the box, so a full-width pill does not touch its edge.
+    private static let inset: CGFloat = 3
 
     var body: some View {
         GeometryReader { box in
             content
-                .frame(width: Self.designWidth, height: Self.height)
+                .frame(width: Self.designWidth - 2 * Self.inset, height: Self.height)
                 .scaleEffect(min(1, box.size.width / Self.designWidth))
                 .position(x: box.size.width / 2, y: Self.height / 2)
         }
@@ -75,9 +77,9 @@ struct GamePreview: View {
                 .shadow(color: Tokens.Colors.ink.opacity(used ? 0 : 0.18), radius: 2, y: 1))
     }
 
-    private func circle(_ fill: Color, _ size: CGFloat, ring: Color = Tokens.Colors.white) -> some View {
+    private func circle(_ fill: Color, _ size: CGFloat) -> some View {
         Circle().fill(fill).frame(width: size, height: size)
-            .overlay(Circle().strokeBorder(ring, lineWidth: 2))
+            .overlay(Circle().strokeBorder(Tokens.Colors.white, lineWidth: 2))
             .shadow(color: Tokens.Colors.ink.opacity(0.18), radius: 2, y: 1)
     }
 
