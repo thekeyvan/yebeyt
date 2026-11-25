@@ -9,6 +9,10 @@ struct AnswerSheet: View {
     let right: Bool
     /// The title of the sheet; «درست چسبوندی!» / «این یکی نشد» when not given.
     var title: String?
+    /// After a wrong couplet of جورچین: the words the player stuck, each marked right or wrong (the card behind the sheet is covered by it).
+    var attempt: [JigsawAttemptWord] = []
+    /// After a wrong answer: the right words, written out (the title can't always name them, as «نه، این بود» doesn't).
+    var correction: String?
     /// «+۱۲۰ · ۱۸ ثانیه»
     let detail: String?
     let buttonTitle: String
@@ -42,6 +46,8 @@ struct AnswerSheet: View {
         VStack(spacing: 16) {
             Capsule().fill(Tokens.Colors.ring).frame(width: 40, height: 5)
             verdict
+            if !right, !attempt.isEmpty { attemptRow }
+            if !right, let correction { correctionCard(correction) }
             if let meaning = couplet.meaning { meaningCard(meaning) }
             actions
             Button(buttonTitle, action: next)
@@ -92,6 +98,31 @@ struct AnswerSheet: View {
             try? await Task.sleep(for: .seconds(2.5))
             if !Task.isCancelled { withAnimation(.snappy) { aiToastShown = false } }
         }
+    }
+
+    private var attemptRow: some View {
+        WrapLayout(spacing: 6, lineSpacing: 6, centered: true) {
+            ForEach(Array(attempt.enumerated()), id: \.offset) { _, item in
+                WordSticker(word: item.word, status: item.status, size: 17)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(item.word)
+                    .accessibilityValue(item.verdict)
+                    .accessibilityIdentifier("attempt-\(item.kind)")
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func correctionCard(_ text: String) -> some View {
+        Text(TextNormalizer.plain(text)).font(.poem(20)).lineSpacing(6).foregroundStyle(Tokens.Colors.ink)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity)
+            .padding(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+            .background(RoundedRectangle(cornerRadius: 18).fill(Color(hex: 0xEEF9E7)))
+            .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Tokens.Colors.green, lineWidth: 3))
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("correction")
     }
 
     private func meaningCard(_ meaning: String) -> some View {

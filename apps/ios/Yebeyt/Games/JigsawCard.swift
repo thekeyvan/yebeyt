@@ -16,7 +16,8 @@ private struct SlotFrames: PreferenceKey {
 /// The couplet of جورچین بیت on a white card: the first hemistich whole, the second as word slots.
 struct JigsawCard: View {
     let board: JigsawBoard
-    /// The couplet is answered: every word shows as it should be.
+    /// The couplet is answered: each word shows what the player placed, green when right and red when not (with the right
+    /// word under it); the bulb's words keep their look.
     let revealed: Bool
     let tapSlot: (Int) -> Void
     @Binding var slotFrames: [Int: CGRect]
@@ -57,31 +58,64 @@ struct JigsawCard: View {
     }
 
     @ViewBuilder private func slot(_ position: Int) -> some View {
-        let word = revealed ? board.question.words[position] : board.word(at: position)
+        let word = board.word(at: position)
         let waiting = board.question.missing.contains(position) && !revealed
-        Group {
-            if let word {
-                let status: WordSticker.Status = revealed ? .correct : .stuck
-                Button { if waiting { tapSlot(position) } } label: { WordSticker(word: word, status: status, size: 22) }
+        let mark = revealed ? board.mark(at: position) : nil
+        VStack(spacing: 3) {
+            Group {
+                if let word {
+                    Button { if waiting { tapSlot(position) } } label: { WordSticker(word: word, status: status(mark), size: 22) }
+                        .buttonStyle(.plain)
+                } else {
+                    Button { tapSlot(position) } label: {
+                        RoundedRectangle(cornerRadius: 14).fill(Tokens.Colors.paper)
+                            .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(Color(hex: 0xB9B4C6), style: StrokeStyle(lineWidth: 2, dash: [5, 4])) }
+                            .frame(width: 46, height: 46)
+                    }
                     .buttonStyle(.plain)
-            } else {
-                Button { tapSlot(position) } label: {
-                    RoundedRectangle(cornerRadius: 14).fill(Tokens.Colors.paper)
-                        .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(Color(hex: 0xB9B4C6), style: StrokeStyle(lineWidth: 2, dash: [5, 4])) }
-                        .frame(width: 46, height: 46)
                 }
-                .buttonStyle(.plain)
+            }
+            .background {
+                GeometryReader { proxy in
+                    Color.clear.preference(key: SlotFrames.self, value: waiting ? [position: proxy.frame(in: .named(JigsawSpace.name))] : [:])
+                }
+            }
+            .accessibilityLabel("جای \(PersianDigits.string(position + 1))")
+            .accessibilityValue(word ?? "خالی")
+            .accessibilityIdentifier("slot-\(position)")
+            if mark == .wrong {  // the right word under the red one
+                Text(board.question.words[position]).font(.poem(14)).foregroundStyle(Color(hex: 0x3E9A1E))
+                    .accessibilityHidden(true)
             }
         }
-        .background {
-            GeometryReader { proxy in
-                Color.clear.preference(key: SlotFrames.self, value: waiting ? [position: proxy.frame(in: .named(JigsawSpace.name))] : [:])
-            }
-        }
-        .accessibilityLabel("جای \(PersianDigits.string(position + 1))")
-        .accessibilityValue(word ?? "خالی")
-        .accessibilityIdentifier("slot-\(position)")
     }
+
+    private func status(_ mark: JigsawBoard.SlotMark?) -> WordSticker.Status {
+        mark.map { JigsawAttemptWord.status(of: $0) } ?? .stuck
+    }
+}
+
+/// A word of the second hemistich as the player left it, for the answer sheet: what was placed and how it turned out.
+struct JigsawAttemptWord: Equatable {
+    let word: String
+    let mark: JigsawBoard.SlotMark
+
+    /// The words of a checked board, in reading order.
+    static func words(of board: JigsawBoard) -> [JigsawAttemptWord] {
+        board.question.words.indices.map { JigsawAttemptWord(word: board.word(at: $0) ?? board.question.words[$0], mark: board.mark(at: $0)) }
+    }
+
+    static func status(of mark: JigsawBoard.SlotMark) -> WordSticker.Status {
+        switch mark {
+        case .given, .right: .correct
+        case .hinted: .stuck
+        case .wrong: .wrong
+        }
+    }
+
+    var status: WordSticker.Status { Self.status(of: mark) }
+    var kind: String { "\(mark)" }
+    var verdict: String { mark == .wrong ? "نشد" : mark == .right ? "درست" : "" }
 }
 
 /// «برگه‌ی برچسب‌ها»: the words still to place, loose on a sheet. A sticker is tapped (it is in hand, then a slot

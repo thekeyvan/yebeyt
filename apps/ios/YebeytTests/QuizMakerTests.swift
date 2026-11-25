@@ -97,6 +97,7 @@ struct PoetQuestionTests {
         let question = try #require(make(QuizFixtures.couplets(poet: "hafez", count: 1)[0]))
         #expect(question.verdict(right: true) == "آره، حافظ!")
         #expect(question.verdict(right: false) == "نه، حافظ بود")
+        #expect(question.rightHemistich == nil, "the title already names the poet")
     }
 }
 
@@ -168,6 +169,7 @@ struct SecondQuestionTests {
         let question = try #require(make(deck.couplets[0]))
         #expect(question.verdict(right: true) == "آره، همینه!")
         #expect(question.verdict(right: false) == "نه، این بود")
+        #expect(question.rightHemistich == question.rightOption.title, "the sheet writes the right one out")
     }
 }
 

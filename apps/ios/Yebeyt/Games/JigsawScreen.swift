@@ -101,7 +101,8 @@ struct JigsawScreen: View {
             .accessibilityHidden(round.sheetOpen)
             if let answer = round.lastAnswer {
                 AnswerSheet(
-                    couplet: round.current.couplet, right: answer.result.isRight,
+                    couplet: round.current.couplet, right: answer.result.isRight, title: answer.result.isRight ? nil : "نه، این بود",
+                    attempt: JigsawAttemptWord.words(of: round.board), correction: round.current.couplet.m2,
                     detail: "+\(PersianDigits.string(answer.result.points)) · \(PersianDigits.string(answer.seconds)) ثانیه",
                     buttonTitle: "بیت بعدی", buttonIdentifier: "jigsawNext", next: { withAnimation(.snappy) { session.next() } }
                 )

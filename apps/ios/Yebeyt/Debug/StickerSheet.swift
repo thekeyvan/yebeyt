@@ -116,7 +116,7 @@ struct StickerSheet: View {
 
     private var words: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 2), spacing: 2) {
-            ForEach([("روی برگه", WordSticker.Status.onSheet), ("دستته", .held), ("چسبیده", .stuck), ("درست بود", .correct)], id: \.0) { label, status in
+            ForEach([("روی برگه", WordSticker.Status.onSheet), ("دستته", .held), ("چسبیده", .stuck), ("درست بود", .correct), ("نشد", .wrong)], id: \.0) { label, status in
                 VStack(alignment: .leading, spacing: 4) {
                     WordSticker(word: "گوهرند", status: status)
                     Text(label).font(.ui(12)).foregroundStyle(Tokens.Colors.muted)

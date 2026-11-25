@@ -131,6 +131,7 @@ struct QuizScreen: View {
             if let answer = round.lastAnswer {
                 AnswerSheet(
                     couplet: round.current.couplet, right: answer.right, title: round.current.verdict(right: answer.right),
+                    correction: round.current.rightHemistich,
                     detail: detail(answer, in: round), buttonTitle: "سؤال بعدی", buttonIdentifier: "quizNext",
                     next: { withAnimation(.snappy) { session.next() } }
                 )

@@ -11,6 +11,9 @@ enum GameAutoplay: Equatable, Sendable {
     case held(Int)
     /// جورچین: this many right couplets, the last one with its sheet open.
     case sheet(Int)
+    /// جورچین: every slot filled, the first missing word with a sticker of another word; `checked` also presses «بچسبون!»
+    /// (the wrong couplet's sheet open).
+    case wrong(checked: Bool)
     /// جورچین: a whole round, eight right and two wrong.
     case end
     /// The quiz games: this many answered (every third one wrong), then an option chosen; with `sheet` the last answer's
@@ -90,6 +93,16 @@ extension JigsawSession {
                 answer(right: number != 3 && number != 7)
                 next()
             }
+        case .wrong(let checked):
+            edit { board in
+                for position in board.question.missing {
+                    let word = board.question.words[position]
+                    let extra = board.question.stickers.first { !board.question.words.contains($0.word) }
+                    let sticker = position == board.question.missing[0] ? extra : board.onSheet.first { $0.word == word }
+                    if let sticker { board.place(sticker, at: position) }
+                }
+            }
+            if checked { check() }
         case .none, .tries, .quiz, .match:
             break
         }

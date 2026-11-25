@@ -11,6 +11,18 @@ struct JigsawBoard: Equatable, Sendable {
         var points: Int
     }
 
+    /// How a slot reads once the couplet is checked.
+    enum SlotMark: Equatable, Sendable {
+        /// A word the couplet gave from the start.
+        case given
+        /// The bulb's word.
+        case hinted
+        /// The player's sticker has the right word.
+        case right
+        /// The player's sticker has another word.
+        case wrong
+    }
+
     let question: JigsawQuestion
     /// Slot position → the sticker in it.
     private(set) var placed: [Int: JigsawSticker] = [:]
@@ -37,6 +49,13 @@ struct JigsawBoard: Equatable, Sendable {
     /// The word shown in a slot: the given word, or the placed sticker's; nil for an empty slot.
     func word(at position: Int) -> String? {
         question.missing.contains(position) ? placed[position]?.word : question.words[position]
+    }
+
+    /// What the slot at this position shows once the couplet is checked. Words count by their text, as `check` does.
+    func mark(at position: Int) -> SlotMark {
+        guard question.missing.contains(position) else { return .given }
+        if hinted.contains(position) { return .hinted }
+        return placed[position]?.word == question.words[position] ? .right : .wrong
     }
 
     var isFull: Bool { question.missing.allSatisfy { placed[$0] != nil } }

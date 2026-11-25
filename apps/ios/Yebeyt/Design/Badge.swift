@@ -54,9 +54,9 @@ struct StickerBadge: View {
     }
 }
 
-/// A word on a sticker sheet: loose on the sheet, stuck in place, held in the hand (bigger, tilted, longer shadow) or correct.
+/// A word on a sticker sheet: loose on the sheet, stuck in place, held in the hand (bigger, tilted, longer shadow), correct (green) or wrong (red).
 struct WordSticker: View {
-    enum Status { case onSheet, stuck, held, correct }
+    enum Status { case onSheet, stuck, held, correct, wrong }
 
     let word: String
     let status: Status
@@ -81,20 +81,21 @@ struct WordSticker: View {
         case .stuck: Tokens.Colors.lapis
         case .held: Tokens.Colors.fire
         case .correct: Tokens.Colors.green
+        case .wrong: Tokens.Colors.fire
         }
     }
 
     private var textColor: Color {
         switch status {
         case .onSheet, .correct: Tokens.Colors.ink
-        case .stuck, .held: Tokens.Colors.white
+        case .stuck, .held, .wrong: Tokens.Colors.white
         }
     }
 
     private var shadow: ShadowToken {
         switch status {
         case .onSheet: Tokens.Sticker.Shadow.wordOnSheet
-        case .stuck, .correct: Tokens.Sticker.Shadow.wordStuck
+        case .stuck, .correct, .wrong: Tokens.Sticker.Shadow.wordStuck
         case .held: Tokens.Sticker.Shadow.wordHeld
         }
     }

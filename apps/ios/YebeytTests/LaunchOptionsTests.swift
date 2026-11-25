@@ -51,6 +51,9 @@ struct LaunchOptionsTests {
     @Test func theResultAndEndRoutesPlayByThemselves() {
         #expect(LaunchOptions(["beytRoute": "jigsaw-result"]).autoplay == .sheet(4))
         #expect(LaunchOptions(["beytRoute": "round-end"]).autoplay == .end)
+        #expect(LaunchOptions(["beytRoute": "jigsaw-wrong"]).autoplay == .wrong(checked: false))
+        #expect(LaunchOptions(["beytRoute": "jigsaw-wrong", "beytSheet": "answer"]).autoplay == .wrong(checked: true))
+        #expect(LaunchOptions(["beytRoute": "jigsaw-wrong"]).game == .jigsaw(.deck))
         #expect(LaunchOptions(["beytRoute": "jigsaw", "beytPlay": "3"]).autoplay == .held(3))
         #expect(LaunchOptions(["beytRoute": "daily", "beytPlay": "1"]).autoplay == .tries(1))
         #expect(LaunchOptions(["beytRoute": "daily"]).autoplay == .none)

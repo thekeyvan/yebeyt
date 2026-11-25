@@ -28,6 +28,9 @@ struct QuizQuestion: Equatable, Sendable {
 
     var rightOption: QuizOption { options[correct] }
 
+    /// The right second hemistich, when the title can't name the answer (مصراع دوم, گوش کن).
+    var rightHemistich: String? { kind == .misra || kind == .listen ? rightOption.title : nil }
+
     /// The title of the sheet after the answer.
     func verdict(right: Bool) -> String {
         switch kind {

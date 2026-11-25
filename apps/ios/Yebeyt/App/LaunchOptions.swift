@@ -4,7 +4,7 @@ import Foundation
 /// Debug launch arguments, for opening a screen straight away (simulator screenshots):
 /// `-beytTab home|explore|games|messages|me`, `-beytUnread <n>`, `-beytRoute stickers|poem:<path>`, and the
 /// library routes `-beytRoute library|book:<path>|section:<path>|poet:<slug>|search:<query>|mood:<key>|poets`
-/// (they open the کاوش tab with those screens pushed). The game routes `-beytRoute games-catalog|daily|jigsaw|jigsaw-result|round-end|poet-game|second|book-game|match|listen`
+/// (they open the کاوش tab with those screens pushed). The game routes `-beytRoute games-catalog|daily|jigsaw|jigsaw-result|jigsaw-wrong|round-end|poet-game|second|book-game|match|listen`
 /// open the بازی tab with the catalog, or a game in front; `-beytPlay <n>` plays a little first (daily: n tries; جورچین:
 /// n couplets, then a sticker in hand; the quiz games: n answered, then an option chosen, and with `-beytSheet answer`
 /// the last answer's sheet left open; معنی‌یاب: n pairs) and `-beytToday <yyyy-mm-dd>` fixes the Tehran day.
@@ -30,6 +30,7 @@ struct LaunchOptions {
         case daily
         case jigsaw
         case jigsawResult
+        case jigsawWrong
         case roundEnd
         case poetGame
         case second
@@ -59,6 +60,7 @@ struct LaunchOptions {
             case ("daily", nil): self = .daily
             case ("jigsaw", nil): self = .jigsaw
             case ("jigsaw-result", nil): self = .jigsawResult
+            case ("jigsaw-wrong", nil): self = .jigsawWrong
             case ("round-end", nil): self = .roundEnd
             case ("poet-game", nil): self = .poetGame
             case ("second", nil): self = .second
@@ -99,7 +101,7 @@ struct LaunchOptions {
         /// The route opens something on the بازی tab.
         var isGames: Bool {
             switch self {
-            case .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen, .leaderboard: true
+            case .gamesCatalog, .daily, .jigsaw, .jigsawResult, .jigsawWrong, .roundEnd, .poetGame, .second, .bookGame, .match, .listen, .leaderboard: true
             default: false
             }
         }
@@ -171,7 +173,7 @@ struct LaunchOptions {
         case .mood(let key): return library.moods.contains { $0.key == key } ? [.mood(key)] : []
         case .book(let path): return library.book(path: path).map { [.library, .book($0.id)] } ?? []
         case .section(let path): return library.section(path: path).map { [.library, .book($0.book.id), .section(book: $0.book.id, section: $0.section.id)] } ?? []
-        case .stickers, .poem, .gamesCatalog, .daily, .jigsaw, .jigsawResult, .roundEnd, .poetGame, .second, .bookGame, .match, .listen, nil: return []
+        case .stickers, .poem, .gamesCatalog, .daily, .jigsaw, .jigsawResult, .jigsawWrong, .roundEnd, .poetGame, .second, .bookGame, .match, .listen, nil: return []
         case .me, .divan, .privacy, .avatar, .invite, .settings, .badges, .friends, .people, .person, .leaderboard: return []
         }
     }
@@ -217,7 +219,7 @@ struct LaunchOptions {
     var game: GameRoute? {
         switch route {
         case .daily: .daily
-        case .jigsaw, .jigsawResult, .roundEnd: .jigsaw(.deck)
+        case .jigsaw, .jigsawResult, .jigsawWrong, .roundEnd: .jigsaw(.deck)
         case .poetGame: .quiz(.poet)
         case .second: .quiz(.misra(poet: nil))
         case .bookGame: .quiz(.book)
@@ -231,6 +233,7 @@ struct LaunchOptions {
     var autoplay: GameAutoplay {
         switch route {
         case .jigsawResult: .sheet(4)
+        case .jigsawWrong: .wrong(checked: sheet == "answer")
         case .roundEnd: .end
         case .daily: play.map(GameAutoplay.tries) ?? .none
         case .jigsaw: play.map(GameAutoplay.held) ?? .none

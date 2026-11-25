@@ -148,6 +148,70 @@ struct JigsawBoardTests {
         #expect(board.check() == JigsawBoard.Result(correctWords: 2, hints: 0, isRight: false, points: 40))
     }
 
+    @Test func eachSlotOfACheckedCoupletIsGivenHintedRightOrWrong() throws {
+        var board = board()
+        board.hint()
+        let hinted = try #require(board.hinted.first)
+        let wrong = try #require(board.question.missing.first { $0 != hinted })
+        for position in board.question.missing where position != hinted && position != wrong {
+            board.place(sticker(board.question.words[position], in: board), at: position)
+        }
+        board.place(board.question.stickers.first { !board.question.words.contains($0.word) }!, at: wrong)
+        for position in board.question.words.indices {
+            let expected: JigsawBoard.SlotMark = position == hinted ? .hinted : position == wrong ? .wrong : board.question.missing.contains(position) ? .right : .given
+            #expect(board.mark(at: position) == expected)
+        }
+    }
+
+    @Test func aWrongStickerMarksOnlyItsOwnSlotAndTheSheetKnowsTheRightWord() throws {
+        var board = board()
+        solve(&board)
+        let wrong = try #require(board.question.missing.first)
+        let extra = board.question.stickers.first { !board.question.words.contains($0.word) }!
+        board.place(extra, at: wrong)
+        #expect(board.mark(at: wrong) == .wrong)
+        #expect(board.word(at: wrong) == extra.word, "the slot shows what the player placed, not the right word")
+        #expect(board.question.missing.dropFirst().allSatisfy { board.mark(at: $0) == .right })
+        #expect(board.check().isRight == false)
+    }
+
+    @Test func theSheetGetsEveryWordAsPlacedWithItsMark() throws {
+        var board = board()
+        solve(&board)
+        let wrong = try #require(board.question.missing.first)
+        let extra = board.question.stickers.first { !board.question.words.contains($0.word) }!
+        board.place(extra, at: wrong)
+        let words = JigsawAttemptWord.words(of: board)
+        #expect(words.count == board.question.words.count)
+        #expect(words[wrong] == JigsawAttemptWord(word: extra.word, mark: .wrong))
+        #expect(words[wrong].status == .wrong && words[wrong].verdict == "نشد")
+        #expect(words.enumerated().filter { $0.offset != wrong }.allSatisfy { $0.element.word == board.question.words[$0.offset] && $0.element.status == .correct })
+    }
+
+    @Test func aStickerWithTheSameWordAsTheRightOneIsRight() throws {
+        var generator = SeededGenerator(seed: 4)
+        let couplet = GameFixtures.couplet(1, m2: "که در که آفرینش ز یک")
+        var board = JigsawBoard(JigsawQuestion(couplet: couplet, distractors: [], generator: &generator)!)
+        for position in board.question.missing {
+            let word = board.question.words[position]
+            board.place(board.onSheet.first { $0.word == word }!, at: position)
+        }
+        #expect(board.question.missing.allSatisfy { board.mark(at: $0) == .right })
+    }
+
+    @Test func swappingTwoDifferentWordsMakesBothSlotsWrong() throws {
+        var board = board()
+        let (a, b) = (board.question.missing[0], board.question.missing[1])
+        try #require(board.question.words[a] != board.question.words[b])
+        for position in board.question.missing where position != a && position != b {
+            board.place(sticker(board.question.words[position], in: board), at: position)
+        }
+        board.place(sticker(board.question.words[b], in: board), at: a)
+        board.place(sticker(board.question.words[a], in: board), at: b)
+        #expect(board.mark(at: a) == .wrong && board.mark(at: b) == .wrong)
+        #expect(board.check() == JigsawBoard.Result(correctWords: 1, hints: 0, isRight: false, points: 20))
+    }
+
     @Test func twoStickersWithTheSameWordAreInterchangeable() {
         var generator = SeededGenerator(seed: 4)
         let couplet = GameFixtures.couplet(1, m2: "که در که آفرینش ز یک")
@@ -276,6 +340,28 @@ struct JigsawRoundTests {
         round.next()
         answer(&round, right: false)
         #expect(round.combo == 0 && round.rightCount == 3)
+    }
+
+    @Test func aCoupletWithOneWrongWordCountsAsWrongButKeepsThePointsOfTheRightOnes() {
+        var round = round()
+        for _ in 0..<3 { answer(&round); round.next() }
+        #expect(round.combo == 3 && round.rightCount == 3)
+        let before = round.points
+        round.edit { board in
+            for position in board.question.missing {
+                let word = board.question.words[position]
+                let extra = board.question.stickers.first { !board.question.words.contains($0.word) }!
+                let sticker = position == board.question.missing[0] ? extra : board.onSheet.first { $0.word == word }!
+                board.place(sticker, at: position)
+            }
+        }
+        let answer = round.check()!
+        let missing = round.board.question.missing.count
+        #expect(!answer.result.isRight && answer.result.correctWords == missing - 1)
+        #expect(round.points - before == (missing - 1) * Scoring.jigsawWord, "only the right words earn")
+        #expect(round.combo == 0 && round.rightCount == 3)
+        #expect(round.answers.map(\.result.isRight) == [true, true, true, false], "the dot is red")
+        #expect(round.board.mark(at: round.board.question.missing[0]) == .wrong)
     }
 
     @Test func afterTenAnswersTheRoundIsFinishedAndTheSecondsLeftCount() {

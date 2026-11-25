@@ -14,6 +14,15 @@ enum OptionState {
         }
     }
 
+    /// What VoiceOver says about the option once it is answered.
+    var spoken: String {
+        switch self {
+        case .right: "درست"
+        case .wrong: "نشد"
+        default: ""
+        }
+    }
+
     var opacity: Double {
         switch self {
         case .dimmed: 0.45
@@ -152,6 +161,7 @@ struct PoetOptionCard: View {
         .allowsHitTesting(state == .idle || state == .selected)
         .accessibilityHidden(state == .removed)
         .accessibilityLabel(name)
+        .accessibilityValue(state.spoken)
         .accessibilityAddTraits(state == .selected ? .isSelected : [])
     }
 }
@@ -181,6 +191,7 @@ struct HemistichOptionRow: View {
         .buttonStyle(.press)
         .allowsHitTesting(state == .idle || state == .selected)
         .accessibilityHidden(state == .removed)
+        .accessibilityValue(state.spoken)
         .accessibilityAddTraits(chosen ? .isSelected : [])
     }
 
@@ -233,6 +244,7 @@ struct BookOptionTile: View {
         .allowsHitTesting(state == .idle || state == .selected)
         .accessibilityHidden(state == .removed)
         .accessibilityLabel(title)
+        .accessibilityValue(state.spoken)
         .accessibilityAddTraits(state == .selected ? .isSelected : [])
     }
 
