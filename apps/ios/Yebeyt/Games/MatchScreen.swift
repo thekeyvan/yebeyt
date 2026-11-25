@@ -74,7 +74,7 @@ struct MatchScreen: View {
                     titleRow(round)
                     MatchCoupletCard(question: round.current)
                     MatchBoard(round: round, shakes: shakes, wrongMeaning: wrongMeaning, selectWord: { session.selectWord($0) }, pick: { pick($0, in: session) })
-                    Text("واژه رو بزن، بعد معنیش رو. اشتباه کنی، فقط تکون می‌خوره.")
+                    Text("واژه رو بزن، بعد معنیش رو. اشتباه کنی، فقط قرمز می‌شه و تکون می‌خوره.")
                         .font(.ui(12)).foregroundStyle(Tokens.Colors.muted).multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 18)

@@ -19,6 +19,8 @@ struct JigsawCard: View {
     /// The couplet is answered: each word shows what the player placed, green when right and red when not (with the right
     /// word under it); the bulb's words keep their look.
     let revealed: Bool
+    /// Whether a wrong word shows the right one (a caption, and for VoiceOver); off while the person is about to retry.
+    var showsRightWord = true
     let tapSlot: (Int) -> Void
     @Binding var slotFrames: [Int: CGRect]
 
@@ -81,12 +83,20 @@ struct JigsawCard: View {
                 }
             }
             .accessibilityLabel("جای \(PersianDigits.string(position + 1))")
-            .accessibilityValue(word ?? "خالی")
+            .accessibilityValue(spokenValue(mark, word: word, position: position))
             .accessibilityIdentifier("slot-\(position)")
-            if mark == .wrong {  // the right word under the red one
+            if mark == .wrong, showsRightWord {  // the right word under the red one
                 Text(board.question.words[position]).font(.poem(14)).foregroundStyle(Color(hex: 0x3E9A1E))
                     .accessibilityHidden(true)
             }
+        }
+    }
+
+    private func spokenValue(_ mark: JigsawBoard.SlotMark?, word: String?, position: Int) -> String {
+        switch mark {
+        case .right?: "درست"
+        case .wrong?: showsRightWord ? "نشد، درستش: \(board.question.words[position])" : "نشد"
+        default: word ?? "خالی"
         }
     }
 

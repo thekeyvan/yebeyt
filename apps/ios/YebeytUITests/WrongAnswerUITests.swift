@@ -1,8 +1,7 @@
 import XCTest
 
 /// A wrong answer looks wrong: what was got wrong turns red, the right answer is written in the sheet, and only what
-/// was right earns. The red behind the sheet is not in the accessibility tree (the sheet is modal), so it is looked for
-/// in the screenshot.
+/// was right earns.
 @MainActor
 final class WrongAnswerUITests: XCTestCase {
     private func launch(_ arguments: [String]) -> XCUIApplication {
@@ -16,21 +15,26 @@ final class WrongAnswerUITests: XCTestCase {
         app.descendants(matching: .any)[identifier]
     }
 
-    /// How many pixels of the screen are the red of a wrong answer (fire, #FF4D24; a little darker under the sheet's scrim).
     private func persian(_ number: Int) -> String {
         String(String(number).map { Character(UnicodeScalar(0x06F0 + Int($0.wholeNumberValue ?? 0))!) })
     }
 
+    /// How many pixels of the screen are the red of a wrong answer (fire, #FF4D24; a little darker under the sheet's scrim).
+    /// The red behind the sheet is not in the accessibility tree (the sheet is modal), so it is looked for in the screenshot,
+    /// drawn first into an sRGB RGBA8 context so the channels are the same whatever the screenshot's own format.
     private func redPixels(_ app: XCUIApplication) -> Int {
-        guard let image = app.screenshot().image.cgImage, let data = image.dataProvider?.data, let bytes = CFDataGetBytePtr(data) else { return 0 }
-        let step = image.bitsPerPixel / 8
+        guard let image = app.screenshot().image.cgImage, let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(
+                  data: nil, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4, space: space,
+                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+              ) else { return 0 }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        guard let data = context.data else { return 0 }
+        let pixels = data.bindMemory(to: UInt8.self, capacity: image.width * image.height * 4)
         var count = 0
-        for y in 0..<image.height {
-            for x in 0..<image.width {
-                let pixel = bytes + y * image.bytesPerRow + x * step
-                let (r, g, b) = (Int(pixel[0]), Int(pixel[1]), Int(pixel[2]))
-                if r > 170, r - g > 100, g < 120, b < 90 { count += 1 }
-            }
+        for index in 0..<(image.width * image.height) {
+            let (r, g, b) = (Int(pixels[index * 4]), Int(pixels[index * 4 + 1]), Int(pixels[index * 4 + 2]))
+            if r > 170, r - g > 100, g < 120, b < 90 { count += 1 }
         }
         return count
     }

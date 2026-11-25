@@ -124,10 +124,10 @@ struct MatchBoard: View {
         let matched = round.matched.contains(word.id), wrong = wrongMeaning == word.id
         return Button { pick(word.id) } label: {
             Text(word.gloss).font(.ui(13, weight: .medium)).multilineTextAlignment(.center)
-                .foregroundStyle(matched ? Color(hex: 0x3E9A1E) : wrong ? Tokens.Colors.fire : Tokens.Colors.ink)
+                .foregroundStyle(matched ? Color(hex: 0x3E9A1E) : Tokens.Colors.ink)
                 .frame(maxWidth: .infinity, minHeight: 48, maxHeight: .infinity)
                 .padding(.horizontal, 12).padding(.vertical, 6)
-                .background(RoundedRectangle(cornerRadius: 16).fill(matched ? Color(hex: 0xEEF9E7) : wrong ? Color(hex: 0xFFEDE8) : Tokens.Colors.white))
+                .background(RoundedRectangle(cornerRadius: 16).fill(matched ? Color(hex: 0xEEF9E7) : wrong ? Tokens.Colors.fireTint : Tokens.Colors.white))
                 .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(matched ? Tokens.Colors.green : wrong ? Tokens.Colors.fire : Tokens.Colors.white, lineWidth: 3))
                 .shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 4, x: 0, y: 2)
                 .shake(shakes[word.id] ?? 0)

@@ -36,6 +36,7 @@ enum Tokens {
         static let ring = Color(hex: 0xDAD6E2)
         static let gameRing = Color(hex: 0xC9CBF5)
         static let lapisTint = Color(hex: 0xE8E9FF)
+        static let fireTint = Color(hex: 0xFFEDE8)
         static let chipBorder = Color(hex: 0xEEEBF2)
         static let trackLight = Color(hex: 0xE6E3EC)
         static let boardPaper = Color(hex: 0xF7F5F0)
