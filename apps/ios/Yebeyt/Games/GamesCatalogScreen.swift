@@ -1,15 +1,29 @@
 import SwiftUI
 
-/// GamesCatalog: the nine games with their icons and what they are. The two with friends open the lobby (after the account gate).
+/// GamesCatalog: the nine games as a grid of cards, each with its sticker, name, line and a small picture of the game.
+/// Three across at the default text size, two as it grows and one at the accessibility sizes. The two with friends
+/// open the lobby (after the account gate).
 struct GamesCatalogScreen: View {
     @Environment(AppModel.self) private var app
     @Environment(AccountModel.self) private var account
+    @Environment(\.dynamicTypeSize) private var textSize
+
+    /// How many cards fit in a row at a text size, so nothing is cut off.
+    nonisolated static func columns(for size: DynamicTypeSize) -> Int {
+        if size.isAccessibilitySize { 1 } else if size > .large { 2 } else { 3 }
+    }
+
+    nonisolated static func rows(_ kinds: [GameKind], columns: Int) -> [[GameKind]] {
+        stride(from: 0, to: kinds.count, by: columns).map { Array(kinds[$0..<min($0 + columns, kinds.count)]) }
+    }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 14) {
-                ForEach(GameKind.allCases, id: \.self) { kind in
-                    card(kind)
+            Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+                ForEach(Array(Self.rows(GameKind.allCases, columns: Self.columns(for: textSize)).enumerated()), id: \.offset) { _, row in
+                    GridRow {
+                        ForEach(row, id: \.self) { kind in card(kind) }
+                    }
                 }
             }
             .padding(.horizontal, 18)
@@ -24,30 +38,41 @@ struct GamesCatalogScreen: View {
 
     private func card(_ kind: GameKind) -> some View {
         Button { open(kind) } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 10) {
-                    GameIcon(kind: kind, size: 44)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(kind.name).font(.title(22)).padding(.top, 3)
-                        Text(kind.meta).font(.ui(11)).foregroundStyle(Tokens.Colors.muted)
-                    }
-                    Spacer(minLength: 0)
-                }
-                Text(kind.about).font(.ui(12.5)).lineSpacing(4).multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 6) {
+                header(kind)
+                Spacer(minLength: 4)
+                GamePreview(kind: kind)
             }
             .foregroundStyle(Tokens.Colors.ink)
-            .padding(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background {
-                RoundedRectangle(cornerRadius: 24).fill(Tokens.Colors.white)
+                RoundedRectangle(cornerRadius: Tokens.Sticker.Radius.card).fill(Tokens.Colors.white)
                     .shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 6, x: 0, y: 3)
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
+        .buttonStyle(.press)
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel("\(kind.name)، \(kind.meta)")
+        .accessibilityHint(kind.about)
         .accessibilityIdentifier("catalog-\(kind.rawValue)")
+    }
+
+    /// The sticker, the name and the line: stacked in a narrow card, side by side when the card is a whole row.
+    @ViewBuilder private func header(_ kind: GameKind) -> some View {
+        let texts = VStack(alignment: .leading, spacing: 0) {
+            Text(kind.name).font(.title(19)).padding(.top, 3)
+            Text(kind.meta).font(.ui(10.5)).foregroundStyle(Tokens.Colors.muted)
+        }
+        .multilineTextAlignment(.leading)
+        .fixedSize(horizontal: false, vertical: true)
+        if Self.columns(for: textSize) == 1 {
+            HStack(spacing: 12) { GameIcon(kind: kind, size: 44); texts; Spacer(minLength: 0) }
+        } else {
+            VStack(alignment: .leading, spacing: 6) { GameIcon(kind: kind, size: 40); texts }
+        }
     }
 
     private func open(_ kind: GameKind) {
