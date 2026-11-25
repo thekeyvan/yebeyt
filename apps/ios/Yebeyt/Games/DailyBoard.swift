@@ -1,13 +1,33 @@
 import SwiftUI
 
+/// How tightly the daily puzzle is set: `compact` is for screens too short for the board's sizes (an iPhone SE is 667 pt
+/// tall), with smaller letter boxes and keys and less space between them.
+struct DailyDensity: Equatable {
+    var compact = false
+
+    /// The room between the couplet, the tries, the keyboard and the buttons.
+    var gap: CGFloat { compact ? 10 : 14 }
+    var boxSize: CGSize { compact ? CGSize(width: 40, height: 44) : CGSize(width: 44, height: 50) }
+    var boxFont: CGFloat { compact ? 20 : 22 }
+    /// A grey key is wider (and, on the board's sizes, taller) than a live one.
+    func keySize(used: Bool) -> CGSize {
+        compact ? CGSize(width: used ? 36 : 32, height: 40) : CGSize(width: used ? 40 : 34, height: used ? 48 : 42)
+    }
+    var keyFont: CGFloat { compact ? 19 : 20 }
+    var keyboardPadding: CGFloat { compact ? 8 : 12 }
+    var eraseHeight: CGFloat { compact ? 40 : 42 }
+    var bottomPadding: CGFloat { compact ? 12 : 26 }
+}
+
 /// The three tries of معمای امروز: a row of letter boxes each, and the «فرصت» line under them.
 struct DailyGrid: View {
     let game: DailyGame
+    var density = DailyDensity()
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: density.compact ? 6 : 8) {
             ForEach(0..<DailyGame.maxTries, id: \.self) { row in
-                HStack(spacing: 8) {
+                HStack(spacing: density.compact ? 6 : 8) {
                     ForEach(0..<game.answer.count, id: \.self) { column in
                         box(row: row, column: column)
                     }
@@ -38,9 +58,9 @@ struct DailyGrid: View {
 
     private func cell(_ letter: String, fill: Color, border: Color, text: Color = Tokens.Colors.ink, halo: Bool = false, pops: Bool = false) -> some View {
         Text(letter)
-            .font(.ui(22, weight: .bold))
+            .font(.ui(density.boxFont, weight: .bold))
             .foregroundStyle(text)
-            .frame(width: 44, height: 50)
+            .frame(width: density.boxSize.width, height: density.boxSize.height)
             .background {
                 RoundedRectangle(cornerRadius: 12).fill(fill)
                 RoundedRectangle(cornerRadius: 12).strokeBorder(border, lineWidth: 3)
@@ -83,9 +103,10 @@ struct DailyKeyboard: View {
     let marks: [Character: LetterMark]
     let type: (Character) -> Void
     let erase: () -> Void
+    var density = DailyDensity()
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: density.compact ? 6 : 8) {
             HStack(spacing: 6) {
                 ForEach(keys.prefix(7), id: \.self, content: key)
             }
@@ -93,14 +114,14 @@ struct DailyKeyboard: View {
                 ForEach(keys.dropFirst(7), id: \.self, content: key)
                 Button(action: erase) {
                     Text("پاک کن").font(.ui(13, weight: .bold)).foregroundStyle(Tokens.Colors.fire)
-                        .frame(width: 80, height: 42)
+                        .frame(width: 80, height: density.eraseHeight)
                         .sticker(fill: .white, radius: 12, border: 3, shadow: Tokens.Sticker.Shadow.wordOnSheet)
                 }
                 .buttonStyle(.press)
                 .accessibilityIdentifier("erase")
             }
         }
-        .padding(12)
+        .padding(density.keyboardPadding)
         .frame(maxWidth: .infinity)
         .background {
             RoundedRectangle(cornerRadius: 22).fill(Tokens.Colors.white.opacity(0.6))
@@ -118,9 +139,9 @@ struct DailyKeyboard: View {
         case nil: .white
         }
         return Button { type(letter) } label: {
-            Text(String(letter)).font(.ui(20, weight: .bold))
+            Text(String(letter)).font(.ui(density.keyFont, weight: .bold))
                 .foregroundStyle(used ? Color(hex: 0xB9B4C6) : Tokens.Colors.ink)
-                .frame(width: used ? 40 : 34, height: used ? 48 : 42)
+                .frame(width: density.keySize(used: used).width, height: density.keySize(used: used).height)
                 .sticker(fill: fill, radius: 12, border: used ? 0 : 3, shadow: used ? ShadowToken(y: 0, blur: 0, opacity: 0) : Tokens.Sticker.Shadow.wordOnSheet)
         }
         .buttonStyle(.press)

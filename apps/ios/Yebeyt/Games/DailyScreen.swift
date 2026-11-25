@@ -15,21 +15,35 @@ struct DailyScreen: View {
     }
 
     var body: some View {
+        GeometryReader { screen in
+            // The board's sizes need about 700 pt between the status bar and the home indicator; below that (an iPhone SE) set it tighter.
+            page(DailyDensity(compact: screen.size.height < Self.compactBelow))
+        }
+    }
+
+    private static let compactBelow: CGFloat = 700
+
+    private func page(_ density: DailyDensity) -> some View {
         ZStack {
-            VStack(spacing: 14) {
-                header
-                DailyCoupletCard(puzzle: session.puzzle, revealed: session.isOver)
-                DailyGrid(game: session.game)
-                    .shake(session.game.misses)
-                    // The last miss has the answer sheet's own error tap.
-                    .sensoryFeedback(.error, trigger: session.game.misses) { old, new in new > old && !session.isOver }
-                DailyKeyboard(keys: session.puzzle.keys, marks: session.game.keyMarks, type: session.type, erase: session.erase)
-                Spacer(minLength: 0)
-                bottomBar
+            ScrollView {
+                VStack(spacing: density.gap) {
+                    DailyCoupletCard(puzzle: session.puzzle, revealed: session.isOver, density: density)
+                    DailyGrid(game: session.game, density: density)
+                        .shake(session.game.misses)
+                        // The last miss has the answer sheet's own error tap.
+                        .sensoryFeedback(.error, trigger: session.game.misses) { old, new in new > old && !session.isOver }
+                    DailyKeyboard(keys: session.puzzle.keys, marks: session.game.keyMarks, type: session.type, erase: session.erase, density: density)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 6)
+                .padding(.bottom, 12)
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 8)
-            .padding(.bottom, 26)
+            .scrollBounceBehavior(.basedOnSize)
+            .scrollIndicators(.hidden)
+            .stickyHeader { header }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                bottomBar.padding(.horizontal, 18).padding(.bottom, density.bottomPadding)
+            }
             .accessibilityHidden(sheetShown)
             if sheetShown {
                 AnswerSheet(

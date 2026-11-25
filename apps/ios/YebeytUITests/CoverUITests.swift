@@ -15,15 +15,13 @@ final class CoverUITests: XCTestCase {
     }
 
     /// The cover is up and settled: it has stopped moving, and reaches from the top of the screen to (at least) its bottom
-    /// edge. Its frame is the union of everything in it, so it also holds the paper it keeps under the bottom edge, and a
-    /// screen whose content is taller than the screen (the daily puzzle on an iPhone SE is ~30 pt too tall) pokes out a few
-    /// points above the top: the top may be up to 40 pt above the screen's top, but never lower (a cover still rising or stuck low).
+    /// edge. Its frame is the union of everything in it, so it also holds the paper it keeps under the bottom edge.
     @MainActor private func isFullyOnScreen(_ cover: XCUIElement, in app: XCUIApplication, timeout: TimeInterval = 8) -> Bool {
         let screen = app.windows.firstMatch.frame
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             let frame = cover.frame
-            if cover.exists, frame.minX >= -1, frame.maxX <= screen.maxX + 1, frame.minY <= 2, frame.minY >= -40, frame.maxY >= screen.maxY - 2 {
+            if cover.exists, frame.minX >= -1, frame.maxX <= screen.maxX + 1, frame.minY <= 2, frame.minY >= -2, frame.maxY >= screen.maxY - 2 {
                 Thread.sleep(forTimeInterval: 0.3)
                 if cover.exists, abs(cover.frame.minY - frame.minY) < 0.5, abs(cover.frame.maxY - frame.maxY) < 0.5 { return true }
             }
