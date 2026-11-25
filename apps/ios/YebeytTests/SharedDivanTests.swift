@@ -124,6 +124,47 @@ struct SharedDivanTests {
         #expect(model.toast == APIError.network.persianMessage)
     }
 
+    // MARK: Removing
+
+    @Test func aCoupletIAddedIsTakenOutAtOnceAndTheServerIsAsked() async {
+        let (model, stub) = model { request in request.method == "DELETE" ? .json(204, "") : Self.server(request) }
+        await model.load()
+        let task = Task { await model.remove(model.items[1]) }  // i2 is mine
+        await Task.yield()  // the task runs as far as its request: the couplet is already out
+        #expect(model.items.map(\.id) == ["i1", "i3", "i4"])
+        #expect(model.counts == SharedDivanCounts(total: 23, mine: 10, theirs: 13))
+        await task.value
+        #expect(model.items.map(\.id) == ["i1", "i3", "i4"])
+        #expect(model.toast == nil)
+        #expect(stub.requests.filter { $0.method == "DELETE" }.map(\.path) == ["/v1/shared-divans/d1/items/i2"])
+    }
+
+    @Test func aRemovalThatFailsPutsTheCoupletBackWhereItWasAndShowsTheToast() async {
+        let (model, _) = model { request in request.method == "DELETE" ? .offline : Self.server(request) }
+        await model.load()
+        await model.remove(model.items[1])
+        #expect(model.items.map(\.id) == ["i1", "i2", "i3", "i4"])
+        #expect(model.counts == SharedDivanCounts(total: 24, mine: 11, theirs: 13))
+        #expect(model.toast == APIError.network.persianMessage)
+    }
+
+    @Test func onlyACoupletIAddedCanBeRemoved() async {
+        let (model, stub) = model(Self.server)
+        await model.load()
+        await model.remove(model.items[0])  // i1 is hers
+        #expect(model.items.map(\.id) == ["i1", "i2", "i3", "i4"])
+        #expect(!stub.requests.contains { $0.method == "DELETE" })
+        #expect(model.items.map(\.addedByMe) == [false, true, false, true])
+    }
+
+    @Test func aRemovedCoupletLeavesThePoetChipsThatNoLongerHaveOne() async {
+        let (model, _) = model { request in request.method == "DELETE" ? .json(204, "") : Self.server(request) }
+        await model.load()
+        #expect(model.poetSlugs == ["hafez", "saadi", "moulavi"])
+        await model.remove(model.items[1])  // the only couplet of Saadi
+        #expect(model.poetSlugs == ["hafez", "moulavi"])
+    }
+
     @Test func aCoupletTheOtherPersonAddsComesInAtTheTopAndMovesTheCounts() async throws {
         let (model, _) = model(Self.server)
         await model.load()

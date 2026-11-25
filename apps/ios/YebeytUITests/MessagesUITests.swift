@@ -158,6 +158,49 @@ final class MessagesUITests: XCTestCase {
         XCTAssertTrue(app.buttons["addToDivan"].waitForExistence(timeout: 10))
     }
 
+    @MainActor func testRemovingACoupletIAddedToTheSharedDivanAsksFirst() {
+        let app = launch(["-beytRoute", "shared:sara.ghazal"])
+        // Hers (i1): the menu has no «بردار».
+        let hers = element(app, "sharedCouplet-i1")
+        XCTAssertTrue(hers.waitForExistence(timeout: 10))
+        hers.press(forDuration: 1.0)
+        XCTAssertTrue(app.buttons["به دیوان مشترک"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["بردار"].exists)
+        app.buttons["کپی متن"].tap()
+
+        // Mine (i2): «بردار» asks, «نه» keeps it, «بردار» removes it.
+        let mine = element(app, "sharedCouplet-i2")
+        XCTAssertTrue(mine.waitForExistence(timeout: 5))
+        mine.press(forDuration: 1.0)
+        XCTAssertTrue(app.buttons["بردار"].waitForExistence(timeout: 5))
+        Self.screenshot(app, "shared-remove-menu")
+        app.buttons["بردار"].tap()
+        XCTAssertTrue(element(app, "removeSharedTitle").waitForExistence(timeout: 5))
+        XCTAssertEqual(element(app, "removeSharedTitle").label, "از دیوان مشترک برداشته بشه؟")
+        XCTAssertEqual(element(app, "removeSharedMessage").label, "برای سارا هم برداشته می‌شه.")
+        Self.screenshot(app, "shared-remove-confirm")
+        element(app, "removeSharedCancel").tap()
+        XCTAssertTrue(element(app, "sharedItem-i2").waitForExistence(timeout: 5))
+
+        element(app, "sharedCouplet-i2").press(forDuration: 1.0)
+        XCTAssertTrue(app.buttons["بردار"].waitForExistence(timeout: 5))
+        app.buttons["بردار"].tap()
+        XCTAssertTrue(element(app, "removeSharedConfirm").waitForExistence(timeout: 5))
+        element(app, "removeSharedConfirm").tap()
+        let gone = NSPredicate(format: "exists == false")
+        expectation(for: gone, evaluatedWith: element(app, "sharedItem-i2"))
+        waitForExpectations(timeout: 5)
+        XCTAssertTrue(element(app, "sharedItem-i1").exists)
+        XCTAssertTrue(element(app, "sharedItem-i3").exists)
+        Self.screenshot(app, "shared-remove-done")
+    }
+
+    @MainActor private static func screenshot(_ app: XCUIApplication, _ name: String) {
+        guard let folder = ProcessInfo.processInfo.environment["SHARED_REMOVE_SHOTS"] else { return }
+        try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        try? app.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: "\(folder)/\(name).png"))
+    }
+
     @MainActor func testTheSharedDivanFiltersByWhoAddedAndByPoetAndLikes() {
         let app = launch(["-beytRoute", "shared:sara.ghazal"])
         XCTAssertTrue(element(app, "sharedItem-i1").waitForExistence(timeout: 10))

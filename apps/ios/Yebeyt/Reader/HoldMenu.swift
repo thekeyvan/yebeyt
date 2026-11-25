@@ -14,9 +14,18 @@ struct HeldCouplet: Equatable, Identifiable {
     let copyText: String
     /// Set when the long press happened in a chat: the person whose shared divan «به دیوان مشترک» goes to.
     var sharedWith: ChatPerson?
+    /// Set when the long press happened on a couplet I added to a shared divan: the menu then offers «بردار».
+    var removal: SharedDivanRemoval?
 
     var id: String { ReaderMarks.key(poemPath: path, couplet: index) }
     var hasMeaning: Bool { couplet.meaning != nil }
+}
+
+/// A couplet of a shared divan that I added, which the menu can take out again («بردار»): the divan is the one with
+/// `username`, the item is the server's id.
+struct SharedDivanRemoval: Equatable {
+    let username: String
+    let itemID: String
 }
 
 /// A long press on a couplet: the page blurs, the couplet is lifted on a tilted card, with a row of icons and a list.
@@ -35,6 +44,8 @@ struct HoldMenu: View {
     let addToSharedDivan: () -> Void
     /// Taking the couplet out of the divan shows a toast with «برگردون»: the screen's toast takes the line and the way back.
     let offerUndo: (String, ToastUndo) -> Void
+    /// «بردار»: asks (the shared divan's screen does) before the couplet goes out of the shared divan.
+    var removeFromSharedDivan: (SharedDivanRemoval) -> Void = { _ in }
 
     /// The board puts the lifted couplet 258pt below the top of the screen (844pt tall).
     private static let boardTop: CGFloat = 258
@@ -171,6 +182,11 @@ struct HoldMenu: View {
                 UIPasteboard.general.string = held.copyText
                 dismiss()
             }
+            if let removal = held.removal {
+                rule
+                row("بردار", CloseIcon(), destructive: true) { removeFromSharedDivan(removal) }
+                    .accessibilityIdentifier("removeFromSharedDivan")
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 4)
@@ -183,11 +199,11 @@ struct HoldMenu: View {
         Tokens.Colors.paper.frame(height: 1)
     }
 
-    private func row(_ title: String, _ icon: some Shape, action: @escaping () -> Void) -> some View {
+    private func row(_ title: String, _ icon: some Shape, destructive: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                LineIcon(shape: icon, size: 20, lineWidth: 2.2, fill: nil).foregroundStyle(Tokens.Colors.lapis)
-                Text(title).font(.ui(15, weight: .medium)).foregroundStyle(Tokens.Colors.ink)
+                LineIcon(shape: icon, size: 20, lineWidth: 2.2, fill: nil).foregroundStyle(destructive ? Tokens.Colors.fire : Tokens.Colors.lapis)
+                Text(title).font(.ui(15, weight: .medium)).foregroundStyle(destructive ? Tokens.Colors.fire : Tokens.Colors.ink)
                 Spacer(minLength: 0)
             }
             .padding(.vertical, 12)

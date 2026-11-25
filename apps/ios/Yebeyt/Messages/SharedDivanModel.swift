@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 
 /// The divan two friends share: its couplets (newest first), the counts, the filter chips and the likes.
 @MainActor @Observable
@@ -146,6 +147,36 @@ final class SharedDivanModel {
             if let now = items.firstIndex(where: { $0.id == item.id }) { items[now] = answer }
         } catch {
             if let now = items.firstIndex(where: { $0.id == item.id }) { items[now].likedByMe = !liked }
+            toast = (error as? APIError).map { MessageCopy.toast(for: $0) }
+        }
+    }
+
+    // MARK: Removing
+
+    /// «بردار»: a couplet I added goes out of the list at once (with the list's spring); the server is asked, and a
+    /// failure puts it back where it was with the toast. A couplet the other person added is never removed.
+    func remove(_ item: SharedDivanItem) async {
+        guard let divan, item.addedByMe, let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+        let (before, countsBefore) = (items[index], counts)
+        withAnimation(Motion.bouncy) {
+            items.remove(at: index)
+            if var counts {
+                counts.total -= 1
+                counts.mine -= 1
+                self.counts = counts
+            }
+            if filter.author == .all { notePoets() }
+        }
+        do {
+            try await session.authorized { try await self.session.api.removeSharedDivanItem(id: divan.id, item: item.id, token: $0) }
+        } catch {
+            withAnimation(Motion.bouncy) {
+                if !items.contains(where: { $0.id == before.id }) {
+                    items.insert(before, at: min(index, items.count))
+                }
+                counts = countsBefore
+                if filter.author == .all { notePoets() }
+            }
             toast = (error as? APIError).map { MessageCopy.toast(for: $0) }
         }
     }

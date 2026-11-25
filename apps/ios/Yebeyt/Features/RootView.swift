@@ -127,7 +127,11 @@ struct RootView: View {
                 model.hold = nil
                 model.sharedTarget = SharedDivanTarget(key: held.id, person: held.sharedWith)
             },
-            offerUndo: { model.showToast($0, undo: $1) }
+            offerUndo: { model.showToast($0, undo: $1) },
+            removeFromSharedDivan: { removal in
+                model.hold = nil
+                model.sharedRemoval = removal
+            }
         )
         .motionTransition { Motion.menu($0, anchor: HoldMenu.origin) }
     }

@@ -54,6 +54,8 @@ final class AppModel {
     private(set) var toastSerial = 0
     /// The couplet that «به دیوان مشترک» was chosen for, over the tabs; nil when no sheet is open.
     var sharedTarget: SharedDivanTarget?
+    /// The couplet of a shared divan that «بردار» was chosen for; that divan's screen asks before removing it.
+    var sharedRemoval: SharedDivanRemoval?
     /// The couplet lifted by a long press outside the reader (the divan), shown over the tabs; nil when none is.
     var hold: HeldCouplet?
     /// What the iOS share sheet shows over the tabs, nil when it is closed.

@@ -165,6 +165,7 @@ enum MessagesStub {
             case ("POST", 4):
                 let key = json["key"] as? String ?? "/hafez/ghazal/sh8#4"
                 return (201, item("new-\(UUID().uuidString.prefix(6))", key, mine: true, note: json["note"] as? String, at: now))
+            case ("DELETE", 5): return (204, "")  // a couplet I added, taken out
             case ("PUT", 6), ("DELETE", 6):
                 let known = ["i1": ("/hafez/ghazal/sh8#4", false), "i2": ("/khayyam/robaee/sh2#0", true), "i3": ("/babataher/2beytiha/sh1#0", false)][parts[4]]
                 return (200, item(parts[4], known?.0 ?? "/hafez/ghazal/sh8#4", mine: parts[4] == "i2", likedByMe: method == "PUT", likedByThem: known?.1 ?? false, at: at(1, 20, 0)))

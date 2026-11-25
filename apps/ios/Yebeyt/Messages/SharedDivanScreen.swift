@@ -14,10 +14,19 @@ struct SharedDivanScreen: View {
 private struct SharedDivanContent: View {
     @Environment(AvatarStore.self) private var avatar
     @Environment(PoetryStore.self) private var store
+    @Environment(AppModel.self) private var app
     @Bindable var model: SharedDivanModel
     @State private var adding = false
 
     private var name: String { model.other?.name ?? model.username }
+
+    /// The question is on screen while the menu's «بردار» has named a couplet of this divan.
+    private var askingToRemove: Binding<Bool> {
+        Binding(
+            get: { app.sharedRemoval?.username == model.username },
+            set: { if !$0 { app.sharedRemoval = nil } }
+        )
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -35,6 +44,15 @@ private struct SharedDivanContent: View {
         .sheet(isPresented: $adding) {
             CoupletPickerSheet(title: "یه بیت اضافه کن", action: "اضافه کن") { key, note in
                 Task { await model.add(key: key, note: note) }
+            }
+        }
+        .sheet(isPresented: askingToRemove) {
+            ConfirmSheet(
+                title: "از دیوان مشترک برداشته بشه؟", message: "برای \(name) هم برداشته می‌شه.", confirm: "بردار", prefix: "removeShared",
+                isPresented: askingToRemove
+            ) {
+                guard let removal = app.sharedRemoval, let item = model.items.first(where: { $0.id == removal.itemID }) else { return }
+                Task { await model.remove(item) }  // at once: the sheet doesn't wait for the server
             }
         }
         .onAppear { model.isVisible = true }
@@ -148,7 +166,8 @@ private struct SharedDivanContent: View {
                     LazyVStack(spacing: 12) {
                         let items = model.visibleItems
                         ForEach(items) { item in
-                            SharedDivanCard(item: item, name: name, otherFace: model.other?.avatar, myFace: avatar.parts, like: { Task { await model.toggleLike(item) } })
+                            SharedDivanCard(item: item, name: name, username: model.username, otherFace: model.other?.avatar, myFace: avatar.parts, like: { Task { await model.toggleLike(item) } })
+                                .motionTransition(Motion.row)
                                 .onAppear { if item.id == items.last?.id { Task { await model.loadMore() } } }
                         }
                     }
@@ -175,6 +194,7 @@ private struct SharedDivanCard: View {
     @Environment(CoupletResolver.self) private var resolver
     let item: SharedDivanItem
     let name: String
+    let username: String
     let otherFace: AvatarParts?
     let myFace: AvatarParts
     let like: () -> Void
@@ -224,15 +244,22 @@ private struct SharedDivanCard: View {
             CoupletText(couplet: resolved.couplet, settings: Self.settings, size: 17, factor: 1.85, color: Tokens.Colors.ink)
                 .contentShape(Rectangle())
                 .onTapGesture { app.openReader(ReaderRoute(path: resolved.path, couplet: resolved.index)) }
-                .onLongPressGesture(minimumDuration: 0.45) { withAnimation(.snappy) { app.hold = resolved.held } }
+                .onLongPressGesture(minimumDuration: 0.45) { withAnimation(.snappy) { app.hold = held(resolved) } }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("\(resolved.couplet.m1)، \(resolved.couplet.m2)")
                 .accessibilityAddTraits(.isButton)
-                .accessibilityAction(named: "کارهای این بیت") { app.hold = resolved.held }
+                .accessibilityAction(named: "کارهای این بیت") { app.hold = held(resolved) }
                 .accessibilityIdentifier("sharedCouplet-\(item.id)")
         } else {
             Text("…").font(.ui(17)).foregroundStyle(Tokens.Colors.muted).frame(maxWidth: .infinity).padding(.vertical, 20)
         }
+    }
+
+    /// The menu's couplet; «بردار» is offered on one I added.
+    private func held(_ resolved: ResolvedCouplet) -> HeldCouplet {
+        var held = resolved.held
+        if item.addedByMe { held.removal = SharedDivanRemoval(username: username, itemID: item.id) }
+        return held
     }
 
     private var footer: some View {

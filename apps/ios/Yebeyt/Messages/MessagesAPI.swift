@@ -66,6 +66,11 @@ extension API {
         return try await call("POST", "/v1/shared-divans/\(id)/items", body: Body(key: key, note: note), token: token)
     }
 
+    /// Takes a couplet I added out of the divan (204; 403 when the other person added it). Its likes go with it.
+    func removeSharedDivanItem(id: String, item: String, token: String) async throws {
+        try await send("DELETE", "/v1/shared-divans/\(id)/items/\(item)", token: token)
+    }
+
     func setSharedDivanLike(id: String, item: String, liked: Bool, token: String) async throws -> SharedDivanItem {
         try await call(liked ? "PUT" : "DELETE", "/v1/shared-divans/\(id)/items/\(item)/like", token: token)
     }

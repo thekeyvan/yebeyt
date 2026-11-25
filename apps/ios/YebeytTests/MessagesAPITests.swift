@@ -44,7 +44,7 @@ struct MessagesAPITests {
             case ("GET", "/v1/me/unread"): .json(200, #"{"total":3,"friendRequests":1}"#)
             case ("GET", "/v1/conversations/c1/messages"): .json(200, MessageJSON.page([]))
             case ("POST", "/v1/conversations/c1/messages"): .json(201, MessageJSON.message(id: "m1", fromMe: true, text: "x"))
-            case ("PUT", "/v1/conversations/c1/read"), ("DELETE", "/v1/messages/m1"), ("POST", "/v1/reports"): .json(204, "")
+            case ("PUT", "/v1/conversations/c1/read"), ("DELETE", "/v1/messages/m1"), ("DELETE", "/v1/shared-divans/d1/items/i1"), ("POST", "/v1/reports"): .json(204, "")
             case ("GET", "/v1/shared-divans"): .json(200, #"{"items":[{"id":"d1","other":{"username":"sara","displayName":"سارا","avatar":null},"counts":{"total":24,"mine":11,"theirs":13}}],"nextCursor":null}"#)
             case ("POST", "/v1/shared-divans"): .json(200, #"{"id":"d1","other":{"username":"sara","displayName":null,"avatar":null},"counts":{"total":0,"mine":0,"theirs":0}}"#)
             case ("GET", "/v1/shared-divans/d1/items"): .json(200, #"{"items":[],"nextCursor":null,"counts":{"total":24,"mine":11,"theirs":13}}"#)
@@ -70,6 +70,8 @@ struct MessagesAPITests {
         _ = try await api.addSharedDivanItem(id: "d1", key: "/hafez/ghazal/sh3#0", note: "یاد سفر", token: "t")
         #expect(try await api.setSharedDivanLike(id: "d1", item: "i1", liked: true, token: "t").likedByMe)
         #expect(try await api.setSharedDivanLike(id: "d1", item: "i1", liked: false, token: "t").likedByMe == false)
+        try await api.removeSharedDivanItem(id: "d1", item: "i1", token: "t")
+        #expect(stub.requests.contains { $0.method == "DELETE" && $0.path == "/v1/shared-divans/d1/items/i1" })
 
         #expect(stub.requests.allSatisfy { $0.authorization == "Bearer t" })
         #expect(stub.requests[0].query == "cursor=next")
