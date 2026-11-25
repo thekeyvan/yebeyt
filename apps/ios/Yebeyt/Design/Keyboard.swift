@@ -22,7 +22,7 @@ enum Keyboard {
         field?.contains(point) == true
     }
 
-    /// The frame, in window coordinates, of the text field or text view that is the first responder; nil when none is.
+    /// Where the text field or text view that is the first responder is drawn, in window coordinates; nil when none is.
     static func focusedFieldFrame() -> CGRect? {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         guard let window = scenes.flatMap(\.windows).first(where: \.isKeyWindow) else { return nil }
@@ -31,7 +31,7 @@ enum Keyboard {
             return view.subviews.lazy.compactMap(focused).first
         }
         guard let field = focused(window) else { return nil }
-        return field.convert(field.bounds, to: window)
+        return field.drawnFrame(in: window)
     }
 }
 

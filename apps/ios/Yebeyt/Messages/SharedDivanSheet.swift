@@ -108,6 +108,7 @@ struct SharedDivanSheet: View {
                 .onChange(of: adder.note) { _, new in
                     if new.utf16.count > SharedDivanAdder.maxNoteLength { adder.note = new.limited(toUTF16: SharedDivanAdder.maxNoteLength) }
                 }
+                .feedbackPrivate()
                 .accessibilityIdentifier("divanNote")
             Button("اضافه کن") { Task { await adder.add() } }
                 .buttonStyle(.sticker(.primary))

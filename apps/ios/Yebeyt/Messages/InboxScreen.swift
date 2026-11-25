@@ -126,6 +126,7 @@ private struct InboxRow: View {
                         .font(.ui(13, weight: unread ? .medium : .regular))
                         .foregroundStyle(unread ? Tokens.Colors.ink : Tokens.Colors.muted)
                         .lineLimit(1)
+                        .feedbackPrivate()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 VStack(alignment: .trailing, spacing: 6) {

@@ -38,6 +38,15 @@ final class KeyboardUITests: XCTestCase {
         XCTAssertEqual(composer.value as? String, "salam")
     }
 
+    @MainActor func testATapInTheFieldItselfKeepsTheKeyboard() {
+        let app = launchChat()
+        let composer = typeInComposer(app)
+        composer.tap()
+        XCTAssertFalse(waitForKeyboardToGo(app, timeout: 2))
+        composer.typeText("!")
+        XCTAssertTrue((composer.value as? String ?? "").contains("!"))  // still typing in it
+    }
+
     @MainActor func testPullingTheMessagesDownClosesTheKeyboard() {
         let app = launchChat()
         _ = typeInComposer(app)

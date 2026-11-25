@@ -184,6 +184,7 @@ struct ReportSheet: View {
                 .font(.ui(14)).lineLimit(1...3)
                 .padding(12)
                 .background(RoundedRectangle(cornerRadius: 14).fill(Tokens.Colors.paper))
+                .feedbackPrivate()
                 .accessibilityIdentifier("reportNote")
             Button {
                 busy = true

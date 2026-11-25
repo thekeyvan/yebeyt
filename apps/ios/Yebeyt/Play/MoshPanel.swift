@@ -79,6 +79,7 @@ struct MoshPanel: View {
             .frame(height: 46)
             .background(RoundedRectangle(cornerRadius: 14).fill(Tokens.Colors.white))
             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Tokens.Colors.lapis, lineWidth: 2))
+            .feedbackPrivate()
             .accessibilityIdentifier("moshField")
     }
 

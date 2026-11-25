@@ -115,6 +115,7 @@ struct InviteScreen: View {
                     .focused($editing)
                     .font(.ui(14)).lineSpacing(6)
                     .foregroundStyle(Tokens.Colors.ink)
+                    .feedbackPrivate()
                     .accessibilityIdentifier("inviteText")
             } else {
                 Text(text).font(.ui(14)).lineSpacing(6).foregroundStyle(Tokens.Colors.ink)

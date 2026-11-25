@@ -2,12 +2,18 @@ import UIKit
 
 /// The picture of the screen taken just before the feedback sheet opens. It stays in memory until it is sent or closed.
 enum ScreenshotCapture {
-    /// The app's key window as it is now (the keyboard and system parts are not in it).
+    /// The app's key window as it is now (the keyboard and system parts are not in it), with a blank over every private
+    /// view (`.feedbackPrivate()`), painted after the window is drawn so no typed text or message is in the picture.
     @MainActor static func keyWindow() -> UIImage? {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         guard let window = scenes.flatMap(\.windows).first(where: \.isKeyWindow) else { return nil }
+        let rects = FeedbackPrivacy.shared.rects(in: window)
+        FeedbackPrivacy.shared.recordRedaction(rects)
         let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
-        return renderer.image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: false) }
+        return renderer.image { context in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: false)
+            PrivateBlank.paint(rects, in: context.cgContext)
+        }
     }
 }
 

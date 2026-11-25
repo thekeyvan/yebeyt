@@ -330,6 +330,7 @@ private struct ChatContent: View {
                 .padding(.horizontal, 16)
                 .frame(height: 48)
                 .background(Capsule().fill(Tokens.Colors.white).stickerShadow(ShadowToken(y: 2, blur: 10, opacity: 0.16)))
+                .feedbackPrivate()
                 .accessibilityIdentifier("composer")
             Button(action: send) {
                 LineIcon(shape: MessagesIcon(), size: 20, lineWidth: 2.4, fill: nil)

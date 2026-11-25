@@ -159,6 +159,10 @@ struct FeedbackForm: View {
                 .opacity(model.draft.screenshotOn ? 1 : 0.4)
                 .accessibilityLabel("عکس صفحه")
                 .accessibilityIdentifier("feedbackThumbnail")
+                #if DEBUG
+                // The rects painted over the screenshot ("x,y,w,h;…"), for the UI tests.
+                .accessibilityValue(FeedbackPrivacy.shared.lastRedacted.map { "\(Int($0.minX)),\(Int($0.minY)),\(Int($0.width)),\(Int($0.height))" }.joined(separator: ";"))
+                #endif
         }
     }
 

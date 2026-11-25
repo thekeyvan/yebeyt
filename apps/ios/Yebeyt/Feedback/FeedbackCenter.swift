@@ -48,7 +48,10 @@ final class FeedbackCenter {
     private(set) var model: FeedbackModel?
     /// The little message over the app after sending («رسید، ممنون!»).
     private(set) var toast: String?
-    private(set) var isRecording = false
+    private(set) var isRecording = false {
+        // While the screen is recorded, private views (typed text, messages) are drawn covered.
+        didSet { FeedbackPrivacy.shared.covering = isRecording }
+    }
     /// The question «بازخوردت هنوز فرستاده نشده. ولش کنی؟» is on screen.
     var isConfirmingClose = false
     /// ReplayKit said no, or cannot record here: the bug screen hides the option.
@@ -93,21 +96,21 @@ final class FeedbackCenter {
 
     // MARK: Opening
 
-    /// The phone was shaken. Nothing happens when the shake is switched off in the settings. A text field in focus loses
-    /// it first, so the keyboard goes before the sheet comes.
+    /// The phone was shaken. Nothing happens when the shake is switched off in the settings.
     @discardableResult func shake() -> Bool {
-        guard FeedbackSettings.shakeEnabled(in: defaults), !isOpen, !isRecording else { return false }
-        dismissKeyboard()
+        guard FeedbackSettings.shakeEnabled(in: defaults) else { return false }
         return open(source: .shake)
     }
 
     /// Takes the screenshot and the state of the moment, then opens the sheet (straight at the form of `type` when
-    /// given). Not while a sheet or a recording is on.
+    /// given). Not while a sheet or a recording is on. A text field in focus loses it after the picture is taken (so the
+    /// picture matches the places that were covered), and before the sheet comes.
     @discardableResult func open(source: Source, type: FeedbackType? = nil) -> Bool {
         guard !isOpen, !isRecording else { return false }
         let snapshot = FeedbackSnapshot(screenshot: capture(), info: makeInfo(), device: device(), fromShake: source == .shake)
         self.snapshot = snapshot
         model = type.map { makeModel($0, snapshot) }
+        dismissKeyboard()
         presenter?.present(self)
         return true
     }

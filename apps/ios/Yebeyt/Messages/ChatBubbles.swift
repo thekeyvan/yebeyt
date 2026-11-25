@@ -39,6 +39,7 @@ struct TextBubble: View {
             }
             // The widest a bubble gets; the background above hugs the text.
             .frame(maxWidth: 250, alignment: mine ? .trailing : .leading)
+            .feedbackPrivate()
     }
 }
 
@@ -230,7 +231,7 @@ struct TextMessageView: View {
         }
         .frame(maxWidth: .infinity, alignment: mine ? .trailing : .leading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spoken)
+        .accessibilityLabel(FeedbackPrivacy.shared.covering ? "پنهان" : spoken)
         .accessibilityIdentifier("bubble-\(message.id)")
     }
 }

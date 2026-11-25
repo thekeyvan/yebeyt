@@ -209,6 +209,7 @@ struct ChallengeEndScreen: View {
                 .onSubmit { Task { await send() } }
                 .padding(.horizontal, 16).frame(height: 48)
                 .background(Capsule().fill(Tokens.Colors.boardPaper))
+                .feedbackPrivate()
                 .accessibilityIdentifier("challengeName")
             if let line { Text(line).font(.ui(12)).foregroundStyle(Tokens.Colors.fire).accessibilityIdentifier("challengeError") }
             Button("بفرست") { Task { await send() } }

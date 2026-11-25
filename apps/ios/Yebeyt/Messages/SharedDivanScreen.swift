@@ -214,6 +214,7 @@ private struct SharedDivanCard: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(UnevenRoundedRectangle(cornerRadii: RectangleCornerRadii(topLeading: 4, bottomLeading: 16, bottomTrailing: 16, topTrailing: 16)).fill(Color(hex: 0xFFF1F6)))
+                .feedbackPrivate()
             Spacer(minLength: 40)
         }
     }

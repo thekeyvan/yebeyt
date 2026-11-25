@@ -55,7 +55,7 @@ Product:
 - The app works **without an account**: reading, library, search, fal, listening, solo games, the divan on the phone. Only features with a server behind them (scores, leaderboard, streak, playing with friends, messages, sync) ask for an account, at the moment they are used, never up front.
 - Sign-in is **only Apple and Google**. No email or phone sign-up.
 - No religious symbols anywhere in icons or art (no crescent, star, mosque shapes, calligraphy of holy names).
-- Feedback reports follow the privacy rules in `docs/yebeyt-2.md`. Never send typed text from elsewhere, messages, phone number, IP or location.
+- Feedback reports follow the privacy rules in `docs/yebeyt-2.md`. Never send typed text from elsewhere, messages, phone number, IP or location. Any view that shows typed text or message text carries `.feedbackPrivate()`: it is blanked in feedback screenshots and covered while a recording runs.
 
 Code and data:
 - Keep files small and simple. No dead code, no speculative abstractions. Handle errors at the boundaries.

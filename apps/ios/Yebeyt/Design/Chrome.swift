@@ -160,6 +160,7 @@ struct SearchBox: View {
             .foregroundStyle(Tokens.Colors.ink)
             .submitLabel(.search)
             .autocorrectionDisabled()
+            .feedbackPrivate()
         if let focus { input.focused(focus) } else { input }
     }
 }
