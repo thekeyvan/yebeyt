@@ -115,7 +115,7 @@ struct ListenLoaderTests {
             timing: { _ in throw URLError(.notConnectedToInternet) }
         )
         let clip = try #require(await loader.clip(for: couplet), "the timing file is not needed")
-        #expect(clip == ListenClip(audio: URL(string: "https://i.ganjoor.net/a/2132-ff.mp3")!, start: 15.2, end: 19.9))
+        #expect(clip == ListenClip(audio: URL(string: "https://i.ganjoor.net/a/2132-ff.mp3")!, start: 15.2, end: 19.9, fade: ListenClipRange.measuredFade))
     }
 
     @Test func aPrecomputedRangeOfAnotherRecitationFallsBackToTheMarginRule() async throws {
@@ -215,6 +215,43 @@ struct ListenClipRangeTests {
 
     @Test func theFadeNeverStartsBeforeTheClip() {
         #expect(ListenClipRange.fadeRange(start: 10, end: 10.1) == 10...10.1)
+    }
+
+    @Test func aMeasuredClipFadesOnlyOverTheSilenceItEndsIn() async throws {
+        #expect(ListenClipRange.measuredFade == 0.08, "the 80 ms after the silence begins")
+        let measured = ListenRange(recitation: 2842, start: 15.2, end: 19.9)
+        let recitations = try JSONDecoder().decode([Recitation].self, from: Fixtures.data("recitations")).sorted { $0.audioOrder < $1.audioOrder }
+        let loader = ListenLoader(
+            poem: { path in Poem(id: 1, title: "", path: path, couplets: [Couplet(m1: "الف", m2: "ب")]) },
+            recitations: { _ in recitations }, timing: { _ in try Fixtures.data("timing-2130-ff", extension: "xml") }
+        )
+        var couplet = QuizFixtures.couplets(poet: "hafez", count: 1)[0]
+        couplet.poem = "/hafez/p1"
+        couplet.listenRange = measured
+        #expect(try #require(await loader.clip(for: couplet)).fade == ListenClipRange.measuredFade)
+        couplet.listenRange = ListenRange(recitation: 9999, start: 15.2, end: 19.9)
+        #expect(try #require(await loader.clip(for: couplet)).fade == ListenClipRange.fade, "the margin rule keeps the long fade")
+        let range = ListenClipRange.fadeRange(start: 15.2, end: 19.9, fade: ListenClipRange.measuredFade)
+        #expect(abs(range.lowerBound - 19.82) < 0.0001 && range.upperBound == 19.9)
+    }
+
+    @Test func theMixFollowsTheClipsOwnFade() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("listen-\(UUID().uuidString).caf")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let format = try #require(AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1))
+        let buffer = try #require(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 48000))
+        buffer.frameLength = 48000
+        do {
+            let file = try AVAudioFile(forWriting: url, settings: format.settings)
+            try file.write(from: buffer)
+        }
+        let clip = ListenClip(audio: url, start: 0.5, end: 2.0, fade: ListenClipRange.measuredFade)
+        let mix = try #require(await ListenClipRange.audioMix(for: AVURLAsset(url: url), clip: clip))
+        let parameters = try #require(mix.inputParameters.first)
+        var start: Float = -1, end: Float = -1
+        var range = CMTimeRange.zero
+        #expect(parameters.getVolumeRamp(for: CMTime(seconds: 1.95, preferredTimescale: 1000), startVolume: &start, endVolume: &end, timeRange: &range))
+        #expect(abs(range.start.seconds - 1.92) < 0.001 && abs(range.end.seconds - 2.0) < 0.001)
     }
 
     @Test func theMixRampsTheVolumeFromFullToNothingOverTheFade() async throws {

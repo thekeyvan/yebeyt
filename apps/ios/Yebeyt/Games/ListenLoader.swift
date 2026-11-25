@@ -18,7 +18,7 @@ struct ListenLoader: Sendable {
         guard let poem = try? await poem(couplet.poem), let list = try? await recitations(poem.id),
               let recitation = list.first(where: { $0.inSyncWithText && $0.xmlUrl != nil }), let xml = recitation.xmlUrl else { return nil }
         if let measured = couplet.listenRange, measured.recitation == recitation.id {
-            return ListenClip(audio: recitation.mp3Url, start: measured.start, end: measured.end)
+            return ListenClip(audio: recitation.mp3Url, start: measured.start, end: measured.end, fade: ListenClipRange.measuredFade)
         }
         guard let data = try? await timing(xml), let timing = try? RecitationTiming(xml: data),
               let range = timing.firstHemistich(ofCouplet: couplet.index, in: poem.couplets) else { return nil }

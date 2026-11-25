@@ -12,6 +12,8 @@ struct ListenClip: Equatable, Sendable {
     let audio: URL
     let start: Double
     let end: Double
+    /// Seconds before `end` the volume starts falling (`ListenClipRange.fade`, or `measuredFade` for a measured clip).
+    var fade = ListenClipRange.fade
 }
 
 /// One question of حدس شاعر, مصراع دوم, از کدوم کتاب؟ or گوش کن: a couplet, the options (shuffled) and which is right.

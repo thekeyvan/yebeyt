@@ -15,8 +15,12 @@ enum ListenClipRange {
     static let margin = 0.8
     /// The clip is never shorter than this (or than the hemistich itself, when that is shorter).
     static let minimumLength = 1.2
-    /// The volume falls from full to nothing over this many seconds before the end, so a stray syllable is not heard.
+    /// The volume falls from full to nothing over this many seconds before the end, so a stray syllable is not heard. This
+    /// is the fade of a clip cut by the margin rule, where the end may still be inside the voice.
     static let fade = 0.25
+    /// The fade of a measured clip (`ListenRange`): it ends 80 ms after the silence begins, so the fade lies wholly in the
+    /// silence and never touches the voiced last syllable.
+    static let measuredFade = 0.08
 
     /// The clip's end for a first hemistich read from `start` to the next hemistich's mark `nextMark`.
     static func end(start: Double, nextMark: Double) -> Double {
@@ -24,7 +28,7 @@ enum ListenClipRange {
     }
 
     /// The part of the audio the fade covers: the last `fade` seconds of the clip, but never before its start.
-    static func fadeRange(start: Double, end: Double) -> ClosedRange<Double> {
+    static func fadeRange(start: Double, end: Double, fade: Double = fade) -> ClosedRange<Double> {
         max(start, end - fade)...end
     }
 
@@ -32,7 +36,7 @@ enum ListenClipRange {
     /// then plays without a fade).
     static func audioMix(for asset: AVAsset, clip: ListenClip) async -> AVAudioMix? {
         guard let track = try? await asset.loadTracks(withMediaType: .audio).first else { return nil }
-        let range = fadeRange(start: clip.start, end: clip.end)
+        let range = fadeRange(start: clip.start, end: clip.end, fade: clip.fade)
         let parameters = AVMutableAudioMixInputParameters(track: track)
         parameters.setVolumeRamp(
             fromStartVolume: 1, toEndVolume: 0,
