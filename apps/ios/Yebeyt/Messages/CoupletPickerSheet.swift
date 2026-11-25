@@ -42,6 +42,7 @@ struct CoupletPickerSheet: View {
         .padding(.horizontal, 18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .dottedPaper()
+        .dismissesKeyboard()
         .presentationDetents([.large])
         .stickerSheet(white: false)
         .task { await loadDivan() }

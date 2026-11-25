@@ -46,7 +46,7 @@ struct SectionScreen: View {
         }
         .scrollIndicators(.hidden)
         .stickyHeader { ScreenHeader(title: section.title, subtitle: subtitle) }
-        .scrollDismissesKeyboard(.interactively)
+        .dismissesKeyboard()
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task {

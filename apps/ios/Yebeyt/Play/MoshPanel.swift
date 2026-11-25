@@ -32,6 +32,7 @@ struct MoshPanel: View {
         .padding(EdgeInsets(top: 14, leading: 14, bottom: 26, trailing: 14))
         .frame(maxWidth: .infinity)
         .background(UnevenRoundedRectangle(topLeadingRadius: 26, topTrailingRadius: 26).fill(Tokens.Colors.white.opacity(0.7)).ignoresSafeArea(edges: .bottom))
+        .dismissesKeyboardOnTap()
         .padding(.horizontal, -18)
         .sheet(isPresented: $confirmingResign) {
             ConfirmSheet(title: "کم آوردی؟ بازی رو می‌بازی.", message: nil, confirm: "کم آوردم", prefix: "resign", isPresented: $confirmingResign) {

@@ -24,6 +24,7 @@ final class FeedbackSheetPresenter: NSObject, FeedbackPresenting, UIAdaptivePres
     func present(_ center: FeedbackCenter) {
         self.center = center
         guard host == nil, let top = Self.topViewController() else { return }
+        Keyboard.dismiss()
         let controller = UIHostingController(rootView: FeedbackSheetRoot(center: center))
         controller.view.backgroundColor = .clear
         controller.overrideUserInterfaceStyle = .light

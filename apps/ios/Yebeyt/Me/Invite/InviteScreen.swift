@@ -33,7 +33,7 @@ struct InviteScreen: View {
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)
         } }
-        .scrollDismissesKeyboard(.interactively)
+        .dismissesKeyboard()
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .overlay(alignment: .bottom) { toastView }

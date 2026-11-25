@@ -44,7 +44,7 @@ struct LibraryScreen: View {
                 subtitle: "\(PersianDigits.string(library.books.count)) کتاب از \(PersianDigits.string(library.poetCount)) شاعر"
             )
         }
-        .scrollDismissesKeyboard(.interactively)
+        .dismissesKeyboard()
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
     }

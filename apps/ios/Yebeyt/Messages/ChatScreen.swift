@@ -143,7 +143,10 @@ private struct ChatContent: View {
             }
             .defaultScrollAnchor(.bottom)
             .scrollIndicators(.hidden)
-            .scrollDismissesKeyboard(.interactively)
+            // Even a short chat can be pulled down to close the keyboard; a tap on the messages closes it too (the
+            // composer is not part of this list: its send button keeps the keyboard).
+            .scrollBounceBehavior(.always)
+            .dismissesKeyboard()
             .onChange(of: chat.entries().last?.id, initial: true) { _, now in if now != nil { settled = true } }
             .onChange(of: chat.entries().last?.id) { _, _ in
                 guard let last = chat.entries().last else { return }
@@ -266,7 +269,10 @@ private struct ChatContent: View {
     private var quickActions: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                chip("بیت بفرست", enabled: true, id: "quickCouplet", action: { picking = true }) {
+                chip("بیت بفرست", enabled: true, id: "quickCouplet", action: {
+                    Keyboard.dismiss()
+                    picking = true
+                }) {
                     HStack(spacing: 2) {
                         RoundedRectangle(cornerRadius: 3).fill(Tokens.Colors.lapis).frame(width: 8, height: 12)
                         RoundedRectangle(cornerRadius: 3).fill(Tokens.Colors.fire).frame(width: 8, height: 12)

@@ -61,7 +61,7 @@ final class FeedbackCenter {
     @ObservationIgnored private let log: FeedbackLog
     @ObservationIgnored private let capture: () -> UIImage?
     @ObservationIgnored private let recorder: any ScreenRecording
-    @ObservationIgnored private let isEditingText: () -> Bool
+    @ObservationIgnored private let dismissKeyboard: () -> Void
     @ObservationIgnored private let network: () -> NetworkKind
     @ObservationIgnored private let device: () -> DeviceInfo
     @ObservationIgnored var presenter: (any FeedbackPresenting)?
@@ -72,7 +72,7 @@ final class FeedbackCenter {
     init(
         app: AppModel, text: TextSettingsStore, session: Session, defaults: UserDefaults = .standard, log: FeedbackLog = .shared,
         capture: @escaping () -> UIImage? = { ScreenshotCapture.keyWindow() }, recorder: any ScreenRecording = ScreenRecorder(),
-        isEditingText: @escaping () -> Bool = { FeedbackCenter.textFieldHasFocus() },
+        dismissKeyboard: @escaping () -> Void = { Keyboard.dismiss() },
         network: @escaping () -> NetworkKind = { NetworkMonitor.shared.current }, device: @escaping () -> DeviceInfo = { DeviceInfo.current() }
     ) {
         self.app = app
@@ -82,7 +82,7 @@ final class FeedbackCenter {
         self.log = log
         self.capture = capture
         self.recorder = recorder
-        self.isEditingText = isEditingText
+        self.dismissKeyboard = dismissKeyboard
         self.network = network
         self.device = device
     }
@@ -93,10 +93,11 @@ final class FeedbackCenter {
 
     // MARK: Opening
 
-    /// The phone was shaken. Nothing happens when the shake is switched off in the settings, or while a text field has
-    /// the focus (shaking the phone then undoes typing).
+    /// The phone was shaken. Nothing happens when the shake is switched off in the settings. A text field in focus loses
+    /// it first, so the keyboard goes before the sheet comes.
     @discardableResult func shake() -> Bool {
-        guard FeedbackSettings.shakeEnabled(in: defaults), !isEditingText() else { return false }
+        guard FeedbackSettings.shakeEnabled(in: defaults), !isOpen, !isRecording else { return false }
+        dismissKeyboard()
         return open(source: .shake)
     }
 
@@ -113,16 +114,6 @@ final class FeedbackCenter {
 
     private func makeModel(_ type: FeedbackType, _ snapshot: FeedbackSnapshot) -> FeedbackModel {
         FeedbackModel(type: type, snapshot: snapshot, sender: FeedbackSender(session: session, log: log))
-    }
-
-    /// A text field or text view in the key window is being edited.
-    static func textFieldHasFocus() -> Bool {
-        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-        guard let window = scenes.flatMap(\.windows).first(where: \.isKeyWindow) else { return false }
-        func editing(_ view: UIView) -> Bool {
-            (view.isFirstResponder && view is UITextInput) || view.subviews.contains(where: editing)
-        }
-        return editing(window)
     }
 
     private func makeInfo() -> TechnicalInfo {
@@ -158,7 +149,7 @@ final class FeedbackCenter {
     func requestClose() async {
         guard model?.hasUnsentWork == true else { return await close() }
         // The keyboard goes first, so it doesn't come and go under the question.
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        dismissKeyboard()
         isConfirmingClose = true
     }
 

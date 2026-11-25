@@ -56,7 +56,7 @@ struct DivanScreen: View {
         }
         .scrollIndicators(.hidden)
         .stickyHeader { header }
-        .scrollDismissesKeyboard(.interactively)
+        .dismissesKeyboard()
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task(id: keptKeys) { await divan.load(marks.keptItems, using: poetry) }

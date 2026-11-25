@@ -108,6 +108,7 @@ struct CoverLayer<Item: Identifiable & Equatable, Content: View>: View {
         .onAppear { covers = state.covers }
         .onChange(of: item) { _, new in
             if let new {
+                Keyboard.dismiss()  // a field under the cover keeps its focus otherwise: the keyboard would stay over the reader
                 if state.present(new) { rise(variant) }
             } else {
                 drop(variant)

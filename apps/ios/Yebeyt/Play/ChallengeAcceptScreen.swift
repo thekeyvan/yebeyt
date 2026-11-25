@@ -219,5 +219,6 @@ struct ChallengeEndScreen: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 26).fill(Tokens.Colors.white).shadow(color: Tokens.Colors.ink.opacity(0.08), radius: 6, x: 0, y: 3))
+        .dismissesKeyboardOnTap()
     }
 }

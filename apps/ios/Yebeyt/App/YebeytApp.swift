@@ -1,5 +1,6 @@
 import GoogleSignIn
 import SwiftUI
+import UIKit
 
 @main
 struct YebeytApp: App {
@@ -37,6 +38,8 @@ struct YebeytApp: App {
         let options = LaunchOptions.fromProcess
         if options.fresh { LaunchOptions.resetSavedState() }
         #endif
+        // A shake while writing would otherwise be taken by the undo alert and never reach `UIWindow.motionEnded`.
+        UIApplication.shared.applicationSupportsShakeToEdit = false
         NetworkMonitor.shared.start()
         ScreenRecorder.removeStaleFiles()
         let textSettings = TextSettingsStore()
@@ -193,7 +196,7 @@ struct YebeytApp: App {
         if showsStickers {
             StickerSheet()
         } else {
-            main
+            main.debugShakeHook()
         }
         #else
         main

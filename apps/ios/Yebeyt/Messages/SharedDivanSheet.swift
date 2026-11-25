@@ -25,6 +25,7 @@ struct SharedDivanSheet: View {
         .padding(.horizontal, 18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .dottedPaper()
+        .dismissesKeyboardOnTap()
         .overlay(alignment: .bottom) {
             if let failure = adder.failure { MessageToast(text: failure).padding(.bottom, 24).accessibilityIdentifier("sheetFailure") }
         }

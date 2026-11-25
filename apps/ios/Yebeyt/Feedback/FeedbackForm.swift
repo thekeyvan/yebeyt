@@ -32,7 +32,7 @@ struct FeedbackForm: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
-        .scrollDismissesKeyboard(.interactively)
+        .dismissesKeyboard()
         .stickyHeader(paper: Tokens.Colors.boardPaper) {
             FeedbackHeader(title: type.title, canSend: model.canSend, close: { Task { await center.requestClose() } }, send: { Task { await center.send() } })
                 .padding(.top, 10)

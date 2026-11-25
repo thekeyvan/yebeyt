@@ -32,9 +32,13 @@ struct FeedbackCenterTests {
         var log: FeedbackLog
         var defaults: UserDefaults
         var stub: StubServer
+        var keyboardClosed: Counter
     }
 
-    private func fixture(network: NetworkKind = .wifi, recorder: any ScreenRecording = FakeRecorder(), editing: Bool = false) -> Fixture {
+    private final class Counter { var count = 0 }
+
+    private func fixture(network: NetworkKind = .wifi, recorder: any ScreenRecording = FakeRecorder()) -> Fixture {
+        let closed = Counter()
         let defaults = UserDefaults(suiteName: "feedback.tests.\(UUID().uuidString)")!
         let stub = StubServer { _ in .json(201, #"{"id":"6f1c2a52-0d0b-4a9e-8a52-3f3b1a2f9c11","uploadToken":"t"}"#) }
         let app = AppModel()
@@ -43,10 +47,10 @@ struct FeedbackCenterTests {
         let session = Session(api: stub.api, store: KeychainStore(service: "com.yebeyt.tests.\(UUID().uuidString)"))
         let center = FeedbackCenter(
             app: app, text: TextSettingsStore(defaults: defaults), session: session, defaults: defaults, log: log,
-            capture: { nil }, recorder: recorder, isEditingText: { editing }, network: { network }, device: { DeviceInfo(appVersion: "2.0.0", deviceModel: "iPhone17,1", osVersion: "26.0") }
+            capture: { nil }, recorder: recorder, dismissKeyboard: { closed.count += 1 }, network: { network }, device: { DeviceInfo(appVersion: "2.0.0", deviceModel: "iPhone17,1", osVersion: "26.0") }
         )
         center.presenter = presenter
-        return Fixture(center: center, app: app, presenter: presenter, log: log, defaults: defaults, stub: stub)
+        return Fixture(center: center, app: app, presenter: presenter, log: log, defaults: defaults, stub: stub, keyboardClosed: closed)
     }
 
     @Test func aShakeOpensTheSheetUnlessTheSettingSwitchesItOff() {
@@ -199,11 +203,21 @@ struct FeedbackCenterTests {
         #expect(small.width == 390 && small.height == 844)  // never enlarged
     }
 
-    @Test func aShakeWhileATextFieldHasTheFocusDoesNotOpenTheSheet() {
-        let f = fixture(editing: true)
+    @Test func aShakeWhileTypingClosesTheKeyboardAndOpensTheSheet() {
+        let f = fixture()
+        #expect(f.center.shake())
+        #expect(f.center.isOpen)
+        #expect(f.keyboardClosed.count == 1)
+    }
+
+    @Test func aShakeThatOpensNothingLeavesTheKeyboardAlone() {
+        let f = fixture()
+        f.defaults.set(false, forKey: FeedbackSettings.shakeKey)
         #expect(!f.center.shake())
-        #expect(!f.center.isOpen)
-        #expect(f.center.open(source: .settings))  // the settings row is not a shake
+        f.defaults.set(true, forKey: FeedbackSettings.shakeKey)
+        #expect(f.center.shake())
+        #expect(!f.center.shake())  // the sheet is open: the report's own keyboard stays
+        #expect(f.keyboardClosed.count == 1)
     }
 
     @Test func goingToTheBackgroundStopsTheRecordingAndBringsTheFormBack() async throws {

@@ -36,7 +36,7 @@ struct PeoplePickSheet: View {
                         .padding(.bottom, 24)
                 }
                 .scrollIndicators(.hidden)
-                .scrollDismissesKeyboard(.interactively)
+                .dismissesKeyboard()
             }
             .padding(.horizontal, 18)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

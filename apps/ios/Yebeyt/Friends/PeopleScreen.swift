@@ -32,7 +32,7 @@ private struct PeopleScreenBody: View {
         }
         .scrollIndicators(.hidden)
         .stickyHeader { ScreenHeader(title: "پیدا کردن دوست") }
-        .scrollDismissesKeyboard(.interactively)
+        .dismissesKeyboard()
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .toast($toast)

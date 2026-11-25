@@ -52,7 +52,7 @@ struct UsernameStep: View {
             .padding(.bottom, 16)
         }
         .scrollIndicators(.hidden)
-        .scrollDismissesKeyboard(.interactively)
+        .dismissesKeyboard()
         .safeAreaInset(edge: .bottom, spacing: 8) { saveButton }
         .dottedPaper()
         .task { await loadSuggestions() }

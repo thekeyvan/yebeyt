@@ -37,7 +37,7 @@ struct SearchScreen: View {
             BackButton()
             SearchBox(text: $query, placeholder: "شاعر، شعر یا یه تیکه از بیت…", style: .round, focus: $focused)
         } }
-        .scrollDismissesKeyboard(.interactively)
+        .dismissesKeyboard()
         .dottedPaper()
         .toolbar(.hidden, for: .navigationBar)
         .task {
