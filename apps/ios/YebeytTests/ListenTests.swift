@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 import Testing
 @testable import Yebeyt
 
@@ -35,14 +36,15 @@ struct ListenTimingTests {
 struct ListenLoaderTests {
     /// What the stubbed Ganjoor answers for a poem: its recitations, and every timing file is the fixture.
     private func loader(
-        recited: @escaping @Sendable (Int) -> Bool = { _ in true }, timing: Data? = nil, failing: Bool = false
+        recited: @escaping @Sendable (Int) -> Bool = { _ in true }, timing: Data? = nil, failing: Bool = false,
+        couplets: [Couplet] = (0..<3).map { Couplet(m1: "الف\($0)", m2: "ب\($0)") }
     ) throws -> ListenLoader {
         let recitations = try JSONDecoder().decode([Recitation].self, from: Fixtures.data("recitations")).sorted { $0.audioOrder < $1.audioOrder }
         let xml = try timing ?? Fixtures.data("timing-2130-ff", extension: "xml")
         return ListenLoader(
             poem: { path in
                 if failing { throw URLError(.notConnectedToInternet) }
-                return Poem(id: Int(path.split(separator: "p").last ?? "0") ?? 0, title: "", path: path, couplets: (0..<3).map { Couplet(m1: "الف\($0)", m2: "ب\($0)") })
+                return Poem(id: Int(path.split(separator: "p").last ?? "0") ?? 0, title: "", path: path, couplets: couplets)
             },
             recitations: { id in
                 if failing { throw URLError(.notConnectedToInternet) }
@@ -64,9 +66,20 @@ struct ListenLoaderTests {
         GameDeck(couplets: (0..<poems).flatMap { poem in (0..<3).map { hafez(poem, index: $0) } } + QuizFixtures.couplets(poet: "saadi", count: 30))
     }
 
-    @Test func theClipIsTheFirstRecitationInSyncAndTheFirstHemistichsTime() async throws {
+    @Test func theClipIsTheFirstRecitationInSyncAndTheFirstHemistichUpToTheMargin() async throws {
         let clip = try #require(await loader().clip(for: hafez(1, index: 1)))
-        #expect(clip == ListenClip(audio: URL(string: "https://i.ganjoor.net/a/2132-ff.mp3")!, start: 15.486, end: 21.036))
+        #expect(clip.audio == URL(string: "https://i.ganjoor.net/a/2132-ff.mp3")!)
+        #expect(clip.start == 15.486)
+        #expect(abs(clip.end - (21.036 - ListenClipRange.margin)) < 0.0001, "it stops before the next hemistich's mark, not at it")
+    }
+
+    @Test func aLastOrSingleLineCoupletHasNoClip() async throws {
+        // Four couplets are timed up to the last verse, which has no mark after it; a single line has no second hemistich.
+        let couplets = [Couplet(m1: "نثر", m2: ""), Couplet(m1: "الف", m2: "ب"), Couplet(m1: "پ", m2: "ت"), Couplet(m1: "ث", m2: "ج")]
+        let loader = try loader(couplets: couplets)
+        #expect(await loader.clip(for: hafez(1, index: 0)) == nil, "a single line")
+        #expect(await loader.clip(for: hafez(1, index: 1)) != nil)
+        #expect(await loader.clip(for: hafez(1, index: 3)) == nil, "no mark for the verse after the last")
     }
 
     @Test func noRecitationInSyncOrNoTimingMeansNoClip() async throws {
@@ -122,5 +135,52 @@ struct ListenLoaderTests {
             let index = try #require(question.hintWord)
             #expect(words.indices.contains(index))
         }
+    }
+}
+
+struct ListenClipRangeTests {
+    @Test func theClipEndsTheMarginBeforeTheNextHemistich() {
+        #expect(abs(ListenClipRange.end(start: 15.486, nextMark: 21.036) - 20.236) < 0.0001)
+        #expect(abs(ListenClipRange.end(start: 0, nextMark: 7.386) - 6.586) < 0.0001)
+    }
+
+    @Test func aShortHemistichKeepsTheMinimumLength() {
+        #expect(ListenClipRange.end(start: 10, nextMark: 12.0) == 11.2, "2 s − 0.8 s is 1.2 s: just the minimum")
+        #expect(abs(ListenClipRange.end(start: 10, nextMark: 11.5) - 11.2) < 0.0001, "1.5 s − 0.8 s would be 0.7 s")
+    }
+
+    @Test func theClipNeverRunsPastTheMarkEvenWhenTheHemistichIsShorterThanTheMinimum() {
+        #expect(ListenClipRange.end(start: 10, nextMark: 10.9) == 10.9)
+    }
+
+    @Test func theFadeIsTheLastQuarterSecond() {
+        let range = ListenClipRange.fadeRange(start: 15.486, end: 20.236)
+        #expect(abs(range.lowerBound - 19.986) < 0.0001)
+        #expect(range.upperBound == 20.236)
+        #expect(ListenClipRange.fade == 0.25)
+    }
+
+    @Test func theFadeNeverStartsBeforeTheClip() {
+        #expect(ListenClipRange.fadeRange(start: 10, end: 10.1) == 10...10.1)
+    }
+
+    @Test func theMixRampsTheVolumeFromFullToNothingOverTheFade() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("listen-\(UUID().uuidString).caf")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let format = try #require(AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1))
+        let buffer = try #require(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 48000))
+        buffer.frameLength = 48000
+        do {
+            let file = try AVAudioFile(forWriting: url, settings: format.settings)
+            try file.write(from: buffer)
+        }
+        let clip = ListenClip(audio: url, start: 0.5, end: 2.0)
+        let mix = try #require(await ListenClipRange.audioMix(for: AVURLAsset(url: url), clip: clip))
+        let parameters = try #require(mix.inputParameters.first)
+        var start: Float = -1, end: Float = -1
+        var range = CMTimeRange.zero
+        #expect(parameters.getVolumeRamp(for: CMTime(seconds: 1.9, preferredTimescale: 1000), startVolume: &start, endVolume: &end, timeRange: &range))
+        #expect(start == 1 && end == 0)
+        #expect(abs(range.start.seconds - 1.75) < 0.001 && abs(range.end.seconds - 2.0) < 0.001)
     }
 }

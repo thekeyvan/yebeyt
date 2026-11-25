@@ -1,8 +1,8 @@
 import Foundation
 
 /// Finds what گوش کن plays: for a couplet of a Hafez poem, the first recitation that is in sync with the text and the
-/// seconds its first hemistich is read (from the timing file). Ganjoor is asked at the start of the round; the three
-/// calls are given as closures so tests can stub them.
+/// seconds its first hemistich is read (from the timing file; `ListenClipRange` stops it before the next hemistich).
+/// Ganjoor is asked at the start of the round; the three calls are given as closures so tests can stub them.
 struct ListenLoader: Sendable {
     var poem: @Sendable (String) async throws -> Poem
     var recitations: @Sendable (Int) async throws -> [Recitation]
@@ -17,7 +17,9 @@ struct ListenLoader: Sendable {
               let recitation = list.first(where: { $0.inSyncWithText && $0.xmlUrl != nil }), let xml = recitation.xmlUrl,
               let data = try? await timing(xml), let timing = try? RecitationTiming(xml: data),
               let range = timing.firstHemistich(ofCouplet: couplet.index, in: poem.couplets) else { return nil }
-        return ListenClip(audio: recitation.mp3Url, start: range.lowerBound, end: range.upperBound)
+        return ListenClip(
+            audio: recitation.mp3Url, start: range.lowerBound, end: ListenClipRange.end(start: range.lowerBound, nextMark: range.upperBound)
+        )
     }
 
     /// Up to `count` questions from the Hafez couplets of the deck, one for each poem that has a clip.

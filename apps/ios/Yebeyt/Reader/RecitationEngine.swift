@@ -37,7 +37,14 @@ typealias MakeRecitationEngine = @MainActor (URL, ListenClip?, RecitationEngineE
         // Precise timing, so a seek lands on the clip's start or the couplet's, also in a streamed mp3 with a variable
         // bit rate. A clip's item ends at the clip's end, exactly, and the end notification below finishes the clip.
         let item = AVPlayerItem(asset: AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]))
-        if let clip { item.forwardPlaybackEndTime = Self.time(clip.end) }
+        if let clip {
+            item.forwardPlaybackEndTime = Self.time(clip.end)
+            // The tracks of a streamed mp3 are known only a moment later; the fade is at the clip's end, so it is in time.
+            Task { @MainActor [weak item] in
+                guard let item, let mix = await ListenClipRange.audioMix(for: item.asset, clip: clip) else { return }
+                item.audioMix = mix
+            }
+        }
         player = AVPlayer(playerItem: item)
         statusObserver = item.observe(\.status) { item, _ in
             switch item.status {
