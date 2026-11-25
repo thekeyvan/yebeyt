@@ -33,7 +33,7 @@ enum GameKind: String, CaseIterable, Sendable {
         }
     }
 
-    /// The paragraph of the catalog card.
+    /// The rule of the game, which the catalog card gives VoiceOver as its hint.
     var about: String {
         switch self {
         case .daily: "یه بیت با یه کلمه‌ی جا افتاده؛ حرف‌هاش رو از برچسب‌های پایین بچین، تایپ لازم نیست. ۳ فرصت، برای همه یکی، فردا عوض می‌شه."

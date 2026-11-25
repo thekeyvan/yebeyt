@@ -4,16 +4,23 @@ import SwiftUI
 /// (the boards' `MOCK` in design/canvas/gen_games.py, smaller). Decorative: fixed sizes, hidden from VoiceOver.
 struct GamePreview: View {
     let kind: GameKind
+    @Environment(Library.self) private var library
+
+    /// The picture is drawn in this box and scaled down to the card when the card is narrower (small phones).
+    private static let designWidth: CGFloat = 88
+    private static let height: CGFloat = 72
 
     var body: some View {
-        // The picture is an overlay so its own widths never widen the card.
-        Color.clear
-            .frame(maxWidth: .infinity)
-            .frame(height: 72)
-            .overlay { content.padding(.horizontal, 6) }
-            .background(RoundedRectangle(cornerRadius: 14).fill(Tokens.Colors.boardPaper))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .accessibilityHidden(true)
+        GeometryReader { box in
+            content
+                .frame(width: Self.designWidth, height: Self.height)
+                .scaleEffect(min(1, box.size.width / Self.designWidth))
+                .position(x: box.size.width / 2, y: Self.height / 2)
+        }
+        .frame(height: Self.height)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Tokens.Colors.boardPaper))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .accessibilityHidden(true)
     }
 
     @ViewBuilder private var content: some View {
@@ -100,15 +107,17 @@ struct GamePreview: View {
     }
 
     private var poet: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 5) {
-                ForEach(Array(zip(["حافظ", "سعدی", "مولانا", "خیام"], [Tokens.Colors.lapis, Tokens.Colors.fire, Tokens.Colors.magenta, Tokens.Colors.ink]).enumerated()), id: \.offset) { index, pair in
-                    VStack(spacing: 1) {
-                        circle(pair.1, 20, ring: index == 2 ? Tokens.Colors.green : Tokens.Colors.white)
-                        Text(pair.0).font(.ui(7, weight: index == 2 ? .bold : .medium, scaled: false)).lineLimit(1).minimumScaleFactor(0.6)
-                            .foregroundStyle(index == 2 ? Color(hex: 0x3E9A1E) : Tokens.Colors.ink)
+        HStack(spacing: 2) {
+            ForEach(Array([("hafez", "حافظ"), ("saadi", "سعدی"), ("moulavi", "مولانا"), ("khayyam", "خیام")].enumerated()), id: \.offset) { index, item in
+                let right = index == 2
+                VStack(spacing: 1) {
+                    if let poet = library.poet(slug: item.0) {
+                        PoetCircle(poet: poet, size: 20, border: 2, borderColor: right ? Tokens.Colors.green : Tokens.Colors.white)
                     }
+                    Text(item.1).font(.ui(7, weight: right ? .bold : .medium, scaled: false)).lineLimit(1).minimumScaleFactor(0.6)
+                        .foregroundStyle(right ? Color(hex: 0x3E9A1E) : Tokens.Colors.ink)
                 }
+                .frame(width: 20)
             }
         }
     }
@@ -122,22 +131,32 @@ struct GamePreview: View {
     }
 
     private var book: some View {
-        HStack(alignment: .bottom, spacing: 6) {
-            ForEach(Array([("مثنوی", Tokens.Colors.amber, 34.0, true), ("دیوان شمس", Tokens.Colors.magenta, 30.0, false), ("فیه ما فیه", Color(hex: 0x1C20B8), 26.0, false)].enumerated()), id: \.offset) { _, item in
-                VStack(spacing: 2) {
-                    RoundedRectangle(cornerRadius: 3).fill(item.1).frame(width: 20, height: item.2)
-                        .overlay { if item.3 { RoundedRectangle(cornerRadius: 3).strokeBorder(Tokens.Colors.green, lineWidth: 2.5).padding(-3) } }
-                    Text(item.0).font(.ui(7, scaled: false)).lineLimit(1).minimumScaleFactor(0.6).foregroundStyle(Tokens.Colors.ink)
-                        .frame(width: 30)
+        VStack(spacing: 4) {
+            HStack(spacing: 3) {
+                if let poet = library.poet(slug: "moulavi") {
+                    PoetCircle(poet: poet, size: 14, border: 1.5)
+                }
+                Text("مولانا").font(.ui(8, weight: .bold, scaled: false)).foregroundStyle(Tokens.Colors.ink)
+            }
+            .padding(.leading, 2).padding(.trailing, 7).padding(.vertical, 1)
+            .background(Capsule().fill(Tokens.Colors.white))
+            HStack(alignment: .bottom, spacing: 4) {
+                ForEach(Array([("مثنوی", Tokens.Colors.amber, 26.0, true), ("دیوان شمس", Tokens.Colors.magenta, 22.0, false), ("فیه ما فیه", Color(hex: 0x1C20B8), 19.0, false)].enumerated()), id: \.offset) { _, item in
+                    VStack(spacing: 2) {
+                        RoundedRectangle(cornerRadius: 3).fill(item.1).frame(width: 18, height: item.2)
+                            .overlay { if item.3 { RoundedRectangle(cornerRadius: 3).strokeBorder(Tokens.Colors.green, lineWidth: 2).padding(-2) } }
+                        Text(item.0).font(.ui(7, scaled: false)).lineLimit(1).minimumScaleFactor(0.6).foregroundStyle(Tokens.Colors.ink)
+                            .frame(width: 26)
+                    }
                 }
             }
         }
     }
 
     private var match: some View {
-        HStack {
+        HStack(spacing: 0) {
             VStack(spacing: 6) { pill("گلگشت"); pill("مصلا") }
-            MatchCurve().stroke(Tokens.Colors.lapis, lineWidth: 1.6).frame(width: 10, height: 30)
+            MatchCurve().stroke(Tokens.Colors.lapis, lineWidth: 2).frame(width: 18, height: 34)
             VStack(spacing: 6) { pill("جای نماز"); pill("گردشگاه", right: true) }
         }
     }
@@ -172,15 +191,16 @@ struct GamePreview: View {
 
     private var duel: some View {
         VStack(spacing: 6) {
-            HStack(spacing: 6) {
-                circle(Tokens.Colors.amber, 24)
-                Text("۳").font(.title(16, scaled: false))
-                Text("۲").font(.title(16, scaled: false))
-                circle(Tokens.Colors.magenta, 24)
+            HStack(spacing: 3) {
+                circle(Tokens.Colors.amber, 18)
+                Text("۳").font(.title(13, scaled: false))
+                Text("در برابر").font(.ui(7, scaled: false)).foregroundStyle(Color(hex: 0x8A8698))
+                Text("۲").font(.title(13, scaled: false))
+                circle(Tokens.Colors.magenta, 18)
             }
             .foregroundStyle(Tokens.Colors.ink)
             HStack(spacing: 3) {
-                ForEach(Array([Tokens.Colors.green, Tokens.Colors.fire, Tokens.Colors.green, Tokens.Colors.green, Tokens.Colors.ring].enumerated()), id: \.offset) { _, color in
+                ForEach(Array([Tokens.Colors.green, Tokens.Colors.green, Tokens.Colors.fire, Tokens.Colors.green, Tokens.Colors.ring].enumerated()), id: \.offset) { _, color in
                     Capsule().fill(color).frame(width: 12, height: 5)
                 }
             }
@@ -194,11 +214,11 @@ private struct MatchCurve: Shape {
 
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.15))
+        path.move(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.2))
         path.addCurve(
-            to: CGPoint(x: rect.minX, y: rect.maxY - rect.height * 0.15),
-            control1: CGPoint(x: rect.midX, y: rect.minY + rect.height * 0.15),
-            control2: CGPoint(x: rect.midX, y: rect.maxY - rect.height * 0.15)
+            to: CGPoint(x: rect.minX, y: rect.maxY - rect.height * 0.2),
+            control1: CGPoint(x: rect.midX, y: rect.minY + rect.height * 0.2),
+            control2: CGPoint(x: rect.midX, y: rect.maxY - rect.height * 0.2)
         )
         return path
     }

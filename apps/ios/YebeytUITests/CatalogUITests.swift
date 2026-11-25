@@ -77,6 +77,24 @@ final class CatalogUITests: XCTestCase {
         shot(app, "catalog-default")
     }
 
+    /// Every word inside a card (the pictures' labels too) lies within the card, so a narrow phone does not cut any off.
+    @MainActor func testNoLabelOfAPictureIsCutOff() {
+        let app = launch()
+        XCTAssertTrue(app.buttons["catalog-daily"].waitForExistence(timeout: 10))
+        var seen = 0
+        for kind in kinds {
+            let card = app.buttons["catalog-\(kind)"]
+            let inside = card.frame.insetBy(dx: 8, dy: 0)
+            for text in card.descendants(matching: .staticText).allElementsBoundByIndex where !text.frame.isEmpty {
+                seen += 1
+                XCTAssertGreaterThanOrEqual(text.frame.minX, inside.minX - 1, "\(kind): «\(text.label)» is cut off on the right")
+                XCTAssertLessThanOrEqual(text.frame.maxX, inside.maxX + 1, "\(kind): «\(text.label)» is cut off on the left")
+            }
+        }
+        XCTAssertGreaterThan(seen, 20, "the pictures' labels are found")
+        shot(app, "catalog-narrow")
+    }
+
     @MainActor func testFewerColumnsAsTheTextGrows() {
         let medium = launch("UICTContentSizeCategoryXXL")
         XCTAssertTrue(medium.buttons["catalog-daily"].waitForExistence(timeout: 10))
