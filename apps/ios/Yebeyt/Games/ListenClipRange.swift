@@ -1,6 +1,7 @@
 import AVFoundation
 
-/// Where a گوش کن clip stops, and how it fades out. Ganjoor's marks are approximate, so the clip does not run to the
+/// Where a گوش کن clip stops, and how it fades out. A deck couplet usually carries the end measured in the real audio
+/// (`ListenRange`); this is the rule for any other: Ganjoor's marks are approximate, so the clip does not run to the
 /// start mark of the second hemistich: it stops inside the silence before it, and fades over its last moments.
 ///
 /// Measured on 30 Hafez ghazals (Farahandouz, the first recitation in sync; 204 couplets where the silence between the

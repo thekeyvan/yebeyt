@@ -105,6 +105,49 @@ struct ListenLoaderTests {
         #expect(await loader.clip(for: hafez(1)) == nil)
     }
 
+    @Test func aPrecomputedRangeOfTheSameRecitationIsPlayedAsItIsWithoutAskingForTheTiming() async throws {
+        var couplet = hafez(1, index: 1)
+        couplet.listenRange = ListenRange(recitation: 2842, start: 15.2, end: 19.9)
+        let recitations = try JSONDecoder().decode([Recitation].self, from: Fixtures.data("recitations")).sorted { $0.audioOrder < $1.audioOrder }
+        let loader = ListenLoader(
+            poem: { path in Poem(id: 1, title: "", path: path, couplets: [Couplet(m1: "الف", m2: "ب")]) },
+            recitations: { _ in recitations },
+            timing: { _ in throw URLError(.notConnectedToInternet) }
+        )
+        let clip = try #require(await loader.clip(for: couplet), "the timing file is not needed")
+        #expect(clip == ListenClip(audio: URL(string: "https://i.ganjoor.net/a/2132-ff.mp3")!, start: 15.2, end: 19.9))
+    }
+
+    @Test func aPrecomputedRangeOfAnotherRecitationFallsBackToTheMarginRule() async throws {
+        var couplet = hafez(1, index: 1)
+        couplet.listenRange = ListenRange(recitation: 9999, start: 15.2, end: 19.9)
+        let clip = try #require(await loader().clip(for: couplet))
+        #expect(clip.start == 15.486)
+        #expect(abs(clip.end - (21.036 - ListenClipRange.margin)) < 0.0001)
+    }
+
+    @Test func aCoupletWithoutARangeUsesTheMarginRule() async throws {
+        let clip = try #require(await loader().clip(for: hafez(1, index: 1)))
+        #expect(abs(clip.end - (21.036 - ListenClipRange.margin)) < 0.0001)
+    }
+
+    @Test func aPrecomputedRangeStillNeedsARecitationInSync() async throws {
+        var couplet = hafez(1)
+        couplet.listenRange = ListenRange(recitation: 2842, start: 0, end: 5)
+        #expect(await (try loader(recited: { _ in false })).clip(for: couplet) == nil)
+        #expect(await (try loader(failing: true)).clip(for: couplet) == nil)
+    }
+
+    @Test func theBundledDeckCarriesTheMeasuredRangesOfMostHafezCouplets() throws {
+        let deck = try GameDeck(bundle: Fixtures.appBundle, poetNames: [:])
+        let hafez = deck.couplets.filter { $0.poetSlug == "hafez" }
+        let ranges = hafez.compactMap(\.listenRange)
+        #expect(hafez.count == 200)
+        #expect(ranges.count > 150, "a few couplets have no clean silence and keep the margin rule")
+        #expect(ranges.allSatisfy { $0.recitation > 0 && $0.start >= 0 && $0.end - $0.start >= 1 })
+        #expect(deck.couplets.filter { $0.poetSlug != "hafez" }.allSatisfy { $0.listenRange == nil })
+    }
+
     @Test func fiveQuestionsFromHafezPoemsThatHaveARecitation() async throws {
         let deck = deck()
         var generator = SeededGenerator(seed: 2)

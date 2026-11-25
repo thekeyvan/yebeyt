@@ -1,5 +1,13 @@
 import Foundation
 
+/// Where a گوش کن clip of a deck couplet starts and ends, in seconds of recitation `recitation`'s mp3: measured at data-build
+/// time (`tools/ganjoor/clips.py`) as the real silence after the first hemistich. Only good for that recitation.
+struct ListenRange: Hashable, Sendable, Decodable {
+    var recitation: Int
+    var start: Double
+    var end: Double
+}
+
 /// A couplet in a game: from the deck, or from a poem the reader has open.
 struct GameCouplet: Hashable, Sendable, Identifiable {
     var poem: String
@@ -18,6 +26,8 @@ struct GameCouplet: Hashable, Sendable, Identifiable {
     var bookPath = ""
     /// The meaning was written by an AI (no marker is shown yet).
     var meaningIsAI = false
+    /// گوش کن, a Hafez couplet of the deck: where its clip really ends (nil: the margin rule of `ListenClipRange` decides).
+    var listenRange: ListenRange?
 
     var id: String { "\(poem)#\(index)" }
 
@@ -58,6 +68,7 @@ final class GameDeck: Observable, Sendable {
         var poet: String
         var book: String?
         var bookTitle: String
+        var clip: ListenRange?
     }
 
     let couplets: [GameCouplet]
@@ -79,7 +90,8 @@ final class GameDeck: Observable, Sendable {
         couplets = entries.map {
             GameCouplet(
                 poem: $0.poem, index: $0.index, m1: $0.m1, m2: $0.m2, meaning: $0.meaning, poetSlug: $0.poet,
-                poetName: poetNames[$0.poet] ?? "", bookTitle: $0.bookTitle, bookPath: $0.book ?? "", meaningIsAI: $0.ai == true
+                poetName: poetNames[$0.poet] ?? "", bookTitle: $0.bookTitle, bookPath: $0.book ?? "", meaningIsAI: $0.ai == true,
+                listenRange: $0.clip
             )
         }
         keys = Set(couplets.map(\.id))

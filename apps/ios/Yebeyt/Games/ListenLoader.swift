@@ -1,7 +1,8 @@
 import Foundation
 
 /// Finds what گوش کن plays: for a couplet of a Hafez poem, the first recitation that is in sync with the text and the
-/// seconds its first hemistich is read (from the timing file; `ListenClipRange` stops it before the next hemistich).
+/// seconds its first hemistich is read: as measured at data-build time when the deck has it for that recitation, else
+/// from the timing file (`ListenClipRange` stops it before the next hemistich).
 /// Ganjoor is asked at the start of the round; the three calls are given as closures so tests can stub them.
 struct ListenLoader: Sendable {
     var poem: @Sendable (String) async throws -> Poem
@@ -11,11 +12,15 @@ struct ListenLoader: Sendable {
     /// Poems tried at once; more are tried only when these did not give enough questions.
     private static let batch = 6
 
-    /// The clip of a couplet; nil when the poem has no recitation in sync, or anything could not be loaded.
+    /// The clip of a couplet; nil when the poem has no recitation in sync, or anything could not be loaded. A deck couplet
+    /// that was measured against this very recitation plays as measured (`listenRange`); any other gets the margin rule.
     func clip(for couplet: GameCouplet) async -> ListenClip? {
         guard let poem = try? await poem(couplet.poem), let list = try? await recitations(poem.id),
-              let recitation = list.first(where: { $0.inSyncWithText && $0.xmlUrl != nil }), let xml = recitation.xmlUrl,
-              let data = try? await timing(xml), let timing = try? RecitationTiming(xml: data),
+              let recitation = list.first(where: { $0.inSyncWithText && $0.xmlUrl != nil }), let xml = recitation.xmlUrl else { return nil }
+        if let measured = couplet.listenRange, measured.recitation == recitation.id {
+            return ListenClip(audio: recitation.mp3Url, start: measured.start, end: measured.end)
+        }
+        guard let data = try? await timing(xml), let timing = try? RecitationTiming(xml: data),
               let range = timing.firstHemistich(ofCouplet: couplet.index, in: poem.couplets) else { return nil }
         return ListenClip(
             audio: recitation.mp3Url, start: range.lowerBound, end: ListenClipRange.end(start: range.lowerBound, nextMark: range.upperBound)
