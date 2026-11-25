@@ -59,8 +59,7 @@ final class HomeAndExploreUITests: XCTestCase {
     @MainActor func testSwipingFromTheEdgeGoesBackOnAPushedScreen() {
         let app = launch(["-beytRoute", "library"])
         XCTAssertTrue(app.buttons["book-9"].waitForExistence(timeout: 10))
-        let edge = app.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5))
-        edge.press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)))
+        edgeSwipeBack(app)
         XCTAssertTrue(app.buttons["searchField"].waitForExistence(timeout: 5))
     }
 

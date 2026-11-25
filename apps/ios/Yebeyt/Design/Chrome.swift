@@ -198,6 +198,13 @@ final class SwipeBackDelegate: NSObject, UIGestureRecognizerDelegate {
 
     static func allows(stackDepth: Int, blocked: Bool) -> Bool { stackDepth > 1 && !blocked }
 
+    /// A scroll view that runs to the screen edge (the face's row of chips) would take the swipe that starts there, so
+    /// its pan waits until the edge swipe has failed (it fails at once for a touch that starts away from the edge).
+    func gestureRecognizer(_ recognizer: UIGestureRecognizer, shouldBeRequiredToFailBy other: UIGestureRecognizer) -> Bool {
+        guard let scroll = other.view as? UIScrollView else { return false }
+        return other === scroll.panGestureRecognizer
+    }
+
     func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
         var responder: UIResponder? = recognizer.view
         while let current = responder {

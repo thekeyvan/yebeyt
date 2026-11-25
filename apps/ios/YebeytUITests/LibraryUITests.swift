@@ -123,6 +123,15 @@ final class LibraryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["readerTitle"].waitForExistence(timeout: 10))
     }
 
+    /// The chips of the library run to the screen edge; the swipe that starts there at their height still goes back.
+    @MainActor func testTheEdgeSwipeGoesBackFromTheHeightOfTheLibraryChips() {
+        let app = launch(["-beytRoute", "library"])
+        let all = app.buttons["همه"]
+        XCTAssertTrue(all.waitForExistence(timeout: 10))
+        edgeSwipeBack(app, atHeightOf: all)
+        XCTAssertTrue(app.buttons["searchField"].waitForExistence(timeout: 8), "the swipe goes back to explore")
+    }
+
     @MainActor func testLongPoetNamesStayOnOneLineOnThePoetCard() {
         for (slug, name) in [("naserkhosro", "ناصرخسرو"), ("bahar", "ملک‌الشعرا بهار"), ("hafez", "حافظ")] {
             let app = launch(["-beytRoute", "poet:\(slug)"])

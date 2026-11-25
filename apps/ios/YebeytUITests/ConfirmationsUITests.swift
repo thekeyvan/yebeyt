@@ -351,7 +351,7 @@ final class ConfirmationsUITests: XCTestCase {
     @MainActor func testTheEdgeSwipeBackLeavesAnUnchangedFaceButNotAChangedOne() {
         let plain = launch(["-beytRoute", "avatar"])
         XCTAssertTrue(plain.buttons["avatarSave"].waitForExistence(timeout: 10))
-        edgeSwipeBack(plain)
+        edgeSwipeBack(plain, atHeightOf: plain.buttons["avatarPart-face"])  // the chips reach the edge
         XCTAssertTrue(waitForDisappearance(of: plain.buttons["avatarSave"]), "nothing to lose: the swipe goes back")
         plain.terminate()
 
@@ -359,15 +359,8 @@ final class ConfirmationsUITests: XCTestCase {
         XCTAssertTrue(app.buttons["avatarPart-hair"].waitForExistence(timeout: 10))
         app.buttons["avatarPart-hair"].tap()
         app.buttons["avatarItem-lapis"].tap()
-        edgeSwipeBack(app)
+        edgeSwipeBack(app, atHeightOf: app.buttons["avatarPart-face"])
         sleep(2)
         XCTAssertTrue(app.buttons["avatarSave"].exists, "the swipe did not leave: the question is the way out")
-    }
-
-    @MainActor private func edgeSwipeBack(_ app: XCUIApplication) {
-        // In right-to-left the back swipe starts at the right edge.
-        let window = app.windows.firstMatch
-        window.coordinate(withNormalizedOffset: CGVector(dx: 0.995, dy: 0.5))
-            .press(forDuration: 0.1, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)))
     }
 }
