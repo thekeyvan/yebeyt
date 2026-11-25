@@ -6,6 +6,8 @@
     python3 tools/ganjoor/build.py --sha <commit>   use another ganjoor-data commit
     python3 tools/ganjoor/build.py --refresh-recitations
                                                     query api.ganjoor.net, rewrite recitations.json, then build
+    python3 tools/ganjoor/build.py --refresh-clips  download the recitations of the deck's Hafez couplets, find where
+                                                    each first hemistich really ends (clips.py), rewrite clips.json, then build
 
 Downloads are cached in tools/ganjoor/.cache (gitignored), so reruns need no network.
 Output: poets.json (every poet, with their books), book-<id>.json for the bundled books,
@@ -13,7 +15,9 @@ library.json (the curated library, see library.py), index-<catId>.json, one list
 (first line, couplet count, rhyme letters, recitations) per curated book, games.json (the game deck, see games.py) and glossary.json (the hard words of couplets, checked against the bundled books, see glossary.py). The poems of the
 curated books come from a sparse git checkout in .cache/repo. Popularity (recitations per poem) comes
 from the committed snapshot recitations.json, so a normal build and --check never touch api.ganjoor.net;
-only --refresh-recitations does, and it is the only way the counts change. Years are lunar Hijri, as in Ganjoor.
+only --refresh-recitations does, and it is the only way the counts change. Likewise the listen clips of the deck's Hafez
+couplets (games.json `clip`: recitation id, start, end in seconds, never audio) come from the committed snapshot clips.json,
+which only --refresh-clips rewrites (it downloads the mp3s into .cache/clips and needs macOS afconvert). Years are lunar Hijri, as in Ganjoor.
 """
 import argparse
 import json
@@ -26,6 +30,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import audio
+import clips
 import games
 import glossary
 import library
@@ -40,6 +45,7 @@ HERE = Path(__file__).resolve().parent
 CACHE = HERE / ".cache"
 DATA_DIR = HERE.parent.parent / "apps/ios/Yebeyt/Resources/Data"
 RECITATIONS = HERE / "recitations.json"
+CLIPS = HERE / "clips.json"
 
 # Books bundled with their full text: poet slug -> book title.
 # Golestan mixes prose and verse and Molavi is too big, so the app fetches them on demand.
@@ -163,7 +169,23 @@ def recitation_counts(poets_dir, curation, refresh, snapshot=RECITATIONS, cache=
     return audio.load_snapshot(snapshot.read_text())
 
 
-def build_files(sha, refresh=False):
+def deck_with_clips(deck, poets_dir, refresh, snapshot=CLIPS, cache=CACHE, download=download):
+    """The deck with its Hafez couplets' listen clips. Read from the committed snapshot; only `refresh` downloads the
+    recitations, finds the silences and rewrites the snapshot (and a CSV report in the cache)."""
+    if refresh:
+        found, rows = clips.refresh(deck, poets_dir, cache, download)
+        snapshot.write_text(clips.dump_snapshot(found))
+        cache.mkdir(parents=True, exist_ok=True)
+        (cache / "clips-report.csv").write_text(clips.dump_report(rows))
+    elif not snapshot.exists():
+        sys.exit(f"{snapshot.name} is missing. Run python3 tools/ganjoor/build.py --refresh-clips")
+    try:
+        return clips.with_clips(deck, clips.load_snapshot(snapshot.read_text()))
+    except ValueError as error:
+        sys.exit(f"{error}. Run python3 tools/ganjoor/build.py --refresh-clips")
+
+
+def build_files(sha, refresh=False, refresh_clips=False):
     """File name -> content for everything the app bundles."""
     fetch = make_fetcher(sha)
     manifest = fetch("manifest.json")
@@ -185,7 +207,8 @@ def build_files(sha, refresh=False):
     recitations = recitation_counts(poets_dir, curation, refresh)
     for name, value in library.build_files(poets_dir, recitations, curation, manifest).items():
         files[name] = dump(value)
-    files["games.json"] = dump(games.build_deck(poets_dir, recitations, curation))
+    deck = games.build_deck(poets_dir, recitations, curation)
+    files["games.json"] = dump(deck_with_clips(deck, poets_dir, refresh_clips))
     return files
 
 
@@ -201,11 +224,13 @@ def main():
     parser.add_argument("--sha", default=SHA, help="ganjoor-data commit (default: the pinned one)")
     parser.add_argument("--refresh-recitations", action="store_true",
                         help="query api.ganjoor.net and rewrite recitations.json (the only call to it)")
+    parser.add_argument("--refresh-clips", action="store_true",
+                        help="download the deck's Hafez recitations and rewrite clips.json (the only download of audio)")
     args = parser.parse_args()
-    if args.check and args.refresh_recitations:
-        parser.error("--check never rewrites recitations.json")
+    if args.check and (args.refresh_recitations or args.refresh_clips):
+        parser.error("--check never rewrites the snapshots")
 
-    files = build_files(args.sha, args.refresh_recitations)
+    files = build_files(args.sha, args.refresh_recitations, args.refresh_clips)
     if args.check:
         stale = differing(files)
         if stale:
