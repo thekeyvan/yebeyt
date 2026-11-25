@@ -108,6 +108,14 @@ One slice per branch, each reviewed before the next starts. The lead confirms th
 
 After these: the web app, the admin dashboard and Android, each designed first.
 
+**Getting ready for the web app (owner, 25 Nov: "at some point we need to start the web app").** It is the next big piece after the iOS submission (links and App Clip, push, App Store prep). Until then every slice keeps it possible:
+- the server API stays client-neutral: fields say what a client may do (e.g. `canPlay`), not which app it is; no iOS-only shapes or copy in responses;
+- the contract is `packages/api/openapi.json` (a web client is generated from it), and colours, type and spacing come from `packages/tokens` (already emitted as CSS for `apps/web`);
+- sign-in stays Apple and Google only; the web will use Sign in with Apple JS and Google Identity Services against the same `/v1/auth/*` endpoints (needs a web client id and a Services ID later);
+- poetry text loads from the pinned Ganjoor commit the app uses, so the web can read the same data without a new server;
+- the web app is designed first (boards in `design/canvas`), starting with reading, the divan and the daily games; friends, messages and games with friends follow.
+
+
 ## Settled after the boards (owner, 23 Nov)
 
 - Feedback goes inside the app to api.yebeyt.com.
