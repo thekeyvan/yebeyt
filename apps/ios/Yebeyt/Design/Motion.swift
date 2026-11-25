@@ -113,8 +113,15 @@ enum Motion {
         rises(variant) || risen ? 1 : 0
     }
 
-    /// It rises with `bouncy` and drops quickly; Reduce Motion crossfades both ways.
-    static func coverRise(_ variant: Variant) -> Animation { rises(variant) ? bouncy : .easeOut(duration: 0.2) }
+    /// A cover is as big as the screen, so it rises with a firm spring (a native sheet's feel: it settles without going
+    /// past the top); `bouncy` is for small things.
+    static let coverResponse = 0.4
+    static let coverDamping = 0.9
+
+    /// It rises with the firm spring and drops quickly; Reduce Motion crossfades both ways.
+    static func coverRise(_ variant: Variant) -> Animation {
+        rises(variant) ? .spring(response: coverResponse, dampingFraction: coverDamping) : .easeOut(duration: 0.2)
+    }
 
     static func coverDrop(_ variant: Variant) -> Animation { rises(variant) ? drop : .easeOut(duration: 0.2) }
 

@@ -71,6 +71,27 @@ final class CoverUITests: XCTestCase {
         XCTAssertTrue(isFullyOnScreen(cover, in: app), "it springs back")
     }
 
+    /// A slow drag keeps the sheet under the finger: 55% of the height closes it (a slow release is not a flick).
+    @MainActor func testASlowDragPastAThirdOfTheReaderClosesIt() {
+        let app = launch(["-beytRoute", "poem:/hafez/ghazal/sh3"])
+        let cover = element(app, "readerCover")
+        XCTAssertTrue(isFullyOnScreen(cover, in: app))
+        let start = app.staticTexts["readerTitle"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let distance = app.windows.firstMatch.frame.height * 0.55
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: distance)), withVelocity: .slow, thenHoldForDuration: 0)
+        XCTAssertTrue(waitForDisappearance(of: cover), "a slow drag of 55% closes the reader")
+    }
+
+    @MainActor func testASlowDragUnderAThirdOfTheReaderSpringsBack() {
+        let app = launch(["-beytRoute", "poem:/hafez/ghazal/sh3"])
+        let cover = element(app, "readerCover")
+        XCTAssertTrue(isFullyOnScreen(cover, in: app))
+        let start = app.staticTexts["readerTitle"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let distance = app.windows.firstMatch.frame.height * 0.2
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: distance)), withVelocity: .slow, thenHoldForDuration: 0)
+        XCTAssertTrue(isFullyOnScreen(cover, in: app), "a slow drag of 20% springs back")
+    }
+
     @MainActor func testADragDownInTheReadersContentDoesNotCloseIt() {
         let app = launch(["-beytRoute", "poem:/hafez/ghazal/sh3", "-beytCouplet", "1"])
         let cover = element(app, "readerCover")
@@ -104,6 +125,26 @@ final class CoverUITests: XCTestCase {
         XCTAssertTrue(waitForDisappearance(of: confirm), "and so is the question")
         XCTAssertTrue(bar.waitForExistence(timeout: 5))
         XCTAssertTrue(bar.isHittable)
+    }
+
+    /// Opening and closing a game that closes without asking, twice in a row: the tab bar comes back each time and the
+    /// second game is all the way up (the covering state of the first must not leak into the second).
+    @MainActor func testAGameOpenedRightAfterAnotherWasClosedIsUpAndTheTabBarIsBackBetween() {
+        let app = launch(["-beytTab", "games"])
+        let open = app.buttons["dailyOpen"]
+        XCTAssertTrue(open.waitForExistence(timeout: 10))
+        let bar = app.otherElements["tabBar"]
+        for _ in 0..<2 {
+            open.tap()
+            let host = element(app, "gameHost")
+            XCTAssertTrue(host.waitForExistence(timeout: 10))
+            XCTAssertTrue(isFullyOnScreen(host, in: app))
+            XCTAssertFalse(bar.exists && bar.isHittable)
+            app.buttons["gameClose"].tap()
+            XCTAssertTrue(waitForDisappearance(of: host))
+            XCTAssertTrue(bar.waitForExistence(timeout: 5))
+            XCTAssertTrue(bar.isHittable)
+        }
     }
 
     @MainActor func testAGameOpenedAtLaunchIsAlreadyUp() {

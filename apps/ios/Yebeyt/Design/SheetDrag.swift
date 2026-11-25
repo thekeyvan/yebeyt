@@ -34,7 +34,8 @@ extension View {
     /// sheet's, for the 30% rule.
     func dragsSheet(translation: Binding<Double>, height: Double, dismiss: @escaping () -> Void) -> some View {
         simultaneousGesture(
-            DragGesture(minimumDistance: 8)
+            // In the screen's own space: the sheet moves with the finger, and a space that moves with it would count only half.
+            DragGesture(minimumDistance: 8, coordinateSpace: .global)
                 .onChanged { translation.wrappedValue = $0.translation.height }
                 .onEnded { value in
                     if SheetDrag.shouldDismiss(translation: value.translation.height, velocity: value.velocity.height, height: height) {

@@ -254,6 +254,14 @@ struct MotionTests {
         #expect(Motion.coverOpacity(risen: true, .full) == 1)
     }
 
+    @Test func aCoverRisesWithAFirmSpringThatDoesNotGoPastTheTop() {
+        #expect(Motion.coverDamping >= 0.85)
+        #expect(Motion.coverDamping > 0.55)  // firmer than `bouncy`
+        // The most a spring of this damping overshoots, as a share of its travel: under 1% (a screen is ~900 pt).
+        let overshoot = exp(-Double.pi * Motion.coverDamping / (1 - Motion.coverDamping * Motion.coverDamping).squareRoot())
+        #expect(overshoot < 0.01)
+    }
+
     @Test func aCoverOnlyCrossfadesUnderReduceMotion() {
         #expect(Motion.coverOffset(risen: false, height: 800, .reduced) == 0)
         #expect(Motion.coverOffset(risen: true, height: 800, .reduced) == 0)
