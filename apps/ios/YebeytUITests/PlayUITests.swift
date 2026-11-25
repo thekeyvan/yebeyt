@@ -56,6 +56,14 @@ final class PlayUITests: XCTestCase {
         XCTAssertFalse(element(app, "newChat-yebeyt").exists)
     }
 
+    @MainActor func testTheChatWithTheDemoFriendHasNoGameChips() {
+        let app = launch(["-beytRoute", "chat:yebeyt"])
+        XCTAssertTrue(app.buttons["quickCouplet"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["quickDaily"].exists)
+        XCTAssertFalse(app.buttons["quickMosh"].exists)
+        XCTAssertFalse(app.buttons["quickDuel"].exists)
+    }
+
     @MainActor func testTheQuickActionsOfAChatOpenTheLobbyWithThatFriend() {
         let app = launch(["-beytRoute", "chat:sara.ghazal"])
         let quick = app.buttons["quickMosh"]

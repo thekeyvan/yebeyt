@@ -60,7 +60,7 @@ describe("POST /v1/conversations", () => {
     const sara = await h.signUp("sara", { displayName: "Sara" });
     await befriend(ali, sara);
     const first = (await (await open(ali, "sara")).json()) as { id: string; other: unknown };
-    expect(first.other).toEqual({ username: "sara", displayName: "Sara", avatar: null, online: false });
+    expect(first.other).toEqual({ username: "sara", displayName: "Sara", avatar: null, canPlay: true, online: false });
     expect(await openId(ali, "Sara")).toBe(first.id);
     expect(await openId(sara, "ali")).toBe(first.id);
   });

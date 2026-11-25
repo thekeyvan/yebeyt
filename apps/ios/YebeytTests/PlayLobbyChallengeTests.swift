@@ -427,3 +427,16 @@ struct CanPlayTests {
         #expect(await search(playableOnly: false).people.map(\.username) == ["yebeyt", "yeganeh"])
     }
 }
+
+/// The chat's person: who can't play gets no game chips.
+struct ChatPersonCanPlayTests {
+    private func person(_ extra: String) throws -> ChatPerson {
+        try JSONDecoder().decode(ChatPerson.self, from: Data(#"{"username":"yebeyt","displayName":"یه بیت","avatar":null,"online":null\#(extra)}"#.utf8))
+    }
+
+    @Test func theChatPersonKeepsCanPlayAndAMissingOneCountsAsYes() throws {
+        #expect(try person(#","canPlay":false"#).canPlay == false)
+        #expect(try person(#","canPlay":true"#).canPlay)
+        #expect(try person("").canPlay)
+    }
+}

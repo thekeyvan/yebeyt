@@ -16,7 +16,7 @@ enum MessagesStub {
         let online: String
     }
 
-    /// The same people (and faces) as the friends stub, so one Sara is everywhere.
+    /// The same people (and faces) as the friends stub, so one Sara is everywhere. `yebeyt` is the demo friend, who can't play.
     private static let people = [
         Person(username: "sara.ghazal", name: "سارا", skin: "peach", hair: "dark", background: "rose", online: "true"),
         Person(username: "aryan", name: "آرین", skin: "sand", hair: "black", background: "mint", online: "null"),
@@ -31,7 +31,7 @@ enum MessagesStub {
         let avatar = known.map {
             #"{"face":"\#($0.skin)","eyes":"round","hair":"\#($0.hair)","mouth":"smile","accessory":"none","background":"\#($0.background)"}"#
         } ?? "null"
-        return (name, #"{"username":"\#(username)","displayName":"\#(name)","avatar":\#(avatar),"online":\#(known?.online ?? "null")}"#)
+        return (name, #"{"username":"\#(username)","displayName":"\#(name)","avatar":\#(avatar),"online":\#(known?.online ?? "null"),"canPlay":\#(username != "yebeyt")}"#)
     }
 
     static func conversation(_ username: String) -> Conversation {

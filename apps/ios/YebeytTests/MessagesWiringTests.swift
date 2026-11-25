@@ -110,6 +110,8 @@ struct MessagesWiringTests {
         #expect(rows.map(\.other.username) == ["sara.ghazal", "aryan", "kian_k", "mahsa.m", "bardia"])
         #expect(rows.map(\.unread).reduce(0, +) == 2)
         #expect(try decode(Conversation.self, answer("POST", "/v1/conversations", body: #"{"username":"sara.ghazal"}"#)).id == "c-sara.ghazal")
+        #expect(try decode(Conversation.self, answer("POST", "/v1/conversations", body: #"{"username":"yebeyt"}"#)).other.canPlay == false)
+        #expect(rows.map(\.other.canPlay) == Array(repeating: true, count: rows.count))
         let sara = try decode(MessagePage.self, answer("GET", "/v1/conversations/c-sara.ghazal/messages"))
         #expect(sara.items.map(\.kind) == [.game, .text, .couplet])
         #expect(sara.otherReadMessageId == "m3")

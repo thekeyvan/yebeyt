@@ -5,14 +5,14 @@ import { conversations, friendRequests, messages, users } from "../db/schema.js"
 import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { findConversationOf, getOrCreateConversation, mayMessage, messageView, showingOnline, unreadCounts } from "../messaging.js";
-import { findByUsername, PAGE, parseTimeCursor, shortPersonSchema, timeCursor, timeCursorSchema } from "../people.js";
+import { canPlaySchema, findByUsername, PAGE, parseTimeCursor, shortPersonSchema, timeCursor, timeCursorSchema } from "../people.js";
 import { newRouter } from "../router.js";
 import { isBlocked, notBlockedWith } from "../social.js";
 import { usernameSchema } from "../schemas.js";
 
 const security = [{ bearerAuth: [] }];
 const otherSchema = shortPersonSchema
-  .extend({ online: z.boolean().nullable().openapi({ description: "Connected right now; null when they do not let others see it («آنلاین» off)." }) })
+  .extend({ canPlay: canPlaySchema, online: z.boolean().nullable().openapi({ description: "Connected right now; null when they do not let others see it («آنلاین» off)." }) })
   .openapi("ChatPerson");
 const opened = z.object({ id: z.uuid(), other: otherSchema }).openapi("Conversation");
 const lastSchema = z
@@ -64,7 +64,7 @@ export function conversationRoutes(deps: Deps) {
       if (!(await mayMessage(db, me, other.id, existing))) throw new ApiError(403, "messages_closed");
       const id = existing ?? (await getOrCreateConversation(db, me, other.id));
       const online = (await showingOnline(db, [other.id])).has(other.id) ? deps.hub.isOnline(other.id) : null;
-      return c.json({ id, other: { username: other.username!, displayName: other.displayName, avatar: other.avatar, online } }, 200);
+      return c.json({ id, other: { username: other.username!, displayName: other.displayName, avatar: other.avatar, canPlay: !other.isHouse, online } }, 200);
     },
   );
 
@@ -105,6 +105,7 @@ export function conversationRoutes(deps: Deps) {
           username: otherUser.username,
           displayName: otherUser.displayName,
           avatar: otherUser.avatar,
+          isHouse: otherUser.isHouse,
           last: lastMessage,
         })
         .from(conversations)
@@ -132,7 +133,7 @@ export function conversationRoutes(deps: Deps) {
             const m = messageView(r.last, me);
             return {
               id: r.id,
-              other: { username: r.username!, displayName: r.displayName, avatar: r.avatar, online: visible.has(r.otherId) ? deps.hub.isOnline(r.otherId) : null },
+              other: { username: r.username!, displayName: r.displayName, avatar: r.avatar, canPlay: !r.isHouse, online: visible.has(r.otherId) ? deps.hub.isOnline(r.otherId) : null },
               last: { kind: m.kind, text: m.text, key: m.key, note: m.note, deleted: m.deleted, at: m.createdAt, fromMe: m.fromMe, event: typeof m.payload?.event === "string" ? m.payload.event : null },
               unread: unread.get(r.id) ?? 0,
             };

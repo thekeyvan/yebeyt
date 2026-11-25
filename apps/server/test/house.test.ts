@@ -86,6 +86,24 @@ describe("the built-in account", () => {
     expect(found.items.map((p) => p.canPlay)).toEqual([true]);
   });
 
+  it("says it can't play in the chat it opens and in the chat list, and everyone else can", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    await h.request("/v1/friend-requests/yebeyt", { method: "POST", token: ali.token });
+    const opened = await h.request("/v1/conversations", { method: "POST", token: ali.token, json: { username: "yebeyt" } });
+    const house = (await opened.json()) as { id: string; other: { canPlay: boolean } };
+    expect(house.other.canPlay).toBe(false);
+    await h.request("/v1/friend-requests/sara", { method: "POST", token: ali.token });
+    await h.request("/v1/friend-requests/ali", { method: "POST", token: sara.token });
+    const withSara = await h.request("/v1/conversations", { method: "POST", token: ali.token, json: { username: "sara" } });
+    const friend = (await withSara.json()) as { id: string; other: { canPlay: boolean } };
+    expect(friend.other.canPlay).toBe(true);
+    await say(ali, house.id);
+    await say(ali, friend.id);
+    const list = (await (await h.request("/v1/conversations", { token: ali.token })).json()) as { items: { other: { username: string; canPlay: boolean } }[] };
+    expect(list.items.map((i) => [i.other.username, i.other.canPlay]).sort()).toEqual([["sara", true], ["yebeyt", false]]);
+  });
+
   it("shows no friends count, though everyone may be its friend", async () => {
     const ali = await h.signUp("ali");
     const sara = await h.signUp("sara");

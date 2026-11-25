@@ -2,12 +2,31 @@ import Foundation
 
 // The messages part of the contract (`packages/api/openapi.json`): chats, messages, shared divans.
 
-/// `ChatPerson`: the other person of a chat. `online` is nil when they don't let others see it.
+/// `ChatPerson`: the other person of a chat. `online` is nil when they don't let others see it; `canPlay` is false only
+/// for the demo friend «یه بیت» (the chat hides the game chips), and a server that doesn't say counts as yes.
 struct ChatPerson: Codable, Equatable, Sendable {
     var username: String
     var displayName: String?
     var avatar: AvatarParts?
     var online: Bool?
+    var canPlay = true
+
+    init(username: String, displayName: String?, avatar: AvatarParts?, online: Bool?, canPlay: Bool = true) {
+        self.username = username
+        self.displayName = displayName
+        self.avatar = avatar
+        self.online = online
+        self.canPlay = canPlay
+    }
+
+    init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        username = try values.decode(String.self, forKey: .username)
+        displayName = try values.decodeIfPresent(String.self, forKey: .displayName)
+        avatar = try values.decodeIfPresent(AvatarParts.self, forKey: .avatar)
+        online = try values.decodeIfPresent(Bool.self, forKey: .online)
+        canPlay = try values.decodeIfPresent(Bool.self, forKey: .canPlay) ?? true
+    }
 
     /// The name shown: the display name, else the username.
     var name: String {
