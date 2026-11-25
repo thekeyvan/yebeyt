@@ -184,6 +184,23 @@ describe("items", () => {
     expect((await add(sara, id, A)).status).toBe(201); // free again
   });
 
+  it("tells both people live when an item is removed, and nobody when it was refused", async () => {
+    const { ali, sara, id } = await pair();
+    const item = (await (await add(ali, id, A)).json()) as Item;
+    const toAli = listen(ali);
+    const toSara = listen(sara);
+    const del = (u: User) => h.request(`/v1/shared-divans/${id}/items/${item.id}`, { method: "DELETE", token: u.token });
+    expect((await del(sara)).status).toBe(403);
+    expect(toAli).toEqual([]);
+    expect(toSara).toEqual([]);
+    expect((await del(ali)).status).toBe(204);
+    const gone = { type: "divan.removed", sharedDivanId: id, itemId: item.id };
+    expect(toAli).toEqual([gone]);
+    expect(toSara).toEqual([gone]);
+    expect((await del(ali)).status).toBe(404);
+    expect(toSara).toHaveLength(1); // the second delete says nothing
+  });
+
   it("keeps each person's like, idempotently", async () => {
     const { ali, sara, id } = await pair();
     const omid = await h.signUp("omid");

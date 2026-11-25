@@ -8,6 +8,8 @@ enum LiveEvent: Equatable, Sendable {
     case deleted(conversationId: String, messageId: String)
     case presence(username: String, online: Bool)
     case divan(sharedDivanId: String, item: SharedDivanItem)
+    /// The person who added a couplet took it out of the shared divan.
+    case divanRemoved(sharedDivanId: String, itemId: String)
     /// Someone asked me to be friends.
     case friendRequest(from: PersonShort)
     /// Someone accepted the request I sent.
@@ -33,6 +35,7 @@ enum LiveEvent: Equatable, Sendable {
             var online: Bool?
             var sharedDivanId: String?
             var item: SharedDivanItem?
+            var itemId: String?
             var from: PersonShort?
         }
         guard let frame = try? JSONDecoder().decode(Frame.self, from: Data(text.utf8)) else { return nil }
@@ -53,6 +56,9 @@ enum LiveEvent: Equatable, Sendable {
         case "divan":
             guard let id = frame.sharedDivanId, let item = frame.item else { return nil }
             return .divan(sharedDivanId: id, item: item)
+        case "divan.removed":
+            guard let id = frame.sharedDivanId, let itemId = frame.itemId else { return nil }
+            return .divanRemoved(sharedDivanId: id, itemId: itemId)
         case "friend.request":
             return frame.from.map(LiveEvent.friendRequest)
         case "friend.accepted":

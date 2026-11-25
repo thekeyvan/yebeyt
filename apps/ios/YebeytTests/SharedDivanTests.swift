@@ -148,6 +148,21 @@ struct SharedDivanTests {
         #expect(model.toast == APIError.network.persianMessage)
     }
 
+    @Test func aRemovalTheServerAnswers404ToStaysRemovedWithoutAToast() async {
+        let (model, _) = model { request in request.method == "DELETE" ? .json(404, #"{"error":"not_found"}"#) : Self.server(request) }
+        await model.load()
+        await model.remove(model.items[1])  // it is already gone from the server
+        #expect(model.items.map(\.id) == ["i1", "i3", "i4"])
+        #expect(model.counts == SharedDivanCounts(total: 23, mine: 10, theirs: 13))
+        #expect(model.toast == nil)
+        // Any other refusal puts it back.
+        let (refused, _) = self.model { request in request.method == "DELETE" ? .json(403, #"{"error":"forbidden"}"#) : Self.server(request) }
+        await refused.load()
+        await refused.remove(refused.items[1])
+        #expect(refused.items.map(\.id) == ["i1", "i2", "i3", "i4"])
+        #expect(refused.toast != nil)
+    }
+
     @Test func onlyACoupletIAddedCanBeRemoved() async {
         let (model, stub) = model(Self.server)
         await model.load()
@@ -183,6 +198,46 @@ struct SharedDivanTests {
         model.apply(.divan(sharedDivanId: "d1", item: again))
         #expect(model.items.map(\.id) == ["i2", "i4"])
         #expect(model.counts == SharedDivanCounts(total: 25, mine: 11, theirs: 14))  // the list read again (24), plus this one
+    }
+
+    @Test func aCoupletRemovedLiveLeavesTheListAndMovesTheCounts() async {
+        let (model, stub) = model(Self.server)
+        await model.load()
+        model.apply(.divanRemoved(sharedDivanId: "other", itemId: "i1"))
+        #expect(model.items.count == 4)
+        model.apply(.divanRemoved(sharedDivanId: "d1", itemId: "i1"))  // hers
+        #expect(model.items.map(\.id) == ["i2", "i3", "i4"])
+        #expect(model.counts == SharedDivanCounts(total: 23, mine: 11, theirs: 12))
+        model.apply(.divanRemoved(sharedDivanId: "d1", itemId: "i1"))  // the same event twice
+        #expect(model.counts == SharedDivanCounts(total: 23, mine: 11, theirs: 12))
+        #expect(stub.requests.filter { $0.path.hasSuffix("/items") }.count == 1)  // nothing read again
+    }
+
+    @Test func theLiveEventOfMyOwnRemovalCountsNothingTwice() async {
+        let (model, _) = model { request in request.method == "DELETE" ? .json(204, "") : Self.server(request) }
+        await model.load()
+        await model.remove(model.items[1])
+        model.apply(.divanRemoved(sharedDivanId: "d1", itemId: "i2"))
+        #expect(model.counts == SharedDivanCounts(total: 23, mine: 10, theirs: 13))
+        #expect(model.items.map(\.id) == ["i1", "i3", "i4"])
+    }
+
+    @Test func aCoupletRemovedLiveThatTheListDoesNotHoldReadsTheListAgain() async {
+        let reads = Recorded<Int>()
+        let (model, stub) = model { request in
+            if request.method == "GET", request.path.hasSuffix("/items"), request.query.contains("by=me") {
+                reads.add(1)  // the first read is before her removal, the next ones after it
+                return .json(200, reads.all.count == 1 ? Self.items([Self.saadi, Self.hafez2]) : Self.items([Self.saadi, Self.hafez2], total: 23, mine: 11, theirs: 12))
+            }
+            return Self.server(request)
+        }
+        await model.load()
+        await model.select(.me)  // «از من»: her couplets are not in the list, but the counts move
+        let before = stub.requests.filter { $0.path.hasSuffix("/items") }.count
+        model.apply(.divanRemoved(sharedDivanId: "d1", itemId: "i1"))
+        for _ in 0..<100 where model.counts?.total != 23 { try? await Task.sleep(for: .milliseconds(20)) }
+        #expect(model.counts == SharedDivanCounts(total: 23, mine: 11, theirs: 12))
+        #expect(stub.requests.filter { $0.path.hasSuffix("/items") }.count == before + 1)
     }
 
     @Test func addingFromTheDivanReadsTheListAndTheCountsAgain() async throws {

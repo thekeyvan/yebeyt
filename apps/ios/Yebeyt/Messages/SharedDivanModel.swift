@@ -45,6 +45,8 @@ final class SharedDivanModel {
     @ObservationIgnored private let session: Session
     @ObservationIgnored private var cursor: String?
     @ObservationIgnored private var loadedAuthor = SharedDivanAuthor.all
+    /// The couplets taken out, by me or live: an event about one again (mine comes to me too) has nothing left to do.
+    @ObservationIgnored private var taken: Set<String> = []
 
     init(username: String, session: Session) {
         self.username = username
@@ -167,9 +169,13 @@ final class SharedDivanModel {
             }
             if filter.author == .all { notePoets() }
         }
+        taken.insert(item.id)
         do {
             try await session.authorized { try await self.session.api.removeSharedDivanItem(id: divan.id, item: item.id, token: $0) }
+        } catch let error as APIError where Self.isNotFound(error) {
+            return  // already gone from the server: it stays out of the list
         } catch {
+            taken.remove(item.id)
             withAnimation(Motion.bouncy) {
                 if !items.contains(where: { $0.id == before.id }) {
                     items.insert(before, at: min(index, items.count))
@@ -179,6 +185,10 @@ final class SharedDivanModel {
             }
             toast = (error as? APIError).map { MessageCopy.toast(for: $0) }
         }
+    }
+
+    private static func isNotFound(_ error: APIError) -> Bool {
+        if case .server(let status, _, _) = error { status == 404 } else { false }
     }
 
     // MARK: Adding
@@ -202,6 +212,10 @@ final class SharedDivanModel {
 
     /// A couplet the other person added arrives at the top (when the chips would show it) and the counts move.
     func apply(_ event: LiveEvent) {
+        if case .divanRemoved(let id, let itemId) = event {
+            applyRemoval(of: itemId, in: id)
+            return
+        }
         guard case .divan(let id, let item) = event, id == divan?.id, !items.contains(where: { $0.id == item.id }) else { return }
         if var counts {
             counts.total += 1
@@ -211,5 +225,24 @@ final class SharedDivanModel {
         guard filter.author == .all || (filter.author == .me) == item.addedByMe else { return }
         items.insert(item, at: 0)
         if filter.author == .all { notePoets() }
+    }
+
+    /// A couplet leaves the list (with the list's spring) and the counts move; when the list doesn't hold it (a chip
+    /// hides it, or it is further down) the list is read again, for the counts.
+    private func applyRemoval(of itemId: String, in divanId: String) {
+        guard divanId == divan?.id, taken.insert(itemId).inserted else { return }
+        guard let index = items.firstIndex(where: { $0.id == itemId }) else {
+            Task { await load() }
+            return
+        }
+        withAnimation(Motion.bouncy) {
+            let gone = items.remove(at: index)
+            if var counts {
+                counts.total -= 1
+                if gone.addedByMe { counts.mine -= 1 } else { counts.theirs -= 1 }
+                self.counts = counts
+            }
+            if filter.author == .all { notePoets() }
+        }
     }
 }

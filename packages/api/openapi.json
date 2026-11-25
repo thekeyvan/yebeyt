@@ -5637,7 +5637,7 @@
           "shared divan"
         ],
         "summary": "Remove a couplet I added",
-        "description": "Only the person who added it. Its likes go with it.",
+        "description": "Only the person who added it. Its likes go with it. Both people get a live `divan.removed` event (see the README); the chat line from when it was added stays.",
         "security": [
           {
             "bearerAuth": []

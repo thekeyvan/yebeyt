@@ -299,6 +299,8 @@ struct LiveConnectionTests {
         let item = MessageJSON.item(id: "i1", key: "/hafez/ghazal/sh3#0", mine: false)
         guard case .divan(let divan, let added)? = LiveEvent.decode(#"{"type":"divan","sharedDivanId":"d1","item":\#(item)}"#) else { throw DecodeFailure() }
         #expect(divan == "d1" && added.key == "/hafez/ghazal/sh3#0" && !added.addedByMe)
+        #expect(LiveEvent.decode(#"{"type":"divan.removed","sharedDivanId":"d1","itemId":"i1"}"#) == .divanRemoved(sharedDivanId: "d1", itemId: "i1"))
+        #expect(LiveEvent.decode(#"{"type":"divan.removed","sharedDivanId":"d1"}"#) == nil)
         #expect(LiveEvent.decode(#"{"type":"duel.round","round":1}"#) == .other("duel.round"))
         #expect(LiveEvent.decode(#"{"type":"read","conversationId":"c1"}"#) == nil)  // fields missing
         #expect(LiveEvent.decode("[]") == nil)

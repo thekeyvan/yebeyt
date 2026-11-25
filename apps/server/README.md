@@ -100,6 +100,7 @@ Every endpoint here needs a signed-in user with a username (403 `username_requir
 - `{type:"deleted", conversationId, messageId}`: the sender deleted a message (both people get it).
 - `{type:"presence", username, online}`: only to people who share a chat that has a message with that person and are not blocked, and only if the person's `showOnline` is on. Online means at least one authenticated socket. When a connected person turns `showOnline` off, their watchers get an offline event; turning it back on sends online.
 - `{type:"divan", sharedDivanId, item}`: a couplet was added to a shared divan (`item` as in the items list).
+- `{type:"divan.removed", sharedDivanId, itemId}`: the person who added a couplet took it out of the shared divan (both people get it; the chat line «… اضافه کرد» stays).
 - `{type:"friend.request", from: {username, displayName, avatar}}`: to the receiver of a new friend request; `{type:"friend.accepted", from: {username, displayName, avatar}}`: to the sender when `from` accepts (or sends back a request at once). Nothing is sent when a request is rejected, cancelled or a friend removed.
 - Games and challenges: `game.started`, `game.move`, `game.turn`, `game.ended`, `duel.question`, `duel.answered`, `duel.round`, `challenge.result`, and the one message a client sends, `duel.answer` (see "Playing with friends").
 

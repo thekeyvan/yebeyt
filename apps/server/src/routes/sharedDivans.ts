@@ -263,7 +263,7 @@ export function sharedDivanRoutes(deps: Deps) {
       path: "/v1/shared-divans/{id}/items/{itemId}",
       tags: ["shared divan"],
       summary: "Remove a couplet I added",
-      description: "Only the person who added it. Its likes go with it.",
+      description: "Only the person who added it. Its likes go with it. Both people get a live `divan.removed` event (see the README); the chat line from when it was added stays.",
       security,
       request: { params: itemParams },
       responses: {
@@ -282,6 +282,7 @@ export function sharedDivanRoutes(deps: Deps) {
       if (!row) throw new ApiError(404, "not_found");
       if (row.addedBy !== me) throw new ApiError(403, "forbidden");
       await db.delete(sharedDivanItems).where(eq(sharedDivanItems.id, itemId));
+      for (const viewer of [me, divan.otherId]) deps.hub.publish(viewer, { type: "divan.removed", sharedDivanId: divan.id, itemId });
       return c.body(null, 204);
     },
   );
