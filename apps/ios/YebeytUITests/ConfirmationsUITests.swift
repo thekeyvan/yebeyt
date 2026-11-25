@@ -51,11 +51,13 @@ final class ConfirmationsUITests: XCTestCase {
         XCTAssertTrue(close.exists)
     }
 
+    /// The app at one text size (`UICTContentSizeCategory…`), with a game or the settings in front.
+    @MainActor private func launchSized(_ category: String, _ arguments: [String], signedIn: Bool = false) -> XCUIApplication {
+        launch(arguments + ["-UIPreferredContentSizeCategoryName", category], signedIn: signedIn)
+    }
+
     @MainActor func testTheQuestionStaysReachableAtTheLargestTextSize() {
-        let app = XCUIApplication()
-        app.launchArguments = ["-beytFresh", "1", "-beytAPI", "http://127.0.0.1:9", "-beytRoute", "jigsaw",
-                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
-        app.launch()
+        let app = launchSized("UICTContentSizeCategoryAccessibilityXXXL", ["-beytRoute", "jigsaw"])
         app.buttons["gameClose"].tap()
         let confirm = app.buttons["leaveGameConfirm"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 10))
@@ -63,6 +65,31 @@ final class ConfirmationsUITests: XCTestCase {
         for _ in 0..<3 where confirm.frame.maxY > screen || !confirm.isHittable { app.staticTexts["leaveGameTitle"].swipeUp() }
         XCTAssertTrue(confirm.isHittable, "the sheet scrolls when its content is more than the screen allows")
         shot(app, "leave-game-largest-text")
+    }
+
+    @MainActor func testTheButtonsStackWithTheWholeLabelAtAccessibilityLargeAndExtraLarge() {
+        for (category, name) in [("UICTContentSizeCategoryAccessibilityL", "ax-l"), ("UICTContentSizeCategoryAccessibilityXL", "ax-xl")] {
+            let app = launchSized(category, ["-beytRoute", "jigsaw"])
+            app.buttons["gameClose"].tap()
+            let cancel = app.buttons["leaveGameCancel"]
+            let confirm = app.buttons["leaveGameConfirm"]
+            XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+            XCTAssertLessThanOrEqual(cancel.frame.maxY, confirm.frame.minY, "stacked, the safe button first (\(name))")
+            XCTAssertGreaterThan(confirm.frame.width, app.windows.firstMatch.frame.width * 0.7, "each button has the whole row (\(name))")
+            shot(app, "leave-game-\(name)")
+        }
+    }
+
+    @MainActor func testNoLabelIsCutAtExtraLargeText() {
+        let app = launchSized("UICTContentSizeCategoryXL", ["-beytRoute", "settings", "-beytSeedDivan", "1"], signedIn: true)
+        app.buttons["signOut"].tap()
+        let cancel = app.buttons["signOutAskCancel"]
+        let confirm = app.buttons["signOutAskConfirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        let stacked = cancel.frame.maxY <= confirm.frame.minY
+        // Side by side, the two halves are equal and the longer label fits in one of them; otherwise they are stacked.
+        XCTAssertTrue(stacked || abs(cancel.frame.width - confirm.frame.width) < 1, "stacked or two equal halves")
+        shot(app, "sign-out-xl")
     }
 
     @MainActor func testGoingOutOfAStartedSoloGameLeaves() {
