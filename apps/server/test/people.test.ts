@@ -177,9 +177,9 @@ describe("GET /v1/users/search", () => {
     await h.request("/v1/friend-requests/pal00", { method: "POST", token: me.token });
     const { items } = (await (await search(me.token, "pal")).json()) as { items: Record<string, unknown>[] };
     expect(items).toHaveLength(20);
-    expect(items[0]).toEqual({ username: "pal00", displayName: null, avatar: null, friendship: "requested", isFriend: false });
+    expect(items[0]).toEqual({ username: "pal00", displayName: null, avatar: null, canPlay: true, friendship: "requested", isFriend: false });
     const found = ((await (await search(me.token, "palsa")).json()) as { items: unknown[] }).items;
-    expect(found).toEqual([{ username: "palsara", displayName: "سارا", avatar: null, friendship: "friends", isFriend: true }]);
+    expect(found).toEqual([{ username: "palsara", displayName: "سارا", avatar: null, canPlay: true, friendship: "friends", isFriend: true }]);
   });
 
   it("does not take a profile for the search: a user named like it is unknown", async () => {

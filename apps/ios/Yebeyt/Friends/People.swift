@@ -22,8 +22,12 @@ final class PeopleSearchModel {
     @ObservationIgnored private weak var center: MessagesCenter?
     @ObservationIgnored private var task: Task<Void, Never>?
 
-    init(session: Session, debounce: Duration = .milliseconds(300), center: MessagesCenter? = nil) {
+    /// An invite picker leaves out who can't play («یه بیت»).
+    private let playableOnly: Bool
+
+    init(session: Session, debounce: Duration = .milliseconds(300), center: MessagesCenter? = nil, playableOnly: Bool = false) {
         self.session = session
+        self.playableOnly = playableOnly
         self.debounce = debounce
         self.center = center
     }
@@ -53,7 +57,7 @@ final class PeopleSearchModel {
                 let api = session.api
                 let found = try await session.authorized { try await api.searchUsers(query, token: $0) }
                 guard !Task.isCancelled else { return }
-                people = found
+                people = playableOnly ? found.filter(\.canPlay) : found
                 phase = .loaded
             } catch is CancellationError {
                 return

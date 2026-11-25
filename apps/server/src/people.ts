@@ -17,6 +17,9 @@ export const shortPersonSchema = z
   .object({ username: z.string(), displayName: z.string().nullable(), avatar: avatarSchema.nullable() })
   .openapi("PersonShort");
 
+/** Whether a game invitation can reach them; false only for the built-in «یه بیت», so a client leaves it out of an invite picker without knowing why. */
+export const canPlaySchema = z.boolean().openapi({ description: "May be invited to a game. False for the built-in demo friend «یه بیت»: an invitation to it is skipped (`not_found`), so leave it out of invite pickers." });
+
 /** The ids of a user's friends, as a SQL subquery. */
 export const friendIds = (userId: string) => sql`(
   select case when user_low = ${userId} then user_high else user_low end from friendships

@@ -89,6 +89,18 @@ final class MessagesUITests: XCTestCase {
         XCTAssertTrue(app.textFields["composer"].waitForExistence(timeout: 10))
     }
 
+    @MainActor func testTheNewChatPickerStillOffersTheDemoFriend() {
+        let app = launch(["-beytRoute", "inbox"])
+        let compose = element(app, "inboxCompose")
+        XCTAssertTrue(compose.waitForExistence(timeout: 10))
+        compose.tap()
+        let field = app.textFields["peopleSearch"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText("ye")
+        XCTAssertTrue(element(app, "newChat-yebeyt").waitForExistence(timeout: 10))
+    }
+
     @MainActor func testMessageOnAPersonsPageOpensTheChat() {
         let app = launch(["-beytRoute", "person:kian_k"])  // a friend, so «پیام بده» shows
         let message = element(app, "personMessage")

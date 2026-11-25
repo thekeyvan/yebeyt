@@ -2,14 +2,15 @@ import SwiftUI
 
 /// The people search of «پیدا کردن دوست» in a mode for choosing someone, as a sheet: «پیام تازه» opens the chat with them,
 /// the game lobby and the challenge card add them to the people to invite. `choose` returns the line to show when it
-/// failed; nil closes the sheet.
+/// failed; nil closes the sheet. `invite` leaves out who can't play («یه بیت»).
 struct PeoplePickSheet: View {
     @Environment(Session.self) private var session
     let title: String
+    var invite = false
     let choose: @MainActor (FoundPerson) async -> String?
 
     var body: some View {
-        Inner(session: session, title: title, choose: choose)
+        Inner(session: session, title: title, invite: invite, choose: choose)
     }
 
     private struct Inner: View {
@@ -21,8 +22,8 @@ struct PeoplePickSheet: View {
         @State private var toast: String?
         @FocusState private var focused: Bool
 
-        init(session: Session, title: String, choose: @escaping @MainActor (FoundPerson) async -> String?) {
-            _model = State(initialValue: PeopleSearchModel(session: session))
+        init(session: Session, title: String, invite: Bool, choose: @escaping @MainActor (FoundPerson) async -> String?) {
+            _model = State(initialValue: PeopleSearchModel(session: session, playableOnly: invite))
             self.title = title
             self.choose = choose
         }

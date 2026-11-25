@@ -9,17 +9,17 @@ private func session(_ stub: StubServer) -> Session {
     ))
 }
 
-private func people(_ names: [String]) -> String {
-    let items = names.map { #"{"username":"\#($0)","displayName":null,"avatar":null}"# }
+private func people(_ names: [String], cannotPlay: Set<String> = []) -> String {
+    let items = names.map { #"{"username":"\#($0)","displayName":null,"avatar":null,"canPlay":\#(!cannotPlay.contains($0))}"# }
     return #"{"items":[\#(items.joined(separator: ","))],"nextCursor":null}"#
 }
 
 /// GameLobby: what the choices become.
 @MainActor
 struct LobbyModelTests {
-    private func lobby(_ start: LobbyStart = LobbyStart(), friends: [String] = ["sara.ghazal", "kian_k", "mahsa.m", "bardia"]) async -> (LobbyModel, StubServer) {
+    private func lobby(_ start: LobbyStart = LobbyStart(), friends: [String] = ["sara.ghazal", "kian_k", "mahsa.m", "bardia"], cannotPlay: Set<String> = []) async -> (LobbyModel, StubServer) {
         let stub = StubServer { request in
-            request.path == "/v1/me/friends" ? .json(200, people(friends)) : .json(201, #"{"game":\#(GameJSON.game(id: "made", status: "waiting", turn: nil)),"invited":[],"skipped":[]}"#)
+            request.path == "/v1/me/friends" ? .json(200, people(friends, cannotPlay: cannotPlay)) : .json(201, #"{"game":\#(GameJSON.game(id: "made", status: "waiting", turn: nil)),"invited":[],"skipped":[]}"#)
         }
         let model = LobbyModel(start: start, session: session(stub))
         await model.loadFriends()
@@ -58,6 +58,11 @@ struct LobbyModelTests {
         let (model, _) = await lobby(LobbyStart(game: .duel, friend: sara), friends: ["kian_k", "sara.ghazal", "mahsa.m", "bardia"])
         #expect(model.game == .duel)
         #expect(model.selected == ["sara.ghazal"])
+        #expect(model.people.map(\.username) == ["sara.ghazal", "kian_k", "mahsa.m"])
+    }
+
+    @Test func aFriendWhoCannotPlayIsNotInTheRow() async {
+        let (model, _) = await lobby(friends: ["yebeyt", "sara.ghazal", "kian_k", "mahsa.m", "bardia"], cannotPlay: ["yebeyt"])
         #expect(model.people.map(\.username) == ["sara.ghazal", "kian_k", "mahsa.m"])
     }
 
@@ -385,5 +390,40 @@ struct ChallengeModelTests {
         #expect(round?.questions.prefix(3).map(\.couplet.id) == wanted.map(\.id))
         let poets = QuizRound.poet(couplets: wanted, poets: QuizFixtures.poets, generator: &generator)
         #expect(poets?.questions.map(\.couplet.id) == wanted.map(\.id))
+    }
+}
+
+/// «یه بیت» can't play: the people a game can be sent to are the ones with `canPlay`, a server that doesn't say counts as yes.
+@MainActor
+struct CanPlayTests {
+    private let list = #"{"items":[{"username":"yebeyt","displayName":"یه بیت","avatar":null,"canPlay":false},{"username":"sara","displayName":null,"avatar":null,"canPlay":true},{"username":"kian_k","displayName":null,"avatar":null}],"nextCursor":null}"#
+    private let found = #"{"items":[{"username":"yebeyt","displayName":"یه بیت","avatar":null,"canPlay":false,"friendship":"friends","isFriend":true},{"username":"yeganeh","displayName":null,"avatar":null,"canPlay":true,"friendship":"none","isFriend":false}]}"#
+
+    @Test func theFriendsPageKeepsWhoCanPlayForTheChallengeCard() throws {
+        let page = try JSONDecoder().decode(PeoplePage.self, from: Data(list.utf8))
+        #expect(page.items.map(\.canPlay) == [false, true, true])
+        #expect(page.playable.map(\.username) == ["sara", "kian_k"])
+        #expect(page.items.map(\.name).first == "یه بیت")  // the friends list still shows it
+    }
+
+    @Test func aSearchResultKeepsCanPlay() throws {
+        let people = try JSONDecoder().decode(UserSearch.self, from: Data(found.utf8)).items
+        #expect(people.map(\.canPlay) == [false, true])
+        #expect(people[0].short.canPlay == false)
+    }
+
+    private func search(playableOnly: Bool) async -> PeopleSearchModel {
+        let body = found
+        let env = SignedInStub { _ in .json(200, body) }
+        defer { env.cleanUp() }
+        let model = PeopleSearchModel(session: env.session, debounce: .milliseconds(1), playableOnly: playableOnly)
+        model.queryChanged("ye")
+        await model.settle()
+        return model
+    }
+
+    @Test func theInvitePickerLeavesThemOutAndOtherSearchesDoNot() async {
+        #expect(await search(playableOnly: true).people.map(\.username) == ["yeganeh"])
+        #expect(await search(playableOnly: false).people.map(\.username) == ["yebeyt", "yeganeh"])
     }
 }

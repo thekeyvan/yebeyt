@@ -43,6 +43,19 @@ final class PlayUITests: XCTestCase {
         XCTAssertTrue(element(app, "progress").waitForExistence(timeout: 10))  // the jigsaw round
     }
 
+    @MainActor func testTheDemoFriendIsNotOfferedInTheLobbyRowNorItsPicker() {
+        let app = launch(["-beytRoute", "lobby"])
+        XCTAssertTrue(element(app, "lobbyPerson-sara.ghazal").waitForExistence(timeout: 10))
+        XCTAssertFalse(element(app, "lobbyPerson-yebeyt").exists)  // the first friend of the fake server, but it can't play
+        app.buttons["lobbyMore"].tap()
+        let field = app.textFields["peopleSearch"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.tap()
+        field.typeText("ye")
+        XCTAssertTrue(element(app, "newChat-sara.ghazal").waitForExistence(timeout: 10))  // the fake search answers the same list for any text
+        XCTAssertFalse(element(app, "newChat-yebeyt").exists)
+    }
+
     @MainActor func testTheQuickActionsOfAChatOpenTheLobbyWithThatFriend() {
         let app = launch(["-beytRoute", "chat:sara.ghazal"])
         let quick = app.buttons["quickMosh"]

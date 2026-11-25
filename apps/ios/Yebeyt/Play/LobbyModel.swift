@@ -104,7 +104,7 @@ final class LobbyModel {
 
     func loadFriends() async {
         guard let page = try? await session.authorized({ try await self.session.api.friends(cursor: nil, token: $0) }) else { return }
-        friends = page.items
+        friends = page.playable
     }
 
     /// Chooses or lets go of a person. False when five are chosen already.

@@ -5,7 +5,7 @@ import type { Deps } from "../deps.js";
 import { ApiError, errorResponse } from "../errors.js";
 import { leagueOf } from "../leagues.js";
 import { canMessage } from "../messaging.js";
-import { findByUsername, friendshipOf, friendshipSchema, friendshipSql, shortPersonSchema } from "../people.js";
+import { canPlaySchema, findByUsername, friendshipOf, friendshipSchema, friendshipSql, shortPersonSchema } from "../people.js";
 import { createRateLimiter } from "../rateLimit.js";
 import { newRouter } from "../router.js";
 import { isBlocked, notBlockedWith } from "../social.js";
@@ -29,7 +29,7 @@ const profileSchema = shortPersonSchema
   })
   .openapi("PublicProfile");
 
-const foundSchema = shortPersonSchema.extend({ friendship: friendshipSchema, isFriend: z.boolean() }).openapi("FoundPerson");
+const foundSchema = shortPersonSchema.extend({ canPlay: canPlaySchema, friendship: friendshipSchema, isFriend: z.boolean() }).openapi("FoundPerson");
 const searchSchema = z.object({ items: z.array(foundSchema).max(SEARCH_MAX_RESULTS) }).openapi("UserSearch");
 
 /** Escapes `\`, `%` and `_` so the text matches itself in a LIKE pattern (`_` is a valid username character). */
@@ -67,6 +67,7 @@ export function peopleRoutes(deps: Deps) {
           username: users.username,
           displayName: users.displayName,
           avatar: users.avatar,
+          isHouse: users.isHouse,
           friendship: friendshipSql(userId, users.id),
         })
         .from(users)
@@ -74,7 +75,7 @@ export function peopleRoutes(deps: Deps) {
         .orderBy(asc(users.username))
         .limit(SEARCH_MAX_RESULTS);
       return c.json(
-        { items: rows.map((r) => ({ username: r.username!, displayName: r.displayName, avatar: r.avatar, friendship: r.friendship, isFriend: r.friendship === "friends" })) },
+        { items: rows.map((r) => ({ username: r.username!, displayName: r.displayName, avatar: r.avatar, canPlay: !r.isHouse, friendship: r.friendship, isFriend: r.friendship === "friends" })) },
         200,
       );
     },

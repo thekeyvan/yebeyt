@@ -69,9 +69,21 @@ describe("the built-in account", () => {
   it("is found by search and has a plain public profile", async () => {
     const ali = await h.signUp("ali");
     const found = await h.request("/v1/users/search?q=yeb", { token: ali.token });
-    expect(await found.json()).toEqual({ items: [{ username: "yebeyt", displayName: "یه بیت", avatar: null, friendship: "none", isFriend: false }] });
+    expect(await found.json()).toEqual({ items: [{ username: "yebeyt", displayName: "یه بیت", avatar: null, canPlay: false, friendship: "none", isFriend: false }] });
     const profile = await h.request("/v1/users/yebeyt", { token: ali.token });
     expect(await profile.json()).toMatchObject({ username: "yebeyt", displayName: "یه بیت", friendsCount: 0, friendship: "none", canMessage: false, league: null });
+  });
+
+  it("says it can't play in the friends list and in search, and everyone else can", async () => {
+    const ali = await h.signUp("ali");
+    const sara = await h.signUp("sara");
+    await h.request("/v1/friend-requests/yebeyt", { method: "POST", token: ali.token });
+    await h.request("/v1/friend-requests/sara", { method: "POST", token: ali.token });
+    await h.request("/v1/friend-requests/ali", { method: "POST", token: sara.token });
+    const friends = (await (await h.request("/v1/me/friends", { token: ali.token })).json()) as { items: { username: string; canPlay: boolean }[] };
+    expect(friends.items.map((p) => [p.username, p.canPlay]).sort()).toEqual([["sara", true], ["yebeyt", false]]);
+    const found = (await (await h.request("/v1/users/search?q=sa", { token: ali.token })).json()) as { items: { canPlay: boolean }[] };
+    expect(found.items.map((p) => p.canPlay)).toEqual([true]);
   });
 
   it("shows no friends count, though everyone may be its friend", async () => {

@@ -83,7 +83,9 @@ enum DebugFriendsBackend {
     private static let bardia = #"{"username":"bardia","displayName":"بردیا","avatar":\#(face("peach", "amber", "sun"))}"#
     private static let paria = #"{"username":"paria","displayName":"پریا","avatar":\#(face("tan", "dark", "mint"))}"#
     private static let raha = #"{"username":"raha","displayName":"رها","avatar":\#(face("ivory", "lapis", "sky"))}"#
-    private static let everyone = [sara, kian, mahsa, aryan, bardia, paria, raha]
+    /// The demo friend: in the friends list and the search like anyone, but it can't play.
+    private static let house = #"{"username":"yebeyt","displayName":"یه بیت","avatar":null,"canPlay":false}"#
+    private static let everyone = [sara, kian, mahsa, aryan, bardia, paria, raha, house]
 
     private static func person(_ username: String) -> String {
         everyone.first { $0.contains("\"\(username)\"") } ?? sara
@@ -111,7 +113,7 @@ enum DebugFriendsBackend {
     static func answer(method: String, path: String, query: String, now: Date = .now, relations: Relations = shared) -> (Int, String)? {
         switch (method, path) {
         case ("GET", "/v1/users/search"):
-            (200, #"{"items":[\#(["sara.ghazal", "kian_k", "mahsa.m", "aryan", "paria", "raha"].map { found(person($0), relations.state(of: $0)) }.joined(separator: ","))]}"#)
+            (200, #"{"items":[\#(["yebeyt", "sara.ghazal", "kian_k", "mahsa.m", "aryan", "paria", "raha"].map { found(person($0), relations.state(of: $0)) }.joined(separator: ","))]}"#)
         case ("POST", let path) where path.hasPrefix("/v1/friend-requests/") && path.hasSuffix("/accept"):
             (200, { relations.accept(usernameOf(path, after: "/v1/friend-requests/")); return #"{"friendship":"friends"}"# }())
         case ("POST", let path) where path.hasPrefix("/v1/friend-requests/") && path.hasSuffix("/reject"):
@@ -185,10 +187,10 @@ enum DebugFriendsBackend {
         return #"{"week":"2026-W47","tier":2,"endsAt":"\#(iso(now.addingTimeInterval(2.6 * 86_400)))","rows":[\#(rows.joined(separator: ","))],"promoteCount":5,"demoteCount":5}"#
     }
 
-    /// The friends list: the three, then generated people, 40 a page; `cursor=2` is the second page.
+    /// The friends list: «یه بیت», the three, then generated people, 40 a page; `cursor=2` is the second page.
     private static func friends(query: String) -> String {
         let second = query.contains("cursor=2")
-        let named = second ? [] : [sara, kian, mahsa]
+        let named = second ? [] : [house, sara, kian, mahsa]
         let range = second ? 38...77 : 1...37
         let generated = range.map { n in
             #"{"username":"friend\#(String(format: "%02d", n))","displayName":"دوست \#(PersianDigits.string(n))","avatar":\#(face("sand", "dark", "sky"))}"#

@@ -548,7 +548,8 @@ struct FriendsStubTests {
 
     @Test func theFriendsListAnswersShortPeople() throws {
         let page = try JSONDecoder().decode(PeoplePage.self, from: Data(answer(.init(), "GET", "/v1/me/friends").1.utf8))
-        #expect(page.items.first?.username == "sara.ghazal" && page.nextCursor == "2")
+        #expect(page.items.first?.username == "yebeyt" && page.items.first?.canPlay == false && page.nextCursor == "2")
+        #expect(page.playable.first?.username == "sara.ghazal")
     }
 }
 #endif

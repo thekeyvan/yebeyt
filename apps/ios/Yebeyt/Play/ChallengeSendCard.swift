@@ -32,7 +32,7 @@ struct ChallengeSendCard: View {
             }
             .toast($toast)
             .sheet(isPresented: $picking) {
-                PeoplePickSheet(title: "کی رو به چالش بکشی؟") { person in
+                PeoplePickSheet(title: "کی رو به چالش بکشی؟", invite: true) { person in
                     let line = await sender.send(to: person.username)
                     if line == nil { toast = PlayCopy.challengeSentTo(person.short.name) }
                     return line
@@ -138,7 +138,7 @@ struct ChallengeSendCard: View {
 
         private func loadFriends() async {
             guard let page = try? await session.authorized({ try await session.api.friends(cursor: nil, token: $0) }) else { return }
-            friends = page.items
+            friends = page.playable
         }
     }
 }

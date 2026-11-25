@@ -49,7 +49,7 @@ private struct LobbyBody: View {
         .dottedPaper()
         .toast($toast)
         .sheet(isPresented: $picking) {
-            PeoplePickSheet(title: "کی رو دعوت کنی؟") { person in model.add(person) ? nil : PlayCopy.tooManyInvites }
+            PeoplePickSheet(title: "کی رو دعوت کنی؟", invite: true) { person in model.add(person) ? nil : PlayCopy.tooManyInvites }
         }
         .task { await model.loadFriends() }
     }

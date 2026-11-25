@@ -2,11 +2,28 @@ import Foundation
 
 /// The shapes of friends, the leaderboard, the feed, scores and reactions in `packages/api/openapi.json`.
 
-/// `PersonShort`: someone as a row shows them.
+/// `PersonShort`: someone as a row shows them. `canPlay` comes with the friends list and search; it is false only for the
+/// demo friend «یه بیت», and a server that doesn't say counts as yes.
 struct PersonShort: Codable, Equatable, Sendable {
     var username: String
     var displayName: String?
     var avatar: AvatarParts?
+    var canPlay = true
+
+    init(username: String, displayName: String?, avatar: AvatarParts?, canPlay: Bool = true) {
+        self.username = username
+        self.displayName = displayName
+        self.avatar = avatar
+        self.canPlay = canPlay
+    }
+
+    init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        username = try values.decode(String.self, forKey: .username)
+        displayName = try values.decodeIfPresent(String.self, forKey: .displayName)
+        avatar = try values.decodeIfPresent(AvatarParts.self, forKey: .avatar)
+        canPlay = try values.decodeIfPresent(Bool.self, forKey: .canPlay) ?? true
+    }
 
     /// What a row calls them: the name, else the username.
     var name: String { displayName ?? username }
@@ -18,10 +35,28 @@ struct FoundPerson: Codable, Equatable, Sendable {
     var displayName: String?
     var avatar: AvatarParts?
     var friendship: Friendship
+    var canPlay = true
 
-    private enum CodingKeys: String, CodingKey { case username, displayName, avatar, friendship }
+    private enum CodingKeys: String, CodingKey { case username, displayName, avatar, friendship, canPlay }
 
-    var short: PersonShort { PersonShort(username: username, displayName: displayName, avatar: avatar) }
+    init(username: String, displayName: String?, avatar: AvatarParts?, friendship: Friendship, canPlay: Bool = true) {
+        self.username = username
+        self.displayName = displayName
+        self.avatar = avatar
+        self.friendship = friendship
+        self.canPlay = canPlay
+    }
+
+    init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        username = try values.decode(String.self, forKey: .username)
+        displayName = try values.decodeIfPresent(String.self, forKey: .displayName)
+        avatar = try values.decodeIfPresent(AvatarParts.self, forKey: .avatar)
+        friendship = try values.decode(Friendship.self, forKey: .friendship)
+        canPlay = try values.decodeIfPresent(Bool.self, forKey: .canPlay) ?? true
+    }
+
+    var short: PersonShort { PersonShort(username: username, displayName: displayName, avatar: avatar, canPlay: canPlay) }
     var isFriend: Bool { friendship == .friends }
 }
 
@@ -34,6 +69,9 @@ struct UserSearch: Codable, Sendable {
 struct PeoplePage: Codable, Sendable {
     var items: [PersonShort]
     var nextCursor: String?
+
+    /// The friends a game can be sent to: not «یه بیت».
+    var playable: [PersonShort] { items.filter(\.canPlay) }
 }
 
 /// An item of `FriendRequestsPage`: who asked (or was asked), and when.

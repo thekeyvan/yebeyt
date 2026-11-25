@@ -555,7 +555,23 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PersonShort"
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/PersonShort"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "canPlay": {
+                      "type": "boolean",
+                      "description": "May be invited to a game. False for the built-in demo friend «یه بیت»: an invitation to it is skipped (`not_found`), so leave it out of invite pickers."
+                    }
+                  },
+                  "required": [
+                    "canPlay"
+                  ]
+                }
+              ]
             }
           },
           "nextCursor": {
@@ -2004,6 +2020,10 @@
           {
             "type": "object",
             "properties": {
+              "canPlay": {
+                "type": "boolean",
+                "description": "May be invited to a game. False for the built-in demo friend «یه بیت»: an invitation to it is skipped (`not_found`), so leave it out of invite pickers."
+              },
               "friendship": {
                 "$ref": "#/components/schemas/Friendship"
               },
@@ -2012,6 +2032,7 @@
               }
             },
             "required": [
+              "canPlay",
               "friendship",
               "isFriend"
             ]
