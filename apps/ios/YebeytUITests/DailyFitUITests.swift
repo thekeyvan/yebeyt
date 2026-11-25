@@ -4,12 +4,26 @@ import XCTest
 /// title row is under the status bar, not in it, and the bottom buttons are fully on screen. At a larger text size the
 /// content scrolls (the header and the buttons stay) instead of being cut off.
 final class DailyFitUITests: XCTestCase {
+    /// `-beytToday 2027-12-17` is a couplet that takes four lines on an iPhone SE: the worst case to fit.
     @MainActor private func launch(_ extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-beytFresh", "1", "-beytRoute", "daily"] + extra
+        app.launchArguments = ["-beytFresh", "1", "-beytRoute", "daily", "-beytToday", "2027-12-17"] + extra
         app.launch()
         XCTAssertTrue(app.buttons["submit"].waitForExistence(timeout: 10))
+        waitUntilSettled(app.buttons["gameClose"])
         return app
+    }
+
+    /// The game rises over the tabs when it opens: waits until the element has stopped moving and can be tapped.
+    private func waitUntilSettled(_ element: XCUIElement, timeout: TimeInterval = 8) {
+        let deadline = Date().addingTimeInterval(timeout)
+        var last = CGRect.null
+        while Date() < deadline {
+            let frame = element.frame
+            if element.isHittable, frame == last { return }
+            last = frame
+            Thread.sleep(forTimeInterval: 0.25)
+        }
     }
 
     /// The close button and the bottom buttons are on screen, and the title row is not under the status bar.
@@ -48,7 +62,20 @@ final class DailyFitUITests: XCTestCase {
     }
 
     @MainActor func testTheDailyPuzzleStillFitsAfterAKeyGoesGrey() {
-        let app = launch(["-beytPlay", "2"])
+        let app = launch()
+        let keys = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'key-'"))
+        let grey = keys.matching(NSPredicate(format: "value == 'تو کلمه نیست'"))
+        // Type the letters in the order of the keyboard and submit until a try shows a letter that is not in the word.
+        var next = 0
+        for _ in 0..<2 where grey.count == 0 {
+            while !app.buttons["submit"].isEnabled, next < keys.count {
+                keys.element(boundBy: next).tap()
+                next += 1
+            }
+            app.buttons["submit"].tap()
+            _ = grey.firstMatch.waitForExistence(timeout: 3)
+        }
+        XCTAssertGreaterThan(grey.count, 0, "a key reads «تو کلمه نیست»")
         assertFits(app)
         XCTAssertTrue(app.buttons["erase"].isHittable)
     }

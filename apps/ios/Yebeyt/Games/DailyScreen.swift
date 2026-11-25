@@ -36,13 +36,15 @@ struct DailyScreen: View {
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 6)
-                .padding(.bottom, 12)
+                .padding(.bottom, density.contentBottomPadding)
             }
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
             .stickyHeader { header }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 bottomBar.padding(.horizontal, 18).padding(.bottom, density.bottomPadding)
+                    .frame(maxWidth: .infinity)
+                    .background { DottedPaper().ignoresSafeArea(edges: .bottom) }  // what scrolls under the bar does not show through
             }
             .accessibilityHidden(sheetShown)
             if sheetShown {

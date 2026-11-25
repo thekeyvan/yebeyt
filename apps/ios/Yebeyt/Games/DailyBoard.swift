@@ -9,14 +9,22 @@ struct DailyDensity: Equatable {
     var gap: CGFloat { compact ? 10 : 14 }
     var boxSize: CGSize { compact ? CGSize(width: 40, height: 44) : CGSize(width: 44, height: 50) }
     var boxFont: CGFloat { compact ? 20 : 22 }
-    /// A grey key is wider (and, on the board's sizes, taller) than a live one.
+    /// The room between the boxes of the grid and between the rows of keys.
+    var boxGap: CGFloat { compact ? 6 : 8 }
+    /// A grey key is wider (and, on the board's sizes, taller) than a live one. The compact keys keep the 44 pt touch height.
     func keySize(used: Bool) -> CGSize {
-        compact ? CGSize(width: used ? 36 : 32, height: 40) : CGSize(width: used ? 40 : 34, height: used ? 48 : 42)
+        compact ? CGSize(width: used ? 40 : 34, height: 44) : CGSize(width: used ? 40 : 34, height: used ? 48 : 42)
     }
     var keyFont: CGFloat { compact ? 19 : 20 }
     var keyboardPadding: CGFloat { compact ? 8 : 12 }
-    var eraseHeight: CGFloat { compact ? 40 : 42 }
+    var eraseHeight: CGFloat { compact ? 44 : 42 }
     var bottomPadding: CGFloat { compact ? 12 : 26 }
+    /// Under the keyboard, inside the scrolling part.
+    var contentBottomPadding: CGFloat { compact ? 4 : 12 }
+    var coupletPadding: EdgeInsets {
+        compact ? EdgeInsets(top: 14, leading: 18, bottom: 12, trailing: 18) : EdgeInsets(top: 20, leading: 20, bottom: 18, trailing: 20)
+    }
+    var coupletLineSpacing: CGFloat { compact ? 4 : 8 }
 }
 
 /// The three tries of معمای امروز: a row of letter boxes each, and the «فرصت» line under them.
@@ -25,9 +33,9 @@ struct DailyGrid: View {
     var density = DailyDensity()
 
     var body: some View {
-        VStack(spacing: density.compact ? 6 : 8) {
+        VStack(spacing: density.boxGap) {
             ForEach(0..<DailyGame.maxTries, id: \.self) { row in
-                HStack(spacing: density.compact ? 6 : 8) {
+                HStack(spacing: density.boxGap) {
                     ForEach(0..<game.answer.count, id: \.self) { column in
                         box(row: row, column: column)
                     }
@@ -106,7 +114,7 @@ struct DailyKeyboard: View {
     var density = DailyDensity()
 
     var body: some View {
-        VStack(spacing: density.compact ? 6 : 8) {
+        VStack(spacing: density.boxGap) {
             HStack(spacing: 6) {
                 ForEach(keys.prefix(7), id: \.self, content: key)
             }

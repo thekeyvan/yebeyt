@@ -17,7 +17,7 @@ struct DailyCoupletCard: View {
                 .font(.ui(12)).foregroundStyle(Color(hex: 0xD6D8FF))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(density.compact ? EdgeInsets(top: 14, leading: 18, bottom: 12, trailing: 18) : EdgeInsets(top: 20, leading: 20, bottom: 18, trailing: 20))
+        .padding(density.coupletPadding)
         .frame(maxWidth: .infinity)
         .background {
             RoundedRectangle(cornerRadius: 26).fill(Tokens.Colors.lapis)
@@ -55,7 +55,7 @@ struct DailyCoupletCard: View {
     }
 
     private func poemText(_ text: String) -> some View {
-        Text(text).font(.poem(20)).lineSpacing(density.compact ? 4 : 8).foregroundStyle(Tokens.Colors.white)
+        Text(text).font(.poem(20)).lineSpacing(density.coupletLineSpacing).foregroundStyle(Tokens.Colors.white)
             .multilineTextAlignment(.leading)
     }
 }
