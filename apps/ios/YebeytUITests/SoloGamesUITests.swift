@@ -149,23 +149,33 @@ final class SoloGamesUITests: XCTestCase {
         expectProgress(app, contains: "۱")  // the first pair of the next couplet
     }
 
+    /// Scrolls the page until the card is wholly above the tab bar: on a small phone the lower cards start under it
+    /// (and a card half under the bar still counts as hittable).
+    @MainActor private func reveal(_ card: XCUIElement, in app: XCUIApplication) {
+        let bar = app.otherElements["tabBar"]
+        for _ in 0..<4 where card.frame.maxY > bar.frame.minY { app.scrollViews.firstMatch.swipeUp(velocity: .fast) }
+    }
+
     @MainActor func testTheTabsFourCardsAndTheCatalogOpenTheirGames() {
         let app = launch(["-beytTab", "games"])
         for kind in ["jigsaw", "poet", "misra", "book"] {
             XCTAssertTrue(app.buttons["game-\(kind)"].waitForExistence(timeout: 10))
             XCTAssertTrue(app.buttons["game-\(kind)"].isEnabled, kind)
         }
+        reveal(app.buttons["game-misra"], in: app)
         app.buttons["game-misra"].tap()
         XCTAssertTrue(element(app, "quizCouplet").waitForExistence(timeout: 10))
         app.buttons["gameClose"].tap()  // the round is timed, so it asks
         XCTAssertTrue(app.buttons["leaveGameConfirm"].waitForExistence(timeout: 10))
         app.buttons["leaveGameConfirm"].tap()
+        reveal(app.buttons["allGames"], in: app)
         app.buttons["allGames"].tap()
         XCTAssertTrue(app.buttons["catalog-match"].waitForExistence(timeout: 5))
         for kind in ["daily", "jigsaw", "poet", "misra", "book", "match", "listen"] {
             XCTAssertTrue(app.buttons["catalog-\(kind)"].isEnabled, kind)
         }
         XCTAssertTrue(app.buttons["catalog-mosh"].isEnabled && app.buttons["catalog-duel"].isEnabled)
+        reveal(app.buttons["catalog-match"], in: app)
         app.buttons["catalog-match"].tap()
         XCTAssertTrue(app.buttons["word-0"].waitForExistence(timeout: 10))
     }
