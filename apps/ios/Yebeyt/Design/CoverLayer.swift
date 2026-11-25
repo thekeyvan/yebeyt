@@ -76,6 +76,7 @@ struct CoverLayer<Item: Identifiable & Equatable, Content: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var state: CoverState<Item>
     @State private var height = 1000.0
+    @State private var coverID = UUID()
 
     /// How far the backdrop reaches under the bottom edge.
     private static var reach: Double { 40 }
@@ -97,8 +98,6 @@ struct CoverLayer<Item: Identifiable & Equatable, Content: View>: View {
                     backdrop.frame(height: Self.reach).offset(y: Self.reach)
                     content(mounted).id(mounted.id)
                         .environment(\.feedbackInCover, true)
-                        .onAppear { FeedbackPrivacy.shared.coverAppeared() }
-                        .onDisappear { FeedbackPrivacy.shared.coverDisappeared() }
                 }
                 .offset(y: Motion.coverOffset(risen: state.risen, height: height, variant))
                 .opacity(Motion.coverOpacity(risen: state.risen, variant))
@@ -109,6 +108,9 @@ struct CoverLayer<Item: Identifiable & Equatable, Content: View>: View {
         }
         .onGeometryChange(for: Double.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { height = $0 }
         .onAppear { covers = state.covers }
+        // What is under the cover is out of the screenshot only while the cover is all the way up.
+        .onChange(of: state.covers, initial: true) { _, now in FeedbackPrivacy.shared.setCover(coverID, hides: now) }
+        .onDisappear { FeedbackPrivacy.shared.setCover(coverID, hides: false) }
         .onChange(of: item) { _, new in
             if let new {
                 Keyboard.dismiss()  // a field under the cover keeps its focus otherwise: the keyboard would stay over the reader

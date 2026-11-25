@@ -69,9 +69,10 @@ struct FeedbackPrivacyTests {
             privacy.register(view)
         }
         #expect(privacy.rects(in: window).count == 2)  // no cover: both are on screen
-        privacy.coverAppeared()
+        let cover1 = UUID()
+        privacy.setCover(cover1, hides: true)
         #expect(privacy.rects(in: window) == [cover.frame])
-        privacy.coverDisappeared()
+        privacy.setCover(cover1, hides: false)  // while it rises or drops the screen under it is seen
         #expect(privacy.rects(in: window).count == 2)
     }
 
@@ -84,13 +85,18 @@ struct FeedbackPrivacyTests {
         let top = PrivateAnchorView(frame: CGRect(x: 10, y: 10, width: 20, height: 20))
         let bottom = PrivateAnchorView(frame: CGRect(x: 10, y: 300, width: 20, height: 20))
         root.view.addSubview(top)
+        let across = PrivateAnchorView(frame: CGRect(x: 10, y: 190, width: 20, height: 20))  // crosses the sheet's top edge
         root.view.addSubview(bottom)
+        root.view.addSubview(across)
         let sheet = UIViewController()
         sheet.modalPresentationStyle = .overFullScreen
         root.present(sheet, animated: false)
         sheet.view.frame = CGRect(x: 0, y: 200, width: 200, height: 200)  // the lower half of the screen
-        for view in [top, bottom] { privacy.register(view) }
-        #expect(privacy.rects(in: window) == [top.frame], "the view above the sheet is still seen, the one under it is not")
+        for view in [top, across, bottom] { privacy.register(view) }
+        let rects = privacy.rects(in: window)
+        #expect(rects.count == 2 && rects.contains(top.frame), "the view above the sheet is still seen")
+        #expect(rects.contains(across.frame), "a view across the sheet's top edge shows its upper lines, so it is blanked")
+        #expect(!rects.contains(bottom.frame), "the view wholly under the sheet is not seen")
         window.isHidden = true
     }
 

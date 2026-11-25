@@ -174,7 +174,8 @@ struct YebeytApp: App {
                 .font(.ui(16))
                 .tint(Tokens.Colors.lapis)
                 .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
-                .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in FeedbackSettings.applyShakeToEdit() }
+                // UIKit turns shake-to-undo back on while a field is being edited: it is set again once the keyboard is up.
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in FeedbackSettings.applyShakeToEdit() }
                 .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
                     if !accounts.onboarding.isRunning { feedback.shake() }
                 }

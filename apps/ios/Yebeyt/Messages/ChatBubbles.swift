@@ -77,7 +77,7 @@ struct CoupletMessageView: View {
             CoupletCardView(key: message.key ?? "", id: message.id, mine: mine, hold: hold, open: open)
             if let note = message.note, !note.isEmpty {
                 TextBubble(text: note, mine: mine)
-                    .contextMenu { actions(mine: mine) } preview: { TextBubble(text: note, mine: mine).feedbackPrivate() }
+                    .contextMenu { actions(mine: mine) } preview: { TextBubble(text: note, mine: mine) }
                 MessageMeta(time: time, mine: mine, seen: seen)
             } else if mine {
                 MessageMeta(time: time, mine: true, seen: seen)
@@ -228,7 +228,7 @@ struct TextMessageView: View {
                     }
                 } preview: {
                     // The long-press preview is a copy of the bubble: covered while recording, like the bubble.
-                    TextBubble(text: message.deleted ? MessageCopy.deletedMessage : message.text ?? "", mine: mine, muted: message.deleted).feedbackPrivate()
+                    TextBubble(text: message.deleted ? MessageCopy.deletedMessage : message.text ?? "", mine: mine, muted: message.deleted)
                 }
             MessageMeta(time: ChatTime.clock(message.createdAt), mine: mine, seen: seen)
         }

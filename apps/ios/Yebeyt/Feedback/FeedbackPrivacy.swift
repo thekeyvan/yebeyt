@@ -21,26 +21,29 @@ final class FeedbackPrivacy {
     /// A small view behind each private view. Where it is is asked only when a screenshot is taken (so scrolling and the
     /// keyboard moving things cost nothing, and the answer is where the view is drawn at that moment).
     @ObservationIgnored private let anchors = NSHashTable<PrivateAnchorView>.weakObjects()
-    /// How many covers (the reader, a game) are mounted: they are opaque and full screen, so what is under them is not seen.
-    @ObservationIgnored private var coversMounted = 0
+    /// The covers (the reader, a game) that are all the way up: they are opaque and full screen, so what is under them is
+    /// not seen. While one rises, drops or fades, the screen under it still is.
+    @ObservationIgnored private var coversUp: Set<UUID> = []
 
     func register(_ anchor: PrivateAnchorView) { anchors.add(anchor) }
-    func coverAppeared() { coversMounted += 1 }
-    func coverDisappeared() { coversMounted = max(0, coversMounted - 1) }
+
+    func setCover(_ id: UUID, hides: Bool) {
+        if hides { coversUp.insert(id) } else { coversUp.remove(id) }
+    }
 
     /// The frames, in `window`'s coordinates, of the private views that are on screen and not hidden under a cover or a
     /// sheet.
     func rects(in window: UIWindow) -> [CGRect] {
         let chain = Self.presentationChain(of: window)
         return anchors.allObjects.compactMap { anchor in
-            guard anchor.window === window, !anchor.isHidden, anchor.inCover || coversMounted == 0 else { return nil }
+            guard anchor.window === window, !anchor.isHidden, anchor.inCover || coversUp.isEmpty else { return nil }
             let rect = anchor.drawnFrame(in: window)
             guard !rect.isNull, rect.width > 0, rect.height > 0 else { return nil }
             let level = Self.level(of: anchor, in: chain)
-            let centre = CGPoint(x: rect.midX, y: rect.midY)
+            // Hidden only when a sheet is over all of it: a bubble across a sheet's top edge shows its upper lines.
             let hidden = chain.dropFirst(level + 1).contains { sheet in
                 guard let view = sheet.viewIfLoaded else { return false }
-                return view.drawnFrame(in: window).contains(centre)
+                return view.drawnFrame(in: window).insetBy(dx: -0.5, dy: -0.5).contains(rect)
             }
             return hidden ? nil : rect
         }

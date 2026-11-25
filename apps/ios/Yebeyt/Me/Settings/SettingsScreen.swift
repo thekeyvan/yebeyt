@@ -47,6 +47,7 @@ struct SettingsScreen: View {
                     }
                     .toggleStyle(MeSwitchStyle())
                     .padding(.vertical, 10)
+                    .onChange(of: shakeForFeedback) { FeedbackSettings.applyShakeToEdit() }
                     .accessibilityIdentifier("settingsShake")
                 }
                 aboutCard
