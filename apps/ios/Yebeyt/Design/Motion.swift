@@ -72,9 +72,6 @@ enum Motion {
     /// A list row that is added or taken away: a little smaller and 12 points lower.
     static func rowArrival(_ variant: Variant) -> Arrival { variant == .full ? Arrival(dy: 12, scale: 0.9) : Arrival(dy: 0, scale: 1) }
 
-    /// A full-screen cover rises from the bottom a little smaller than it ends.
-    static let coverScale = 0.96
-
     /// How far a tab page slides: the new one in from its tab's side, the old one out to the far side.
     static let tabSlide = 40.0
 
@@ -87,6 +84,14 @@ enum Motion {
         return Arrival(dy: 0, scale: 1, dx: toTheRight ? tabSlide : -tabSlide)
     }
 
+    /// The page of a segment (a `SegmentedControl`'s content) slides in from its segment's side. `.offset` is mirrored in
+    /// right-to-left, so `dx` is the same in both layouts: positive toward a later segment, negative toward an earlier one.
+    /// A fade only under Reduce Motion or when no segment changed.
+    static func pageArrival(from old: Int, to new: Int, _ variant: Variant) -> Arrival {
+        guard variant == .full, old != new else { return Arrival(dy: 0, scale: 1) }
+        return Arrival(dy: 0, scale: 1, dx: new > old ? tabSlide : -tabSlide)
+    }
+
     /// A sheet or overlay: rises from the bottom with `bouncy`, drops quickly; a crossfade under Reduce Motion.
     static func sheet(_ variant: Variant) -> AnyTransition {
         guard rises(variant) else { return .opacity }
@@ -96,12 +101,22 @@ enum Motion {
     /// The dimmed background behind a sheet fades in and out (also under Reduce Motion).
     static var scrim: AnyTransition { .opacity }
 
-    /// A full-screen cover (the reader): rises with a spring and a slight scale, drops quickly.
-    static func cover(_ variant: Variant) -> AnyTransition {
-        guard rises(variant) else { return .opacity }
-        let rising = AnyTransition.move(edge: .bottom).combined(with: .scale(scale: coverScale, anchor: .bottom))
-        return .asymmetric(insertion: rising.animation(bouncy), removal: rising.animation(drop))
+    // MARK: Covers
+
+    /// A full-screen cover (the reader, a game) is one layer: `CoverLayer` moves all of it with one offset, so nothing in
+    /// it is drawn or moved on its own. Away it sits a screen's height down; Reduce Motion keeps it in place and fades.
+    static func coverOffset(risen: Bool, height: Double, _ variant: Variant) -> Double {
+        rises(variant) && !risen ? height : 0
     }
+
+    static func coverOpacity(risen: Bool, _ variant: Variant) -> Double {
+        rises(variant) || risen ? 1 : 0
+    }
+
+    /// It rises with `bouncy` and drops quickly; Reduce Motion crossfades both ways.
+    static func coverRise(_ variant: Variant) -> Animation { rises(variant) ? bouncy : .easeOut(duration: 0.2) }
+
+    static func coverDrop(_ variant: Variant) -> Animation { rises(variant) ? drop : .easeOut(duration: 0.2) }
 
     /// A menu or card from its origin: scales up from 0.9 with `bouncy`, goes away quickly.
     static func menu(_ variant: Variant, anchor: UnitPoint = .center) -> AnyTransition {

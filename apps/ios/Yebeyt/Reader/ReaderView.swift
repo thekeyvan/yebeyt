@@ -10,6 +10,9 @@ struct ReaderView: View {
     @Environment(AppModel.self) private var app
     @State private var model: ReaderModel
     @State private var sharedTarget: SharedDivanTarget?
+    /// How far a drag on the header has pulled the reader down (the reader is a bottom sheet).
+    @State private var pulled = 0.0
+    @State private var height = 0.0
     let close: () -> Void
     let playWithPoem: () -> Void
     let playWithCouplet: (Int) -> Void
@@ -50,6 +53,8 @@ struct ReaderView: View {
             }
         }
         .overlay(alignment: .bottom) { toast }
+        .offset(y: SheetDrag.offset(for: pulled))
+        .onGeometryChange(for: Double.self) { $0.size.height } action: { height = $0 }
         .animation(Motion.bouncy, value: model.holdIndex)
         .animation(Motion.bouncy, value: model.toast)
         .sheet(isPresented: $model.textSheetOpen) {
@@ -85,6 +90,8 @@ struct ReaderView: View {
     private func page(_ theme: ReaderTheme) -> some View {
         VStack(spacing: 8) {
             ReaderHeader(model: model, theme: theme, close: close, playWithPoem: { app.startGame(playWithPoem) }, openPoet: poetAction)
+                .contentShape(Rectangle())
+                .dragsSheet(translation: $pulled, height: height, dismiss: close)
             switch model.phase {
             case .loading:
                 Spacer()

@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The header both reading modes share: close, title and subtitle, the game button and «آ», with the mode
-/// toggle under it. It is one view above the mode's content, so switching modes can't move it.
+/// The header both reading modes share: the grabber, close, title and subtitle, the game button and «آ», with the mode
+/// toggle under it. It is one view above the mode's content, so switching modes can't move it. The reader is a bottom
+/// sheet, and this is its handle: a drag down on it closes the reader (`ReaderView`).
 struct ReaderHeader: View {
     let model: ReaderModel
     let theme: ReaderTheme
@@ -13,6 +14,9 @@ struct ReaderHeader: View {
 
     var body: some View {
         VStack(spacing: 12) {
+            Capsule().fill(theme.secondary.opacity(0.4)).frame(width: 40, height: 5)
+                .padding(.top, 2)
+                .accessibilityHidden(true)
             HStack(spacing: 10) {
                 circle(label: "بستن", action: close) {
                     LineIcon(shape: ChevronDownIcon(), size: 22, lineWidth: 2.6, fill: nil).foregroundStyle(Tokens.Colors.ink)

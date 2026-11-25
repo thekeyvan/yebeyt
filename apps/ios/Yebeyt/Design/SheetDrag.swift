@@ -28,6 +28,23 @@ extension View {
     func dragToDismiss(_ dismiss: @escaping () -> Void) -> some View {
         modifier(DragToDismiss(dismiss: dismiss))
     }
+
+    /// The drag of a sheet that is moved elsewhere (the reader: only its header is a handle, so the content keeps its own
+    /// scrolling and paging): `translation` is what the sheet's offset follows (`SheetDrag.offset(for:)`) and `height` the
+    /// sheet's, for the 30% rule.
+    func dragsSheet(translation: Binding<Double>, height: Double, dismiss: @escaping () -> Void) -> some View {
+        simultaneousGesture(
+            DragGesture(minimumDistance: 8)
+                .onChanged { translation.wrappedValue = $0.translation.height }
+                .onEnded { value in
+                    if SheetDrag.shouldDismiss(translation: value.translation.height, velocity: value.velocity.height, height: height) {
+                        dismiss()
+                    } else {
+                        withAnimation(Motion.bouncy) { translation.wrappedValue = 0 }
+                    }
+                }
+        )
+    }
 }
 
 private struct DragToDismiss: ViewModifier {
@@ -39,16 +56,6 @@ private struct DragToDismiss: ViewModifier {
         content
             .offset(y: SheetDrag.offset(for: translation))
             .onGeometryChange(for: Double.self) { $0.size.height } action: { height = $0 }
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 8)
-                    .onChanged { translation = $0.translation.height }
-                    .onEnded { value in
-                        if SheetDrag.shouldDismiss(translation: value.translation.height, velocity: value.velocity.height, height: height) {
-                            dismiss()
-                        } else {
-                            withAnimation(Motion.bouncy) { translation = 0 }
-                        }
-                    }
-            )
+            .dragsSheet(translation: $translation, height: height, dismiss: dismiss)
     }
 }

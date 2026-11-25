@@ -14,8 +14,11 @@ struct RootView: View {
     @Environment(FeedbackCenter.self) private var feedback
     @Environment(MessagesCenter.self) private var messages
     @Environment(FriendGames.self) private var friendGames
+    @Environment(TextSettingsStore.self) private var text
     @Environment(\.scenePhase) private var scenePhase
     @State private var keyboardUp = false
+    /// A game is all the way up: it has covered the tab bar, which can leave.
+    @State private var gameCovers = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -23,22 +26,18 @@ struct RootView: View {
                 TabPage(model: model, reserve: keyboardUp || !model.showsTabBar ? 0 : TabBar.footprint)
                 // The bar would ride up on top of the keyboard, so it is hidden while the keyboard is up.
                 // The privacy, avatar and invite screens are drawn without it on their boards.
-                if !keyboardUp, model.showsTabBar {
+                if !keyboardUp, model.showsTabBar, !gameCovers {
                     TabBar(model: model)
                 }
                 if let held = model.hold { holdMenu(held) }
             }
+            // The tabs stay as they are underneath while the game rises over them; once it is up they are out of reach.
             .accessibilityHidden(model.game != nil)
-            if let game = model.game {
-                GameHost(route: game)
-                    .id(game.id)
-                    .motionTransition(Motion.cover)
-            }
+            .allowsHitTesting(model.game == nil)
+            CoverLayer(item: model.game, backdrop: Tokens.Colors.paper, covers: $gameCovers) { GameHost(route: $0) }
         }
         .accessibilityHidden(model.reader != nil)
         .messageToast($model.toast, undo: model.toastUndo, serial: model.toastSerial, bottom: 110)
-        .animation(Motion.bouncy, value: model.game)
-        .animation(Motion.bouncy, value: model.reader)
         // The bar sits 18pt above the screen edge, as on the board; the pages reserve its height.
         .ignoresSafeArea(.container, edges: .bottom)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardUp = true }
@@ -93,23 +92,22 @@ struct RootView: View {
         .leaveGameQuestion(model)
         .sheet(item: $model.share) { ShareSheet(text: $0.text).presentationDetents([.medium, .large]) }
         .sharedDivanSheet(item: $model.sharedTarget) { model.showToast($0) }
-        // The reader is drawn over everything, not as a system cover, so that it can rise with a spring like the game.
+        // The reader is drawn over everything, not as a system cover, so that it can rise like a bottom sheet, like the game.
         .overlay { reader }
     }
 
-    @ViewBuilder private var reader: some View {
-        if let route = model.reader {
+    private var reader: some View {
+        CoverLayer(item: model.reader, backdrop: text.settings.theme.background) { route in
             ReaderView(
                 route: route, close: { model.closeReader() },
                 playWithPoem: { model.playWithPoem(route.path) },
                 playWithCouplet: { model.playWithCouplet(poem: route.path, index: $0) },
                 openPoet: { model.openPoet(slug: $0) }
             )
-            .id(route.id)
             .accessibilityElement(children: .contain)
             .accessibilityAddTraits(.isModal)
             .accessibilityAction(.escape) { model.closeReader() }
-            .motionTransition(Motion.cover)
+            .accessibilityIdentifier("readerCover")
         }
     }
 

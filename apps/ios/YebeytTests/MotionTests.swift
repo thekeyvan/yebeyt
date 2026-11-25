@@ -247,8 +247,32 @@ struct MotionTests {
         #expect(Motion.tabSlide == 40)
     }
 
-    @Test func aCoverRisesFromJustUnderFullSize() {
-        #expect(Motion.coverScale == 0.96)
+    @Test func aCoverRisesFromTheBottomEdgeAsOnePieceAtFullSize() {
+        #expect(Motion.coverOffset(risen: false, height: 800, .full) == 800)
+        #expect(Motion.coverOffset(risen: true, height: 800, .full) == 0)
+        #expect(Motion.coverOpacity(risen: false, .full) == 1)
+        #expect(Motion.coverOpacity(risen: true, .full) == 1)
+    }
+
+    @Test func aCoverOnlyCrossfadesUnderReduceMotion() {
+        #expect(Motion.coverOffset(risen: false, height: 800, .reduced) == 0)
+        #expect(Motion.coverOffset(risen: true, height: 800, .reduced) == 0)
+        #expect(Motion.coverOpacity(risen: false, .reduced) == 0)
+        #expect(Motion.coverOpacity(risen: true, .reduced) == 1)
+    }
+
+    @Test func aSegmentsPageSlidesInFromTheSideOfItsSegmentAndIsMirroredByTheLayout() {
+        // `.offset` is mirrored in right-to-left, so `pageArrival.dx` is the same in both layouts: toward a later
+        // segment positive, toward an earlier one negative. In screen terms (`tabArrival`) the first segment is at the
+        // right in Persian, so a later one's page comes from the left.
+        #expect(Motion.pageArrival(from: 0, to: 1, .full).dx == 40)
+        #expect(Motion.pageArrival(from: 2, to: 0, .full).dx == -40)
+        #expect(Motion.pageArrival(from: 1, to: 1, .full).dx == 0)
+        #expect(Motion.tabArrival(from: 0, to: 1, rightToLeft: true, .full).dx == -40)  // later segment: from the left
+    }
+
+    @Test func aSegmentsPageOnlyFadesUnderReduceMotion() {
+        #expect(Motion.pageArrival(from: 0, to: 2, .reduced) == Motion.Arrival(dy: 0, scale: 1))
     }
 
     @Test func theTabPageOnlyFadesUnderReduceMotion() {
