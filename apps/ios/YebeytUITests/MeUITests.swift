@@ -89,6 +89,7 @@ final class MeUITests: XCTestCase {
         let title = app.staticTexts["deleteTitle"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         XCTAssertEqual(title.label, "حسابت و همه‌ی چیزهایی که جمع کردی پاک می‌شه. مطمئنی؟")
+        assertSheetFits(app, title: title, lastButton: app.buttons["deleteConfirm"])
         app.buttons["deleteCancel"].tap()
         XCTAssertTrue(waitForDisappearance(of: title))
         XCTAssertTrue(delete.exists)  // «نه» changes nothing
@@ -146,6 +147,7 @@ final class MeUITests: XCTestCase {
         let title = app.staticTexts["unsyncedTitle"]
         XCTAssertTrue(title.waitForExistence(timeout: 10))
         XCTAssertEqual(title.label, "همه‌ی بیت‌هات هنوز به حسابت نرسیده. اگه الان خارج بشی، از این گوشی پاک می‌شن.")
+        assertSheetFits(app, title: title, lastButton: app.buttons["unsyncedLeave"])
 
         app.buttons["unsyncedStay"].tap()  // «بمونم»
         XCTAssertTrue(waitForDisappearance(of: title))

@@ -42,6 +42,7 @@ final class ConfirmationsUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["leaveGameMessage"].label, "نتیجه‌ی این دور ثبت نمی‌شه.")
         XCTAssertEqual(app.buttons["leaveGameCancel"].label, "بمون")
         XCTAssertEqual(app.buttons["leaveGameConfirm"].label, "برو بیرون")
+        assertSheetFits(app, title: title, lastButton: app.buttons["leaveGameConfirm"])
         shot(app, "leave-game")
 
         app.buttons["leaveGameCancel"].tap()  // «بمون»
@@ -88,6 +89,7 @@ final class ConfirmationsUITests: XCTestCase {
         XCTAssertEqual(title.label, "درخواستت رو پس بگیری؟")
         XCTAssertEqual(app.buttons["cancelRequestCancel"].label, "نه")
         XCTAssertEqual(app.buttons["cancelRequestConfirm"].label, "پس بگیر")
+        assertSheetFits(app, title: title, lastButton: app.buttons["cancelRequestConfirm"])
         shot(app, "cancel-request")
         app.buttons["cancelRequestCancel"].tap()
         XCTAssertTrue(waitForDisappearance(of: title))
@@ -108,6 +110,7 @@ final class ConfirmationsUITests: XCTestCase {
         XCTAssertEqual(title.label, "درخواستش رو رد کنی؟")
         XCTAssertEqual(app.staticTexts["rejectRequestMessage"].label, "بهش خبر نمی‌دیم.")
         XCTAssertEqual(app.buttons["rejectRequestConfirm"].label, "رد کن")
+        assertSheetFits(app, title: title, lastButton: app.buttons["rejectRequestConfirm"])
         shot(app, "reject-request")
         app.buttons["rejectRequestCancel"].tap()
         XCTAssertTrue(waitForDisappearance(of: title))
@@ -123,7 +126,9 @@ final class ConfirmationsUITests: XCTestCase {
     @MainActor func testTheSignOutQuestionIsShown() {
         let app = launch(["-beytRoute", "settings", "-beytSeedDivan", "1"], signedIn: true)
         app.buttons["signOut"].tap()
-        XCTAssertTrue(app.staticTexts["signOutAskTitle"].waitForExistence(timeout: 10))
+        let title = app.staticTexts["signOutAskTitle"]
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        assertSheetFits(app, title: title, lastButton: app.buttons["signOutAskConfirm"])
         shot(app, "sign-out")
     }
 
@@ -164,6 +169,7 @@ final class ConfirmationsUITests: XCTestCase {
         XCTAssertEqual(title.label, "بازخوردت هنوز فرستاده نشده. ولش کنی؟")
         XCTAssertEqual(app.buttons["feedbackDiscardCancel"].label, "بمون")
         XCTAssertEqual(app.buttons["feedbackDiscardConfirm"].label, "ول کن")
+        assertSheetFits(app, title: title, lastButton: app.buttons["feedbackDiscardConfirm"])
         shot(app, "feedback-discard")
         app.buttons["feedbackDiscardCancel"].tap()
         XCTAssertTrue(waitForDisappearance(of: title))
@@ -218,6 +224,7 @@ final class ConfirmationsUITests: XCTestCase {
         another.tap()
         let title = app.staticTexts["leaveGameTitle"]
         XCTAssertTrue(title.waitForExistence(timeout: 10))
+        assertSheetFits(app, title: title, lastButton: app.buttons["leaveGameConfirm"])
         shot(app, "leave-game-from-reader")
         app.buttons["leaveGameCancel"].tap()
         XCTAssertTrue(waitForDisappearance(of: title))
@@ -263,6 +270,7 @@ final class ConfirmationsUITests: XCTestCase {
         XCTAssertEqual(title.label, "چهره‌ات ذخیره نشده. ولش کنی؟")
         XCTAssertEqual(again.buttons["avatarDiscardCancel"].label, "بمون")
         XCTAssertEqual(again.buttons["avatarDiscardConfirm"].label, "ول کن")
+        assertSheetFits(again, title: title, lastButton: again.buttons["avatarDiscardConfirm"])
         shot(again, "avatar-discard")
         again.buttons["avatarDiscardCancel"].tap()
         XCTAssertTrue(waitForDisappearance(of: title))

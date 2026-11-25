@@ -136,6 +136,8 @@ final class FriendsUITests: XCTestCase {
         menu.tap()
         app.buttons["گزارش"].tap()
         app.buttons["reason-abuse"].tap()
+        let screen = app.windows.firstMatch.frame.height
+        XCTAssertLessThan(screen - app.buttons["reportSend"].frame.maxY, 90, "no empty band under the sheet's button")
         app.buttons["reportSend"].tap()
         XCTAssertTrue(app.staticTexts["گزارشت رسید"].waitForExistence(timeout: 10))
     }

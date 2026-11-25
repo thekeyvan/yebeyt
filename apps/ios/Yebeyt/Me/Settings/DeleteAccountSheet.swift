@@ -38,7 +38,8 @@ struct DeleteAccountSheet: View {
             }
         }
         .padding(EdgeInsets(top: 28, leading: 22, bottom: 16, trailing: 22))
-        .presentationDetents([.height(260)])
+        .frame(maxWidth: .infinity)
+        .fitsSheetHeight()
         .stickerSheet()
         .environment(\.layoutDirection, .rightToLeft)
     }
