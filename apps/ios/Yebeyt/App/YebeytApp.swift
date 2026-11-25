@@ -38,7 +38,6 @@ struct YebeytApp: App {
         let options = LaunchOptions.fromProcess
         if options.fresh { LaunchOptions.resetSavedState() }
         #endif
-        FeedbackSettings.applyShakeToEdit()
         NetworkMonitor.shared.start()
         ScreenRecorder.removeStaleFiles()
         let textSettings = TextSettingsStore()
@@ -174,7 +173,9 @@ struct YebeytApp: App {
                 .font(.ui(16))
                 .tint(Tokens.Colors.lapis)
                 .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
-                // UIKit turns shake-to-undo back on while a field is being edited: it is set again once the keyboard is up.
+                // Shake-to-undo is switched off once the app is active (a setting made in `App.init` doesn't take effect: the flag
+                // stays on until something sets it again), and again when the keyboard is up, as a hardware keyboard never shows one.
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in FeedbackSettings.applyShakeToEdit() }
                 .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in FeedbackSettings.applyShakeToEdit() }
                 .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
                     if !accounts.onboarding.isRunning { feedback.shake() }
