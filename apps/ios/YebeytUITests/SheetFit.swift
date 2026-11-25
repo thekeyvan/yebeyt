@@ -7,6 +7,7 @@ extension XCTestCase {
         let screen = app.windows.firstMatch.frame.height
         let sheetTop = title.frame.minY - 50  // the grabber and the top padding
         XCTAssertLessThan(screen - sheetTop, screen * 0.4, "the sheet takes under 40% of the screen", file: file, line: line)
+        XCTAssertLessThanOrEqual(lastButton.frame.maxY, screen, "the buttons are not cut off by the screen's edge", file: file, line: line)
         XCTAssertLessThan(screen - lastButton.frame.maxY, 90, "no empty band under the buttons", file: file, line: line)
     }
 }

@@ -43,27 +43,36 @@ struct RecordingPillHost: View {
     }
 }
 
-/// A small fire sticker at the top: a dot, «در حال ضبط» and the «تموم» button.
+/// A small fire sticker at the top: a dot and «در حال ضبط · تموم». The whole pill is the stop button, with a hit area at
+/// least 44pt tall; VoiceOver lands on it when it appears.
 struct RecordingPill: View {
     let stop: () -> Void
+    @AccessibilityFocusState private var focused: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
-            Circle().fill(Tokens.Colors.white).frame(width: 9, height: 9)
-            Text("در حال ضبط").font(.ui(13, weight: .bold))
-            Text("·").font(.ui(13, weight: .bold))
-            Button(action: stop) {
+        ZStack { button }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("recordingPill")
+    }
+
+    private var button: some View {
+        Button(action: stop) {
+            HStack(spacing: 8) {
+                Circle().fill(Tokens.Colors.white).frame(width: 9, height: 9)
+                Text("در حال ضبط").font(.ui(13, weight: .bold))
+                Text("·").font(.ui(13, weight: .bold))
                 Text("تموم").font(.ui(13, weight: .bold)).underline()
-                    .padding(.vertical, 8).padding(.horizontal, 4)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("recordingStop")
+            .foregroundStyle(Tokens.Colors.white)
+            .padding(.horizontal, 14).padding(.vertical, 8)
+            .sticker(fill: Tokens.Colors.fire, radius: Tokens.Sticker.Radius.pill, border: Tokens.Sticker.BorderWidth.badge, shadow: Tokens.Sticker.Shadow.badge)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
-        .foregroundStyle(Tokens.Colors.white)
-        .padding(.horizontal, 14).padding(.vertical, 0)
-        .sticker(fill: Tokens.Colors.fire, radius: Tokens.Sticker.Radius.pill, border: Tokens.Sticker.BorderWidth.badge, shadow: Tokens.Sticker.Shadow.badge)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("recordingPill")
+        .buttonStyle(.plain)
+        .accessibilityLabel("ضبط رو تموم کن")
+        .accessibilityIdentifier("recordingStop")
+        .accessibilityFocused($focused)
+        .onAppear { focused = true }
     }
 }

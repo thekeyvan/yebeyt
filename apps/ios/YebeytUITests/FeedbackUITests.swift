@@ -171,7 +171,8 @@ final class FeedbackUITests: XCTestCase {
         let app = startRecording(over: ["-beytRoute", "jigsaw"])
         XCTAssertTrue(app.buttons["gameClose"].exists)
         let pill = element(app, "recordingPill").frame
-        XCTAssertLessThan(pill.height, 80, "only the pill takes touches, the rest of the window is the app's")
+        XCTAssertGreaterThanOrEqual(pill.height, 44, "the pill is a comfortable target")
+        XCTAssertLessThan(pill.height, 80, "the pill window takes touches only on the pill; the rest belongs to the app")
         XCTAssertLessThan(pill.minY, 120)
         stopRecording(app)
     }
@@ -186,5 +187,24 @@ final class FeedbackUITests: XCTestCase {
         app.buttons["gameClose"].tap()
         XCTAssertTrue(app.staticTexts["leaveGameTitle"].waitForExistence(timeout: 10))
         stopRecording(app)
+    }
+
+    @MainActor func testTouchesOutsideThePillReachTheGameUnderIt() {
+        let app = startRecording(over: ["-beytRoute", "jigsaw"])
+        let pill = element(app, "recordingPill").frame
+        let close = app.buttons["gameClose"]
+        XCTAssertGreaterThan(close.frame.minX, pill.maxX, "the close button is beside the pill, not under it")
+        close.tap()
+        XCTAssertTrue(app.staticTexts["leaveGameTitle"].waitForExistence(timeout: 10), "the tap went to the game")
+        XCTAssertTrue(element(app, "recordingPill").exists, "and the recording goes on")
+        app.buttons["leaveGameCancel"].tap()
+        XCTAssertTrue(element(app, "recordingPill").exists)
+    }
+
+    @MainActor func testAnyPartOfThePillStopsTheRecording() {
+        let app = startRecording(over: ["-beytRoute", "jigsaw"])
+        let pill = element(app, "recordingPill")
+        pill.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5)).tap()  // the dot's side, not the word «تموم»
+        XCTAssertTrue(element(app, "feedbackRecorded").waitForExistence(timeout: 10))
     }
 }

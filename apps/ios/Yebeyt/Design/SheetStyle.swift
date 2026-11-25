@@ -7,7 +7,7 @@ extension View {
         modifier(SheetChrome(white: white))
     }
 
-    /// The sheet is as tall as its content. Put it on the content, before `stickerSheet`.
+    /// The sheet is as tall as its content (and scrolls when that is more than fits). Put it on the content, before `stickerSheet`.
     func fitsSheetHeight() -> some View {
         modifier(FitsSheetHeight())
     }
@@ -29,10 +29,14 @@ private struct FitsSheetHeight: ViewModifier {
     /// Until the content is measured.
     @State private var height: CGFloat = 480
 
+    /// The content sits in a scroll view that only scrolls when it does not fit: the sheet is as tall as the content, and
+    /// when the content is taller than the screen allows (a small phone, the largest text size) the sheet stops at its
+    /// largest height and the content scrolls instead of being cut off.
     func body(content: Content) -> some View {
-        content
-            .fixedSize(horizontal: false, vertical: true)
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
-            .presentationDetents([.height(height)])
+        ScrollView {
+            content.onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .presentationDetents([.height(height)])
     }
 }

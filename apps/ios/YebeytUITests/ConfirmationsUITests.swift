@@ -51,6 +51,19 @@ final class ConfirmationsUITests: XCTestCase {
         XCTAssertTrue(close.exists)
     }
 
+    @MainActor func testTheQuestionStaysReachableAtTheLargestTextSize() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-beytFresh", "1", "-beytAPI", "http://127.0.0.1:9", "-beytRoute", "jigsaw",
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        app.buttons["gameClose"].tap()
+        let confirm = app.buttons["leaveGameConfirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        let screen = app.windows.firstMatch.frame.height
+        for _ in 0..<3 where confirm.frame.maxY > screen || !confirm.isHittable { app.staticTexts["leaveGameTitle"].swipeUp() }
+        XCTAssertTrue(confirm.isHittable, "the sheet scrolls when its content is more than the screen allows")
+    }
+
     @MainActor func testGoingOutOfAStartedSoloGameLeaves() {
         let app = launch(["-beytRoute", "jigsaw"])
         app.buttons["gameClose"].tap()

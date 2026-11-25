@@ -104,6 +104,8 @@ final class FeedbackOverlay {
         window.rootViewController = Self.host(RecordingPillHost(center: center) { [weak window] in window?.touchRect = $0 })
         window.isHidden = false
         pillWindow = window
+        // VoiceOver's focus goes to the pill (and `RecordingPill` focuses its button once it is on screen).
+        UIAccessibility.post(notification: .screenChanged, argument: window.rootViewController?.view)
     }
 
     func hidePill() {
