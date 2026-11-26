@@ -127,6 +127,7 @@ test("signing out syncs first, then forgets the account's divan and likes here; 
   await expect(ask1).toContainText("دیوانت به حسابت همگام می‌شه و از این گوشی پاک می‌شه؛ با ورود دوباره برمی‌گرده.");
   await ask1.getByRole("button", { name: "بیرون برو" }).click();
   await expect(page.getByTestId("settings-sign-in")).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0); // the question has gone down
   expect(await kept(page, "reader.divan")).toBeNull();
   expect(await kept(page, "reader.marks")).toBeNull();
   expect(await sessionCookies(page)).toEqual([]);

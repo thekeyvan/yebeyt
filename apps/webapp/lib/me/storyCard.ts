@@ -15,7 +15,7 @@ const OPENER = { font: '30px "yebeyt-poem"', height: 46 };
 const LINK = { font: '700 18px "yebeyt-ui"', height: 52, side: 24 };
 
 /** The fonts the picture is drawn with, to load before drawing. */
-export const storyFonts = [TITLE.font, BODY.font, OPENER.font, LINK.font];
+const storyFonts = [TITLE.font, BODY.font, OPENER.font, LINK.font];
 
 /** `text` broken into lines that fit `width`, at the spaces. */
 function wrap(ctx: Canvas2D, text: string, width: number): string[] {
