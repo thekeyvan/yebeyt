@@ -8,7 +8,6 @@ Only what is still open. These need accounts or devices the agents don't have he
 
 ## 1b. The web app (app.yebeyt.com)
 
-- Cloudflare DNS for app.yebeyt.com (the web app already runs at https://webapp-production-529c90ac.up.railway.app). Add two records, both with proxy off (grey cloud): `CNAME` `app` → `9qiq7rgm.up.railway.app`, and `TXT` `_railway-verify.app` → `railway-verify=e8ae026eacb8bf91d81b3dc5d937e91399b58ada56d442b56af67e5e42deabd8`. Railway issues the certificate by itself once they resolve.
 - Before web sign-in (slice W4): in developer.apple.com → Identifiers → Services IDs, make `com.yebeyt.web` with Sign in with Apple on, domain `app.yebeyt.com`, return URL `https://app.yebeyt.com/auth/apple`. In Google Cloud (the yebeyt project) → Credentials, make an OAuth client of type *Web application* with origin `https://app.yebeyt.com`. Send the lead both ids (they aren't secret).
 
 ## 2. Test on a real phone
@@ -79,6 +78,8 @@ Notes:
 - The privacy policy on the new website already has this clause: «اگه بازخورد بفرستی، متن، عکس صفحه و (اگه بخوای) فیلم صفحه‌ات رو می‌گیریم. اگه باگ گزارش کنی، اطلاعات فنی گوشی (نسخه‌ی اپ، مدل و نسخه‌ی سیستم، صفحه‌ای که بودی، چند صفحه‌ی قبلش، کدهای خطاهای اخیر) هم همراهشه. اگه وارد حساب شده باشی، گزارش به نام کاربریت ثبت می‌شه؛ اگه نه، بی‌نام. چیزی که جای دیگه تایپ کردی، پیام‌هات، شماره‌ات، آی‌پی یا مکانت هیچ‌وقت همراهش نمی‌ره.»
 
 ## Done
+
+- 26 Nov: Cloudflare records for app.yebeyt.com; Railway's certificate is valid.
 
 - 24 Nov: `yebeyt.com` and `www.yebeyt.com` point at the new website on Railway (certificates valid); the old Pages site is detached.
 - 24 Nov: `api.yebeyt.com` points at the new server (CNAME `1kdy3n7t.up.railway.app`, certificate valid).
