@@ -1,8 +1,9 @@
-import type { Avatar } from "./api";
+/** The six parts of a face, each an id (the contract's `Avatar`: lower-case letters, digits and dashes, up to 32). */
+export type AvatarParts = { face: string; eyes: string; hair: string; mouth: string; accessory: string; background: string };
 
 /**
  * The parts of a face and their colours, as in the app's `AvatarCatalogue` (apps/ios/Yebeyt/Me/Avatar/AvatarParts.swift;
- * test/avatar-parts.test.ts fails when the two drift).
+ * test/avatar-parts.test.ts of this package fails when the two drift).
  */
 export const SKINS = { peach: "#F2C29B", sand: "#E8B98A", tan: "#C98F63", brown: "#9C6A45", ivory: "#F8DCC4" };
 export const HAIRS = { dark: "#3B2A2A", black: "#14112B", amber: "#FFB703", fire: "#FF4D24", magenta: "#FF3D8B", lapis: "#2F35F5" };
@@ -19,7 +20,7 @@ export type Accessory = (typeof ACCESSORIES)[number];
 export type Look = { skin: string; hair: string; background: string; eyes: Eyes; mouth: Mouth; accessory: Accessory };
 
 /** The face everyone starts with (the app's `AvatarParts.standard`), which a person without a face shows. */
-const STANDARD: Avatar = { face: "peach", eyes: "round", hair: "dark", mouth: "smile", accessory: "ney", background: "sun" };
+export const STANDARD: AvatarParts = { face: "peach", eyes: "round", hair: "dark", mouth: "smile", accessory: "ney", background: "sun" };
 
 const pick = <T extends string>(options: readonly T[], id: string): T | undefined => options.find((option) => option === id);
 const colour = (table: Record<string, string>, id: string) => (Object.hasOwn(table, id) ? table[id]! : Object.values(table)[0]!);
@@ -29,7 +30,7 @@ const colour = (table: Record<string, string>, id: string) => (Object.hasOwn(tab
  * standard face for null, and part by part otherwise: an id it doesn't know falls to that part's first option (the default),
  * and an unknown accessory is left out.
  */
-export function look(avatar: Avatar | null): Look {
+export function look(avatar: AvatarParts | null): Look {
   const parts = avatar ?? STANDARD;
   return {
     skin: colour(SKINS, parts.face),

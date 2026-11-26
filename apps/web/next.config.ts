@@ -30,6 +30,8 @@ const config: NextConfig = {
   // The workspace root, so the standalone build traces files of the packages next to the app.
   outputFileTracingRoot: fileURLToPath(new URL("../../", import.meta.url)),
   poweredByHeader: false,
+  // The face is drawn by a TypeScript package of the workspace, which Next compiles with the app.
+  transpilePackages: ["@yebeyt/avatar"],
   // One 404 page for URLs that match no route: with two root layouts (Persian and English) there is no layout to build it in.
   experimental: { globalNotFound: true },
   headers: async () => [{ source: "/:path*", headers: securityHeaders }],

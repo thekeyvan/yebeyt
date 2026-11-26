@@ -4,6 +4,7 @@ RUN npm install --global pnpm@12.8.1
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/webapp/package.json apps/webapp/
+COPY packages/avatar/package.json packages/avatar/
 
 FROM base AS build
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -15,6 +16,7 @@ COPY apps/webapp apps/webapp
 # The build copies the fonts named in tokens.json from assets/fonts into public/fonts (packages/tokens/copy-fonts.mjs),
 # and the colours of tokens.json are read by the app (lib/tokens.ts).
 COPY packages/tokens packages/tokens
+COPY packages/avatar packages/avatar
 COPY assets/fonts assets/fonts
 # …and the poetry data of the iOS app is copied into public/data (scripts/copy-data.mjs); it is the web app's bundled poetry.
 COPY apps/ios/Yebeyt/Resources/Data apps/ios/Yebeyt/Resources/Data

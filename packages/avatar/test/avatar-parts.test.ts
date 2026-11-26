@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ACCESSORIES, BACKGROUNDS, EYES, HAIRS, MOUTHS, SKINS } from "../lib/avatar";
+import { ACCESSORIES, BACKGROUNDS, EYES, HAIRS, MOUTHS, SKINS } from "../src/catalogue";
 
 const ID = "[a-z0-9-]+"; // the contract's ids: letters, digits and dashes
 
@@ -60,7 +60,7 @@ const web = {
   accessories: [...ACCESSORIES],
 };
 
-const swift = readFileSync(new URL("../../ios/Yebeyt/Me/Avatar/AvatarParts.swift", import.meta.url), "utf8");
+const swift = readFileSync(new URL("../../../apps/ios/Yebeyt/Me/Avatar/AvatarParts.swift", import.meta.url), "utf8");
 
 describe("the web's avatar parts", () => {
   it("are the app's AvatarParts.swift: same ids, same colours, same order", () => {

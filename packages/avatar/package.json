@@ -1,0 +1,26 @@
+{
+  "name": "@yebeyt/avatar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The face of yebeyt drawn as SVG (the web's port of apps/ios/Yebeyt/Me/Avatar): the parts, their colours, and the React component both web apps use.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "~5.9.0",
+    "vitest": "^5.1.1"
+  }
+}
