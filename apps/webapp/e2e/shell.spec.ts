@@ -1,11 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+// `heading` is the page's own title: the home's is «بیتِ امروز», as on the phone, where «خونه» is only the tab.
 const tabs = [
-  { title: "خونه", href: "/" },
-  { title: "کاوش", href: "/explore" },
-  { title: "بازی", href: "/games" },
-  { title: "پیام‌ها", href: "/messages" },
-  { title: "من", href: "/me" },
+  { title: "خونه", href: "/", heading: "بیتِ امروز" },
+  { title: "کاوش", href: "/explore", heading: "کاوش" },
+  { title: "بازی", href: "/games", heading: "بازی" },
+  { title: "پیام‌ها", href: "/messages", heading: "پیام‌ها" },
+  { title: "من", href: "/me", heading: "من" },
 ];
 
 const lapis = "rgb(47, 53, 245)";
@@ -28,10 +29,10 @@ test("the five tabs navigate, and the open one is marked and lapis", async ({ pa
   const bar = page.getByRole("navigation", { name: "تب‌ها" });
   await expect(bar.getByRole("link")).toHaveText(tabs.map((tab) => tab.title));
 
-  for (const { title, href } of tabs) {
+  for (const { title, href, heading } of tabs) {
     await bar.getByRole("link", { name: title }).click();
     await expect(page).toHaveURL((url) => url.pathname === href);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading);
     const open = bar.getByRole("link", { name: title });
     await expect(open).toHaveAttribute("aria-current", "page");
     await expect(open).toHaveCSS("color", lapis);

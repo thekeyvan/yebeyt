@@ -145,3 +145,37 @@ export const SparkleIcon = ({ size = 16 }: { size?: number }) => (
     <path d="M10 3.5l1.9 5.1 5.1 1.9-5.1 1.9-1.9 5.1-1.9-5.1-5.1-1.9 5.1-1.9zM18.5 14.5l.9 2.1 2.1 .9-2.1 .9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" />
   </IconBox>
 );
+
+// The icons of the library screens (Design/LibraryIcons.swift): the boards Library, Book, BookSection and Poet.
+
+/** The round back button's chevron (points right, towards where right-to-left reading starts). */
+export const ChevronRightIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) => (
+  <IconBox size={size} lineWidth={lineWidth} fill={fill}>
+    <path d="M9 5l7 7-7 7" />
+  </IconBox>
+);
+
+/** The chevron at the end of a list row, and the one in «شروع» (points left). */
+export const ChevronLeftIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) => (
+  <IconBox size={size} lineWidth={lineWidth} fill={fill}>
+    <path d="M15 5l-7 7 7 7" />
+  </IconBox>
+);
+
+/** خوندی */
+export const CheckIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) => (
+  <IconBox size={size} lineWidth={lineWidth} fill={fill}>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </IconBox>
+);
+
+/** یه غزل تصادفی (a die; the dots are tiny circles that the stroke turns into dots) */
+export const DiceIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) => (
+  <IconBox size={size} lineWidth={lineWidth} fill={fill}>
+    <rect x="4" y="4" width="16" height="16" rx="4" />
+    <circle cx="9" cy="9" r="1.3" />
+    <circle cx="15" cy="15" r="1.3" />
+    <circle cx="15" cy="9" r="1.3" />
+    <circle cx="9" cy="15" r="1.3" />
+  </IconBox>
+);

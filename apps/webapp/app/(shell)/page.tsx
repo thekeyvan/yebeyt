@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Page } from "../../components/shell/Page";
+import { HomeScreen } from "../../components/home/HomeScreen";
 
 export const metadata: Metadata = { title: { absolute: "یه بیت" } };
 
 export default function HomePage() {
-  return <Page title="خونه" />;
+  return <HomeScreen />;
 }

@@ -124,3 +124,13 @@ export function popKeyframes(pop: Pop): { keyframes: Record<string, number[]>; t
 
 /** Whether a press's particles fly: the action has some (a send has none) and Reduce Motion is off. */
 export const bursts = (action: "like" | "keep" | "repost" | "send", v: Variant): boolean => v === "full" && action !== "send";
+
+/** A card thrown off the deck (`Motion.throwAway`). */
+export const throwAway = spring(0.32, 0.72);
+
+/** How a card on the deck sits: resting, or flung off to the side, tilted (`Motion.ThrowPose`); under Reduce Motion it stays and fades. */
+export const restingPose = { rotate: 0, x: 0, y: 0, opacity: 1 };
+export const thrownPose = (v: Variant): typeof restingPose => (v === "full" ? { rotate: -18, x: -480, y: -30, opacity: 1 } : { rotate: 0, x: 0, y: 0, opacity: 0 });
+
+/** The next card of the deck springs in, a little smaller, and fades in (only the fade under Reduce Motion). */
+export const dealArrival = (v: Variant): { scale: number; opacity: number } => ({ scale: v === "full" ? 0.8 : 1, opacity: 0 });

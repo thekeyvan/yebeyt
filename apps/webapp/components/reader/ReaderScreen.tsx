@@ -3,6 +3,7 @@
 import { motion, useDragControls } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { progressStore } from "../../lib/library/browser";
 import { coverAway, coverDrop, coverRise, useVariant } from "../../lib/motion";
 import { useTextSettings } from "../../lib/reader/browser";
 import { keyStep } from "../../lib/reader/paging";
@@ -46,6 +47,14 @@ export function ReaderScreen({ route, modal }: { route: ReaderRoute; modal: bool
   useEffect(() => {
     if (loaded) window.history.replaceState(window.history.state, "", routeURL(initial.path, reader.actionIndex, reader.mode));
   }, [loaded, initial.path, reader.actionIndex, reader.mode]);
+
+  // Where the reader is, for «ادامه بده» and «خوندی»: the couplet on the page, or the one at the top of the list.
+  useEffect(() => {
+    if (loaded && content) progressStore().opened(content.poem.path, reader.actionIndex, content.poem.couplets.length, content.title);
+  }, [loaded, content, reader.actionIndex]);
+  useEffect(() => {
+    if (reader.reachedEnd && content) progressStore().reachedEnd(content.poem.path, content.poem.couplets.length);
+  }, [reader.reachedEnd, content]);
 
   // The page follows the recitation (the whole-poem list scrolls to it by itself).
   const active = view?.activeCouplet;

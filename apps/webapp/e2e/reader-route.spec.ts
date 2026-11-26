@@ -65,7 +65,7 @@ test.describe("opening and closing", () => {
     await expect(page.getByTestId("reader")).toBeVisible();
     await page.getByRole("button", { name: "بستن" }).click();
     await expect(page).toHaveURL((url) => url.pathname === "/");
-    await expect(page.getByRole("heading", { level: 1, name: "خونه" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "بیتِ امروز" })).toBeVisible();
   });
 
   test("a pull down on the header closes it", async ({ page }) => {

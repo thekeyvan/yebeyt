@@ -1,4 +1,5 @@
 import { test } from "@playwright/test";
+import { openApp } from "./browse";
 import { openPoem, stubNetwork } from "./reader";
 
 // Screenshots of the screens that prove the shell (not committed: e2e/__screenshots__ is ignored).
@@ -67,5 +68,40 @@ test.describe("the reader", () => {
     await page.getByRole("region", { name: "خوانش" }).waitFor();
     await page.waitForTimeout(1500);
     await page.screenshot(shot(`reader-player-${size}`));
+  });
+});
+
+// The screens of W2 (home, explore, the library and search), on the fixed day with nothing from the network.
+test.describe("browsing", () => {
+  const screens = [
+    { name: "home", path: "/", also: true },
+    { name: "explore", path: "/explore" },
+    { name: "library", path: "/explore/library", also: true },
+    { name: "book", path: "/explore/book/hafez" },
+    { name: "section", path: "/explore/section/hafez/ghazal" },
+    { name: "poet", path: "/explore/poet/hafez" },
+    { name: "poets", path: "/explore/poets" },
+    { name: "search", path: "/explore/search?q=ساقی" },
+    { name: "mood", path: "/explore/mood/love" },
+  ];
+
+  for (const { name, path, also } of screens) {
+    test(name, async ({ page }, info) => {
+      const { width, height } = page.viewportSize()!;
+      test.skip(!info.project.name.startsWith("chromium") || width === 390 || (width > 375 && !also), "one browser; the phone, and the wide screen for two");
+      await openApp(page, path);
+      await page.locator("main [aria-busy=true]").waitFor({ state: "detached" });
+      await page.waitForTimeout(1200);
+      await page.screenshot(shot(`web2-${name}-${width}x${height}`));
+    });
+  }
+
+  test("fal", async ({ page }, info) => {
+    test.skip(!info.project.name.startsWith("chromium") || page.viewportSize()!.width !== 375, "the phone size of the brief");
+    await openApp(page, "/explore");
+    await page.getByTestId("fal").click();
+    await page.getByTestId("couplet-0").waitFor();
+    await page.waitForTimeout(1200);
+    await page.screenshot(shot("web2-fal-375x667"));
   });
 });

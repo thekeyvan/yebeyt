@@ -34,6 +34,8 @@ export function useReader(initial: ReaderRoute) {
   const [meaning, setMeaning] = useState({ open: false, expanded: false });
   const [holdIndex, setHoldIndex] = useState<number>();
   const [textSheetOpen, setTextSheetOpen] = useState(false);
+  /** The whole-poem list showed its last couplet: the poem is read. */
+  const [reachedEnd, setReachedEnd] = useState(false);
 
   useEffect(() => {
     let current = true;
@@ -102,6 +104,8 @@ export function useReader(initial: ReaderRoute) {
     meaning,
     holdIndex,
     textSheetOpen,
+    reachedEnd,
+    markReachedEnd: () => setReachedEnd(true),
     hasMeaning,
     retry: () => setAttempt((n) => n + 1),
     setTopIndex,

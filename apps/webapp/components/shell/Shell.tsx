@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { isRightToLeft, settle, slideFrom, useVariant } from "../../lib/motion";
+import { trackNavigation } from "../../lib/nav";
 import { tabAt } from "../../lib/tabs";
 import { TabBar } from "../ui/TabBar";
 
@@ -22,6 +23,7 @@ export function Shell({ children, reader }: { children: ReactNode; reader: React
   if (!covered && under !== pathname) setUnder(pathname);
   const current = tabAt(under);
   const v = useVariant();
+  useEffect(() => trackNavigation(pathname), [pathname]);
   const previous = useRef<number | null>(null);
   useEffect(() => {
     if (!covered) previous.current = current;

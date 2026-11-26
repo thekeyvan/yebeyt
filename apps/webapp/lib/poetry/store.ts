@@ -63,6 +63,17 @@ export class PoetryStore {
     return new PoetryStore(await backends.bundled.poets(), backends);
   }
 
+  /** The Ganjoor paths of the bundled books. */
+  get bundledPaths(): string[] {
+    return this.bundledRefs.map((book) => book.path);
+  }
+
+  /** Every poem of the bundled books, with its poet's slug (the first part of its path). */
+  async bundledPoems(): Promise<{ slug: string; poem: Poem }[]> {
+    const books = await Promise.all([...this.bundledRefs].sort((a, b) => a.id - b.id).map((ref) => this.bundledBook(ref.id)));
+    return books.flatMap(({ poems }) => poems.map((poem) => ({ slug: poem.path.split("/")[1] ?? "", poem })));
+  }
+
   /** The poet whose slug starts a Ganjoor path. */
   poetOf(path: string): PoetsFile["poets"][number] | undefined {
     return this.poets.find((poet) => path.startsWith(`/${poet.slug}/`));

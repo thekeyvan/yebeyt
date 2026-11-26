@@ -7,8 +7,8 @@ import { cn } from "../../lib/cn";
 export type SegmentOption<T extends string> = { value: T; label: string; leading?: ReactNode };
 
 /**
- * «بیت به بیت / کل شعر» (`pill`: a white capsule, the chosen one lapis) and the text sheet's rows (`row`: a light pill with the title above
- * it): one option is on, as in a radio group drawn as buttons. The behaviour (arrow keys, roles) is UI SDK's; the lapis
+ * «بیت به بیت / کل شعر» (`pill`: a white capsule, the chosen one lapis), the text sheet's rows (`row`: a light pill with the title above
+ * it) and the sorts of a section (`divan`: the same on a darker track): one option is on, as in a radio group drawn as buttons. The behaviour (arrow keys, roles) is UI SDK's; the lapis
  * indicator slides to the chosen one, and stays put under Reduce Motion.
  */
 export function Segmented<T extends string>({
@@ -23,7 +23,7 @@ export function Segmented<T extends string>({
   onValueChange: (value: T) => void;
   options: readonly SegmentOption<T>[];
   label: string;
-  look: "pill" | "row";
+  look: "pill" | "row" | "divan";
   disabled?: boolean;
 }) {
   const pill = look === "pill";
@@ -35,7 +35,7 @@ export function Segmented<T extends string>({
       disabled={disabled}
       className={cn(
         "relative isolate flex gap-0.5 p-[3px]",
-        pill ? "rounded-pill bg-white shadow-[0_2px_4px_rgba(20,17,43,0.08)]" : "w-full gap-1 rounded-[14px] bg-paper p-1",
+        pill ? "rounded-pill bg-white shadow-[0_2px_4px_rgba(20,17,43,0.08)]" : cn("w-full gap-1 rounded-[14px] p-1", look === "divan" ? "bg-track-light" : "bg-paper"),
         disabled && "opacity-40",
       )}
     >

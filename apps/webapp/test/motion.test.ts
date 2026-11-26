@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bouncy, press, pressedScale, pressTransition, pop, settle, slideFrom, spring, tabSlide, toastArrival, variant } from "../lib/motion";
+import { bouncy, dealArrival, press, restingPose, throwAway, thrownPose, pressedScale, pressTransition, pop, settle, slideFrom, spring, tabSlide, toastArrival, variant } from "../lib/motion";
 
 describe("springs", () => {
   it("turn an iOS response and damping into Motion's stiffness and damping", () => {
@@ -71,5 +71,25 @@ describe("slideFrom", () => {
     expect(slideFrom(2, 2, true, "full")).toBe(0);
     expect(slideFrom(null, 2, true, "full")).toBe(0);
     expect(slideFrom(0, 1, true, "reduced")).toBe(0);
+  });
+});
+
+describe("the deck (Motion.ThrowPose and dealArrival)", () => {
+  it("throws a card off to the side, tilted, with its own spring", () => {
+    expect(throwAway).toEqual(spring(0.32, 0.72));
+    const pose = thrownPose("full");
+    expect(pose.x).not.toBe(0);
+    expect(pose.rotate).not.toBe(0);
+    expect(pose.opacity).toBe(1);
+    expect(restingPose).toEqual({ rotate: 0, x: 0, y: 0, opacity: 1 });
+  });
+
+  it("only fades a thrown card when reduced", () => {
+    expect(thrownPose("reduced")).toEqual({ rotate: 0, x: 0, y: 0, opacity: 0 });
+  });
+
+  it("deals the next card in at 0.8 and fades it in, and only fades when reduced", () => {
+    expect(dealArrival("full")).toEqual({ scale: 0.8, opacity: 0 });
+    expect(dealArrival("reduced")).toEqual({ scale: 1, opacity: 0 });
   });
 });

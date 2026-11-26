@@ -46,6 +46,8 @@ type MarkButtonProps = {
   /** What the press did: true when the mark turned on (or a send went), false when it turned off, nothing when it did not change (the gate opened instead). */
   onPress: () => boolean | void;
   className?: string;
+  /** What is beside the icon and does not pop with it («نگه دار» next to its bookmark). */
+  caption?: ReactNode;
   children: ReactNode;
 };
 
@@ -54,7 +56,7 @@ type MarkButtonProps = {
  * mark changes its icon does what the action does: hearts rise from a like, a bookmark drops in with ribbons, arrows spin and circle
  * out of a repost, a send flies off and lands back; turning off only pops a little. Under Reduce Motion: a short pop, no particles.
  */
-export function MarkButton({ action, label, selected, onPress, className, children }: MarkButtonProps) {
+export function MarkButton({ action, label, selected, onPress, className, caption, children }: MarkButtonProps) {
   const press = usePress();
   const v = useVariant();
   const [icon, animateIcon] = useAnimate<HTMLSpanElement>();
@@ -82,6 +84,7 @@ export function MarkButton({ action, label, selected, onPress, className, childr
       <span ref={icon} className="grid place-items-center">
         {children}
       </span>
+      {caption}
       {flight && <Burst {...flight} />}
     </motion.button>
   );

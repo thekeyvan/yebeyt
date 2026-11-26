@@ -53,6 +53,8 @@ export async function stubNetwork(page: Page): Promise<void> {
     if (/\.(mp3|wav)$/.test(url)) return ranged(route, audio);
     return route.abort();
   });
+  // The web app's own door to the server (/api) has nothing behind it here; a test that wants an answer routes it itself.
+  await page.route((url) => url.hostname === "localhost" && url.pathname.startsWith("/api/"), (route) => route.fulfill({ status: 502 }));
   // What the page plays, for the tests that look at the audio.
   await page.addInitScript(() => {
     const play = HTMLMediaElement.prototype.play;

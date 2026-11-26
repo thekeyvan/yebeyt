@@ -98,6 +98,16 @@ export function WholePoem({ reader, settings }: { reader: Reader; settings: Text
     // Only on opening: scrolling moves `topIndex` by itself.
   }, []);
 
+  // The last couplet came into view: the poem is read.
+  useEffect(() => {
+    const last = rows.current.get(reader.couplets.length - 1);
+    if (!last || !list.current) return;
+    const observer = new IntersectionObserver(([entry]) => entry?.isIntersecting && reader.markReachedEnd(), { root: list.current });
+    observer.observe(last);
+    return () => observer.disconnect();
+    // `markReachedEnd` is new on every render; what matters is which poem it is.
+  }, [reader.couplets.length]);
+
   // Follows the recitation.
   useEffect(() => {
     if (active !== undefined) rows.current.get(active)?.scrollIntoView({ block: "center", behavior: "smooth" });
