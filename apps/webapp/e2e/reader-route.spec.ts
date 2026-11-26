@@ -36,6 +36,20 @@ test.describe("opening and closing", () => {
     await expect(page.locator("[inert]")).toHaveCount(0);
   });
 
+  test("going on to another page from the reader, «بازی با این بیت», leaves it and its menu behind", async ({ page }) => {
+    await stubNetwork(page);
+    await page.goto("/dev/stickers");
+    await page.getByRole("link", { name: "باز کردن غزل ۳ حافظ" }).click();
+    await expect(page.getByTestId("reader-title")).toHaveText("غزل ۳");
+    await page.getByTestId("couplet-1").click({ button: "right" });
+    await page.getByRole("dialog", { name: "کارهای این بیت" }).getByRole("button", { name: "بازی با این بیت" }).click();
+    await expect(page).toHaveURL((url) => url.pathname === "/games");
+    await expect(page.getByRole("heading", { level: 1, name: "بازی" })).toBeVisible();
+    await expect(page.getByTestId("reader")).toHaveCount(0);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.locator("[inert]")).toHaveCount(0);
+  });
+
   test("Escape closes it too", async ({ page }) => {
     await stubNetwork(page);
     await page.goto("/dev/stickers");
@@ -146,6 +160,20 @@ test.describe("a poem that is not bundled", () => {
     await expect(page.getByTestId("reader-subtitle")).toHaveText("حافظ · قطعات");
     // No meaning for these couplets: no chip.
     await expect(page.getByRole("button", { name: "معنی این بیت" })).toHaveCount(0);
+  });
+
+  test("an address that tries to leave ganjoor-data is refused, and nothing is fetched for it", async ({ page }) => {
+    const asked: string[] = [];
+    await stubNetwork(page);
+    await page.route((url) => url.hostname !== "localhost", (route) => {
+      asked.push(route.request().url());
+      return route.abort();
+    });
+    for (const path of ["/poem/hafez/%252e%252e/%252e%252e/attacker/repo/main/x", "/poem/hafez/..%5C..%5C..%5Cattacker%5Crepo%5Cmain%5Cx"]) {
+      await page.goto(path);
+      await expect(page.getByRole("alert").filter({ hasText: "شعر باز نشد" })).toBeVisible();
+    }
+    expect(asked.filter((url) => url.includes("raw.githubusercontent.com"))).toEqual([]);
   });
 
   test("a poem that does not exist says so too", async ({ page }) => {

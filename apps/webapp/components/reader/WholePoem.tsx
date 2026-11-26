@@ -28,8 +28,13 @@ function Row({ reader, index, settings, active, onRef }: { reader: Reader; index
       tabIndex={0}
       data-testid={`couplet-${index}`}
       onClick={() => reader.openCouplet(index)}
-      onKeyDown={(event) => event.key === "Enter" && reader.openCouplet(index)}
       {...hold}
+      onKeyDown={(event) => {
+        hold.onKeyDown(event);
+        if (event.defaultPrevented || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault(); // a space would also scroll the list
+        reader.openCouplet(index);
+      }}
       className={`-mx-2.5 cursor-pointer select-none rounded-[14px] px-2.5 [-webkit-touch-callout:none] ${active ? "bg-lapis/12" : ""}`}
     >
       <CoupletText couplet={couplet} settings={settings} size={listSize(settings)} factor={listFactor(settings)} className={themeClasses[settings.theme].text} />

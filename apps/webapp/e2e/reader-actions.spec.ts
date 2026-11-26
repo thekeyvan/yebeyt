@@ -170,6 +170,21 @@ test.describe("the hold menu", () => {
     await expect(page.getByTestId("reader-title")).toBeVisible();
   });
 
+  test("the keyboard opens it on the focused couplet (the menu key, Shift+F10), focus goes into it and comes back", async ({ page }) => {
+    await openPoem(page, "?c=1");
+    const couplet = page.getByTestId("couplet-1");
+    for (const key of ["ContextMenu", "Shift+F10"]) {
+      await couplet.focus();
+      await page.keyboard.press(key);
+      const menu = page.getByRole("dialog", { name: "کارهای این بیت" });
+      await expect(menu).toBeVisible();
+      await expect.poll(() => page.evaluate(() => document.activeElement?.closest("[role=dialog]") !== null)).toBe(true);
+      await page.keyboard.press("Escape");
+      await expect(menu).toBeHidden();
+      await expect(couplet).toBeFocused();
+    }
+  });
+
   test("keeps from the menu without closing it, and the shared divan and the likes go to the gate", async ({ page }) => {
     await openPoem(page, "?c=1");
     await page.getByTestId("couplet-1").click({ button: "right" });

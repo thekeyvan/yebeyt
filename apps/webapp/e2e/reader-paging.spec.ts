@@ -91,6 +91,17 @@ test("the whole poem and back keep the couplet; a tap picks one", async ({ page 
   await expect(page.getByTestId("couplet-4")).toBeInViewport();
 });
 
+test("in the whole poem a couplet is a button: Enter and Space pick it", async ({ page }) => {
+  await openPoem(page, "?c=0&mode=scroll");
+  await page.getByTestId("couplet-2").focus();
+  await page.keyboard.press("Space");
+  await expect(page).toHaveURL(/c=2$/);
+  await page.getByRole("radio", { name: "کل شعر" }).click();
+  await page.getByTestId("couplet-3").focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/c=3$/);
+});
+
 test("scrolling the whole poem changes the couplet the actions act on, and it is the one kept", async ({ page }) => {
   await openPoem(page, "?c=0&mode=scroll");
   await page.getByTestId("couplet-0").evaluate((row) => {

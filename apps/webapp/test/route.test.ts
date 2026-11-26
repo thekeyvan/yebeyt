@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { isValidPath } from "../lib/poetry/store";
 import { parseRoute, routeURL } from "../lib/reader/route";
 
 describe("the reader's address", () => {
@@ -18,5 +19,11 @@ describe("the reader's address", () => {
     expect(routeURL("/hafez/ghazal/sh3", 2, "couplet")).toBe("/poem/hafez/ghazal/sh3?c=2");
     expect(routeURL("/hafez/ghazal/sh3", 0, "scroll")).toBe("/poem/hafez/ghazal/sh3?c=0&mode=scroll");
     expect(parseRoute(["hafez", "ghazal", "sh3"], { c: "2", mode: "scroll" }).couplet).toBe(2);
+  });
+
+  it("does not decode the path a second time, so an encoded «..» stays a path that is refused", () => {
+    const { path } = parseRoute(["hafez", "%2e%2e", "%252e%252e"], {});
+    expect(path).toBe("/hafez/%2e%2e/%252e%252e");
+    expect(isValidPath(path)).toBe(false);
   });
 });

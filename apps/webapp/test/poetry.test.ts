@@ -144,8 +144,18 @@ describe("PoetryStore", () => {
   it("refuses a path that could point outside ganjoor-data", async () => {
     const fetcher = vi.fn<typeof fetch>();
     const store = await open(fetcher);
-    for (const path of ["poets/x", "/a/../b", "/a//b", "/a/./b", "/"]) await expect(store.poem(path)).rejects.toMatchObject({ kind: "notFound" });
+    const tricks = [
+      "poets/x", "/a/../b", "/a//b", "/a/./b", "/", "/a/b/",
+      "/hafez/..\\..\\..\\..\\attacker\\repo\\main\\x", // fetch turns a backslash into a slash
+      "/hafez/%2e%2e/%2e%2e/attacker", "/hafez/%252e%252e/x", "/hafez/ghazal/sh3?x=1", "/hafez/ghazal/sh3#x", "/hafez/ghazal/ش",
+    ];
+    for (const path of tricks) {
+      await expect(store.poem(path)).rejects.toMatchObject({ kind: "notFound" });
+      await expect(store.book(path)).rejects.toMatchObject({ kind: "notFound" });
+    }
     expect(isValidPath("/hafez/ghazal/sh3")).toBe(true);
+    expect(isValidPath("/babataher/2beytiha/sh3")).toBe(true);
+    expect(isValidPath("/a_b/c-d")).toBe(true);
     expect(fetcher).not.toHaveBeenCalled();
   });
 

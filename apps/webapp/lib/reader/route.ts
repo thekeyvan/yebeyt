@@ -15,19 +15,15 @@ type Query = Record<string, string | string[] | undefined>;
 
 const first = (value: string | string[] | undefined): string | undefined => (Array.isArray(value) ? value[0] : value);
 
-function decode(segment: string): string {
-  try {
-    return decodeURIComponent(segment);
-  } catch {
-    return segment;
-  }
-}
-
-/** `/poem/hafez/ghazal/sh3?c=2&mode=scroll&meaning=1` → the route; what is missing or unreadable is the start of the poem, in couplet mode, no meaning. */
+/**
+ * `/poem/hafez/ghazal/sh3?c=2&mode=scroll&meaning=1` → the route; what is missing or unreadable is the start of the poem, in couplet mode,
+ * no meaning. The segments are taken as Next gives them (decoded once): decoding again would turn `%252e%252e` into `..`. The path is
+ * checked where it is used, by `isValidPath` in the store.
+ */
 export function parseRoute(segments: string[], query: Query): ReaderRoute {
   const couplet = Number(first(query.c));
   return {
-    path: `/${segments.map(decode).join("/")}`,
+    path: `/${segments.join("/")}`,
     couplet: Number.isInteger(couplet) && couplet > 0 ? couplet : 0,
     mode: first(query.mode) === "scroll" ? "scroll" : "couplet",
     meaning: first(query.meaning) === "1",

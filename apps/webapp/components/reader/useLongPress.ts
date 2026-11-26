@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type MouseEvent, type PointerEvent } from "react";
+import { useRef, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 
 /** How long a press has to last to be a long press (iOS: `minimumDuration: 0.5`). */
 const holdSeconds = 0.5;
@@ -8,8 +8,8 @@ const holdSeconds = 0.5;
 const slop = 10;
 
 /**
- * A long press on a couplet, and the right-click and the keyboard's menu key that mean the same (they send `contextmenu`). The click that
- * comes after a long press is swallowed, so lifting the finger does not also pick the couplet.
+ * A long press on a couplet, and what means the same: the right-click (`contextmenu`) and, from the keyboard, the menu key and Shift+F10. The
+ * click that comes after a long press is swallowed, so lifting the finger does not also pick the couplet.
  */
 export function useLongPress(onHold: () => void) {
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -41,6 +41,11 @@ export function useLongPress(onHold: () => void) {
       event.preventDefault();
       cancel();
       held.current = true;
+      onHold();
+    },
+    onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "ContextMenu" && !(event.shiftKey && event.key === "F10")) return;
+      event.preventDefault();
       onHold();
     },
     onClickCapture(event: MouseEvent) {

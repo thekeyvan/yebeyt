@@ -44,7 +44,7 @@ export function ReaderScreen({ route, modal }: { route: ReaderRoute; modal: bool
 
   // The address keeps the couplet and the mode, so a link reopens the same couplet.
   useEffect(() => {
-    if (loaded) window.history.replaceState(null, "", routeURL(initial.path, reader.actionIndex, reader.mode));
+    if (loaded) window.history.replaceState(window.history.state, "", routeURL(initial.path, reader.actionIndex, reader.mode));
   }, [loaded, initial.path, reader.actionIndex, reader.mode]);
 
   // The page follows the recitation (the whole-poem list scrolls to it by itself).
