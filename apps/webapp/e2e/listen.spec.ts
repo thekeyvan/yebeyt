@@ -147,7 +147,8 @@ test.describe("گوش کن", () => {
     expect((await audioNow(page))!.paused).toBe(false);
     await page.getByTestId("skip").click();
     await expect(page.getByTestId("round-end")).toBeVisible();
-    await expect.poll(async () => (await audioNow(page))!.paused).toBe(true);
+    // Short, so a clip that ends by itself in a few seconds does not pass for one that was stopped.
+    await expect.poll(async () => (await audioNow(page))!.paused, { timeout: 1000 }).toBe(true);
     await page.waitForTimeout(1500);
     expect((await audioNow(page))!.paused).toBe(true);
   });
