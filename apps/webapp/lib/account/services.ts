@@ -1,5 +1,9 @@
 import { statsStore } from "../games/browser";
 import { scoreGameOf } from "../games/scoreGame";
+import { progressStore } from "../library/browser";
+import { Achievements } from "../me/achievements";
+import { AvatarStore } from "../me/avatarStore";
+import { PrivacyStore } from "../me/privacyStore";
 import { Taste } from "../onboarding/taste";
 import { marksStore } from "../reader/browser";
 import { AccountModel, type CredentialSource } from "./accountModel";
@@ -11,6 +15,7 @@ import { MyStats } from "./myStats";
 import { ReactionsSync } from "./reactionsSync";
 import { ScoreSync } from "./scoreSync";
 import { Session } from "./session";
+import { AccountDeletion } from "./deleteAccount";
 import { AccountSignOut } from "./signOut";
 
 function build() {
@@ -30,8 +35,15 @@ function build() {
     if (game) scores.report(game, points);
   };
   stats.onDailyFinished = (day, solved, tries, points) => scores.reportDaily(day, solved, tries, points);
+  // The badges and the avatar's locks count what the games tell: right answers on Hafez couplets and wins in «از کدوم کتاب؟».
+  const achievements = new Achievements(localStorage);
+  stats.onRightAnswer = (poetSlug) => achievements.recordRight(poetSlug);
+  stats.onRoundEnd = (game, right, questions) => achievements.recordRound(game, right, questions);
   const divan = new DivanSync(marks, session, api);
   const reactions = new ReactionsSync(marks, session, api, localStorage);
+  const privacy = new PrivacyStore(localStorage, session, api);
+  const avatar = new AvatarStore(localStorage, session, api);
+  const data = { marks, stats, reactions, scores, divan, privacy, avatar };
   return {
     session,
     api,
@@ -42,9 +54,14 @@ function build() {
     scores,
     divan,
     reactions,
+    achievements,
+    reading: progressStore(),
+    privacy,
+    avatar,
     taste: new Taste(localStorage),
     account: new AccountModel(session, stats, source, api),
-    leaving: new AccountSignOut(session, { marks, stats, reactions, scores, divan }),
+    leaving: new AccountSignOut(session, data),
+    deletion: new AccountDeletion(session, api, data),
   };
 }
 

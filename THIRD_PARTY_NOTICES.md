@@ -42,3 +42,8 @@ Thank you to Ganjoor and its contributors for making this poetry open and readab
 - [GoogleSignIn-iOS](https://github.com/google/GoogleSignIn-iOS) (Apache License 2.0) and its dependencies
   (AppAuth, GTMAppAuth, GTMSessionFetcher, GoogleUtilities, AppCheck, Promises; all Apache 2.0), added with Swift Package Manager for «ادامه با گوگل».
 - The Apple and Google marks on the sign-in buttons are the only brand art in the app; they are drawn as shapes and belong to Apple and Google.
+
+## Libraries (`apps/webapp`)
+
+- [Next.js](https://github.com/vercel/next.js), [React](https://github.com/facebook/react), [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) and [Motion](https://github.com/motiondivision/motion) (all MIT).
+- [UI SDK](https://github.com/vercel-labs/ui) (Apache License 2.0): the headless behaviours (sheets, toasts, segmented controls) under our own look.

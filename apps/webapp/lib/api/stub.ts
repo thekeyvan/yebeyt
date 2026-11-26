@@ -15,10 +15,16 @@ type Account = {
   rounds: Set<string>;
   points: number;
   progress: { points: number; streakDays: number; streakLastDate: string | null; bestByGame: Record<string, number> };
+  privacy: Record<string, unknown>;
 };
 
 // On `globalThis`, so that the routes of the app, which may be built apart, share one set of accounts.
 const accounts: Map<string, Account> = ((globalThis as { __beytStub?: Map<string, Account> }).__beytStub ??= new Map());
+/** The accounts that were deleted: the real server knows no session of them any more. */
+const deleted: Set<string> = ((globalThis as { __beytStubDeleted?: Set<string> }).__beytStubDeleted ??= new Set());
+
+/** The server's defaults for the privacy settings (`PRIVACY_DEFAULTS` in apps/server/src/routes/privacy.ts). */
+const privacyDefaults = { keptVisibility: "friends", dailyVisibility: "friends", showOnline: true, inGlobalLeaderboard: false, messagesFrom: "friends", gameInvitesFrom: "all", allowReposts: true };
 
 /** Names the debug server says are taken. */
 export const takenUsernames = ["sara", "sara.ghazal", "aryan", "hafez", "niloofar"];
@@ -30,6 +36,7 @@ const isDebugToken = (token: unknown): token is string => typeof token === "stri
 /** The session of a debug sign-in; the access token carries who it is, so the server needs no table of sessions. */
 function debugSession(given: Partial<Spec>): Response {
   const spec: Spec = { id: crypto.randomUUID(), username: null, displayName: null, provider: "apple", syncFails: false, ...given };
+  deleted.delete(spec.id); // signing in again after a deletion makes a new account
   return Response.json({ accessToken: `debug-access.${encode(spec)}`, refreshToken: `debug-refresh.${encode(spec)}`, user: accountOf(spec).user });
 }
 
@@ -37,7 +44,7 @@ function accountOf(spec: Spec): Account {
   let account = accounts.get(spec.id);
   if (!account) {
     const user = { id: spec.id, username: spec.username, displayName: spec.displayName, avatar: null, usernameChangedAt: null, createdAt: "2026-11-20T08:00:00.000Z", providers: [spec.provider] };
-    account = { spec, user, divan: new Map(), reactions: new Map(), rounds: new Set(), points: 0, progress: { points: 0, streakDays: 0, streakLastDate: null, bestByGame: {} } };
+    account = { spec, user, divan: new Map(), reactions: new Map(), rounds: new Set(), points: 0, progress: { points: 0, streakDays: 0, streakLastDate: null, bestByGame: {} }, privacy: { ...privacyDefaults } };
     accounts.set(spec.id, account);
   }
   return account;
@@ -69,6 +76,7 @@ function stubAnswer({ method, path, credential, body }: Call): Response {
   const account = accountOf(specOf(credential ?? ""));
   const route = `${method} ${url.pathname}`;
   const { searchParams } = url;
+  if (deleted.has(account.spec.id)) return error(401, "unauthorized");
   if (account.spec.syncFails && url.pathname === "/v1/me/divan") return error(503, "unavailable");
 
   switch (route) {
@@ -78,6 +86,18 @@ function stubAnswer({ method, path, credential, body }: Call): Response {
       return new Response(null, { status: 204 });
     case "GET /v1/me":
       return Response.json(account.user);
+    case "DELETE /v1/me":
+      accounts.delete(account.spec.id);
+      deleted.add(account.spec.id);
+      return new Response(null, { status: 204 });
+    case "PUT /v1/me/avatar":
+      account.user = { ...account.user, avatar: given };
+      return Response.json(account.user);
+    case "GET /v1/me/privacy":
+      return Response.json(account.privacy);
+    case "PUT /v1/me/privacy":
+      account.privacy = { ...account.privacy, ...given };
+      return Response.json(account.privacy);
     case "PUT /v1/me/profile":
       account.user = { ...account.user, displayName: String(given.displayName ?? "").trim() };
       return Response.json(account.user);

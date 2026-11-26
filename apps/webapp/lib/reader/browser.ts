@@ -1,6 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { devPagesEnabled } from "../dev";
+import { seedDivan } from "../me/seed";
 import { ReaderMarks } from "./marks";
 import { defaultSettings, TextSettingsStore, type TextSettings } from "./settings";
 
@@ -9,8 +11,14 @@ let settings: TextSettingsStore | undefined;
 let marks: ReaderMarks | undefined;
 
 const settingsStore = (): TextSettingsStore => (settings ??= new TextSettingsStore(localStorage));
-/** The marks of this browser (also what the account syncs). */
-export const marksStore = (): ReaderMarks => (marks ??= new ReaderMarks(localStorage));
+/** The marks of this browser (also what the account syncs). A debug build can be told to keep sample couplets first (`sessionStorage.beytSeedDivan = "1"`, the phone's `-beytSeedDivan 1`). */
+export function marksStore(): ReaderMarks {
+  if (!marks) {
+    marks = new ReaderMarks(localStorage);
+    if (devPagesEnabled() && sessionStorage.getItem("beytSeedDivan") === "1") seedDivan(marks);
+  }
+  return marks;
+}
 
 /** The text settings, and the way to change them. On the server (and while hydrating) they are the defaults. */
 export function useTextSettings(): [TextSettings, (change: Partial<TextSettings>) => void] {

@@ -56,6 +56,16 @@ export class ReadingProgress extends Store<State> {
     this.save({ last, finished: new Set(finished).add(path), couplets: passed });
   }
 
+  /** How many different couplets have been read (the «۱۰۰ بیت» badge). */
+  get coupletsRead(): number {
+    return this.snapshot().couplets.size;
+  }
+
+  /** The paths of the poems read to the end. */
+  get finishedPaths(): string[] {
+    return [...this.snapshot().finished];
+  }
+
   isRead = (path: string): boolean => this.snapshot().finished.has(path);
 
   /** The poem opened last, when it is not finished. */

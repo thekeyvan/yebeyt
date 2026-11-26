@@ -27,14 +27,28 @@ describe("what the /api proxy lets through", () => {
     expect(route("PUT", "v1/me/progress")?.path).toBe("/v1/me/progress");
   });
 
+  it("allows what Me adds (W5), each with its own method and a session: the avatar, the privacy settings and deleting the account", () => {
+    expect(route("PUT", "v1/me/avatar")).toEqual({ path: "/v1/me/avatar", auth: true });
+    expect(route("GET", "v1/me/privacy")).toEqual({ path: "/v1/me/privacy", auth: true });
+    expect(route("PUT", "v1/me/privacy")).toEqual({ path: "/v1/me/privacy", auth: true });
+    expect(route("DELETE", "v1/me")).toEqual({ path: "/v1/me", auth: true });
+  });
+
+  it("allows nothing else of Me: no reading of the account through the door, no other method on the new paths", () => {
+    for (const [method, path] of [["GET", "v1/me"], ["PUT", "v1/me"], ["POST", "v1/me"], ["GET", "v1/me/avatar"], ["POST", "v1/me/avatar"], ["DELETE", "v1/me/avatar"], ["POST", "v1/me/privacy"], ["DELETE", "v1/me/privacy"], ["PATCH", "v1/me/privacy"], ["DELETE", "v1/me/profile"], ["DELETE", "v1/me/username"], ["GET", "v1/me/blocks"]]) {
+      expect(route(method!, path!), `${method} ${path}`).toBeUndefined();
+    }
+    expect(route("DELETE", "v1/me", "x=1")).toEqual({ path: "/v1/me", auth: true }); // no query goes on
+  });
+
   it("refuses a method a path is not allowed for", () => {
     for (const [method, path] of [["POST", "v1/me/divan"], ["DELETE", "v1/me/divan"], ["GET", "v1/me/username"], ["GET", "v1/scores"], ["PUT", "v1/scores"], ["GET", "v1/reactions/like"], ["POST", "v1/reactions/like"], ["PUT", "v1/me/stats"], ["PATCH", "v1/me/divan"], ["HEAD", "v1/me/stats"]]) {
       expect(route(method!, path!), `${method} ${path}`).toBeUndefined();
     }
   });
 
-  it("refuses every other path, the sign-in ones and the deletion of the account included", () => {
-    for (const path of ["", "v1", "v1/poets", "v1/me", "v1/poets/pictures/x", "v2/poets/pictures", "v1/poets/hafez", "v1/auth/apple", "v1/auth/refresh", "v1/auth/logout", "v1/me/avatar", "v1/me/friends", "v1/reactions/share", "v1/reactions/counts", "v1/reactions/like/x", "v1/admin/poets/hafez/picture"]) {
+  it("refuses every other path, the sign-in ones included", () => {
+    for (const path of ["", "v1", "v1/poets", "v1/me/x", "v1/me/avatar/x", "v1/me/privacy/x", "v1/poets/pictures/x", "v2/poets/pictures", "v1/poets/hafez", "v1/auth/apple", "v1/auth/refresh", "v1/auth/logout", "v1/me/friends", "v1/reactions/share", "v1/reactions/counts", "v1/reactions/like/x", "v1/admin/poets/hafez/picture"]) {
       for (const method of ["GET", "PUT", "POST", "DELETE"]) expect(route(method, path), `${method} ${path}`).toBeUndefined();
     }
   });

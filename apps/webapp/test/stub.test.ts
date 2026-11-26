@@ -94,6 +94,22 @@ describe("the debug server (only in a build with the debug pages)", () => {
     expect(await (await call(session, "GET", "/v1/me/stats")).json()).toMatchObject({ totalPoints: 60, streakDays: 2 }); // the carried-over points are not rounds
   });
 
+  it("keeps the avatar and the privacy settings (the defaults, then only the fields sent) and forgets a deleted account", async () => {
+    vi.stubEnv("NEXT_PUBLIC_DEV_PAGES", "1");
+    const session = await signIn({ id: "to-delete", username: "niloofar" });
+    const face = { face: "tan", eyes: "wink", hair: "fire", mouth: "grin", accessory: "rose", background: "mint" };
+    expect(((await (await call(session, "PUT", "/v1/me/avatar", face)).json()) as { avatar: unknown }).avatar).toEqual(face);
+    expect(((await (await call(session, "GET", "/v1/me")).json()) as { avatar: unknown }).avatar).toEqual(face);
+
+    expect(await (await call(session, "GET", "/v1/me/privacy")).json()).toEqual({ keptVisibility: "friends", dailyVisibility: "friends", showOnline: true, inGlobalLeaderboard: false, messagesFrom: "friends", gameInvitesFrom: "all", allowReposts: true });
+    expect(await (await call(session, "PUT", "/v1/me/privacy", { keptVisibility: "me" })).json()).toMatchObject({ keptVisibility: "me", showOnline: true });
+
+    expect((await call(session, "DELETE", "/v1/me")).status).toBe(204);
+    expect((await call(session, "GET", "/v1/me")).status).toBe(401);
+    const again = await signIn({ id: "to-delete", username: "niloofar" }); // a new account
+    expect(((await (await call(again, "GET", "/v1/me")).json()) as { avatar: unknown }).avatar).toBeNull();
+  });
+
   it("refuses the divan when it is told to, for the sign-out warning", async () => {
     vi.stubEnv("NEXT_PUBLIC_DEV_PAGES", "1");
     const session = await signIn({ username: "niloofar", syncFails: true });

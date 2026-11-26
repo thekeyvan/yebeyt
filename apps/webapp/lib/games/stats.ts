@@ -59,6 +59,10 @@ const loadClaimed = (storage: KeyValueStorage): number => {
 export class GameStats extends Store<State> {
   /** Told when a round of a solo game is over, with its points (for the server). */
   onRoundFinished?: (game: GameKind, points: number) => void;
+  /** Told when a quiz answer is right, with the couplet's poet (for the «حافظ‌شناس» badge). */
+  onRightAnswer?: (poetSlug: string) => void;
+  /** Told when a quiz round ends, with how many answers were right of how many questions. */
+  onRoundEnd?: (game: GameKind, right: number, questions: number) => void;
   /** Told when a day's puzzle is over, solved or out of tries: the day, whether it was solved, the tries it took and its points. */
   onDailyFinished?: (day: TehranDay, solved: boolean, tries: number, points: number) => void;
 
@@ -142,6 +146,19 @@ export class GameStats extends Store<State> {
       day = day.previous;
     }
     return count;
+  }
+
+  /** The longest run of days the daily puzzle was solved, ever (what the «۷ روز» badge and the candle ask for). */
+  get bestStreak(): number {
+    let longest = 0;
+    let run = 0;
+    let previous: number | undefined;
+    for (const day of [...new Set(this.snapshot().saved.solvedDays)].sort((a, b) => a - b)) {
+      run = previous === day - 1 ? run + 1 : 1;
+      longest = Math.max(longest, run);
+      previous = day;
+    }
+    return longest;
   }
 
   best(game: GameKind): number {

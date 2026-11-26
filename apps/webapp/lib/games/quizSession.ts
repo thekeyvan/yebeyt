@@ -74,7 +74,10 @@ export class QuizSession extends Store<number> {
   /** «همینه!» */
   confirm(): void {
     const answer = this.round.confirm();
-    if (answer) this.stats.award(answer.points);
+    if (answer) {
+      this.stats.award(answer.points);
+      if (answer.right) this.stats.onRightAnswer?.(this.round.current.couplet.poetSlug);
+    }
     this.changed();
   }
 
@@ -91,6 +94,7 @@ export class QuizSession extends Store<number> {
     this.finished = true;
     this.stats.raiseBest(this.round.kind, this.round.points);
     this.stats.finishRound(this.round.kind, this.round.points);
+    this.stats.onRoundEnd?.(this.round.kind, this.round.rightCount, this.round.questions.length);
   }
 
   private changed(): void {

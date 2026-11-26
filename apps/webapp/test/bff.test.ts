@@ -75,9 +75,20 @@ describe("the proxy turns the session cookie into a Bearer token", () => {
     const up = upstream(() => json(200, {}));
     const bff = createBff(up.send);
     expect((await proxy(bff, request("GET", "/api/v1/me", { cookie: signedIn }))).status).toBe(404);
-    expect((await proxy(bff, request("DELETE", "/api/v1/me", { cookie: signedIn }))).status).toBe(404);
+    expect((await proxy(bff, request("PUT", "/api/v1/me", { cookie: signedIn }))).status).toBe(404);
     expect((await bff.proxy(request("GET", "/api/x", { cookie: signedIn }), ["v1", "poets", "..", "pictures"])).status).toBe(404);
     expect(up.calls).toEqual([]);
+  });
+
+  it("lets the deletion of the account through with the session, and its 204 on without a body (W5)", async () => {
+    const up = upstream(() => new Response(null, { status: 204 }));
+    const response = await proxy(createBff(up.send), request("DELETE", "/api/v1/me", { cookie: signedIn }));
+    expect(response.status).toBe(204);
+    expect(await response.text()).toBe("");
+    expect(up.calls).toEqual([{ method: "DELETE", path: "/v1/me", credential: "access-1" }]);
+    const crossSite = await proxy(createBff(up.send), request("DELETE", "/api/v1/me", { cookie: signedIn, headers: { "sec-fetch-site": "cross-site" } }));
+    expect(crossSite.status).toBe(403);
+    expect(up.calls).toHaveLength(1);
   });
 
   it("passes the picture's ETag, cache control and type on, and a 304", async () => {

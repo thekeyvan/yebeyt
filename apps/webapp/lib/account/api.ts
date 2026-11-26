@@ -7,6 +7,9 @@ export type DailyRequest = components["schemas"]["DailyRequest"];
 export type Progress = components["schemas"]["Progress"];
 export type RemoteStats = components["schemas"]["Stats"];
 export type UsernameCheck = components["schemas"]["UsernameCheck"];
+export type Avatar = NonNullable<components["schemas"]["Avatar"]>;
+export type PrivacySettings = components["schemas"]["PrivacySettings"];
+export type PrivacyPatch = components["schemas"]["PrivacyPatch"];
 export type ReactionKind = "like" | "repost";
 export type MyReactions = components["schemas"]["MyReactions"];
 
@@ -85,6 +88,7 @@ export function createApi(onSignedOut: () => void = () => {}, send: Fetch = (...
       if (response.status === 401) onSignedOut();
       throw new ApiError(response.status, typeof code === "string" ? code : undefined);
     }
+    if (response.status === 204) return undefined as Answer;
     try {
       return (await response.json()) as Answer;
     } catch {
@@ -99,6 +103,11 @@ export function createApi(onSignedOut: () => void = () => {}, send: Fetch = (...
     usernameSuggestions: async (base: string) => (await call<components["schemas"]["UsernameSuggestions"]>("GET", "/v1/usernames/suggestions", { query: { base } })).suggestions,
     setDisplayName: (displayName: string) => call<User>("PUT", "/v1/me/profile", { body: { displayName } }),
     setUsername: (username: string) => call<User>("PUT", "/v1/me/username", { body: { username } }),
+    setAvatar: (avatar: Avatar) => call<User>("PUT", "/v1/me/avatar", { body: avatar }),
+    privacy: () => call<PrivacySettings>("GET", "/v1/me/privacy"),
+    putPrivacy: (patch: PrivacyPatch) => call<PrivacySettings>("PUT", "/v1/me/privacy", { body: patch }),
+    /** Deletes the account and everything stored for it. */
+    deleteAccount: () => call<void>("DELETE", "/v1/me"),
     putProgress: (progress: Progress) => call<Progress>("PUT", "/v1/me/progress", { body: progress }).then((): void => {}),
     divan: async () => items(await call("GET", "/v1/me/divan")),
     /** Merges `items` (at most 2000) into the stored divan; answers the whole merged divan. */

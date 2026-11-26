@@ -34,8 +34,8 @@ const reaction = (segments: string[]): string | undefined => {
 
 /**
  * The only paths the web app's `/api` route passes on, each with its methods: the poet pictures (W2, no session) and, from W4, what the account, the
- * divan, the reactions and the scores use, which go with the session's access token. The sign-in routes are not here (`/auth/*` makes them) and
- * neither is the deletion of the account (W5). Every part of the path is checked on its own and the address is built from the checked parts, so
+ * divan, the reactions and the scores use, which go with the session's access token, and from W5 the avatar, the privacy settings and the deletion
+ * of the account (only `DELETE /v1/me`: reading the account is `/auth/session`'s). The sign-in routes are not here (`/auth/*` makes them). Every part of the path is checked on its own and the address is built from the checked parts, so
  * nothing a visitor sends can make it point anywhere else on the server.
  */
 const rules: readonly Rule[] = [
@@ -45,6 +45,9 @@ const rules: readonly Rule[] = [
   { methods: ["GET"], path: exact("v1", "usernames", "suggestions"), query: { base: plain }, auth: true },
   { methods: ["PUT"], path: exact("v1", "me", "username"), query: {}, auth: true },
   { methods: ["PUT"], path: exact("v1", "me", "profile"), query: {}, auth: true },
+  { methods: ["PUT"], path: exact("v1", "me", "avatar"), query: {}, auth: true },
+  { methods: ["GET", "PUT"], path: exact("v1", "me", "privacy"), query: {}, auth: true },
+  { methods: ["DELETE"], path: exact("v1", "me"), query: {}, auth: true },
   { methods: ["GET", "PUT"], path: exact("v1", "me", "divan"), query: {}, auth: true },
   { methods: ["GET"], path: exact("v1", "me", "reactions"), query: { cursor: plain }, auth: true },
   { methods: ["PUT", "DELETE"], path: reaction, query: { key: plain }, auth: true },

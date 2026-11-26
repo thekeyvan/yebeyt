@@ -439,6 +439,160 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the avatar
+         * @description Six parts, each an id from the app's catalogue (the server checks only their shape). Replaces the whole avatar.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["Avatar"];
+                };
+            };
+            responses: {
+                /** @description The user with the new avatar. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["User"];
+                    };
+                };
+                /** @description invalid_request: a part is missing, empty, longer than 32 characters or not lowercase letters, digits and dashes. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/privacy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Who may see and reach me
+         * @description The stored settings, or the defaults when none were stored.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The settings. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PrivacySettings"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        /**
+         * Change some privacy settings
+         * @description Only the fields sent change; the rest keep their value (or the default).
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PrivacyPatch"];
+                };
+            };
+            responses: {
+                /** @description The settings. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PrivacySettings"];
+                    };
+                };
+                /** @description Bad request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/progress": {
         parameters: {
             query?: never;
@@ -1346,6 +1500,32 @@ export interface components {
              */
             url: string;
         }[];
+        PrivacyPatch: {
+            /** @enum {string} */
+            keptVisibility?: "friends" | "me";
+            /** @enum {string} */
+            dailyVisibility?: "friends" | "me";
+            showOnline?: boolean;
+            inGlobalLeaderboard?: boolean;
+            /** @enum {string} */
+            messagesFrom?: "all" | "friends";
+            /** @enum {string} */
+            gameInvitesFrom?: "all" | "friends";
+            allowReposts?: boolean;
+        };
+        PrivacySettings: {
+            /** @enum {string} */
+            keptVisibility: "friends" | "me";
+            /** @enum {string} */
+            dailyVisibility: "friends" | "me";
+            showOnline: boolean;
+            inGlobalLeaderboard: boolean;
+            /** @enum {string} */
+            messagesFrom: "all" | "friends";
+            /** @enum {string} */
+            gameInvitesFrom: "all" | "friends";
+            allowReposts: boolean;
+        };
         Progress: {
             points: number;
             streakDays: number;
