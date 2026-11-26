@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { FriendsCenter } from "../lib/friends/center";
 import { ApiError } from "../lib/account/api";
 import { AccountDeletion } from "../lib/account/deleteAccount";
 import { DivanSync } from "../lib/account/divanSync";
@@ -45,7 +46,8 @@ function fixture(deleteAnswer: () => Promise<void> = async () => {}) {
   const scores = new ScoreSync(session, server, storage);
   const privacy = new PrivacyStore(storage, session, server);
   const avatar = new AvatarStore(storage, session, server);
-  const data = { marks, stats, reactions, scores, divan, privacy, avatar };
+  const friends = new FriendsCenter(session, { unread: async () => ({ total: 0, friendRequests: 2 }), friendRequests: async () => ({ items: [], nextCursor: null }), friendAction: async () => "none" });
+  const data = { marks, stats, reactions, scores, divan, privacy, avatar, friends };
   return { storage, session, server, ...data, leaving: new AccountSignOut(session, data), deletion: new AccountDeletion(session, server, data) };
 }
 
@@ -57,6 +59,7 @@ function fill(f: Fixture) {
   f.marks.toggle("liked", "/a/b/c", 1);
   f.privacy.change("allowReposts", false);
   f.avatar.save({ ...standardParts, hair: "fire" });
+  f.friends.requests.setCount(2);
 }
 
 function expectNothingLeft(f: Fixture) {
@@ -67,6 +70,7 @@ function expectNothingLeft(f: Fixture) {
   expect(f.privacy.settings).toEqual(defaultPrivacy);
   expect(f.avatar.parts).toEqual(standardParts);
   expect(f.avatar.isUnsent).toBe(false);
+  expect(f.friends.requests.snapshot().incomingCount).toBe(0);
   expect(f.storage.getItem("me.avatar")).toBeNull();
   expect(f.storage.getItem("me.privacy")).toBeNull();
 }

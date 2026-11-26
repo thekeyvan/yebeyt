@@ -1015,6 +1015,1256 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/reactions/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Likes and reposts of up to 50 couplets
+         * @description Everyone's reactions are counted, not only friends'. Every asked key is in the answer, with zeros when nobody reacted.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Up to 50 couplet keys, comma separated (the `#` in a key must be percent-encoded). */
+                    keys: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Counts by key. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReactionCountsByKey"];
+                    };
+                };
+                /** @description invalid_request: a bad key, or more than 50. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find people by the start of their username
+         * @description Case-insensitive prefix match on the username, at least 2 characters, up to 20 results in alphabetical order, never including me or anyone who blocked me or whom I blocked. 60 searches a minute per user.
+         */
+        get: {
+            parameters: {
+                query: {
+                    q: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The people found. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserSearch"];
+                    };
+                };
+                /** @description invalid_request: shorter than 2 characters after trimming. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Too many searches (60 a minute per user). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's public profile
+         * @description Name, avatar, how many friends they have, whether we are friends or a request is open (`friendship`). Their league tier and points this week are given only to a friend, to themselves and when they allow the global leaderboard.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    username: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The profile. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublicProfile"];
+                    };
+                };
+                /** @description Bad request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No user with that username, or one of us blocked the other. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/friend-requests/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask someone to be friends
+         * @description Idempotent: asking again changes nothing. If they already asked me, this accepts and we are friends; if we are friends, nothing happens. The built-in demo friend «یه بیت» (username `yebeyt`) accepts at once: I get a live `friend.accepted` from it, and the answer is `friends`. The receiver gets a live `friend.request` (and the sender of a request I accept, `friend.accepted`). If either of us blocked the other, the person is not found (404). A user may send 30 new requests an hour (429 rate_limited); repeats and acceptances do not count.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    username: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Where we stand now: `requested`, or `friends` when it was accepted or we already were. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FriendshipState"];
+                    };
+                };
+                /** @description invalid_request: that is yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No user with that username. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description rate_limited: 120 calls a minute, or 30 new requests an hour, per user. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        /**
+         * Cancel the request I sent
+         * @description Idempotent, silent. Does nothing to a request they sent me or to a friendship.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    username: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: that is yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No user with that username. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Too many requests (120 a minute per user). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/friend-requests/{username}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept the request they sent me
+         * @description We are friends now, and they get a live `friend.accepted`. Idempotent: 200 when we are already friends. 404 when they sent no request (or one of us blocked the other).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    username: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description `friends`. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FriendshipState"];
+                    };
+                };
+                /** @description invalid_request: that is yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No user with that username. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Too many requests (120 a minute per user). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/friend-requests/{username}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject the request they sent me
+         * @description Silent: the request just goes away, the sender is not told and may send a new one at once. Idempotent.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    username: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: that is yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No user with that username. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Too many requests (120 a minute per user). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/friends/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Stop being friends
+         * @description Idempotent and silent: they are not told, and either of us may send a new request.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    username: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: that is yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No user with that username. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Too many requests (120 a minute per user). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/friends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My friends, 50 a page
+         * @description Ordered by when we became friends, newest first.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of friends. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FriendsPage"];
+                    };
+                };
+                /** @description A malformed cursor. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/friend-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Friend requests I received or sent, newest first, 50 a page
+         * @description `direction=incoming` are the people who asked me (answer with accept or reject); `outgoing` are the people I asked (cancel with DELETE).
+         */
+        get: {
+            parameters: {
+                query: {
+                    cursor?: string;
+                    direction: "incoming" | "outgoing";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of requests. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FriendRequestsPage"];
+                    };
+                };
+                /** @description A malformed cursor, or no `direction`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/unread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How many unread messages and friend requests I have, for the tab badge
+         * @description The other people's messages after the last one I read, in all chats that nobody blocked. System lines and deleted messages do not count. `friendRequests` is how many friend requests wait for my answer.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The total. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Unread"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blocks/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Block someone
+         * @description Idempotent. Removes the friendship and the friend requests between the two. A blocked pair cannot send friend requests, message or share a divan with each other (and cannot invite each other to games), and each is hidden from the other's profile lookup (404) and search. The blocked person is not told.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    username: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: that is yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No user with that username. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Too many requests (120 a minute per user). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /**
+         * Unblock someone
+         * @description Idempotent. The friendship and requests removed by the block do not come back.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    username: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: that is yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No user with that username. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Too many requests (120 a minute per user). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a person or one of their messages
+         * @description For abuse or spam. A report is read by the team; the reported person is not told. 10 reports a minute per user.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReportRequest"];
+                };
+            };
+            responses: {
+                /** @description Reported. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: a bad body, or that is yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such user, or no such message of theirs in a chat I am in. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Too many reports (10 a minute per user). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/leaderboard/league": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My league this week
+         * @description Groups of up to 30 people of one tier. A stranger in the group who is not on the global list is `hidden`: no username, name or picture (the app shows «یه نفر»), but their points and rank are real; friends and people on the global list show normally. The first score of a week puts me in a group of the tier I earned last week (tier 0 to begin with). At the week's end the top 5 move up a tier and the bottom 5 down (ties go to the earlier last score). Before my first score of the week `rows` is empty and `tier` is the one I will start in.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The standings. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LeagueStandings"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/leaderboard/friends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This week's points: me and my friends
+         * @description Friends with no score are listed with 0. Best first, then by username; up to 100.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The standings. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FriendsStandings"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/leaderboard/global": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This week's points: everyone who allows it
+         * @description People with `inGlobalLeaderboard` on (and a username) who scored this week, best first (ties by user id), 50 a page. `me` is my own rank among them, also when I am hidden; null before my first score of the week.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of the standings. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GlobalStandings"];
+                    };
+                };
+                /** @description A malformed cursor. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What my friends did: the home «دوستات» feed
+         * @description Newest first, 30 a page, from friends only. A friend's likes and reposts are shown only when their `keptVisibility` is `friends` (the switch that also hides their divan). Their solved daily puzzles are shown only when their `dailyVisibility` is `friends`. Taking back a like, or ending the friendship, removes the item.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of items. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Feed"];
+                    };
+                };
+                /** @description A malformed cursor. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/scores": {
         parameters: {
             query?: never;
@@ -1471,8 +2721,116 @@ export interface components {
              */
             allowedAt?: string;
         };
+        Feed: {
+            items: components["schemas"]["FeedItem"][];
+            /** @description Pass as `cursor` for the next page; null on the last page. */
+            nextCursor: string | null;
+        };
+        FeedItem: {
+            /** @enum {string} */
+            type: "like" | "repost" | "daily";
+            user: components["schemas"]["PersonShort"];
+            /**
+             * @description The couplet, for a like or a repost.
+             * @example /hafez/ghazal/sh3#0
+             */
+            key?: string;
+            /**
+             * @description The Tehran day, for a daily result.
+             * @example 2026-06-01
+             */
+            date?: string;
+            /** @description Tries it took, for a daily result. */
+            tries?: number;
+            /** Format: date-time */
+            at: string;
+        };
+        FoundPerson: components["schemas"]["PersonShort"] & {
+            /** @description Whether this person can be invited to a game; when false an invitation is skipped as `not_found`, so leave them out of invite pickers. */
+            canPlay: boolean;
+            friendship: components["schemas"]["Friendship"];
+            isFriend: boolean;
+        };
+        Friend: components["schemas"]["PersonShort"] & {
+            /** @description Whether this person can be invited to a game; when false an invitation is skipped as `not_found`, so leave them out of invite pickers. */
+            canPlay: boolean;
+        };
+        FriendRequestsPage: {
+            items: (components["schemas"]["PersonShort"] & {
+                /**
+                 * Format: date-time
+                 * @description When the request was sent.
+                 */
+                createdAt: string;
+            })[];
+            /** @description Pass as `cursor` for the next page; null on the last page. */
+            nextCursor: string | null;
+        };
+        FriendsPage: {
+            items: components["schemas"]["Friend"][];
+            /** @description Pass as `cursor` for the next page; null on the last page. */
+            nextCursor: string | null;
+        };
+        FriendsStandings: {
+            /**
+             * @description The Tehran week, Saturday to Friday.
+             * @example 2026-W23
+             */
+            week: string;
+            rows: components["schemas"]["LeaderboardRow"][];
+        };
+        /**
+         * @description `requested`: I sent them a request and wait. `incoming`: they sent me one. `friends`: we are friends.
+         * @enum {string}
+         */
+        Friendship: "none" | "requested" | "incoming" | "friends";
+        FriendshipState: {
+            friendship: components["schemas"]["Friendship"];
+        };
+        GlobalStandings: {
+            /**
+             * @description The Tehran week, Saturday to Friday.
+             * @example 2026-W23
+             */
+            week: string;
+            rows: components["schemas"]["LeaderboardRow"][];
+            me: components["schemas"]["LeaderboardRow"] & (Record<string, never> | null);
+            /** @description Pass as `cursor` for the next page; null on the last page. */
+            nextCursor: string | null;
+        };
         GoogleSignInRequest: {
             idToken: string;
+        };
+        LeaderboardRow: {
+            rank: number;
+            /** @description Null for someone who has not chosen a username yet, and when `hidden`. */
+            username: string | null;
+            displayName: string | null;
+            avatar: components["schemas"]["Avatar"];
+            points: number;
+            isMe: boolean;
+            /** @description League only: a stranger who keeps off the global leaderboard. Show «یه نفر»; username, name and picture are null, the points are real. */
+            hidden: boolean;
+        };
+        LeagueStandings: {
+            /**
+             * @description The Tehran week, Saturday to Friday.
+             * @example 2026-W23
+             */
+            week: string;
+            /** @description 0 نوآموز, 1 بیت‌خوان, 2 غزل‌باز, 3 سخن‌دان, 4 استاد سخن. */
+            tier: number;
+            /**
+             * Format: date-time
+             * @description When the week ends (Friday midnight in Tehran).
+             */
+            endsAt: string;
+            /** @description My league group, best first. Empty until my first score of the week. */
+            rows: components["schemas"]["LeaderboardRow"][];
+            /** @enum {number} */
+            promoteCount: 5;
+            /** @enum {number} */
+            demoteCount: 5;
         };
         MyReactions: {
             items: {
@@ -1488,6 +2846,11 @@ export interface components {
             }[];
             /** @description Pass as `cursor` for the next page; null on the last page. */
             nextCursor: string | null;
+        };
+        PersonShort: {
+            username: string;
+            displayName: string | null;
+            avatar: components["schemas"]["Avatar"];
         };
         PoetPictureList: {
             /** @example hafez */
@@ -1535,14 +2898,46 @@ export interface components {
                 [key: string]: number;
             };
         };
+        PublicProfile: components["schemas"]["PersonShort"] & {
+            friendsCount: number;
+            friendship: components["schemas"]["Friendship"];
+            /** @description `friendship` is `friends`. */
+            isFriend: boolean;
+            /** @description I may write to them now: nobody blocked the other, and their «بهم پیام بده» lets me (or they already wrote to me in our chat). Never for myself. */
+            canMessage: boolean;
+            /** @description This week's tier; null before their first score of the week, and for a stranger who keeps off the global leaderboard (same rule as `weekPoints`). */
+            league: {
+                tier: number;
+            } | null;
+            /** @description Only for a friend, for yourself, or someone who allows the global leaderboard; else null. */
+            weekPoints: number | null;
+        };
         ReactionCounts: {
             likes: number;
             reposts: number;
             likedByMe: boolean;
             repostedByMe: boolean;
         };
+        ReactionCountsByKey: {
+            [key: string]: components["schemas"]["ReactionCounts"];
+        };
         RefreshRequest: {
             refreshToken: string;
+        };
+        ReportRequest: {
+            /**
+             * @description The person reported.
+             * @example hafez_fan
+             */
+            username: string;
+            /**
+             * Format: uuid
+             * @description One of their messages in a chat I am in.
+             */
+            messageId?: string;
+            /** @enum {string} */
+            reason: "spam" | "abuse" | "other";
+            note?: string;
         };
         ScoreRequest: {
             /**
@@ -1588,6 +2983,10 @@ export interface components {
                 tier: number;
             };
         };
+        Unread: {
+            total: number;
+            friendRequests: number;
+        };
         User: {
             /** Format: uuid */
             id: string;
@@ -1599,6 +2998,9 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             providers: ("apple" | "google")[];
+        };
+        UserSearch: {
+            items: components["schemas"]["FoundPerson"][];
         };
         UsernameCheck: {
             available: boolean;

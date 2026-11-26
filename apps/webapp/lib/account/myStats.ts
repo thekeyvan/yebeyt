@@ -8,11 +8,11 @@ import type { GameStats } from "../games/stats";
  * browser's own (points from before the account, rounds not sent yet) when those are this account's: points carried over to another account are not
  * counted for this one (Games/MyStats.swift).
  */
-export class MyStats extends Store<{ remote?: RemoteStats }> {
+export class MyStats extends Store<{ remote?: RemoteStats; friendsCount?: number }> {
   constructor(
     private readonly local: GameStats,
     private readonly session: SessionLike,
-    private readonly api: Pick<Api, "stats">,
+    private readonly api: Pick<Api, "stats" | "profile">,
   ) {
     super({});
   }
@@ -33,14 +33,33 @@ export class MyStats extends Store<{ remote?: RemoteStats }> {
     return Math.max(this.snapshot().remote?.streakDays ?? 0, this.localIsMine ? this.local.streak : 0);
   }
 
+  /** How many friends I have, once the server has said. */
+  get friendsCount(): number | undefined {
+    return this.snapshot().friendsCount;
+  }
+
   /** Asks the server again; a failure keeps what is shown. */
   async refresh(): Promise<void> {
     if (!this.session.isSignedIn) {
-      if (this.snapshot().remote) this.set({});
+      if (this.snapshot().remote) this.set({ ...this.snapshot(), remote: undefined });
       return;
     }
     try {
-      this.set({ remote: await this.api.stats() });
+      this.set({ ...this.snapshot(), remote: await this.api.stats() });
+    } catch {
+      // What is shown stays.
+    }
+  }
+
+  /** «۱۲ دوست» on the profile: how many friends I have, from my own public profile; undefined until the server has said. */
+  async refreshFriendsCount(): Promise<void> {
+    const username = this.session.user?.username;
+    if (!this.session.isSignedIn || !username) {
+      if (this.snapshot().friendsCount !== undefined) this.set({ ...this.snapshot(), friendsCount: undefined });
+      return;
+    }
+    try {
+      this.set({ ...this.snapshot(), friendsCount: (await this.api.profile(username)).friendsCount });
     } catch {
       // What is shown stays.
     }

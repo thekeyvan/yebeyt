@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Api } from "../lib/account/api";
 import { UsernameAvailability } from "../lib/account/usernameAvailability";
 import { MyStats } from "../lib/account/myStats";
 import { GameStats } from "../lib/games/stats";
@@ -86,7 +87,7 @@ describe("MyStats (Games/MyStats.swift)", () => {
   const fixture = (signedIn: boolean, remote?: { totalPoints: number; streakDays: number }, id = "u1") => {
     const stats = new GameStats(memoryStorage(), clock);
     const session = sessionOf(signedIn, id);
-    const api = { stats: vi.fn(async () => ({ totalPoints: remote?.totalPoints ?? 0, weekPoints: 0, streakDays: remote?.streakDays ?? 0, league: { tier: 1 } })) };
+    const api = { stats: vi.fn(async () => ({ totalPoints: remote?.totalPoints ?? 0, weekPoints: 0, streakDays: remote?.streakDays ?? 0, league: { tier: 1 } })), profile: vi.fn(async () => ({ friendsCount: 12 }) as Awaited<ReturnType<Api["profile"]>>) };
     return { stats, session, api, mine: new MyStats(stats, session, api) };
   };
 
@@ -125,5 +126,19 @@ describe("MyStats (Games/MyStats.swift)", () => {
     f.session.isSignedIn = false;
     await f.mine.refresh();
     expect(f.mine.points).toBe(0);
+  });
+
+  it("counts my friends from my own public profile (the profile's «۱۲ دوست»), and has no count for a guest", async () => {
+    const f = fixture(true);
+    expect(f.mine.friendsCount).toBeUndefined();
+    await f.mine.refreshFriendsCount();
+    expect(f.api.profile).toHaveBeenCalledWith("niloofar");
+    expect(f.mine.friendsCount).toBe(12);
+    f.api.profile.mockRejectedValue(offline());
+    await f.mine.refreshFriendsCount();
+    expect(f.mine.friendsCount).toBe(12); // a failure keeps what is shown
+    f.session.isSignedIn = false;
+    await f.mine.refreshFriendsCount();
+    expect(f.mine.friendsCount).toBeUndefined();
   });
 });

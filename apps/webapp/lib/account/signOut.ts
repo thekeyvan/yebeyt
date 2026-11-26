@@ -1,3 +1,4 @@
+import type { FriendsCenter } from "../friends/center";
 import type { DivanSync } from "./divanSync";
 import type { ReactionsSync } from "./reactionsSync";
 import type { ScoreSync } from "./scoreSync";
@@ -23,7 +24,7 @@ export const unsyncedCopy = {
 };
 
 /** What in this browser belongs to an account: the divan with its times, the likes and reposts, the privacy settings and the face, and the scores and reactions not sent yet. */
-export type AccountData = { marks: ReaderMarks; stats: GameStats; reactions: ReactionsSync; scores: ScoreSync; divan: DivanSync; privacy: PrivacyStore; avatar: AvatarStore };
+export type AccountData = { marks: ReaderMarks; stats: GameStats; reactions: ReactionsSync; scores: ScoreSync; divan: DivanSync; privacy: PrivacyStore; avatar: AvatarStore; friends: Pick<FriendsCenter, "reset"> };
 
 /** Whatever is on its way when an account leaves must land (or fail) before this browser is cleared. */
 export async function settleAccountData({ divan, reactions, scores, privacy, avatar }: AccountData): Promise<void> {
@@ -36,10 +37,10 @@ export async function settleAccountData({ divan, reactions, scores, privacy, ava
 
 /**
  * Forgets what belongs to the account (`LocalAccountData.clearForSignOut`), so nothing of it is carried over to the next account in this browser: the divan with
- * its times, the likes and reposts and what is unsent, the privacy settings and the face. The game points stay, but only as the leaving account's: the next one
+ * its times, the likes and reposts and what is unsent, the privacy settings and the face, and the friends and requests in memory. The game points stay, but only as the leaving account's: the next one
  * may claim just what is earned after. What a guest has anyway (reading, game scores, text settings) stays.
  */
-export function clearAccountData({ marks, stats, reactions, scores, privacy, avatar }: AccountData): void {
+export function clearAccountData({ marks, stats, reactions, scores, privacy, avatar, friends }: AccountData): void {
   stats.release();
   marks.clearDivan();
   marks.clearLikesAndReposts();
@@ -47,6 +48,7 @@ export function clearAccountData({ marks, stats, reactions, scores, privacy, ava
   scores.clear();
   privacy.clear();
   avatar.clear();
+  friends.reset();
 }
 
 /**

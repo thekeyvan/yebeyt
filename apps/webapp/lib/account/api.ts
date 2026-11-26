@@ -1,4 +1,5 @@
 import type { components } from "../api/schema";
+import { friendsApi } from "../friends/api";
 import { fromWire, toWire, type DivanItem } from "../reader/divan";
 
 export type User = components["schemas"]["User"];
@@ -68,12 +69,15 @@ export const messageOf = (error: unknown): string => (error instanceof ApiError 
 
 type Fetch = typeof fetch;
 
+/** One call to the server through the door: JSON in and out, a 204 answers nothing. */
+export type Call = <Answer>(method: string, path: string, options?: { query?: Record<string, string>; body?: unknown }) => Promise<Answer>;
+
 /**
  * The client of the server through the web app's own door (`/api`, which adds the session): JSON in and out, the field names as in `packages/api/openapi.json`
  * (the types are `lib/api/schema.d.ts`). `onSignedOut` is told when the server refused the session for good (the door has already tried to refresh it).
  */
 export function createApi(onSignedOut: () => void = () => {}, send: Fetch = (...args) => fetch(...args)) {
-  async function call<Answer>(method: string, path: string, options: { query?: Record<string, string>; body?: unknown } = {}): Promise<Answer> {
+  const call: Call = async <Answer>(method: string, path: string, options: { query?: Record<string, string>; body?: unknown } = {}): Promise<Answer> => {
     const query = options.query ? `?${new URLSearchParams(options.query)}` : "";
     let response: Response;
     try {
@@ -96,7 +100,7 @@ export function createApi(onSignedOut: () => void = () => {}, send: Fetch = (...
     } catch {
       throw new ApiError(502);
     }
-  }
+  };
 
   const items = (wire: components["schemas"]["Divan"]): DivanItem[] => wire.items.flatMap((item) => fromWire(item) ?? []);
 
@@ -119,6 +123,7 @@ export function createApi(onSignedOut: () => void = () => {}, send: Fetch = (...
     postScore: (request: ScoreRequest) => call<unknown>("POST", "/v1/scores", { body: request }).then((): void => {}),
     postDaily: (request: DailyRequest) => call<unknown>("POST", "/v1/daily", { body: request }).then((): void => {}),
     stats: () => call<RemoteStats>("GET", "/v1/me/stats"),
+    ...friendsApi(call),
   };
 }
 

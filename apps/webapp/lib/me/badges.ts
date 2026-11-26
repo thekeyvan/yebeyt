@@ -7,6 +7,9 @@ const levels = [
   { name: "استاد سخن", from: 12_000 },
 ] as const;
 
+/** The name of a league's tier, which are the levels' names; a tier out of range is the nearest one. */
+export const tierName = (tier: number): string => levels[Math.min(Math.max(tier, 0), levels.length - 1)]!.name;
+
 export const levelName = (points: number): string => levels.findLast((level) => points >= level.from)?.name ?? levels[0].name;
 
 /** What the badges are measured on. */

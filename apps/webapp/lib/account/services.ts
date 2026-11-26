@@ -1,3 +1,4 @@
+import { FriendsCenter } from "../friends/center";
 import { statsStore } from "../games/browser";
 import { scoreGameOf } from "../games/scoreGame";
 import { progressStore } from "../library/browser";
@@ -43,7 +44,8 @@ function build() {
   const reactions = new ReactionsSync(marks, session, api, localStorage);
   const privacy = new PrivacyStore(localStorage, session, api);
   const avatar = new AvatarStore(localStorage, session, api);
-  const data = { marks, stats, reactions, scores, divan, privacy, avatar };
+  const friends = new FriendsCenter(session, api);
+  const data = { marks, stats, reactions, scores, divan, privacy, avatar, friends };
   return {
     session,
     api,
@@ -58,6 +60,7 @@ function build() {
     reading: progressStore(),
     privacy,
     avatar,
+    friends,
     taste: new Taste(localStorage),
     account: new AccountModel(session, stats, source, api),
     leaving: new AccountSignOut(session, data),
