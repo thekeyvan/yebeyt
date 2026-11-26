@@ -1,0 +1,31 @@
+/* The toast: an ink capsule with white text over the bottom of the screen (MessageToast in Messages/MessageViews.swift).
+   UI SDK sets the custom properties and positions the region; these rules give it the look. It drops in with Motion
+   (components/ui/Toast.tsx), so here it only fades, in and out. */
+[data-slot="toast-region"] {
+  width: min(356px, calc(100vw - 2rem));
+  height: var(--toast-front-height);
+  /* Above the tab bar, which is 88 high (18 below it, 70 tall) plus the phone's own bottom edge. */
+  margin: 0 0 calc(96px + env(safe-area-inset-bottom));
+  padding: 0;
+  list-style: none;
+  outline: none;
+}
+
+[data-slot="toast"] {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  height: var(--toast-height);
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-white);
+  font-size: 13px;
+  font-weight: 500;
+  transition: opacity 150ms ease-out;
+}
+
+[data-slot="toast"][data-starting-style],
+[data-slot="toast"][data-ending-style] {
+  opacity: 0;
+}

@@ -4,9 +4,9 @@
   "private": true,
   "engines": { "node": ">=22" },
   "scripts": {
-    "predev": "node scripts/copy-fonts.mjs",
+    "predev": "node ../../packages/tokens/copy-fonts.mjs public/fonts",
     "dev": "next dev",
-    "prebuild": "node scripts/copy-fonts.mjs",
+    "prebuild": "node ../../packages/tokens/copy-fonts.mjs public/fonts",
     "build": "next build",
     "start": "next start",
     "test": "vitest run",

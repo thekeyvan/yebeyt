@@ -16,7 +16,7 @@ Folders are added only when their first slice lands.
 | `apps/webapp/` | The web app at app.yebeyt.com (plan and slices in [docs/web-app.md](docs/web-app.md)): Next.js App Router, TypeScript, Tailwind v4 themed from the tokens, UI SDK (headless behaviours), Motion; mobile first. Hosted on Railway (service `webapp`) |
 | `apps/admin/`, `apps/android/` | (later) Admin dashboard (Next.js), Android (Kotlin + Jetpack Compose) |
 | `.railway/` | `railway.ts`: Railway infrastructure as code for the project (services, Postgres, builds, health check, domain). `railway config plan` / `apply`; variables stay in Railway |
-| `packages/tokens/` | `tokens.json`: the one source of colours, fonts and sticker sizes. `tools/make_tokens.py` writes the platform files from it (Swift for iOS, `apps/web/app/tokens.css`) |
+| `packages/tokens/` | `tokens.json`: the one source of colours, fonts and sticker sizes. `tools/make_tokens.py` writes the platform files from it (Swift for iOS, `apps/web/app/tokens.css`, the web app's Tailwind theme `apps/webapp/app/theme.css`) |
 | `packages/api/` | `openapi.json`: the OpenAPI contract, written from the server's routes by `api:generate` (never edit by hand); clients for each platform are generated from it |
 | `assets/fonts/` | Every font file and its licence (`licenses/`). Apps take the fonts they use from here |
 | `design/canvas/` | The design: one HTML file per screen in `project/`, the scripts that make them, and their `README.md` |
@@ -43,6 +43,10 @@ JavaScript and TypeScript packages share one pnpm workspace (`pnpm-workspace.yam
   pnpm --filter @yebeyt/server api:check      # fails when packages/api/openapi.json is stale; fix with api:generate and commit
   pnpm --filter @yebeyt/server build
   pnpm --filter @yebeyt/web build            # Next.js; `pnpm --filter @yebeyt/web dev` runs it on :3000, `start` serves the build
+  pnpm --filter @yebeyt/webapp dev           # the web app on :3000 (the debug page of every component is /dev/stickers)
+  pnpm --filter @yebeyt/webapp build
+  pnpm --filter @yebeyt/webapp test          # Vitest and Testing Library
+  pnpm --filter @yebeyt/webapp e2e           # Playwright (Chromium and WebKit; 375×667, 390×844, 1280×800) against `next build && next start`; once: `pnpm --filter @yebeyt/webapp exec playwright install chromium webkit`
   ```
   The web app's link pages call the server: set `API_URL` (e.g. `API_URL=http://localhost:8080`) to point them at a local one. The App Store id is `6837700208`; put it in `apps/web/lib/config.ts` (`APP_STORE_ID`) only when 2.0 is live on the store, since before that the id has no store page.
   After editing `apps/server/src/db/schema.ts` run `pnpm --filter @yebeyt/server db:generate` and commit the new file in `apps/server/drizzle/`. Env vars, local run, the picture upload script and the Railway deploy are in `apps/server/README.md`.

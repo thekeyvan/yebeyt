@@ -1,0 +1,8 @@
+.next/
+next-env.d.ts
+tsconfig.tsbuildinfo
+# Copied from assets/fonts by packages/tokens/copy-fonts.mjs
+public/fonts/
+# Playwright's screenshots and traces
+test-results/
+e2e/__screenshots__/

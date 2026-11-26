@@ -24,8 +24,17 @@ export default defineRailway(() => {
     domains: ["yebeyt.com", "www.yebeyt.com"],
   });
 
+  const webapp = service("webapp", {
+    source: { repo: "thekeyvan/yebeyt", branch: "main" },
+    build: { buildEnvironment: "V3", builder: "DOCKERFILE", dockerfilePath: "apps/webapp/Dockerfile", watchPatterns: ["apps/webapp/**", "packages/tokens/**", "assets/fonts/**", "apps/ios/Yebeyt/Resources/Data/**", "pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"] },
+    healthcheckPath: "/",
+    healthcheckTimeout: 60,
+    replicas: { "europe-west4-drams3a": 1 },
+    domains: ["app.yebeyt.com"],
+  });
+
   return project("yebeyt", {
     variables: { managed: false },
-    resources: [PostgresExvV, server, web, postgresVolume1kOn],
+    resources: [PostgresExvV, server, web, webapp, postgresVolume1kOn],
   });
 });

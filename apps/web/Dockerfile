@@ -9,7 +9,7 @@ FROM base AS build
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm install --frozen-lockfile --filter "@yebeyt/web..."
 COPY apps/web apps/web
-# The build copies the fonts named in tokens.json from assets/fonts into public/fonts (scripts/copy-fonts.mjs).
+# The build copies the fonts named in tokens.json from assets/fonts into public/fonts (packages/tokens/copy-fonts.mjs).
 COPY packages/tokens packages/tokens
 COPY assets/fonts assets/fonts
 RUN pnpm --filter @yebeyt/web build

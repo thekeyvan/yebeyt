@@ -1,0 +1,45 @@
+/* ui-sdk's own few rules go in this layer, below ours (see its "Styling and animation" guide). */
+@layer ui-sdk;
+@import "tailwindcss";
+@import "./theme.css";
+
+/* Paper with dots on a grid, like the sheet behind a sticker (Design/DottedPaper.swift): a dot in the middle of each cell. */
+@utility dotted-paper {
+  background-color: var(--color-paper);
+  background-image: radial-gradient(circle, var(--color-dot) var(--dots-radius), transparent calc(var(--dots-radius) + 0.5px));
+  background-size: var(--dots-grid) var(--dots-grid);
+}
+
+@layer base {
+  html {
+    background-color: var(--color-paper);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    font-family: var(--font-ui);
+    color: var(--color-ink);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-title);
+    font-weight: 400;
+    line-height: 1.3;
+  }
+
+  button {
+    cursor: pointer;
+    font: inherit;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-lapis);
+    outline-offset: 2px;
+  }
+}

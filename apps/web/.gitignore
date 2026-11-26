@@ -1,5 +1,5 @@
 .next/
 next-env.d.ts
 tsconfig.tsbuildinfo
-# Copied from assets/fonts by scripts/copy-fonts.mjs
+# Copied from assets/fonts by packages/tokens/copy-fonts.mjs
 public/fonts/
