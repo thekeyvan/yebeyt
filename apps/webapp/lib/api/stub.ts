@@ -1,8 +1,9 @@
 import { problem } from "../account/usernameRules";
 import type { Call } from "./bff";
 
-// A server that answers for the debug sign-in (the phone's `-beytSignedIn 1`, which is answered on the phone): in a build with the debug pages only,
-// a session whose tokens begin with «debug-» is answered here, in memory, and never reaches the real server. A production build never asks it.
+// A server that answers for the debug sign-in (the phone's `-beytSignedIn 1`, which is answered on the phone): only in a dev build or one built with
+// NEXT_PUBLIC_DEV_PAGES=1 (`lib/dev.ts`; the switch is baked in at build time, so a variable set on a running server cannot turn it on), a session whose
+// tokens begin with «debug-» is answered here, in memory, and never reaches the real server. Any other build never asks it.
 
 type Spec = { id: string; username: string | null; displayName: string | null; provider: "apple" | "google"; syncFails: boolean };
 

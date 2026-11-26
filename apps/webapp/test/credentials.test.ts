@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { appleNonce, AppleCredentials, googleName, SignInCanceled, sha256Hex, type AppleAnswer } from "../lib/account/credentials";
+import { appleNonce, AppleCredentials, appleStateKey, googleName, SignInCanceled, sha256Hex, type AppleAnswer } from "../lib/account/credentials";
 
 describe("the nonce of Sign in with Apple (Account/Credentials.swift `AppleNonce`)", () => {
   it("is random and long enough", () => {
@@ -21,8 +21,16 @@ describe("the nonce of Sign in with Apple (Account/Credentials.swift `AppleNonce
 
 describe("Sign in with Apple JS", () => {
   const redirect = "https://app.yebeyt.com/auth/apple";
-  const fake = (answer: () => Promise<AppleAnswer>) => {
-    const auth = { init: vi.fn(), signIn: vi.fn(answer) };
+  // Apple's answer carries back the `state` it was set up with, unless the test says otherwise.
+  const fake = (answer: () => Promise<AppleAnswer>, echoState = true) => {
+    const auth = {
+      init: vi.fn(),
+      signIn: vi.fn(async () => {
+        const given = await answer();
+        const { state } = auth.init.mock.calls.at(-1)![0] as { state: string };
+        return given.authorization && echoState ? { ...given, authorization: { state, ...given.authorization } } : given;
+      }),
+    };
     return { auth, load: vi.fn(async () => auth) };
   };
 
@@ -71,6 +79,27 @@ describe("Sign in with Apple JS", () => {
     const empty = new AppleCredentials("x", redirect, fake(async () => ({ authorization: {} })).load);
     await empty.prepare();
     await expect(empty.signIn()).rejects.toThrow();
+  });
+
+  it("sets Apple up with a random state, kept in sessionStorage, and a new one for the next sign-in", async () => {
+    const { auth, load } = fake(async () => ({ authorization: { id_token: "idt", code: "c" } }));
+    const apple = new AppleCredentials("x", redirect, load);
+    await apple.prepare();
+    const first = (auth.init.mock.calls[0]![0] as { state: string }).state;
+    expect(first).toMatch(/^[0-9A-Za-z.-]{32}$/);
+    expect(sessionStorage.getItem(appleStateKey)).toBe(first);
+    await apple.signIn();
+    await vi.waitFor(() => expect(auth.init).toHaveBeenCalledTimes(2));
+    expect((auth.init.mock.calls[1]![0] as { state: string }).state).not.toBe(first);
+  });
+
+  it("refuses an answer whose state is not the one that was sent, or has none", async () => {
+    for (const state of ["someone-elses", undefined]) {
+      const { load } = fake(async () => ({ authorization: { id_token: "idt", code: "c", state: state as string } }), false);
+      const apple = new AppleCredentials("x", redirect, load);
+      await apple.prepare();
+      await expect(apple.signIn()).rejects.toThrow("not to this sign-in");
+    }
   });
 
   it("fails when it is pressed before the script has loaded", async () => {

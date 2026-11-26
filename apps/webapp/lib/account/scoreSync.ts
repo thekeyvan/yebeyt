@@ -2,7 +2,8 @@ import { ApiError, type Api } from "./api";
 import type { SessionLike } from "./session";
 import { clipped, type ScoreGame } from "../games/scoreGame";
 import type { TehranDay } from "../games/tehranDay";
-import { readJSON, writeJSON, type RemovableStorage } from "../reader/store";
+import type { RemovableStorage } from "../reader/store";
+import { StoredList } from "./storedList";
 
 type Item = { score: { roundId: string; game: ScoreGame; points: number; playedAt: string } } | { daily: { date: string; solved: boolean; tries: number } };
 
@@ -10,6 +11,8 @@ type Item = { score: { roundId: string; game: ScoreGame; points: number; playedA
 type Entry = { userId?: string; item: Item };
 
 export const scoresKey = "scores.unsent";
+
+const sameEntry = (a: Entry, b: Entry): boolean => a.userId === b.userId && JSON.stringify(a.item) === JSON.stringify(b.item);
 
 /** The daily puzzle's tries (DailyGame.maxTries). */
 const maxTries = 3;
@@ -22,7 +25,8 @@ const maxTries = 3;
  * it is: one of another account is dropped, never sent as the signed-in person's.
  */
 export class ScoreSync {
-  private queue: Entry[];
+  /** The queue lives in storage only, so that tabs of this browser share it. */
+  private readonly queue: StoredList<Entry>;
   private running?: Promise<void>;
   /** Told after a flush sent something, so the points shown can be fetched again. */
   onSent?: () => void;
@@ -30,15 +34,14 @@ export class ScoreSync {
   constructor(
     private readonly session: SessionLike,
     private readonly api: Pick<Api, "postScore" | "postDaily">,
-    private readonly storage: RemovableStorage,
+    storage: RemovableStorage,
     private readonly now: () => number = Date.now,
   ) {
-    const saved = readJSON(storage, scoresKey);
-    this.queue = Array.isArray(saved) ? (saved as Entry[]) : [];
+    this.queue = new StoredList(storage, scoresKey);
   }
 
   get hasUnsent(): boolean {
-    return this.queue.length > 0;
+    return this.queue.items.length > 0;
   }
 
   /** A round of `game` is over with `points` (clipped to the game's cap). */
@@ -57,8 +60,7 @@ export class ScoreSync {
 
   /** Forgets what is waiting (the account is gone from this browser). */
   clear(): void {
-    this.queue = [];
-    this.storage.removeItem(scoresKey);
+    this.queue.clear();
   }
 
   /** Sends what is waiting, oldest first; a failure stops there and the rest waits. A call while one is running waits for it. */
@@ -81,30 +83,24 @@ export class ScoreSync {
     if (!this.session.user) await this.session.restore();
     const me = this.session.user?.id;
     if (!me) return; // who is signed in is not known (no network): try later
-    this.queue = this.queue.filter((entry) => entry.userId === undefined || entry.userId === me);
-    this.save();
+    this.queue.items = this.queue.items.filter((entry) => entry.userId === undefined || entry.userId === me);
     let sent = false;
-    for (let entry = this.queue[0]; entry; entry = this.queue[0]) {
+    for (let entry = this.queue.items[0]; entry; entry = this.queue.items[0]) {
       try {
         await ("score" in entry.item ? this.api.postScore(entry.item.score) : this.api.postDaily(entry.item.daily));
         sent = true;
       } catch (error) {
         if (!(error instanceof ApiError && error.isFinal)) break; // 409: already counted. Any other refusal is final too; the rest waits.
       }
-      this.queue = this.queue.slice(1);
-      this.save();
+      this.queue.items = this.queue.items.filter((other) => !sameEntry(other, entry!)); // read again: another tab may have added to it meanwhile
     }
     if (sent) this.onSent?.();
   }
 
   private enqueue(item: Item): void {
     const text = JSON.stringify(item);
-    if (!this.queue.some((entry) => JSON.stringify(entry.item) === text)) this.queue.push({ ...(this.session.user ? { userId: this.session.user.id } : {}), item });
-    this.save();
+    const waiting = this.queue.items;
+    if (!waiting.some((entry) => JSON.stringify(entry.item) === text)) this.queue.items = [...waiting, { ...(this.session.user ? { userId: this.session.user.id } : {}), item }];
     void this.flush();
-  }
-
-  private save(): void {
-    writeJSON(this.storage, scoresKey, this.queue);
   }
 }

@@ -16,14 +16,13 @@ const google = "flex h-[54px] w-full items-center justify-center gap-2.5 rounded
 
 /**
  * «ادامه با اپل» and «ادامه با گوگل», with the line that says why a sign-in failed (Account/SignInButtons.swift). Sign in with Apple JS opens its popup from the
- * press; Google Identity Services draws its own button, which sits invisibly over ours (it is the one that is pressed, and it gives an id token). Until a
+ * press; Google Identity Services draws its own button (it is the one that is pressed, and it gives an id token). Until a
  * provider's id is set, its button cannot be pressed and a line says so. `onOutcome` hears how every attempt ended.
  */
 export function SignInButtons({ account, onOutcome }: { account: AccountModel | undefined; onOutcome: (outcome: Outcome) => void }) {
   const busy = useStore(account)?.isSigningIn ?? false;
   const [error, setError] = useState<string>();
   const [appleReady, setAppleReady] = useState(false);
-  const [googleReady, setGoogleReady] = useState(false);
   const googleFrame = useRef<HTMLDivElement>(null);
   const missing = !appleServicesId || !googleClientId;
 
@@ -65,8 +64,7 @@ export function SignInButtons({ account, onOutcome }: { account: AccountModel | 
             if (credential) void run(account.signInWith({ credential: { provider: "google", idToken: credential }, name: googleName(credential) }));
           },
         });
-        identity.renderButton(frame, { type: "standard", theme: "outline", size: "large", width: Math.min(400, Math.max(200, frame.offsetWidth)) });
-        setGoogleReady(true);
+        identity.renderButton(frame, { type: "standard", theme: "outline", size: "large", text: "continue_with", shape: "pill", locale: "fa", width: Math.min(400, Math.max(200, Math.floor(frame.offsetWidth))) });
       },
       () => current && setError(new ApiError(500).persianMessage),
     );
@@ -83,16 +81,8 @@ export function SignInButtons({ account, onOutcome }: { account: AccountModel | 
         ادامه با اپل
       </button>
       {googleClientId ? (
-        <div className="relative h-[54px]">
-          <div aria-hidden className={`${google} ${googleReady ? "" : "opacity-60"}`}>
-            <GoogleMark />
-            ادامه با گوگل
-          </div>
-          {/* Google's own button, 40 high, stretched over ours and invisible: its press is the one that signs in. */}
-          <div className="absolute inset-0 overflow-hidden rounded-2xl opacity-[0.01]" style={{ pointerEvents: busy ? "none" : "auto" }}>
-            <div ref={googleFrame} className="flex w-full origin-top scale-y-[1.35] justify-center" />
-          </div>
-        </div>
+        // Google's own button, drawn by Google in its frame and by its rules (outline, «continue with», pill, Persian); it is the one that is pressed.
+        <div ref={googleFrame} className={`flex min-h-10 w-full justify-center ${busy ? "pointer-events-none" : ""}`} />
       ) : (
         <button type="button" disabled className={`${google} disabled:opacity-60`}>
           <GoogleMark />

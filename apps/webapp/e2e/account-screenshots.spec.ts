@@ -33,6 +33,7 @@ test("the gate, the username step and the sign-out warning", async ({ page }) =>
   await page.getByRole("button", { name: "نگه دار" }).click();
   await page.getByRole("navigation", { name: "تب‌ها" }).getByRole("link", { name: "من" }).click();
   await page.getByTestId("settings-username").waitFor();
+  await settled(page); // the tab's page transition is over
   await shot(page, "me");
 });
 

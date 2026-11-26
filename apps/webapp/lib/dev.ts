@@ -1,2 +1,2 @@
-/** The debug pages (`/dev/…`) exist while developing, and in a build only when it was made with NEXT_PUBLIC_DEV_PAGES=1 (the end-to-end tests). */
+/** The debug pages (`/dev/…`) exist while developing, and in a build only when it was made with NEXT_PUBLIC_DEV_PAGES=1 (the end-to-end tests). `next.config.ts` bakes the variable in when the app is built, in the server's code too, so one set later on a running server changes nothing. */
 export const devPagesEnabled = (): boolean => process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_DEV_PAGES === "1";

@@ -1,7 +1,8 @@
 import { ApiError, type Api, type ReactionKind } from "./api";
 import type { SessionLike } from "./session";
 import type { ReaderMarks } from "../reader/marks";
-import { readJSON, writeJSON, type RemovableStorage } from "../reader/store";
+import type { RemovableStorage } from "../reader/store";
+import { StoredList } from "./storedList";
 
 /** One change waiting to go: the last state of a couplet and kind, and the account it was made for (undefined: not known, the next sync takes it). */
 export type Change = { key: string; kind: ReactionKind; on: boolean; userId?: string };
@@ -23,12 +24,9 @@ const sameChange = (a: Change, b: Change): boolean => a.key === b.key && a.kind 
  * them (they may be another person's).
  */
 export class ReactionsSync {
-  private changes: Change[];
+  /** The queue lives in storage only, so that tabs of this browser share it. */
+  private readonly list: StoredList<Change>;
   private running?: Promise<void>;
-  /** The account that last liked or reposted something here while signed in. */
-  private owner: string | undefined;
-  /** The account the server's list was last pulled for. */
-  private pulledFor: string | undefined;
 
   constructor(
     private readonly marks: ReaderMarks,
@@ -36,19 +34,26 @@ export class ReactionsSync {
     private readonly api: Pick<Api, "setReaction" | "myReactions">,
     private readonly storage: RemovableStorage,
   ) {
-    const saved = readJSON(storage, unsentKey);
-    this.changes = Array.isArray(saved) ? (saved as Change[]) : [];
-    this.owner = storage.getItem(ownerKey) ?? undefined;
-    this.pulledFor = storage.getItem(pulledKey) ?? undefined;
+    this.list = new StoredList(storage, unsentKey);
     marks.onReactionChange = (key, kind, on) => this.record(key, kind, on);
   }
 
   get unsent(): readonly Change[] {
-    return this.changes;
+    return this.list.items;
   }
 
   get hasUnsent(): boolean {
-    return this.changes.length > 0;
+    return this.list.items.length > 0;
+  }
+
+  /** The account that last liked or reposted something in this browser while signed in. */
+  private get owner(): string | undefined {
+    return this.storage.getItem(ownerKey) ?? undefined;
+  }
+
+  /** The account the server's list was last pulled for. */
+  private get pulledFor(): string | undefined {
+    return this.storage.getItem(pulledKey) ?? undefined;
   }
 
   /** Sends what is unsent, then reads the server's reactions and merges them. Returns whether it all went through (true too when there is no account to sync). */
@@ -77,9 +82,6 @@ export class ReactionsSync {
 
   /** Forgets what is unsent (the account is gone from this browser). */
   clear(): void {
-    this.changes = [];
-    this.owner = undefined;
-    this.pulledFor = undefined;
     for (const key of [unsentKey, ownerKey, pulledKey]) this.storage.removeItem(key);
   }
 
@@ -87,28 +89,22 @@ export class ReactionsSync {
     if (!this.session.user) await this.session.restore();
     const me = this.session.user?.id;
     if (!me) return; // who is signed in is not known (no network): try later
-    this.changes = this.changes.filter((change) => change.userId === undefined || change.userId === me);
-    this.save();
-    for (let change = this.changes[0]; change; change = this.changes[0]) {
+    this.list.items = this.list.items.filter((change) => change.userId === undefined || change.userId === me);
+    for (let change = this.list.items[0]; change; change = this.list.items[0]) {
       try {
         await this.api.setReaction(change.kind, change.key, change.on);
       } catch (error) {
         if (!(error instanceof ApiError && error.isFinal)) break; // a refusal the server will never change is dropped; anything else waits
       }
-      this.changes = this.changes.filter((other) => !sameChange(other, change!));
-      this.save();
+      this.list.items = this.list.items.filter((other) => !sameChange(other, change!)); // read again: another tab may have added to it meanwhile
     }
   }
 
   private record(key: string, kind: ReactionKind, on: boolean): void {
     if (!this.session.isSignedIn) return;
     const userId = this.session.user?.id;
-    if (userId) {
-      this.owner = userId;
-      this.storage.setItem(ownerKey, userId);
-    }
-    this.changes = [...this.changes.filter((change) => !(change.key === key && change.kind === kind)), { key, kind, on, ...(userId ? { userId } : {}) }];
-    this.save();
+    if (userId) this.storage.setItem(ownerKey, userId);
+    this.list.items = [...this.list.items.filter((change) => !(change.key === key && change.kind === kind)), { key, kind, on, ...(userId ? { userId } : {}) }];
     void this.flush();
   }
 
@@ -130,20 +126,15 @@ export class ReactionsSync {
     for (const kind of kinds) {
       const mark = kind === "like" ? "liked" : "reposted";
       const server = new Set(items.filter((item) => item.kind === kind).map((item) => item.key));
-      const waiting = () => new Set(this.changes.filter((change) => change.kind === kind).map((change) => change.key));
+      const waiting = () => new Set(this.list.items.filter((change) => change.kind === kind).map((change) => change.key));
       if (sendOwn) {
-        for (const key of [...this.marks.keys(mark)].filter((key) => !server.has(key) && !waiting().has(key)).sort()) this.changes.push({ key, kind, on: true, userId: me });
+        const own = [...this.marks.keys(mark)].filter((key) => !server.has(key) && !waiting().has(key)).sort();
+        this.list.items = [...this.list.items, ...own.map((key): Change => ({ key, kind, on: true, userId: me }))];
       }
       this.marks.applyServer(server, mark, waiting());
     }
-    this.pulledFor = me;
     this.storage.setItem(pulledKey, me);
-    this.save();
     if (sendOwn && this.hasUnsent) await this.flush();
     return true;
-  }
-
-  private save(): void {
-    writeJSON(this.storage, unsentKey, this.changes);
   }
 }

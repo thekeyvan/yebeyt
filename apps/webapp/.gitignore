@@ -8,3 +8,4 @@ public/data/
 # Playwright's screenshots and traces
 test-results/
 e2e/__screenshots__/
+.next-prod/

@@ -38,7 +38,7 @@ export function loadScript(src: string): Promise<void> {
   return loaded;
 }
 
-export type AppleAnswer = { authorization?: { id_token?: string; code?: string }; user?: { name?: { firstName?: string; lastName?: string } } };
+export type AppleAnswer = { authorization?: { id_token?: string; code?: string; state?: string }; user?: { name?: { firstName?: string; lastName?: string } } };
 type AppleAuth = { init(config: Record<string, unknown>): void; signIn(): Promise<AppleAnswer> };
 
 const appleScript = "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
@@ -48,12 +48,16 @@ async function loadAppleJs(): Promise<AppleAuth> {
   return (window as unknown as { AppleID: { auth: AppleAuth } }).AppleID.auth;
 }
 
+/** Where the `state` sent to Apple waits for the answer's copy of it. */
+export const appleStateKey = "apple.state";
+
 const canceled = new Set(["popup_closed_by_user", "user_cancelled_authorize"]);
 
 /**
  * Sign in with Apple JS in a popup (Account/Credentials.swift `AppleSignIn`). Apple wants the hashed nonce when it is set up, so the script is loaded and
  * set up before the press (`prepare`), with a nonce of its own; the press then calls Apple at once, as a popup must, and a new nonce is made for the next one.
- * The server gets the raw nonce, and the return URL the code was asked with.
+ * The server gets the raw nonce, and the return URL the code was asked with. Apple also gets a random `state`, kept in sessionStorage, and an answer that does not
+ * carry it back is refused.
  */
 export class AppleCredentials {
   private auth?: AppleAuth;
@@ -63,12 +67,15 @@ export class AppleCredentials {
     private readonly clientId: string,
     private readonly redirectUri: string,
     private readonly load: () => Promise<AppleAuth> = loadAppleJs,
+    private readonly storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> = sessionStorage,
   ) {}
 
   async prepare(): Promise<void> {
     this.auth ??= await this.load();
     const raw = appleNonce();
-    this.auth.init({ clientId: this.clientId, scope: "name", redirectURI: this.redirectUri, state: "yebeyt", nonce: await sha256Hex(raw), usePopup: true });
+    const state = appleNonce();
+    this.storage.setItem(appleStateKey, state);
+    this.auth.init({ clientId: this.clientId, scope: "name", redirectURI: this.redirectUri, state, nonce: await sha256Hex(raw), usePopup: true });
     this.nonce = raw;
   }
 
@@ -76,12 +83,15 @@ export class AppleCredentials {
     const { auth, nonce } = this;
     if (!auth || nonce === undefined) return Promise.reject(new Error("Sign in with Apple is not ready"));
     this.nonce = undefined;
+    const state = this.storage.getItem(appleStateKey);
+    this.storage.removeItem(appleStateKey); // used once; the next `prepare` sets a new one
     const answer = auth.signIn();
     const next = () => void this.prepare().catch(() => undefined);
     return answer.then(
       (result) => {
         next();
-        const idToken = result.authorization?.id_token;
+        if (state === null || result.authorization?.state !== state) throw new Error("Apple's answer is not to this sign-in");
+        const idToken = result.authorization.id_token;
         if (!idToken) throw new Error("Apple gave no identity token");
         const name = [result.user?.name?.firstName, result.user?.name?.lastName].filter(Boolean).join(" ");
         const credential: Credential = { provider: "apple", identityToken: idToken, authorizationCode: result.authorization?.code, nonce, redirectUri: this.redirectUri };

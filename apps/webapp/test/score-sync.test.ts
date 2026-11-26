@@ -164,6 +164,27 @@ describe("ScoreSync (Games/ScoreSync.swift)", () => {
   });
 });
 
+describe("two tabs of one browser", () => {
+  it("share the queue: neither overwrites the other's rounds, and a round sent by one is not sent again by the other", async () => {
+    const storage = memoryStorage();
+    const tabA = fixture(true, storage);
+    const tabB = fixture(true, storage); // opened before the first round was played
+    tabA.api.postScore.mockRejectedValue(offline());
+    tabB.api.postScore.mockRejectedValue(offline());
+    tabA.sync.report("poet", 100);
+    tabB.sync.report("match", 40);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(tabA.sync.hasUnsent).toBe(true);
+    tabB.api.postScore.mockReset();
+    await tabB.sync.flush();
+    expect((tabB.api.postScore.mock.calls as unknown as [{ game: string }][]).map(([round]) => round.game)).toEqual(["poet", "match"]);
+    expect(tabA.sync.hasUnsent).toBe(false);
+    tabA.api.postScore.mockClear();
+    await tabA.sync.flush();
+    expect(tabA.api.postScore).not.toHaveBeenCalled();
+  });
+});
+
 describe("what tells ScoreSync (GameStats)", () => {
   const stats = () => new GameStats(memoryStorage(), () => new Date("2026-11-23T10:00:00Z"));
 

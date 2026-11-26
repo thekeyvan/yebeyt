@@ -93,10 +93,11 @@ export function createBff(send: Upstream) {
   async function body(request: Request): Promise<{ text?: string; refusal?: Response }> {
     if (request.method === "GET") return {};
     if (Number(request.headers.get("content-length") ?? 0) > maxBody) return { refusal: new Response(null, { status: 413 }) };
-    const text = await request.text();
+    const text = await readCapped(request);
+    if (text === undefined) return { refusal: new Response(null, { status: 413 }) };
     if (text === "") return {};
     if (!(request.headers.get("content-type") ?? "").startsWith("application/json")) return { refusal: new Response(null, { status: 415 }) };
-    return text.length > maxBody ? { refusal: new Response(null, { status: 413 }) } : { text };
+    return { text };
   }
 
   return {
@@ -132,9 +133,9 @@ export function createBff(send: Upstream) {
       } catch {
         return new Response(null, { status: 502 });
       }
-      const session = upstream.ok ? ((await upstream.json().catch(() => undefined)) as (Tokens & { user?: unknown }) | undefined) : undefined;
-      if (!session) return answerOf(upstream, [], true);
-      if (typeof session.accessToken !== "string" || typeof session.refreshToken !== "string" || typeof session.user !== "object") return new Response(null, { status: 502 });
+      if (!upstream.ok) return answerOf(upstream, [], true);
+      const session = (await upstream.json().catch(() => undefined)) as (Tokens & { user?: unknown }) | undefined;
+      if (!session || typeof session.accessToken !== "string" || typeof session.refreshToken !== "string" || typeof session.user !== "object") return new Response(null, { status: 502 });
       return secureAnswer({ user: session.user }, 200, writeSession(session, isSecure(request)));
     },
 
@@ -164,6 +165,23 @@ export function createBff(send: Upstream) {
       return secureAnswer(null, 204, ended(request));
     },
   };
+}
+
+/** The body as text, read as it arrives so that a chunked body (which has no length to check first) is cut off at `maxBody` bytes: undefined when it is longer. */
+async function readCapped(request: Request): Promise<string | undefined> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (let part = await reader.read(); !part.done; part = await reader.read()) {
+    size += part.value.byteLength;
+    if (size > maxBody) {
+      await reader.cancel();
+      return undefined;
+    }
+    chunks.push(part.value);
+  }
+  return new TextDecoder().decode(Buffer.concat(chunks));
 }
 
 const text = (value: unknown, max: number): value is string => typeof value === "string" && value.length >= 1 && value.length <= max;

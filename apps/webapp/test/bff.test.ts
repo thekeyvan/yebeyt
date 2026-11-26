@@ -119,6 +119,49 @@ describe("the proxy turns the session cookie into a Bearer token", () => {
     expect((await proxy(bff, request("POST", "/api/v1/scores", { cookie: signedIn, body: { pad: "x".repeat(1_100_000) } }))).status).toBe(413);
     expect(up.calls).toEqual([]);
   });
+
+  it("cuts off a chunked body, which has no length to check, once it is too large, and stops reading it", async () => {
+    const up = upstream(() => json(200, {}));
+    let sent = 0;
+    const chunk = new TextEncoder().encode("x".repeat(400_000));
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        sent += 1;
+        if (sent > 50) return controller.close();
+        controller.enqueue(chunk);
+      },
+    });
+    const chunked = new Request(`${origin}/api/v1/scores`, {
+      method: "POST",
+      headers: { host: "app.yebeyt.com", "sec-fetch-site": "same-origin", "content-type": "application/json", cookie: signedIn },
+      body,
+      duplex: "half",
+    } as RequestInit);
+    expect(chunked.headers.get("content-length")).toBeNull();
+    expect((await proxy(createBff(up.send), chunked)).status).toBe(413);
+    expect(sent).toBeLessThan(10);
+    expect(up.calls).toEqual([]);
+  });
+
+  it("passes a chunked body that is within the limit", async () => {
+    const up = upstream(() => json(200, {}));
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode('{"game":"po'));
+        controller.enqueue(encoder.encode('et","points":3}'));
+        controller.close();
+      },
+    });
+    const chunked = new Request(`${origin}/api/v1/scores`, {
+      method: "POST",
+      headers: { host: "app.yebeyt.com", "sec-fetch-site": "same-origin", "content-type": "application/json", cookie: signedIn },
+      body,
+      duplex: "half",
+    } as RequestInit);
+    expect((await proxy(createBff(up.send), chunked)).status).toBe(200);
+    expect(up.calls[0]?.body).toBe('{"game":"poet","points":3}');
+  });
 });
 
 describe("a 401 is refreshed once", () => {
@@ -259,6 +302,15 @@ describe("the auth routes keep the tokens away from the page", () => {
     expect((await bff.signIn(request("POST", "/auth/google", { body: { idToken: 5 } }), "google")).status).toBe(400);
     expect((await bff.signIn(request("POST", "/auth/apple", { body: { identityToken: "x" } }), "apple")).status).toBe(400);
     expect(up.calls).toEqual([]);
+  });
+
+  it("answers 502, not 500, when the server's 200 to a sign-in is not JSON or not a session", async () => {
+    const html = createBff(upstream(() => new Response("<html>", { status: 200 })).send);
+    const first = await html.signIn(request("POST", "/auth/google", { body: { idToken: "t" } }), "google");
+    expect(first.status).toBe(502);
+    expect(setCookies(first)).toEqual([]);
+    const odd = createBff(upstream(() => json(200, { hello: 1 })).send);
+    expect((await odd.signIn(request("POST", "/auth/apple", { body: { identityToken: "t", nonce: "n" } }), "apple")).status).toBe(502);
   });
 
   it("refuses a sign-in from another site", async () => {

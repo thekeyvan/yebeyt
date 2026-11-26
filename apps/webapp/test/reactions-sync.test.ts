@@ -180,4 +180,23 @@ describe("ReactionsSync (Reader/ReactionsSync.swift)", () => {
     expect(f.sync.hasUnsent).toBe(false);
     expect(new ReactionsSync(new ReaderMarks(storage), f.session, f.server.api, storage).hasUnsent).toBe(false);
   });
+
+  it("shares what is unsent between two tabs: neither overwrites the other's changes, and once one has sent them the other does not send them again", async () => {
+    const tabA = fixture(true, storage);
+    const tabB = fixture(true, storage); // opened before the first change was made
+    tabA.server.api.setReaction.mockRejectedValue(offline());
+    tabB.server.api.setReaction.mockRejectedValue(offline());
+    tabA.marks.toggle("liked", "/a/b", 1);
+    tabB.marks.toggle("reposted", "/c/d", 2);
+    await settle();
+    expect(tabA.sync.unsent.map((change) => `${change.kind} ${change.key}`)).toEqual(["like /a/b#1", "repost /c/d#2"]);
+    expect(tabB.sync.unsent).toEqual(tabA.sync.unsent);
+    tabB.server.api.setReaction.mockImplementation(async (kind: string, key: string, on: boolean) => void tabB.server.calls.push(`${on ? "PUT" : "DELETE"} ${kind} ${key}`));
+    await tabB.sync.flush();
+    expect(tabB.server.calls).toEqual(["PUT like /a/b#1", "PUT repost /c/d#2"]);
+    expect(tabA.sync.hasUnsent).toBe(false);
+    tabA.server.api.setReaction.mockClear();
+    await tabA.sync.flush();
+    expect(tabA.server.api.setReaction).not.toHaveBeenCalled();
+  });
 });
