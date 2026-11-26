@@ -7,7 +7,9 @@ import { cn } from "../../lib/cn";
 import { pop, useVariant, usePress } from "../../lib/motion";
 import { persianDigits, unreadText } from "../../lib/persian";
 import { tabs } from "../../lib/tabs";
-import { ExploreIcon, GamesIcon, HomeIcon, MeIcon, MessagesIcon } from "./icons";
+import { FaceCircle } from "../me/FaceCircle";
+import { useAvatarParts } from "../me/useAvatarParts";
+import { ExploreIcon, GamesIcon, HomeIcon, MessagesIcon } from "./icons";
 
 const PressLink = motion.create(Link);
 
@@ -50,16 +52,13 @@ function GamesButton({ on }: { on: boolean }) {
   );
 }
 
+/** «من»: the person's own face in a ring, lapis when the tab is open (`meAvatar` in Features/TabBar.swift: 30 wide, the face 2 in from a white border). */
 function MeRing({ on }: { on: boolean }) {
+  const parts = useAvatarParts();
   return (
-    <span
-      className={cn(
-        "flex h-[26px] w-[26px] items-center justify-center rounded-full border-2 border-white bg-white",
-        on ? "shadow-[0_0_0_2.5px_var(--color-lapis)]" : "shadow-[0_0_0_1.5px_var(--color-ring)]",
-      )}
-    >
+    <span className={cn("flex size-[30px] rounded-full border-2 border-white", on ? "shadow-[0_0_0_2.5px_var(--color-lapis)]" : "shadow-[0_0_0_1.5px_var(--color-ring)]")}>
       <Pop on={on}>
-        <MeIcon size={18} lineWidth={2} />
+        <FaceCircle parts={parts} size={26} padding={2} />
       </Pop>
     </span>
   );

@@ -1,6 +1,7 @@
 import { test, type Page } from "@playwright/test";
 import { newId, openAccountApp, openOnboarding, signInAs } from "./account";
 import { fillByTaps } from "./games";
+import { openSettings } from "./me";
 
 // Screenshots of the account screens at the small phone (not committed: e2e/__screenshots__ is ignored).
 const shot = (page: Page, name: string) => page.screenshot({ path: `e2e/__screenshots__/web4-${name}.png` });
@@ -31,7 +32,7 @@ test("the gate, the username step and the sign-out warning", async ({ page }) =>
   await page.getByRole("dialog").waitFor({ state: "hidden" });
 
   await page.getByRole("button", { name: "نگه دار" }).click();
-  await page.getByRole("navigation", { name: "تب‌ها" }).getByRole("link", { name: "من" }).click();
+  await openSettings(page);
   await page.getByTestId("settings-username").waitFor();
   await settled(page); // the tab's page transition is over
   await shot(page, "me");
@@ -43,7 +44,7 @@ test("the sign-out warning", async ({ page }) => {
   await page.getByRole("button", { name: "پسند" }).click();
   await signInAs(page, { id: newId(), username: "niloofar", syncFails: true });
   await page.getByRole("dialog").waitFor({ state: "hidden" });
-  await page.getByRole("navigation", { name: "تب‌ها" }).getByRole("link", { name: "من" }).click();
+  await openSettings(page);
   await page.getByTestId("sign-out").click();
   await page.getByRole("dialog", { name: "از حسابت بیرون بری؟" }).waitFor();
   await settled(page);

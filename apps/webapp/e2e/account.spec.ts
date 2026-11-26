@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { newId, noSidewaysScroll, openAccountApp, sessionCookies, signInAs, ask } from "./account";
 import { todaysCouplet } from "./browse";
 import { daily, tapKeys } from "./games";
+import { openSettings } from "./me";
 
 const coupletKey = `${todaysCouplet.path}#${todaysCouplet.index}`;
 const like = (page: Page) => page.getByRole("button", { name: "پسند" });
@@ -118,7 +119,7 @@ test("signing out syncs first, then forgets the account's divan and likes here; 
   await signInAs(page, { id, username: "niloofar" });
   await expect(like(page)).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("dialog")).toHaveCount(0); // the gate has gone down
-  await page.getByRole("navigation", { name: "تب‌ها" }).getByRole("link", { name: "من" }).click();
+  await openSettings(page);
   await expect(page.getByTestId("settings-username")).toContainText("@niloofar");
 
   await page.getByTestId("sign-out").click();
@@ -146,7 +147,7 @@ test("signing out with something that did not reach the account warns, and keeps
   await page.getByRole("button", { name: "پسند" }).click();
   await signInAs(page, { id: newId(), username: "niloofar", syncFails: true }); // the debug server refuses the divan
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByRole("navigation", { name: "تب‌ها" }).getByRole("link", { name: "من" }).click();
+  await openSettings(page);
   await page.getByTestId("sign-out").click();
   await page.getByRole("dialog", { name: "از حسابت بیرون بری؟" }).getByRole("button", { name: "بیرون برو" }).click();
 
@@ -180,7 +181,7 @@ test("a refused session signs the page out: the gate opens again", async ({ page
   await page.context().clearCookies();
   await page.reload();
   await expect(like(page)).toHaveAttribute("aria-pressed", "true"); // what it kept stays until it syncs…
-  await page.getByRole("navigation", { name: "تب‌ها" }).getByRole("link", { name: "من" }).click();
+  await openSettings(page);
   await expect(page.getByTestId("settings-sign-in")).toBeVisible();
 });
 

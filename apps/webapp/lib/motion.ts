@@ -41,6 +41,9 @@ export function usePress(): { whileTap: { scale: number }; transition: Transitio
 /** A toast drops in from above, a little smaller (only fades under Reduce Motion). */
 export const toastArrival = (v: Variant): { y: number; scale: number } => (v === "full" ? { y: -28, scale: 0.9 } : { y: 0, scale: 1 });
 
+/** A list row that comes or goes (`Motion.row`: a couplet taken out of the divan or brought back): it scales from 0.9 and slides 12, and fades; under Reduce Motion it only fades. */
+export const rowArrival = (v: Variant): { opacity: number; scale: number; y: number } => (v === "full" ? { opacity: 0, scale: 0.9, y: 12 } : { opacity: 0, scale: 1, y: 0 });
+
 /** A menu, a dialog or a card that appears: a little smaller. */
 export const menuArrival = (v: Variant): { scale: number } => ({ scale: v === "full" ? 0.9 : 1 });
 

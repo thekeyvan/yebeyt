@@ -17,11 +17,14 @@ export function RoundButton({ label, onClick, selected, children }: { label: str
   );
 }
 
-/** The back button of pushed screens: a round button with the chevron pointing right. It goes back to the page before, or to `fallback` when the screen was opened by its link. */
-export function BackButton({ fallback }: { fallback: string }) {
+/**
+ * The back button of pushed screens: a round button with the chevron pointing right. It goes back to the page before, or to `fallback` when the screen was opened
+ * by its link; a screen that must ask first (a face not saved) gives `onBack`, which is what a press does then.
+ */
+export function BackButton({ fallback, onBack }: { fallback: string; onBack?: () => void }) {
   const router = useRouter();
   return (
-    <RoundButton label="برگشت" onClick={() => (canGoBack() ? router.back() : router.push(fallback))}>
+    <RoundButton label="برگشت" onClick={onBack ?? (() => (canGoBack() ? router.back() : router.push(fallback)))}>
       <ChevronRightIcon size={20} lineWidth={2.6} />
     </RoundButton>
   );

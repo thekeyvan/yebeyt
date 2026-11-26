@@ -59,7 +59,7 @@ Each slice is on its own branch (`feat/web-<name>`), built by **builder**, revie
 - **W2 Home, Explore, Library, Search** (merged 26 Nov), plus reading progress (iOS `ReadingProgress`: the last couplet opened in each poem, for «ادامه بده»).
 - **W3 Solo games**, in two parts: **W3a** (merged 26 Nov) the catalog, معمای امروز, جورچین, the after-answer sheet, round end and stats; **W3b** حدس شاعر، مصراع دوم، از کدوم کتاب؟، معنی‌یاب، گوش کن (the iOS names), with the poet page's game card. گوش کن stops its clip with `timeupdate` plus an animation-frame check and fades it with a Web Audio gain.
 - **W4 Accounts and sync**: the web sign-in, username, gate, onboarding, carry-over, the typed API client, divan/scores/reactions sync.
-- **W5 Me.**
+- **W5 Me** (built 26 Nov): `/me` and its screens (divan, avatar, invite, settings with deleting the account, privacy, badges, licences); the avatar drawing moved to `packages/avatar`, shared with `apps/web`. Left out of the settings as they make no sense in a browser: the shake for feedback and the version line; there is no blocked-people screen on the phone, so none here. «بازخورد» says «به‌زودی» until W9.
 - **W6 Friends and leaderboard.**
 - **W7 Messages and shared divans.**
 - **W8 Playing with friends.**
