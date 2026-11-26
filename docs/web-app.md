@@ -5,7 +5,7 @@ The web app does everything the iOS app does, so people can read and play in a b
 ## Decisions (owner, 26 Nov)
 
 - **Web first.** The web app comes before the rest of the iOS work: 9b (Universal Links, App Clip, deferred links, invite rewards) and push wait until it's done. App Store prep (listing, screenshots, review notes) goes on alongside it, because it is mostly not code.
-- **Separate app on a subdomain.** `apps/webapp` (`@yebeyt/webapp`), Next.js App Router with TypeScript. It is its own Railway service `webapp` with the domain `app.yebeyt.com` and is deployed from `main` like the others. The link pages on yebeyt.com get a «روی وب بازی کن / بخون» button into the web app.
+- **Separate app on a subdomain.** `apps/webapp` (`@yebeyt/webapp`), Next.js App Router with TypeScript. It is its own Railway service `webapp` with the domain `app.yebeyt.com` (Railway URL https://webapp-production-529c90ac.up.railway.app) and is deployed from `main` like the others. Railway's config can't register a custom domain, so it was added with `railway domain app.yebeyt.com --service webapp --port 8080`. The link pages on yebeyt.com get a «روی وب بازی کن / بخون» button into the web app.
 - **Mobile first.** On a phone, each screen follows its iOS board in `design/canvas/project/`. Wider screens use the standard responsive patterns, with no new boards:
   - from 768 px, the content is a centred column (max 560 px; reader and games 640 px) on the dotted paper;
   - from 1024 px, the bottom tab bar becomes a right-hand side rail (RTL);
@@ -53,7 +53,7 @@ Not on the web: haptics (a pop-up only), shake, the App Clip, push (web push may
 
 Each slice is on its own branch (`feat/web-<name>`), built by **builder**, reviewed by **reviewer**, merged and deployed to app.yebeyt.com before the next starts.
 
-- **W0 Foundations**: `apps/webapp`, the Tailwind theme from the tokens, fonts, the sticker components, the shell (tab bar and side rail, five empty tabs, headers, sheet, confirm, toast, motion), Playwright, Dockerfile, the Railway service and domain.
+- **W0 Foundations** (merged 26 Nov, 304eaea): `apps/webapp`, the Tailwind theme from the tokens, fonts, the sticker components, the shell (tab bar and side rail, five empty tabs, headers, sheet, confirm, toast, motion), Playwright, Dockerfile, the Railway service and domain.
 - **W1 Reading**: poetry data loading, the reader in both modes, text sheet, meaning, hold menu, marks, recitation.
 - **W2 Home, Explore, Library, Search.**
 - **W3 Solo games.**

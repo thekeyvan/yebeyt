@@ -8,7 +8,7 @@ Only what is still open. These need accounts or devices the agents don't have he
 
 ## 1b. The web app (app.yebeyt.com)
 
-- Cloudflare DNS: add `app` as a CNAME to the target Railway shows for the `webapp` service (the lead will post it here once the service exists), proxy off (grey cloud), like `yebeyt.com`.
+- Cloudflare DNS for app.yebeyt.com (the web app already runs at https://webapp-production-529c90ac.up.railway.app). Add two records, both with proxy off (grey cloud): `CNAME` `app` → `9qiq7rgm.up.railway.app`, and `TXT` `_railway-verify.app` → `railway-verify=e8ae026eacb8bf91d81b3dc5d937e91399b58ada56d442b56af67e5e42deabd8`. Railway issues the certificate by itself once they resolve.
 - Before web sign-in (slice W4): in developer.apple.com → Identifiers → Services IDs, make `com.yebeyt.web` with Sign in with Apple on, domain `app.yebeyt.com`, return URL `https://app.yebeyt.com/auth/apple`. In Google Cloud (the yebeyt project) → Credentials, make an OAuth client of type *Web application* with origin `https://app.yebeyt.com`. Send the lead both ids (they aren't secret).
 
 ## 2. Test on a real phone
