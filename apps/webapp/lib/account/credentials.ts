@@ -74,8 +74,10 @@ export class AppleCredentials {
     this.auth ??= await this.load();
     const raw = appleNonce();
     const state = appleNonce();
+    const hashed = await sha256Hex(raw);
+    // The state, the nonce and Apple's setup are changed together with nothing awaited between them, so two `prepare`s that overlap cannot leave them from different calls.
     this.storage.setItem(appleStateKey, state);
-    this.auth.init({ clientId: this.clientId, scope: "name", redirectURI: this.redirectUri, state, nonce: await sha256Hex(raw), usePopup: true });
+    this.auth.init({ clientId: this.clientId, scope: "name", redirectURI: this.redirectUri, state, nonce: hashed, usePopup: true });
     this.nonce = raw;
   }
 

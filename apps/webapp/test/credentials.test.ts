@@ -93,6 +93,23 @@ describe("Sign in with Apple JS", () => {
     expect((auth.init.mock.calls[1]![0] as { state: string }).state).not.toBe(first);
   });
 
+  it("keeps the state, the nonce and Apple's setup of one call together when two prepares overlap", async () => {
+    const { auth, load } = fake(async () => ({ authorization: { id_token: "idt", code: "c" } }));
+    const apple = new AppleCredentials("x", redirect, load);
+    // The first call's hash comes back after the second's.
+    const digest = crypto.subtle.digest.bind(crypto.subtle);
+    const spy = vi.spyOn(crypto.subtle, "digest").mockImplementationOnce(async (...args: Parameters<typeof digest>) => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return digest(...args);
+    });
+    await Promise.all([apple.prepare(), apple.prepare()]);
+    spy.mockRestore();
+    const last = auth.init.mock.calls.at(-1)![0] as { state: string; nonce: string };
+    expect(sessionStorage.getItem(appleStateKey)).toBe(last.state);
+    const result = await apple.signIn();
+    expect(await sha256Hex((result.credential as { nonce: string }).nonce)).toBe(last.nonce);
+  });
+
   it("refuses an answer whose state is not the one that was sent, or has none", async () => {
     for (const state of ["someone-elses", undefined]) {
       const { load } = fake(async () => ({ authorization: { id_token: "idt", code: "c", state: state as string } }), false);
