@@ -8,7 +8,7 @@ export type SegmentOption<T extends string> = { value: T; label: string; leading
 
 /**
  * «بیت به بیت / کل شعر» (`pill`: a white capsule, the chosen one lapis), the text sheet's rows (`row`: a light pill with the title above
- * it), the sorts of a section (`divan`: the same on a darker track) and the choices on a white card (`paper`: a capsule on the paper's colour, as the privacy rows): one option is on, as in a radio group drawn as buttons. The behaviour (arrow keys, roles) is UI SDK's; the lapis
+ * it), the sorts of a section (`divan`: the same on a darker track) and the choices on a white card (`paper`: a capsule on the paper's colour, as the privacy rows; `stretch` makes the options share the width): one option is on, as in a radio group drawn as buttons. The behaviour (arrow keys, roles) is UI SDK's; the lapis
  * indicator slides to the chosen one, and stays put under Reduce Motion.
  */
 export function Segmented<T extends string>({
@@ -18,6 +18,7 @@ export function Segmented<T extends string>({
   label,
   look,
   disabled,
+  stretch,
 }: {
   value: T;
   onValueChange: (value: T) => void;
@@ -25,6 +26,8 @@ export function Segmented<T extends string>({
   label: string;
   look: "pill" | "row" | "divan" | "paper";
   disabled?: boolean;
+  /** The options share the width of the control equally (the leaderboard's tabs). */
+  stretch?: boolean;
 }) {
   const pill = look === "pill" || look === "paper";
   return (
@@ -53,6 +56,7 @@ export function Segmented<T extends string>({
           className={cn(
             "flex items-center justify-center gap-1.5 text-[13px] text-ink data-checked:font-bold data-checked:text-white",
             pill ? "rounded-pill px-3.5 py-1.5 font-medium" : "h-[38px] flex-1 rounded-xl font-medium",
+            stretch && "flex-1 py-[9px] text-sm",
           )}
         >
           {option.leading}

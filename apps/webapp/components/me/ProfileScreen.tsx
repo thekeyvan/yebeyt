@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { levelName } from "../../lib/me/badges";
 import { favouritePoet } from "../../lib/me/favouritePoet";
 import { persianDigits } from "../../lib/persian";
@@ -68,6 +69,9 @@ function Identity({ services }: { services: Services }) {
   const reading = useProgress();
   const { value: data } = useLibraryData();
   const signedIn = status === "in";
+  const mine = useMyStats();
+  // «۱۲ دوست» comes from my own public profile, once there is a username.
+  useEffect(() => void services.myStats.refreshFriendsCount(), [services, user?.username, signedIn]);
   const name = status === "loading" ? "" : signedIn ? (user?.displayName ?? services.account.snapshot().providerName ?? user?.username ?? "من") : "مهمان";
   const slug = favouritePoet([...marks.keys("kept")], reading.finishedPaths);
   const poet = slug && data?.library.poet(slug)?.name;
@@ -85,8 +89,18 @@ function Identity({ services }: { services: Services }) {
           {name}
         </p>
         {signedIn && user?.username && (
-          <p data-testid="profile-username" dir="ltr" className="text-[13px] text-muted">
-            @{user.username}
+          <p className="flex gap-1 text-[13px] text-muted">
+            <span data-testid="profile-username" dir="ltr">
+              @{user.username}
+            </span>
+            {mine.friendsCount !== undefined && (
+              <>
+                <span>·</span>
+                <Link href="/me/friends" data-testid="profile-friends">
+                  {persianDigits(mine.friendsCount)} دوست
+                </Link>
+              </>
+            )}
           </p>
         )}
         {!signedIn && status !== "loading" && (

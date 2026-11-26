@@ -14,7 +14,7 @@ test.beforeEach(({ page }, info) => {
 
 test("the gate, the username step and the sign-out warning", async ({ page }) => {
   await openAccountApp(page, "/");
-  await page.getByRole("button", { name: "پسند" }).click();
+  await page.getByRole("button", { name: "پسند", exact: true }).click();
   await page.getByRole("dialog", { name: /یه حساب لازمه/ }).waitFor();
   await settled(page);
   await shot(page, "gate");
@@ -41,7 +41,7 @@ test("the gate, the username step and the sign-out warning", async ({ page }) =>
 test("the sign-out warning", async ({ page }) => {
   await openAccountApp(page, "/");
   await page.getByRole("button", { name: "نگه دار" }).click();
-  await page.getByRole("button", { name: "پسند" }).click();
+  await page.getByRole("button", { name: "پسند", exact: true }).click();
   await signInAs(page, { id: newId(), username: "niloofar", syncFails: true });
   await page.getByRole("dialog").waitFor({ state: "hidden" });
   await openSettings(page);

@@ -91,7 +91,7 @@ const league = (call: Call) => {
 const feed = ({ world }: Call) => {
   const today = TehranDay.of(new Date()).key;
   const items = [
-    { type: "repost", user: person("kian_k"), key: "/hafez/ghazal/sh3#0", at: hoursAgo(1) },
+    { type: "repost", user: person("kian_k"), key: "/hafez/ghazal/sh3#0", at: hoursAgo(1.1) },
     { type: "daily", user: person("sara.ghazal"), date: today, tries: 2, at: hoursAgo(1 / 6) },
     { type: "like", user: person("mahsa.m"), key: "/hafez/ghazal/sh1#2", at: hoursAgo(2) },
   ].filter((item) => world.state(item.user!.username) === "friends");

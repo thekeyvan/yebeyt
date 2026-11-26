@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { isRightToLeft, settle, slideFrom, useVariant } from "../../lib/motion";
 import { isGamePage } from "../../lib/games/kinds";
+import { useStore } from "../../lib/library/browser";
 import { trackNavigation } from "../../lib/nav";
 import { tabAt } from "../../lib/tabs";
+import { useServices } from "../account/useServices";
 import { TabBar } from "../ui/TabBar";
 
 /** A poem opened from inside the app is a cover over the page it came from (`reader`), and so is a game (`game`); the page stays under it. */
@@ -24,6 +26,9 @@ export function Shell({ children, reader, game }: { children: ReactNode; reader:
   if (!covered && under !== pathname) setUnder(pathname);
   const current = tabAt(under);
   const v = useVariant();
+  const friends = useServices()?.friends;
+  const unread = useStore(friends)?.unreadMessages ?? 0;
+  const requests = useStore(friends?.requests)?.incomingCount ?? 0;
   useEffect(trackNavigation, [pathname]);
   const previous = useRef<number | null>(null);
   useEffect(() => {
@@ -38,7 +43,7 @@ export function Shell({ children, reader, game }: { children: ReactNode; reader:
         </motion.div>
       </div>
       <div inert={covered}>
-        <TabBar current={current} />
+        <TabBar current={current} unread={unread} requests={requests} />
       </div>
       {game}
       {reader}

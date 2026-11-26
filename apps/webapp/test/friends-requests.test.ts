@@ -169,10 +169,10 @@ describe("another person's page (PersonFriendshipTests)", () => {
 
   it("becoming friends reads the page again, for the message button", async () => {
     const { model } = await page("incoming", "friends", () => ok({ friendship: "friends" }));
-    expect(model.canMessage).toBe(false);
+    expect(model.snapshot().profile?.canMessage).toBe(false);
     await model.perform("accept");
     expect(model.friendship).toBe("friends");
-    expect(model.canMessage).toBe(true);
+    expect(model.snapshot().profile?.canMessage).toBe(true);
   });
 
   it("a person who is not there is «not found»; a network failure is a failure that keeps the page", async () => {

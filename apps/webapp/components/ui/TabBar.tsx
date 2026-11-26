@@ -89,11 +89,13 @@ function icon(index: number, on: boolean, unread: string | null): ReactNode {
  * The tab bar (Features/TabBar.swift; the exact spec is `nav()` in design/canvas/gen_explore.py): a white bar 64 high
  * (70 with its top gap) with 14 at the sides and 18 below; lapis on the open tab with a 16×3 line under it; the raised
  * round «بازی» in the middle. From 1024 px it is a rail on the right (the start side), in a column.
- * `current` is the open tab's index (null on a page outside the tabs); `unread` is the badge on «پیام‌ها».
+ * `current` is the open tab's index (null on a page outside the tabs); the badge on «پیام‌ها» counts the `unread` messages and the friend `requests`
+ * waiting for an answer, and says each to screen readers (`unreadAccessibilityLabel` in App/AppModel.swift).
  */
-export function TabBar({ current, unread = 0 }: { current: number | null; unread?: number }) {
+export function TabBar({ current, unread = 0, requests = 0 }: { current: number | null; unread?: number; requests?: number }) {
   const press = usePress();
-  const unreadLabel = unreadText(unread);
+  const unreadLabel = unreadText(unread + requests);
+  const spoken = [unread > 0 && `${persianDigits(unread)} پیام نخونده`, requests > 0 && `${persianDigits(requests)} درخواست دوستی`].filter(Boolean).join("، ");
   return (
     <nav
       aria-label="تب‌ها"
@@ -107,7 +109,7 @@ export function TabBar({ current, unread = 0 }: { current: number | null; unread
             key={tab.href}
             href={tab.href}
             aria-current={on ? "page" : undefined}
-            aria-label={waiting ? `${tab.title} ${persianDigits(unread)} پیام نخونده` : undefined}
+            aria-label={waiting ? `${tab.title} ${spoken}` : undefined}
             {...press}
             className={cn("flex flex-col items-center gap-[3px]", on ? "text-lapis" : "text-muted")}
           >

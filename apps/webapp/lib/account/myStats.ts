@@ -45,7 +45,8 @@ export class MyStats extends Store<{ remote?: RemoteStats; friendsCount?: number
       return;
     }
     try {
-      this.set({ ...this.snapshot(), remote: await this.api.stats() });
+      const remote = await this.api.stats();
+      this.set({ ...this.snapshot(), remote });
     } catch {
       // What is shown stays.
     }
@@ -59,7 +60,8 @@ export class MyStats extends Store<{ remote?: RemoteStats; friendsCount?: number
       return;
     }
     try {
-      this.set({ ...this.snapshot(), friendsCount: (await this.api.profile(username)).friendsCount });
+      const { friendsCount } = await this.api.profile(username);
+      this.set({ ...this.snapshot(), friendsCount });
     } catch {
       // What is shown stays.
     }

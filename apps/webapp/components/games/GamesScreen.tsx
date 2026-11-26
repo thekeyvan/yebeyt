@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useGameStats } from "../../lib/games/browser";
 import type { GameDeck } from "../../lib/games/couplet";
 import { pickPuzzle } from "../../lib/games/dailyPuzzle";
@@ -22,6 +23,7 @@ export function GamesScreen() {
 function Games({ deck }: { deck: GameDeck }) {
   const stats = useGameStats();
   const account = useAccount();
+  const router = useRouter();
   const mine = useMyStats();
   const puzzle = pickPuzzle(stats.today, deck);
   const solved = (stats.daily(stats.today)?.outcome ?? "playing") !== "playing";
@@ -34,7 +36,7 @@ function Games({ deck }: { deck: GameDeck }) {
             <span aria-label={`رشته‌ی ${persianDigits(mine.streak)} روزه`} data-testid="streak">
               <Badge kind="streak" value={mine.streak} />
             </span>
-            <button type="button" aria-label={`امتیاز ${persianDigits(mine.points, { grouped: true })} و رده‌بندی`} data-testid="points" onClick={() => account.require("leaderboard")}>
+            <button type="button" aria-label={`امتیاز ${persianDigits(mine.points, { grouped: true })} و رده‌بندی`} data-testid="points" onClick={() => account.require("leaderboard", () => router.push("/games/leaderboard"))}>
               <Badge kind="points" value={mine.points} />
             </button>
           </div>

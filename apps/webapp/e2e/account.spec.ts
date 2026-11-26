@@ -5,7 +5,7 @@ import { daily, tapKeys } from "./games";
 import { openSettings } from "./me";
 
 const coupletKey = `${todaysCouplet.path}#${todaysCouplet.index}`;
-const like = (page: Page) => page.getByRole("button", { name: "پسند" });
+const like = (page: Page) => page.getByRole("button", { name: "پسند", exact: true });
 const gate = (page: Page) => page.getByRole("dialog", { name: /یه حساب لازمه/ });
 
 /** What the browser has kept in localStorage under `key`. */
@@ -53,6 +53,8 @@ test("what a guest kept and earned goes to the account when they sign in", async
   const progress = page.waitForRequest((request) => request.method() === "PUT" && request.url().endsWith("/api/v1/me/progress"));
   await signInAs(page, { id, username: "niloofar" });
   await expect(gate(page)).toBeHidden();
+  await expect(page).toHaveURL(/\/games\/leaderboard$/); // the tap that asked for it went ahead
+  await page.goBack();
   // What the guest earned goes to the account as the phone sends it (the server keeps the larger of each), and so does the divan.
   expect((await progress).postDataJSON()).toEqual({ points: 140, streakDays: 0, streakLastDate: null, bestByGame: { jigsaw: 215 } });
   await expect.poll(async () => (await ask(page, "/v1/me/divan")).items.map((item: { key: string }) => item.key)).toContain(coupletKey);
@@ -65,6 +67,8 @@ test("the daily puzzle solved while signed in is reported to the account: its re
   await page.getByTestId("points").click();
   await signInAs(page, { id: newId(), username: "niloofar" });
   await expect(gate(page)).toBeHidden();
+  await expect(page).toHaveURL(/\/games\/leaderboard$/);
+  await page.goBack();
   await page.getByTestId("daily-open").click();
   await tapKeys(page, daily.word);
   await page.getByTestId("submit").click();
@@ -145,7 +149,7 @@ test("signing out with something that did not reach the account warns, and keeps
   await openAccountApp(page, "/");
   await page.getByRole("button", { name: "نگه دار" }).click();
   await page.getByRole("button", { name: "نگه دار" }).waitFor();
-  await page.getByRole("button", { name: "پسند" }).click();
+  await page.getByRole("button", { name: "پسند", exact: true }).click();
   await signInAs(page, { id: newId(), username: "niloofar", syncFails: true }); // the debug server refuses the divan
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await openSettings(page);

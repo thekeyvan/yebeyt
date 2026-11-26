@@ -40,11 +40,6 @@ export class PersonModel extends Store<State> {
     return this.snapshot().profile?.friendship ?? "none";
   }
 
-  /** «پیام بده» shows when the server says I may write to them (W7 brings the chat). */
-  get canMessage(): boolean {
-    return this.snapshot().profile?.canMessage === true;
-  }
-
   async load(): Promise<void> {
     try {
       this.update({ profile: await this.api.profile(this.username), phase: loaded });
