@@ -8,10 +8,17 @@ const list = z
   .transform((s) => s.split(",").map((v) => v.trim()).filter(Boolean))
   .pipe(z.array(z.string()).min(1, "needs at least one value"));
 
+/** A list that may be left out: no value is the empty list. */
+const optionalList = z
+  .string()
+  .optional()
+  .transform((s) => (s ?? "").split(",").map((v) => v.trim()).filter(Boolean));
+
 const schema = z.object({
   DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, "must be a postgres:// URL"),
   JWT_SECRET: z.string().min(32, "must be at least 32 characters"),
   APPLE_BUNDLE_IDS: list,
+  APPLE_REDIRECT_URIS: optionalList,
   APPLE_TEAM_ID: z.string().min(1),
   APPLE_KEY_ID: z.string().min(1),
   APPLE_PRIVATE_KEY: z
@@ -27,6 +34,8 @@ export type Config = {
   databaseUrl: string;
   jwtSecret: string;
   appleBundleIds: string[];
+  /** The return URLs of Sign in with Apple JS that a web client may name (the web app's `/auth/apple`); none until one is set. */
+  appleRedirectUris: string[];
   appleTeamId: string;
   appleKeyId: string;
   applePrivateKey: string;
@@ -52,6 +61,7 @@ export async function loadConfig(env: Record<string, string | undefined>): Promi
     databaseUrl: e.DATABASE_URL,
     jwtSecret: e.JWT_SECRET,
     appleBundleIds: e.APPLE_BUNDLE_IDS,
+    appleRedirectUris: e.APPLE_REDIRECT_URIS,
     appleTeamId: e.APPLE_TEAM_ID,
     appleKeyId: e.APPLE_KEY_ID,
     applePrivateKey: e.APPLE_PRIVATE_KEY,

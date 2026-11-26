@@ -32,13 +32,20 @@ const form = (fields: Record<string, string>) =>
 
 /**
  * Trades the sign-in authorization code for Apple's refresh token and returns it sealed for storage.
- * Failure is not fatal for signing in; it only means we cannot revoke the Apple token later.
+ * Failure is not fatal for signing in; it only means we cannot revoke the Apple token later. A code from Sign in with Apple JS
+ * (a web client) is bound to its return URL, which Apple wants again here as `redirectUri`.
  */
-export async function exchangeAppleCode(deps: AppleDeps, code: string, clientId: string): Promise<string | null> {
+export async function exchangeAppleCode(deps: AppleDeps, code: string, clientId: string, redirectUri?: string): Promise<string | null> {
   try {
     const res = await deps.fetch(
       `${APPLE}/auth/token`,
-      form({ client_id: clientId, client_secret: await clientSecret(deps, clientId), code, grant_type: "authorization_code" }),
+      form({
+        client_id: clientId,
+        client_secret: await clientSecret(deps, clientId),
+        code,
+        grant_type: "authorization_code",
+        ...(redirectUri ? { redirect_uri: redirectUri } : {}),
+      }),
     );
     if (!res.ok) {
       deps.log(`apple code exchange failed status=${res.status}`);

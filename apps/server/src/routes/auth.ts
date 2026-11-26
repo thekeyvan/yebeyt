@@ -19,6 +19,11 @@ const appleBody = z
     identityToken: z.string().min(1).max(8192),
     authorizationCode: z.string().min(1).max(2048).optional(),
     nonce: z.string().min(1).max(512).openapi({ description: "The raw nonce; its sha256 was sent to Apple. Required: the identity token must carry its sha256." }),
+    redirectUri: z
+      .string()
+      .max(512)
+      .optional()
+      .openapi({ description: "For a code from Sign in with Apple JS (a web client): the return URL it was asked with. Accepted only when it is in the server's APPLE_REDIRECT_URIS." }),
     fullName: z
       .object({ givenName: z.string().nullish(), familyName: z.string().nullish() })
       .nullish()
@@ -48,8 +53,9 @@ export function authRoutes(deps: Deps) {
     }),
     async (c) => {
       const body = c.req.valid("json");
+      if (body.redirectUri !== undefined && !deps.config.appleRedirectUris.includes(body.redirectUri)) return c.json({ error: "invalid_request" as const }, 400);
       const identity = await verifyAppleIdentityToken(body.identityToken, body.nonce, deps);
-      const sealed = body.authorizationCode ? await exchangeAppleCode(deps, body.authorizationCode, identity.audience) : null;
+      const sealed = body.authorizationCode ? await exchangeAppleCode(deps, body.authorizationCode, identity.audience, body.redirectUri) : null;
       return c.json(await startSession("apple", identity.subject, sealed), 200);
     },
   );

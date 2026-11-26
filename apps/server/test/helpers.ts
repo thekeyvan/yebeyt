@@ -20,6 +20,7 @@ import type { UploadBudgets } from "../src/routes/feedback.js";
 
 export const BUNDLE_ID = "com.yebeyt.app";
 export const NONCE = "test-nonce";
+export const WEB_REDIRECT = "https://app.yebeyt.com/auth/apple";
 export const GOOGLE_CLIENT = "web-client.apps.googleusercontent.com";
 
 /** A signing key and the JWKS that publishes it, standing in for Apple's or Google's. */
@@ -46,6 +47,7 @@ export async function testConfig(): Promise<Config> {
     appleTeamId: "TEAM123456",
     appleKeyId: "KEY1234567",
     applePrivateKey: await exportPKCS8(privateKey),
+    appleRedirectUris: [WEB_REDIRECT],
     googleClientIds: [GOOGLE_CLIENT],
     adminToken: "admin-token-for-tests",
     port: 0,

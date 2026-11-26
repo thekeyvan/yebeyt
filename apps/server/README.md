@@ -29,6 +29,7 @@ All are checked at start; a missing or malformed one stops the server with a mes
 | `DATABASE_URL` | `postgres://…` (Railway's Postgres plugin provides it) |
 | `JWT_SECRET` | 32+ random characters. Signs access tokens (HS256); the key that seals the stored Apple refresh tokens is derived from it. Changing it signs everyone out and makes stored Apple tokens unreadable (account deletion then skips the Apple revoke for them) |
 | `APPLE_BUNDLE_IDS` | comma list of accepted audiences, e.g. `com.yebeyt.app` |
+| `APPLE_REDIRECT_URIS` | optional comma list of the return URLs a web client may name for Sign in with Apple JS, e.g. `https://app.yebeyt.com/auth/apple` (Apple wants it again at the code exchange); the web Services ID goes in `APPLE_BUNDLE_IDS` |
 | `APPLE_TEAM_ID`, `APPLE_KEY_ID` | for the client-secret JWT sent to Apple (code exchange and revoke) |
 | `APPLE_PRIVATE_KEY` | the `.p8` PEM; `\n` escapes are accepted so it fits on one line |
 | `GOOGLE_CLIENT_IDS` | comma list of accepted OAuth client ids (the iOS one, later the web one) |

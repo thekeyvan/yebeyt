@@ -27,7 +27,13 @@ describe("loadConfig", () => {
     expect(c.port).toBe(9000);
     expect(c.appleBundleIds).toEqual(["com.yebeyt.app", "com.yebeyt.app.clip"]);
     expect(c.googleClientIds).toEqual(["one.apps.googleusercontent.com"]);
+    expect(c.appleRedirectUris).toEqual([]);
     expect(c.applePrivateKey).toBe(pem.trim());
+  });
+
+  it("reads the web redirect uris of Apple, which are optional", async () => {
+    const c = await loadConfig({ ...valid, APPLE_REDIRECT_URIS: "https://app.yebeyt.com/auth/apple, https://example.test/auth/apple" });
+    expect(c.appleRedirectUris).toEqual(["https://app.yebeyt.com/auth/apple", "https://example.test/auth/apple"]);
   });
 
   it("defaults the port to 8080", async () => {

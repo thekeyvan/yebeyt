@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { decryptSecret } from "../src/crypto.js";
 import { identities, sessions, users } from "../src/db/schema.js";
-import { BUNDLE_ID, makeHarness, NONCE, nonceHash, type Harness } from "./helpers.js";
+import { BUNDLE_ID, makeHarness, NONCE, nonceHash, WEB_REDIRECT, type Harness } from "./helpers.js";
 
 let h: Harness;
 beforeEach(async () => {
@@ -83,6 +83,29 @@ describe("POST /v1/auth/apple", () => {
     const [identity] = await h.db.select().from(identities);
     expect(identity!.appleRefreshToken).not.toContain("apple-refresh-1");
     expect(JSON.parse(decryptSecret(identity!.appleRefreshToken!, h.deps.config.jwtSecret)!)).toEqual({ t: "apple-refresh-1", c: BUNDLE_ID });
+  });
+
+  it("sends the redirect uri of a web code to Apple when the server lists it", async () => {
+    h.fetchMock.mockResolvedValueOnce(Response.json({ refresh_token: "apple-refresh-web" }));
+    const res = await post("/v1/auth/apple", { identityToken: await h.appleToken("apple-1"), nonce: NONCE, authorizationCode: "web-code", redirectUri: WEB_REDIRECT });
+    expect(res.status).toBe(200);
+    const form = h.fetchMock.mock.calls[0]![1]!.body as URLSearchParams;
+    expect(form.get("redirect_uri")).toBe(WEB_REDIRECT);
+    expect(form.get("code")).toBe("web-code");
+  });
+
+  it("sends no redirect uri when the app gives none", async () => {
+    h.fetchMock.mockResolvedValueOnce(Response.json({ refresh_token: "apple-refresh-1" }));
+    await post("/v1/auth/apple", { identityToken: await h.appleToken("apple-1"), nonce: NONCE, authorizationCode: "code-1" });
+    expect((h.fetchMock.mock.calls[0]![1]!.body as URLSearchParams).has("redirect_uri")).toBe(false);
+  });
+
+  it("refuses a redirect uri that is not in the list, before anything is sent to Apple", async () => {
+    const res = await post("/v1/auth/apple", { identityToken: await h.appleToken("apple-1"), nonce: NONCE, authorizationCode: "c", redirectUri: "https://evil.example/auth/apple" });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "invalid_request" });
+    expect(h.fetchMock).not.toHaveBeenCalled();
+    expect(await h.db.select().from(identities)).toHaveLength(0);
   });
 
   it("still signs in when Apple's code exchange fails", async () => {

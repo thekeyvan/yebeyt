@@ -235,6 +235,11 @@
             "maxLength": 512,
             "description": "The raw nonce; its sha256 was sent to Apple. Required: the identity token must carry its sha256."
           },
+          "redirectUri": {
+            "type": "string",
+            "maxLength": 512,
+            "description": "For a code from Sign in with Apple JS (a web client): the return URL it was asked with. Accepted only when it is in the server's APPLE_REDIRECT_URIS."
+          },
           "fullName": {
             "type": [
               "object",
