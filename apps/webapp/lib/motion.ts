@@ -125,6 +125,12 @@ export function popKeyframes(pop: Pop): { keyframes: Record<string, number[]>; t
 /** Whether a press's particles fly: the action has some (a send has none) and Reduce Motion is off. */
 export const bursts = (action: "like" | "keep" | "repost" | "send", v: Variant): boolean => v === "full" && action !== "send";
 
+/** A wrong answer: side to side (pixels), stronger than the first shake, over 0.45 s; still under Reduce Motion (`Motion.shake`). */
+export const shake = (v: Variant): Pop => (v === "full" ? { x: [[14, 0.05], [-14, 0.09], [10, 0.09], [-6, 0.09], [3, 0.08], [0, 0.05]] } : {});
+
+/** A number counting up to its value: half a second, easing out; at once under Reduce Motion (`Motion.countUp`). */
+export const countUp = (v: Variant): Transition => (v === "full" ? { duration: 0.5, ease: "easeOut" } : { duration: 0 });
+
 /** A card thrown off the deck (`Motion.throwAway`). */
 export const throwAway = spring(0.32, 0.72);
 

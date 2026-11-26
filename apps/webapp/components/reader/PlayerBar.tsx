@@ -4,8 +4,8 @@ import { Slider, SliderControl, SliderIndicator, SliderThumb, SliderTrack } from
 import { motion } from "motion/react";
 import { useState } from "react";
 import { bouncy, menuArrival, useVariant, usePress } from "../../lib/motion";
+import { persianClock } from "../../lib/persian";
 import { isPlaying, type PlayerView, type RecitationPlayer } from "../../lib/reader/player";
-import { clock } from "../../lib/reader/text";
 import { Sheet } from "../ui/Sheet";
 import { PlayIcon, VoiceIcon } from "../ui/icons";
 
@@ -53,7 +53,7 @@ export function PlayerBar({ player, view, couplet }: { player: RecitationPlayer;
         )}
       </div>
       <div className="flex items-center gap-3 text-xs font-medium text-muted">
-        <span className="w-9 text-center">{clock(view.position)}</span>
+        <span className="w-9 text-center">{persianClock(view.position)}</span>
         <Slider value={Math.min(view.position, view.duration)} min={0} max={known ? view.duration : 1} step={0.1} largeStep={5} disabled={!known} onValueChange={(value) => player.seekTo(value as number)} className="flex-1">
           <SliderControl className="relative flex h-6 items-center">
             <SliderTrack className="relative h-1.5 w-full rounded-[3px] bg-track-light">
@@ -62,7 +62,7 @@ export function PlayerBar({ player, view, couplet }: { player: RecitationPlayer;
             </SliderTrack>
           </SliderControl>
         </Slider>
-        <span className="w-9 text-center">{`−${clock(Math.max(view.duration - view.position, 0))}`}</span>
+        <span className="w-9 text-center">{`−${persianClock(Math.max(view.duration - view.position, 0))}`}</span>
       </div>
       <Sheet open={voices} onOpenChange={setVoices} title="صدای دیگه">
         <ul className="flex w-full flex-col">

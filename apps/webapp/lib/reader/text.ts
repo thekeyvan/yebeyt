@@ -24,9 +24,3 @@ export const copyText = (couplet: Couplet, poet: string): string => `${lines(cou
 
 /** The caption under a lifted couplet: «حافظ · غزل ۳ · بیت ۲». */
 export const caption = (poet: string, title: string, index: number): string => `${poet} · ${title} · بیت ${persianDigits(index + 1)}`;
-
-/** «۰:۴۲» for 42 seconds, «۱:۲۸» for 88: the time on the seek bar, minutes and seconds. */
-export function clock(seconds: number): string {
-  const whole = Math.max(0, Math.floor(seconds));
-  return `${persianDigits(Math.floor(whole / 60))}:${persianDigits(whole % 60).padStart(2, "۰")}`;
-}

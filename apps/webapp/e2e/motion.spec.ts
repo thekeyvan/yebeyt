@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { answerCouplet, daily, openRound, tapKeys } from "./games";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -85,6 +86,40 @@ test("with reduced motion nothing moves for longer than 0.15 s", async ({ page }
   await page.getByRole("navigation", { name: "تب‌ها" }).getByRole("link", { name: "کاوش" }).click();
   await page.waitForURL("**/explore");
   await page.waitForTimeout(700);
+
+  const { longest, animations } = await page.evaluate(() => (window as unknown as { __moves: () => Moves }).__moves());
+  expect(longest.ms, `${longest.what} moved for ${longest.ms} ms`).toBeLessThanOrEqual(170);
+  for (const { what, ms } of animations) expect(ms, `${what} animates for ${ms} ms`).toBeLessThanOrEqual(150);
+});
+
+test("with reduced motion a game rises as a fade, and its sheet, pops and confirm move for no longer than 0.15 s", async ({ page }) => {
+  await openRound(page, "/games");
+  await expect(page.getByTestId("daily-card")).toBeVisible();
+  await watchMoves(page);
+
+  // معمای امروز: a miss (the shake), the word (the pops, the sheet), back.
+  await page.getByTestId("daily-open").click();
+  await expect(page.getByTestId("game")).toBeVisible();
+  await tapKeys(page, daily.misses[0]!);
+  await page.getByTestId("submit").click();
+  await tapKeys(page, daily.word);
+  await page.getByTestId("submit").click();
+  await expect(page.getByTestId("answer-sheet")).toBeVisible();
+  await page.waitForTimeout(500);
+  await page.getByTestId("next").click();
+  await expect(page.getByTestId("game")).toHaveCount(0);
+
+  // جورچین: a right couplet (the sheet and the verdict), the question before leaving.
+  await page.getByTestId("game-jigsaw").click();
+  await expect(page.getByTestId("jigsaw-card")).toBeVisible();
+  await answerCouplet(page, "right");
+  await page.waitForTimeout(500);
+  await page.getByTestId("next").click();
+  await page.getByRole("button", { name: "بستن" }).click();
+  await page.getByRole("dialog").waitFor();
+  await page.waitForTimeout(500);
+  await page.getByRole("button", { name: "برو بیرون" }).click();
+  await expect(page.getByTestId("game")).toHaveCount(0);
 
   const { longest, animations } = await page.evaluate(() => (window as unknown as { __moves: () => Moves }).__moves());
   expect(longest.ms, `${longest.what} moved for ${longest.ms} ms`).toBeLessThanOrEqual(170);

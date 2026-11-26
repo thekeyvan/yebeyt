@@ -179,3 +179,26 @@ export const DiceIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) => (
     <circle cx="9" cy="15" r="1.3" />
   </IconBox>
 );
+
+// The games' icons (Games/GameChrome.swift).
+
+/** The bulb: the hint of a game. */
+export const BulbIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) => (
+  <IconBox size={size} lineWidth={lineWidth} fill={fill}>
+    <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+  </IconBox>
+);
+
+/** بُر زدن برچسب‌ها */
+export const ShuffleIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) => (
+  <IconBox size={size} lineWidth={lineWidth} fill={fill}>
+    <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+  </IconBox>
+);
+
+/** The clock of the timer capsule. */
+export const TimerIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) => (
+  <IconBox size={size} lineWidth={lineWidth} fill={fill}>
+    <path d="M4 13a8 8 0 1 0 16 0a8 8 0 1 0-16 0zM12 9v4l2.5 2M9.5 2.5h5" />
+  </IconBox>
+);

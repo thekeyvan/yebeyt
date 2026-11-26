@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Page } from "../../../components/shell/Page";
+import { GamesScreen } from "../../../components/games/GamesScreen";
 
 export const metadata: Metadata = { title: "بازی" };
 
 export default function GamesPage() {
-  return <Page title="بازی" />;
+  return <GamesScreen />;
 }

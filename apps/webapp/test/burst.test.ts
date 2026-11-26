@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { frame, pieces, type BurstAction } from "../lib/burst";
-import { bursts, coverAway, coverDrop, coverRise, popKeyframes, spring, turningOff, turningOn } from "../lib/motion";
+import { bigStyle, frame, pieces, type BurstAction } from "../lib/burst";
+import { bursts, countUp, coverAway, coverDrop, coverRise, popKeyframes, shake, spring, turningOff, turningOn } from "../lib/motion";
 
 describe("burst pieces (Design/Burst.swift)", () => {
   it("gives each action its own kind of piece, tint and count", () => {
@@ -44,6 +44,49 @@ describe("burst pieces (Design/Burst.swift)", () => {
   it("fans a keep and a like upward, and circles a repost", () => {
     for (const piece of [...pieces("keep", 3), ...pieces("like", 3)]) expect(Math.sin(piece.angle)).toBeLessThan(0.1);
     expect(pieces("repost", 3).every((piece) => piece.flight === "orbit")).toBe(true);
+  });
+});
+
+describe("the bursts of a result", () => {
+  it("pops 4 to 6 green ticks from a right answer, out in every direction", () => {
+    for (let seed = 0; seed < 20; seed++) {
+      const ticks = pieces("right", seed);
+      expect(ticks.length).toBeGreaterThanOrEqual(4);
+      expect(ticks.length).toBeLessThanOrEqual(6);
+      expect(ticks.every((piece) => piece.kind === "tick" && piece.tint === "green" && piece.flight === "radial")).toBe(true);
+    }
+    const angles = pieces("right", 3).map((piece) => piece.angle);
+    expect(Math.max(...angles) - Math.min(...angles)).toBeGreaterThan(Math.PI);
+  });
+
+  it("throws 6 to 8 pieces of confetti, dots, dashes and squares, in the sticker colours, from a won round", () => {
+    const kinds = new Set<string>();
+    const tints = new Set<string>();
+    for (let seed = 0; seed < 60; seed++) {
+      const confetti = pieces("win", seed);
+      expect(confetti.length).toBeGreaterThanOrEqual(6);
+      expect(confetti.length).toBeLessThanOrEqual(8);
+      for (const piece of confetti) {
+        kinds.add(piece.kind);
+        tints.add(piece.tint);
+      }
+    }
+    expect([...kinds].sort()).toEqual(["dash", "dot", "square"]);
+    expect([...tints].sort()).toEqual(["amber", "fire", "green", "lapis", "magenta"]);
+  });
+
+  it("flies the confetti of a result 74 out, bigger than the small one", () => {
+    const big = pieces("win", 4, bigStyle);
+    expect(Math.max(...big.map((piece) => piece.distance))).toBeLessThanOrEqual(74);
+    expect(Math.max(...big.map((piece) => piece.distance))).toBeGreaterThan(0.7 * 74);
+    expect(Math.max(...pieces("win", 4).map((piece) => piece.distance))).toBeLessThanOrEqual(34);
+    expect(Math.max(...big.map((piece) => piece.size))).toBeGreaterThan(Math.max(...pieces("win", 4).map((piece) => piece.size)));
+  });
+
+  it("turns a square as it flies", () => {
+    const square = pieces("win", 1).find((piece) => piece.spin !== 0)!;
+    expect(frame(square, 0.5).rotation).not.toBe(0);
+    expect(frame(square, 0).rotation).toBe(0);
   });
 });
 
@@ -94,6 +137,20 @@ describe("the pop of an icon", () => {
   it("makes particles only for an action that has some, and not under Reduce Motion", () => {
     expect([bursts("like", "full"), bursts("keep", "full"), bursts("repost", "full"), bursts("send", "full")]).toEqual([true, true, true, false]);
     expect(bursts("like", "reduced")).toBe(false);
+  });
+});
+
+describe("the shake of a wrong answer and the count-up", () => {
+  it("goes side to side over 0.45 s and is still under Reduce Motion", () => {
+    const { keyframes, duration } = popKeyframes(shake("full"));
+    expect(keyframes.x).toEqual([0, 14, -14, 10, -6, 3, 0]);
+    expect(duration).toBeCloseTo(0.45, 5);
+    expect(popKeyframes(shake("reduced")).keyframes).toEqual({});
+  });
+
+  it("counts up in half a second, and at once under Reduce Motion", () => {
+    expect(countUp("full")).toEqual({ duration: 0.5, ease: "easeOut" });
+    expect(countUp("reduced")).toEqual({ duration: 0 });
   });
 });
 

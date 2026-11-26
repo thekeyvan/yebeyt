@@ -307,6 +307,8 @@ for (const path of screens) {
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     await expect(page.locator("main")).toBeVisible();
     await expect(page.locator("main [aria-busy=true]")).toHaveCount(0);
+    // The search page has its results only once the couplets of the books have loaded; scrolled to the end before that, the end of a page that then grows is far below.
+    if (path.startsWith("/explore/search")) await expect(page.locator("[data-testid^=couplet-]").first()).toBeVisible();
     await page.waitForTimeout(400);
     const { scrollWidth, clientWidth } = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }));
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth);

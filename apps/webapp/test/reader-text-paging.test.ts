@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { persianClock } from "../lib/persian";
 import { above, below, clamp, dragStep, keyStep, nearestToTop, next, previous } from "../lib/reader/paging";
-import { caption, clock, copyText, progress, progressLabel, shareText, shortTitle, subtitle } from "../lib/reader/text";
+import { caption, copyText, progress, progressLabel, shareText, shortTitle, subtitle } from "../lib/reader/text";
 
 describe("ReaderText", () => {
   const couplet = { m1: "بده ساقی می باقی", m2: "کنار آب رکن آباد" };
@@ -39,7 +40,7 @@ describe("ReaderText", () => {
   });
 
   it("writes the time of the seek bar in minutes and seconds, in Persian digits", () => {
-    expect([clock(0), clock(42.9), clock(88), clock(600), clock(-3)]).toEqual(["۰:۰۰", "۰:۴۲", "۱:۲۸", "۱۰:۰۰", "۰:۰۰"]);
+    expect([persianClock(0), persianClock(42.9), persianClock(88), persianClock(600), persianClock(-3)]).toEqual(["۰:۰۰", "۰:۴۲", "۱:۲۸", "۱۰:۰۰", "۰:۰۰"]);
   });
 });
 

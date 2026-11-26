@@ -4,19 +4,20 @@ import { motion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { isRightToLeft, settle, slideFrom, useVariant } from "../../lib/motion";
+import { isGamePage } from "../../lib/games/kinds";
 import { trackNavigation } from "../../lib/nav";
 import { tabAt } from "../../lib/tabs";
 import { TabBar } from "../ui/TabBar";
 
-/** A poem opened from inside the app is a cover over the page it came from (`reader`); the page stays under it. */
-const covers = (pathname: string): boolean => pathname.startsWith("/poem/");
+/** A poem opened from inside the app is a cover over the page it came from (`reader`), and so is a game (`game`); the page stays under it. */
+const covers = (pathname: string): boolean => pathname.startsWith("/poem/") || isGamePage(pathname);
 
 /**
  * The tab bar and the page of the open tab. Switching tabs slides the new page in 40 from its tab's side (mirrored in
- * right-to-left) and never fades; the page that leaves is simply gone, as the router swaps it at once. While the reader
- * covers the page, the page and the tab bar stay as they are, and nothing under the cover can be reached.
+ * right-to-left) and never fades; the page that leaves is simply gone, as the router swaps it at once. While the reader or a game
+ * covers the page, the page and the tab bar stay as they are, and nothing under the cover can be reached. The reader opens over a game too.
  */
-export function Shell({ children, reader }: { children: ReactNode; reader: ReactNode }) {
+export function Shell({ children, reader, game }: { children: ReactNode; reader: ReactNode; game: ReactNode }) {
   const pathname = usePathname();
   const covered = covers(pathname);
   const [under, setUnder] = useState(pathname);
@@ -39,6 +40,7 @@ export function Shell({ children, reader }: { children: ReactNode; reader: React
       <div inert={covered}>
         <TabBar current={current} />
       </div>
+      {game}
       {reader}
     </>
   );
