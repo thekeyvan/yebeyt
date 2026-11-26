@@ -7,7 +7,7 @@ import { normalize } from "../../lib/library/normalize";
 import { searchHref } from "../../lib/library/routes";
 import { isEmpty, search, type CoupletCorpus } from "../../lib/library/search";
 import { Screen } from "../shell/Screen";
-import { WithLibrary } from "./WithLibrary";
+import { LoadFailed, WithLibrary } from "./WithLibrary";
 import { BackButton, SearchBox } from "./chrome";
 import { BookRow, CoupletRow, NothingFound, PoetRow } from "./rows";
 
@@ -20,7 +20,7 @@ const Heading = ({ children }: { children: string }) => <h2 className="pt-2.5 te
 export function SearchScreen({ initial }: { initial: string }) {
   const [query, setQuery] = useState(initial);
   const [settled, setSettled] = useState(initial);
-  const { value: corpus } = useCorpus();
+  const { value: corpus, failed, retry } = useCorpus();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -32,14 +32,14 @@ export function SearchScreen({ initial }: { initial: string }) {
 
   return (
     <WithLibrary>
-      {({ library }) => <Found library={library} query={query} settled={settled} corpus={corpus} onQuery={setQuery} />}
+      {({ library }) => <Found library={library} query={query} settled={settled} corpus={corpus} failed={failed} onRetry={retry} onQuery={setQuery} />}
     </WithLibrary>
   );
 }
 
-type FoundProps = { library: Library; query: string; settled: string; corpus: CoupletCorpus | undefined; onQuery: (text: string) => void };
+type FoundProps = { library: Library; query: string; settled: string; corpus: CoupletCorpus | undefined; failed: boolean; onRetry: () => void; onQuery: (text: string) => void };
 
-function Found({ library, query, settled, corpus, onQuery }: FoundProps) {
+function Found({ library, query, settled, corpus, failed, onRetry, onQuery }: FoundProps) {
   const results = useMemo(() => (normalize(settled) === "" ? undefined : search(library, settled, corpus)), [library, settled, corpus]);
   return (
     <Screen
@@ -51,6 +51,7 @@ function Found({ library, query, settled, corpus, onQuery }: FoundProps) {
       }
     >
       <div className="flex flex-col gap-2 pt-1.5">
+        {failed && <LoadFailed title="بیت‌ها باز نشد" onRetry={onRetry} />}
         {results && corpus && isEmpty(results) && <NothingFound />}
         {results && results.poets.length > 0 && (
           <>

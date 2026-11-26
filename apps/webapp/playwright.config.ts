@@ -20,8 +20,9 @@ export default defineConfig({
     command: `pnpm build && pnpm exec next start -p ${port}`,
     url: `http://localhost:${port}`,
     timeout: 240_000,
-    // The debug pages (/dev/stickers) are only in a build made with this.
-    env: { NEXT_PUBLIC_DEV_PAGES: "1" },
+    // The debug pages (/dev/stickers) are only in a build made with NEXT_PUBLIC_DEV_PAGES. The /api route asks a server that is not there, so no
+    // test reaches the network (a test that wants an answer routes the request itself).
+    env: { NEXT_PUBLIC_DEV_PAGES: "1", API_URL: "http://127.0.0.1:9" },
   },
   projects: (["chromium", "webkit"] as const).flatMap((browser) =>
     sizes.map(({ name, viewport, phone }) => ({

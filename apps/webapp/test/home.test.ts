@@ -75,23 +75,22 @@ describe("the pick of a day", () => {
   });
 });
 
-describe("the day and the date line (Tehran, as the whole app counts days)", () => {
-  it("changes the day number at Tehran's midnight", () => {
-    const before = new Date("2026-11-22T20:29:00Z"); // 23:59 in Tehran
-    const after = new Date("2026-11-22T20:31:00Z"); // 00:01 on the 23rd
-    expect(dayNumber(after)).toBe(dayNumber(before) + 1);
-    expect(dayNumber(new Date("1970-01-01T12:00:00Z"))).toBe(0);
+describe("the day and the date line (the device's day, as on the phone)", () => {
+  it("changes the day number at the device's midnight", () => {
+    expect(dayNumber(new Date(2026, 10, 23, 0, 1))).toBe(dayNumber(new Date(2026, 10, 22, 23, 59)) + 1);
+    expect(dayNumber(new Date(2026, 10, 23, 12))).toBe(dayNumber(new Date(2026, 10, 23, 0, 1)));
   });
 
-  it("can count by another time zone, as the phone's local midnight", () => {
+  it("can count by a given time zone", () => {
     const before = new Date("2026-11-22T22:59:00Z"); // 23:59 in Berlin
     expect(dayNumber(new Date("2026-11-22T23:01:00Z"), "Europe/Berlin")).toBe(dayNumber(before, "Europe/Berlin") + 1);
+    expect(dayNumber(new Date("1970-01-01T12:00:00Z"), "UTC")).toBe(0);
   });
 
   it("writes the weekday, day and month in the Persian calendar", () => {
-    const monday = new Date("2026-11-23T11:00:00Z");
-    expect(dateLine(monday, "Europe/Berlin")).toBe("دوشنبه ۲ آذر");
-    expect(dateLine(new Date("2026-11-15T09:00:00Z"))).toBe("یکشنبه ۲۴ آبان");
+    expect(dateLine(new Date("2026-11-23T11:00:00Z"), "Europe/Berlin")).toBe("دوشنبه ۲ آذر");
+    expect(dateLine(new Date(2026, 10, 23, 12))).toBe("دوشنبه ۲ آذر");
+    expect(dateLine(new Date(2026, 10, 15, 12))).toBe("یکشنبه ۲۴ آبان");
   });
 });
 
@@ -194,10 +193,10 @@ describe("the day a debug build can be told it is (-beytToday)", () => {
   afterEach(() => vi.unstubAllEnvs());
   const told = (key: string | null) => ({ getItem: () => key });
 
-  it("is the day in sessionStorage, at noon in Tehran, while developing", () => {
+  it("is the day in sessionStorage, at noon on the device's clock, while developing", () => {
     vi.stubEnv("NODE_ENV", "development");
-    expect(today(told("2026-11-23")).toISOString()).toBe("2026-11-23T08:30:00.000Z");
-    expect(dayNumber(today(told("2026-11-23")))).toBe(dayNumber(new Date("2026-11-23T10:00:00+03:30")));
+    expect(today(told("2026-11-23")).getTime()).toBe(new Date(2026, 10, 23, 12).getTime());
+    expect(dayNumber(today(told("2026-11-23")))).toBe(dayNumber(new Date(2026, 10, 23, 0, 1)));
   });
 
   it("is now when it is told nothing or something that is no date", () => {
@@ -210,6 +209,6 @@ describe("the day a debug build can be told it is (-beytToday)", () => {
     vi.stubEnv("NEXT_PUBLIC_DEV_PAGES", "");
     expect(Math.abs(today(told("2026-11-23")).getTime() - Date.now())).toBeLessThan(1000);
     vi.stubEnv("NEXT_PUBLIC_DEV_PAGES", "1");
-    expect(today(told("2026-11-23")).toISOString()).toBe("2026-11-23T08:30:00.000Z");
+    expect(today(told("2026-11-23")).getTime()).toBe(new Date(2026, 10, 23, 12).getTime());
   });
 });

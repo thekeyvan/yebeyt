@@ -9,7 +9,7 @@ The web app does everything the iOS app does, so people can read and play in a b
 - **Mobile first.** On a phone, each screen follows its iOS board in `design/canvas/project/`. Wider screens use the standard responsive patterns, with no new boards:
   - from 768 px, the content is a centred column (max 560 px; reader and games 640 px) on the dotted paper;
   - from 1024 px, the bottom tab bar becomes a right-hand side rail (RTL);
-  - from 1024 px, messages and the library show list and detail side by side;
+  - from 1024 px, messages and the library show list and detail side by side (the library's is deferred to W7, built together with the messages' two panes; until then the library is the one column at every width);
   - bottom sheets become centred dialogs at ≥ 768 px, with the same content.
 - **Design system: Tailwind v4 + UI SDK + Motion, with our own sticker components.**
   - The Tailwind theme (`@theme`) is generated from `packages/tokens/tokens.json` by `tools/make_tokens.py`, like the Swift and CSS files: colours, fonts, sticker border widths, radii and shadows. Never hand-edit it.

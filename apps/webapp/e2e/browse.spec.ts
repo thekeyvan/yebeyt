@@ -337,3 +337,26 @@ test("the web app's /api route refuses everything but the poet pictures, travers
   }
   expect((await request.post("/api/v1/poets/pictures")).status()).toBe(405);
 });
+
+test("«برگشت» goes back inside the app, and from a screen opened by its link, or once back at it, goes to the screen above", async ({ page }) => {
+  await openApp(page, "/explore/poet/saadi");
+  await page.getByRole("link", { name: "گلستان" }).first().click();
+  await expect(page).toHaveURL((url) => url.pathname.startsWith("/explore/book/saadi"));
+  await page.getByRole("button", { name: "برگشت" }).click();
+  await expect(page).toHaveURL((url) => url.pathname === "/explore/poet/saadi");
+  // The poet's page was opened by its link: there is no page of ours before it, and the app must not be left.
+  await page.getByRole("button", { name: "برگشت" }).click();
+  await expect(page).toHaveURL((url) => url.pathname === "/explore");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("کاوش");
+});
+
+test("when the couplets do not load, a mood and the search say so and offer «دوباره»", async ({ page }) => {
+  await page.route("**/data/book-24.json", (route) => route.abort());
+  await openApp(page, "/explore/mood/love");
+  await expect(page.getByRole("alert").filter({ hasText: "بیت‌ها باز نشد" })).toBeVisible();
+  await page.goto("/explore/search?q=ساقی");
+  await expect(page.getByRole("alert").filter({ hasText: "بیت‌ها باز نشد" })).toBeVisible();
+  await page.unroute("**/data/book-24.json");
+  await page.getByRole("button", { name: "دوباره" }).click();
+  await expect(page.locator("[data-testid^=couplet-]").first()).toBeVisible();
+});

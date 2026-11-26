@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: Context): Promise<Respon
   const match = request.headers.get("if-none-match");
   if (match) headers.set("if-none-match", match);
   try {
-    const upstream = await fetch(`${apiUrl()}${path}${upstreamQuery(new URL(request.url).searchParams)}`, { headers, signal: AbortSignal.timeout(timeoutMs), cache: "no-store" });
+    const upstream = await fetch(`${apiUrl()}${path}${upstreamQuery(new URL(request.url).searchParams)}`, { headers, signal: AbortSignal.timeout(timeoutMs), cache: "no-store", redirect: "manual" });
     if (![200, 304, 404].includes(upstream.status)) return new Response(null, { status: 502 });
     const answer = new Headers();
     for (const name of passed) {

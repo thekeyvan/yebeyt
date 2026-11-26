@@ -23,7 +23,7 @@ export function Shell({ children, reader }: { children: ReactNode; reader: React
   if (!covered && under !== pathname) setUnder(pathname);
   const current = tabAt(under);
   const v = useVariant();
-  useEffect(() => trackNavigation(pathname), [pathname]);
+  useEffect(trackNavigation, [pathname]);
   const previous = useRef<number | null>(null);
   useEffect(() => {
     if (!covered) previous.current = current;

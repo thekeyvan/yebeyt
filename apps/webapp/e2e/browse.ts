@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { stubNetwork } from "./reader";
 
-/** The Tehran day the pages are told it is (`-beytToday`): Monday 2 Azar 1405. Its couplet is ghazal 121 of Hafez, couplet 7 (index 6); after one «رد کن», ghazal 195, couplet 4. */
+/** The day the pages are told it is (`-beytToday`): Monday 2 Azar 1405. Its couplet is ghazal 121 of Hafez, couplet 7 (index 6); after one «رد کن», ghazal 195, couplet 4. */
 export const today = "2026-11-23";
 export const todaysCouplet = { path: "/hafez/ghazal/sh121", index: 6, text: "بَلاگردانِ جان و تن" };
 export const nextCouplet = { path: "/hafez/ghazal/sh195", index: 3, text: "گُذار کُن چو صَبا" };

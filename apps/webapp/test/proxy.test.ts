@@ -53,6 +53,7 @@ describe("the proxy route", () => {
     expect(new Headers(init.headers).get("if-none-match")).toBe('"abc"');
     expect(new Headers(init.headers).get("cookie")).toBeNull();
     expect(init.signal).toBeInstanceOf(AbortSignal);
+    expect(init.redirect).toBe("manual");
     expect(response.status).toBe(200);
     expect(response.headers.get("etag")).toBe('"abc"');
     expect(response.headers.get("cache-control")).toBe("public, max-age=86400");
@@ -75,6 +76,14 @@ describe("the proxy route", () => {
     expect((await call("/api/v1/me")).status).toBe(404);
     expect((await call("/api/v1/poets/%2e%2e/picture")).status).toBe(404);
     expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("does not follow a redirect of the server: it is a 502, not another address", async () => {
+    const upstream = vi.fn(async () => new Response(null, { status: 302, headers: { location: "http://evil.example/x" } }));
+    vi.stubGlobal("fetch", upstream);
+    const response = await call("/api/v1/poets/hafez/picture");
+    expect(response.status).toBe(502);
+    expect(response.headers.get("location")).toBeNull();
   });
 
   it("answers 502 when the server cannot be reached or fails", async () => {
