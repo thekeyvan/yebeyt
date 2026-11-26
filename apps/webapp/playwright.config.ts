@@ -1,11 +1,8 @@
-import { execFileSync } from "node:child_process";
 import { defineConfig, devices } from "@playwright/test";
 
-// The tests run against the production build (`next build && next start`) on a port nobody uses. Every process that
-// loads this file (the runner and each worker) must see the same one, so it is picked once and kept in the environment.
-process.env.E2E_PORT ??= execFileSync(process.execPath, ["-e", "const s=require('net').createServer().listen(0,()=>{console.log(s.address().port);s.close()})"])
-  .toString()
-  .trim();
+// The tests run against the production build (`next build && next start`) on a fixed port; E2E_PORT picks another.
+// A port chosen from the system before the build could be taken by something else before the server starts.
+process.env.E2E_PORT ??= "4173";
 const port = Number(process.env.E2E_PORT);
 
 const sizes = [

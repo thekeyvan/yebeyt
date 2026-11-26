@@ -36,11 +36,14 @@ function BottomSheet({ open, onOpenChange, title, description, children }: Sheet
     <Drawer open={open} onOpenChange={onOpenChange} driver="pointer">
       <DrawerBackdrop className={backdrop} />
       <DrawerContent
-        className={`${surface} relative mx-auto flex max-h-[85dvh] w-full max-w-xl flex-col items-center gap-4 overflow-y-auto rounded-t-[30px] pt-3 pb-[max(16px,env(safe-area-inset-bottom))] after:absolute after:inset-x-0 after:top-full after:h-24 after:bg-white`}
+        className={`${surface} relative mx-auto flex max-h-[85dvh] w-full max-w-xl flex-col items-center gap-4 rounded-t-[30px] pt-3 pb-[max(16px,env(safe-area-inset-bottom))] after:absolute after:inset-x-0 after:top-full after:h-24 after:bg-white`}
       >
         <div aria-hidden className="h-[5px] w-10 shrink-0 rounded-pill bg-ring" data-testid="grabber" />
-        <Words Title={DrawerTitle} Description={DrawerDescription} title={title} description={description} />
-        {children}
+        {/* Only this part scrolls (when the content is more than fits): the white strip under the sheet, for overscroll, is outside it. */}
+        <div className="flex min-h-0 w-full flex-col items-center gap-4 overflow-y-auto">
+          <Words Title={DrawerTitle} Description={DrawerDescription} title={title} description={description} />
+          {children}
+        </div>
       </DrawerContent>
     </Drawer>
   );

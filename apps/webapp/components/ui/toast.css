@@ -11,6 +11,13 @@
   outline: none;
 }
 
+/* From 1024 px the tab bar is a rail at the side, so only the usual gap is left below. */
+@media (min-width: 1024px) {
+  [data-slot="toast-region"] {
+    margin-bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+}
+
 [data-slot="toast"] {
   position: absolute;
   inset-inline: 0;

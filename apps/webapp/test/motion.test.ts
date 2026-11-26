@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bouncy, coverRise, press, pressedScale, pressTransition, pop, settle, slideFrom, spring, tabSlide, toastArrival, variant } from "../lib/motion";
+import { bouncy, press, pressedScale, pressTransition, pop, settle, slideFrom, spring, tabSlide, toastArrival, variant } from "../lib/motion";
 
 describe("springs", () => {
   it("turn an iOS response and damping into Motion's stiffness and damping", () => {
@@ -11,7 +11,6 @@ describe("springs", () => {
   it("are the values of Motion.swift", () => {
     expect(bouncy).toEqual(spring(0.35, 0.55));
     expect(press).toEqual(spring(0.3, 0.5));
-    expect(coverRise).toEqual(spring(0.4, 0.9));
   });
 });
 

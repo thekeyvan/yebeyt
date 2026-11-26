@@ -101,6 +101,32 @@ test("the sheet follows the finger down", async ({ page, browserName }) => {
   expect(during - top).toBeLessThan(90);
 });
 
+test("a short sheet does not scroll, and its grabber stays in view after a swipe up", async ({ page, browserName }) => {
+  const { width, height } = page.viewportSize()!;
+  test.skip(width >= 768, "a centred dialog has no grabber to swipe");
+  const { sheet } = await openSheet(page);
+  const scrolls = await sheet.evaluate((dialog) => [dialog, ...dialog.querySelectorAll("*")].filter((el) => el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY !== "visible").length);
+  expect(scrolls).toBe(0);
+  const top = (await sheet.boundingBox())!.y;
+  await drag(page, browserName, { x: width / 2, y: top + 30 }, { x: width / 2, y: top - 150 });
+  await page.waitForTimeout(600);
+  await expect(page.getByTestId("grabber")).toBeInViewport();
+  const rest = (await sheet.boundingBox())!;
+  expect(rest.y + rest.height).toBeLessThanOrEqual(height + 1);
+  expect(await sheet.evaluate((dialog) => dialog.scrollTop)).toBe(0);
+});
+
+test("the toast sits above the bar on a phone, and just above the edge beside the rail", async ({ page }) => {
+  const { width, height } = page.viewportSize()!;
+  await page.goto("/dev/stickers");
+  await page.getByRole("button", { name: "نشون بده" }).click();
+  const toast = page.getByRole("region", { name: "اعلان‌ها" }).locator('[data-slot="toast"]');
+  await expect(toast).toBeVisible();
+  await page.waitForTimeout(700);
+  const box = (await toast.boundingBox())!;
+  expect(height - (box.y + box.height)).toBeCloseTo(width >= 1024 ? 18 : 96, -1);
+});
+
 test("the confirm sheet has the safe button on the right and the red one on the left", async ({ page }) => {
   await page.goto("/dev/stickers");
   await page.getByRole("button", { name: "باز کردن پرسش" }).click();

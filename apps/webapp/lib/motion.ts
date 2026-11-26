@@ -18,8 +18,6 @@ export function spring(response: number, dampingFraction: number): { type: "spri
 export const bouncy = spring(0.35, 0.55);
 /** A pressed button letting go: springs back past 1. */
 export const press = spring(0.3, 0.5);
-/** A cover as big as the screen rises firmly, so it settles without going past the top. */
-export const coverRise = spring(0.4, 0.9);
 
 /** How far a page slides in: from the side of its tab (or segment). */
 export const tabSlide = 40;

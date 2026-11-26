@@ -26,7 +26,7 @@ export default defineRailway(() => {
 
   const webapp = service("webapp", {
     source: { repo: "thekeyvan/yebeyt", branch: "main" },
-    build: { buildEnvironment: "V3", builder: "DOCKERFILE", dockerfilePath: "apps/webapp/Dockerfile", watchPatterns: ["apps/webapp/**", "packages/tokens/**", "assets/fonts/**", "apps/ios/Yebeyt/Resources/Data/**", "pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"] },
+    build: { buildEnvironment: "V3", builder: "DOCKERFILE", dockerfilePath: "apps/webapp/Dockerfile", watchPatterns: ["apps/webapp/**", "packages/tokens/**", "assets/fonts/**", "pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"] },
     healthcheckPath: "/",
     healthcheckTimeout: 60,
     replicas: { "europe-west4-drams3a": 1 },

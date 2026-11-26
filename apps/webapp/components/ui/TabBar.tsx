@@ -98,7 +98,7 @@ export function TabBar({ current, unread = 0 }: { current: number | null; unread
   return (
     <nav
       aria-label="تب‌ها"
-      className="fixed inset-x-[max(14px,env(safe-area-inset-left))] bottom-[calc(18px+env(safe-area-inset-bottom))] z-30 grid h-[70px] grid-cols-5 items-center rounded-tab-bar bg-white pt-1.5 shadow-tab-bar lg:inset-x-auto lg:start-4 lg:top-1/2 lg:bottom-auto lg:flex lg:h-auto lg:w-24 lg:-translate-y-1/2 lg:flex-col lg:gap-6 lg:py-6"
+      className="fixed start-[max(14px,env(safe-area-inset-right))] end-[max(14px,env(safe-area-inset-left))] bottom-[calc(18px+env(safe-area-inset-bottom))] z-30 grid h-[70px] grid-cols-5 items-center rounded-tab-bar bg-white pt-1.5 shadow-tab-bar lg:start-4 lg:end-auto lg:top-1/2 lg:bottom-auto lg:flex lg:h-auto lg:w-24 lg:-translate-y-1/2 lg:flex-col lg:gap-6 lg:py-6"
     >
       {tabs.map((tab, index) => {
         const on = current === index;
