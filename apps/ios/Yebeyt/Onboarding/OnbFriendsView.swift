@@ -10,7 +10,7 @@ struct OnbFriendsView: View {
     private var username: String { account.session.user?.username ?? "" }
 
     var body: some View {
-        VStack(spacing: 16) {
+        OnbScreen {
             HStack {
                 Button("بعداً") { onboarding.finish() }
                     .font(.ui(13, weight: .bold)).foregroundStyle(Color(hex: 0x8A8698))
@@ -18,23 +18,18 @@ struct OnbFriendsView: View {
                     .accessibilityIdentifier("onbLater")
                 Spacer()
             }
-            OnbHeading(title: "دوستات رو پیدا کن", text: "شعر با رفیق قشنگ‌تره. هر کی رو پیدا کنی، بیت‌هایی که به اشتراک می‌ذاره توی خونه‌ت میاد.")
-                .frame(maxWidth: .infinity, alignment: .leading)
-            ScrollView {
-                VStack(spacing: 16) {
-                    inviteCard
-                    OnboardingPeopleSearch()
-                }
-                .padding(.vertical, 4)
+        } content: { density in
+            VStack(spacing: density.gap) {
+                OnbHeading(title: "دوستات رو پیدا کن", text: "شعر با رفیق قشنگ‌تره. هر کی رو پیدا کنی، بیت‌هایی که به اشتراک می‌ذاره توی خونه‌ت میاد.")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                inviteCard
+                OnboardingPeopleSearch()
             }
-            .scrollIndicators(.hidden)
-            .scrollClipDisabled()
-            .dismissesKeyboard()
+        } footer: {
             Button("بریم خونه") { onboarding.finish() }
                 .buttonStyle(OnbButtonStyle())
                 .accessibilityIdentifier("onbHome")
         }
-        .onbPage()
         .sheet(isPresented: $sharing) { ShareSheet(text: InviteLink.url(username: username)).presentationDetents([.medium, .large]) }
     }
 

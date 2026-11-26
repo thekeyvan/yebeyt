@@ -9,7 +9,7 @@ struct OnbButtonStyle: ButtonStyle {
             .font(.title(22))
             .foregroundStyle(Tokens.Colors.white)
             .padding(.top, 4)
-            .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
+            .frame(maxWidth: .infinity, minHeight: 50)
             .sticker(fill: Tokens.Colors.lapis, radius: 20, border: 4, shadow: ShadowToken(y: 6, blur: 16, opacity: 0.3))
             .opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : 0.45)
             .pressSquish(configuration.isPressed)
@@ -61,9 +61,60 @@ struct OnbHeading: View {
     }
 }
 
-extension View {
-    /// An onboarding page: the board's side margins on dotted paper.
-    func onbPage() -> some View {
-        padding(.horizontal, 22).padding(.top, 6).padding(.bottom, 8).dottedPaper()
+/// How tightly an onboarding step is set: `compact` is for screens too short for the board's sizes (an iPhone SE is
+/// 667 pt tall), with less room between the parts and smaller pictures.
+struct OnbDensity: Equatable {
+    var compact = false
+    /// The height of the part that scrolls, for a step that fills it (the welcome's picture).
+    var room: CGFloat = 0
+
+    /// The room between the parts of a step.
+    var gap: CGFloat { compact ? 10 : 16 }
+    /// A poet's picture in the taste grid.
+    var poetSize: CGFloat { compact ? 56 : 72 }
+    var poetGridPadding: CGFloat { compact ? 12 : 18 }
+    var poetGridGap: CGFloat { compact ? 10 : 14 }
+    var gameIconSize: CGFloat { compact ? 44 : 50 }
+}
+
+/// An onboarding page on dotted paper with the board's side margins: the header (skip, back) and the main button stay
+/// where they are, and what is between them scrolls only when it is taller than the room (a small phone, a large text
+/// size). `content` is given the density to set itself by.
+struct OnbScreen<Header: View, Content: View, Footer: View>: View {
+    /// The board's sizes need about 700 pt between the status bar and the home indicator; below that (an iPhone SE) set them tighter.
+    static var compactBelow: CGFloat { 700 }
+
+    /// The scrolling part is cut at its edges, so the shadows of the cards at its ends get their room inside it (taken
+    /// from the gaps next to it).
+    private static var shadowRoom: (top: CGFloat, bottom: CGFloat) { (4, 8) }
+
+    @ViewBuilder let header: () -> Header
+    @ViewBuilder let content: (OnbDensity) -> Content
+    @ViewBuilder let footer: () -> Footer
+    /// The tallest the screen has been, so the keyboard coming up does not change the density.
+    @State private var tallest: CGFloat = 0
+
+    var body: some View {
+        GeometryReader { screen in
+            let compact = max(tallest, screen.size.height) < Self.compactBelow
+            let density = OnbDensity(compact: compact)
+            VStack(spacing: 0) {
+                header().padding(.horizontal, 22).padding(.top, 6).padding(.bottom, density.gap - Self.shadowRoom.top)
+                GeometryReader { room in
+                    ScrollView {
+                        content(OnbDensity(compact: compact, room: room.size.height))
+                            .padding(.horizontal, 22)
+                            .padding(.top, Self.shadowRoom.top).padding(.bottom, Self.shadowRoom.bottom)
+                            .frame(minHeight: room.size.height, alignment: .top)
+                    }
+                    .scrollBounceBehavior(.basedOnSize)
+                    .scrollIndicators(.hidden)
+                    .dismissesKeyboard()
+                }
+                footer().padding(.horizontal, 22).padding(.top, density.gap - Self.shadowRoom.bottom).padding(.bottom, 8)
+            }
+            .onChange(of: screen.size.height, initial: true) { _, height in tallest = max(tallest, height) }
+        }
+        .dottedPaper()
     }
 }

@@ -6,7 +6,7 @@ struct OnbWelcomeView: View {
     @Environment(Library.self) private var library
 
     var body: some View {
-        VStack(spacing: 16) {
+        OnbScreen {
             HStack {
                 Button("از قبل حساب داری؟ وارد شو") { onboarding.signIn() }
                     .font(.ui(14, weight: .bold)).foregroundStyle(Tokens.Colors.lapis)
@@ -14,16 +14,19 @@ struct OnbWelcomeView: View {
                     .accessibilityIdentifier("onbHaveAccount")
                 Spacer()
             }
-            hero
-            Button("بزن بریم") { onboarding.next() }
-                .buttonStyle(OnbButtonStyle())
-                .accessibilityIdentifier("onbStart")
-            Text("بدون حساب هم می‌شه شروع کرد").font(.ui(12)).foregroundStyle(Color(hex: 0x8A8698)).padding(.top, -6)
+        } content: { density in
+            hero(minHeight: density.room)
+        } footer: {
+            VStack(spacing: 10) {
+                Button("بزن بریم") { onboarding.next() }
+                    .buttonStyle(OnbButtonStyle())
+                    .accessibilityIdentifier("onbStart")
+                Text("بدون حساب هم می‌شه شروع کرد").font(.ui(12)).foregroundStyle(Color(hex: 0x8A8698))
+            }
         }
-        .onbPage()
     }
 
-    private var hero: some View {
+    private func hero(minHeight: CGFloat) -> some View {
         ZStack {
             VStack(spacing: 18) {
                 cards
@@ -35,7 +38,7 @@ struct OnbWelcomeView: View {
             }
             decorations
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, minHeight: minHeight)
     }
 
     /// Two stickers, one blue and one orange, each with a white bar.

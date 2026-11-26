@@ -12,13 +12,23 @@ struct OnbGameView: View {
     @State private var slotFrames: [Int: CGRect] = [:]
 
     var body: some View {
-        VStack(spacing: 16) {
+        OnbScreen {
             OnbTopBar(current: 1) { onboarding.next() }
-            heading
-            if let game { play(game) } else { Spacer() }
+        } content: { density in
+            VStack(spacing: density.gap) {
+                heading(iconSize: density.gameIconSize)
+                    .padding(.bottom, density.compact ? 8 : 0)  // the card's tag rises above its top edge
+                if let game { play(game) }
+            }
+            .coordinateSpace(name: JigsawSpace.name)
+        } footer: {
+            if let game {
+                Button("بچسبون!") { game.check() }
+                    .buttonStyle(OnbButtonStyle())
+                    .disabled(!game.board.isFull || game.showsWrong)
+                    .accessibilityIdentifier("onbCheck")
+            }
         }
-        .coordinateSpace(name: JigsawSpace.name)
-        .onbPage()
         .task { await run() }
         .sensoryFeedback(.error, trigger: game?.misses) { old, new in (new ?? 0) > (old ?? 0) }
         .onChange(of: game?.showsWrong) { _, shows in
@@ -35,9 +45,9 @@ struct OnbGameView: View {
         }
     }
 
-    private var heading: some View {
+    private func heading(iconSize: CGFloat) -> some View {
         HStack(spacing: 12) {
-            GameIcon(kind: .jigsaw, size: 50)
+            GameIcon(kind: .jigsaw, size: iconSize)
             VStack(alignment: .leading, spacing: 2) {
                 Text("اولین بیتت رو بچسبون").font(.title(28)).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
                 Text("برچسب‌ها رو بکن و به ترتیب بچسبون. ۳۰ ثانیه.").font(.ui(13)).foregroundStyle(Tokens.Colors.muted)
@@ -59,11 +69,6 @@ struct OnbGameView: View {
             select: { sticker in game.edit { $0.select(sticker) } },
             drop: { sticker, point in drop(sticker, at: point, in: game) }
         )
-        Spacer(minLength: 0)
-        Button("بچسبون!") { game.check() }
-            .buttonStyle(OnbButtonStyle())
-            .disabled(!game.board.isFull || game.showsWrong)
-            .accessibilityIdentifier("onbCheck")
     }
 
     private func drop(_ sticker: JigsawSticker, at point: CGPoint, in game: OnboardingGame) {

@@ -5,29 +5,43 @@ import SwiftUI
 struct OnbAccountView: View {
     @Environment(OnboardingModel.self) private var onboarding
     @Environment(AccountModel.self) private var account
+    @Environment(\.dynamicTypeSize) private var textSize
     @State private var error: String?
 
+    /// At a large text size only the two sign-in buttons stay at the bottom; the rest goes under the benefits, to scroll to.
+    private var pinsOnlyTheButtons: Bool { textSize.isAccessibilitySize }
+
     var body: some View {
-        VStack(spacing: 16) {
+        OnbScreen {
             OnbTopBar(current: 2) { onboarding.finish() }
-            header
-            benefits
-            Spacer(minLength: 0)
+        } content: { density in
+            VStack(spacing: density.gap) {
+                header
+                benefits
+                if pinsOnlyTheButtons { later }
+            }
+        } footer: {
             VStack(spacing: 10) {
                 SignInButtons(busy: account.isSigningIn, error: error) { provider in
                     error = nil
                     Task { await signIn(provider) }
                 }
-                Button { onboarding.finish() } label: {
-                    Text("فعلاً بدون حساب").font(.ui(14, weight: .bold)).foregroundStyle(Tokens.Colors.muted)
-                        .padding(.top, 8).frame(maxWidth: .infinity, minHeight: 36)
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("onbNoAccount")
-                terms
+                if !pinsOnlyTheButtons { later }
             }
         }
-        .onbPage()
+    }
+
+    /// «فعلاً بدون حساب» and the terms under it.
+    private var later: some View {
+        VStack(spacing: 10) {
+            Button { onboarding.finish() } label: {
+                Text("فعلاً بدون حساب").font(.ui(14, weight: .bold)).foregroundStyle(Tokens.Colors.muted)
+                    .padding(.top, 8).frame(maxWidth: .infinity, minHeight: 36)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("onbNoAccount")
+            terms
+        }
     }
 
     private func signIn(_ provider: AuthProvider) async {
