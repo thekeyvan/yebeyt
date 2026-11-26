@@ -7,6 +7,9 @@ COPY apps/webapp/package.json apps/webapp/
 
 FROM base AS build
 ENV NEXT_TELEMETRY_DISABLED=1
+# The ids of the sign-in providers are public and go into the page when it is built, so Railway's variables of the same names must reach the build.
+ARG NEXT_PUBLIC_APPLE_SERVICES_ID
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
 RUN pnpm install --frozen-lockfile --filter "@yebeyt/webapp..."
 COPY apps/webapp apps/webapp
 # The build copies the fonts named in tokens.json from assets/fonts into public/fonts (packages/tokens/copy-fonts.mjs),

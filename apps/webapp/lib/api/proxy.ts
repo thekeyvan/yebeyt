@@ -4,21 +4,69 @@ const slug = /^[a-z0-9_-]{1,40}$/;
 /** The version of a picture, which makes its address new when the picture changes. */
 const version = /^[A-Za-z0-9_-]{1,64}$/;
 
-/**
- * The only paths the web app's `/api` route passes on, and only for GET (W2): the list of poet pictures and one poet's picture. `segments` are
- * the path's parts after `/api`, as Next gives them (decoded). Every part is checked on its own and the address is built from the checked
- * parts, so nothing a visitor sends can make it point anywhere else on the server. W4 widens this with the session.
- */
-export function upstreamPath(segments: string[]): string | undefined {
-  const [first, second, third, fourth, ...rest] = segments;
-  if (first !== "v1" || second !== "poets" || rest.length > 0) return undefined;
-  if (third === "pictures" && fourth === undefined) return "/v1/poets/pictures";
-  if (third !== undefined && slug.test(third) && fourth === "picture") return `/v1/poets/${third}/picture`;
-  return undefined;
-}
+/** A plain query value: short, no control characters. */
+const plain = (value: string): boolean => value.length <= 400 && !/[\u0000-\u001f\u007f]/.test(value);
 
-/** The query that goes with the path: only `v`, the picture's version. */
-export function upstreamQuery(search: URLSearchParams): string {
-  const value = search.get("v");
-  return value !== null && version.test(value) ? `?v=${value}` : "";
+type Rule = {
+  methods: readonly string[];
+  /** The path's parts after `/api`, as Next gives them (decoded), checked one by one; the path they stand for, or undefined. */
+  path: (segments: string[]) => string | undefined;
+  /** The query names passed on, each with how its value is checked (`plain` when not named). */
+  query: Readonly<Record<string, (value: string) => boolean>>;
+  /** Whether the session's access token goes with it: false for what a guest may ask. */
+  auth: boolean;
+};
+
+const exact =
+  (...parts: string[]) =>
+  (segments: string[]): string | undefined =>
+    segments.length === parts.length && parts.every((part, index) => segments[index] === part) ? `/${parts.join("/")}` : undefined;
+
+const picture = (segments: string[]): string | undefined => {
+  const [first, second, name, last, ...rest] = segments;
+  return first === "v1" && second === "poets" && name !== undefined && slug.test(name) && last === "picture" && rest.length === 0 ? `/v1/poets/${name}/picture` : undefined;
+};
+
+const reaction = (segments: string[]): string | undefined => {
+  const [first, second, kind, ...rest] = segments;
+  return first === "v1" && second === "reactions" && (kind === "like" || kind === "repost") && rest.length === 0 ? `/v1/reactions/${kind}` : undefined;
+};
+
+/**
+ * The only paths the web app's `/api` route passes on, each with its methods: the poet pictures (W2, no session) and, from W4, what the account, the
+ * divan, the reactions and the scores use, which go with the session's access token. The sign-in routes are not here (`/auth/*` makes them) and
+ * neither is the deletion of the account (W5). Every part of the path is checked on its own and the address is built from the checked parts, so
+ * nothing a visitor sends can make it point anywhere else on the server.
+ */
+const rules: readonly Rule[] = [
+  { methods: ["GET"], path: exact("v1", "poets", "pictures"), query: { v: (value) => version.test(value) }, auth: false },
+  { methods: ["GET"], path: picture, query: { v: (value) => version.test(value) }, auth: false },
+  { methods: ["GET"], path: exact("v1", "usernames", "check"), query: { u: plain }, auth: true },
+  { methods: ["GET"], path: exact("v1", "usernames", "suggestions"), query: { base: plain }, auth: true },
+  { methods: ["PUT"], path: exact("v1", "me", "username"), query: {}, auth: true },
+  { methods: ["PUT"], path: exact("v1", "me", "profile"), query: {}, auth: true },
+  { methods: ["GET", "PUT"], path: exact("v1", "me", "divan"), query: {}, auth: true },
+  { methods: ["GET"], path: exact("v1", "me", "reactions"), query: { cursor: plain }, auth: true },
+  { methods: ["PUT", "DELETE"], path: reaction, query: { key: plain }, auth: true },
+  { methods: ["POST"], path: exact("v1", "scores"), query: {}, auth: true },
+  { methods: ["POST"], path: exact("v1", "daily"), query: {}, auth: true },
+  { methods: ["GET"], path: exact("v1", "me", "stats"), query: {}, auth: true },
+  { methods: ["PUT"], path: exact("v1", "me", "progress"), query: {}, auth: true },
+];
+
+/** Where a request goes on the server (path and query), and whether it carries the session; undefined for anything not allowed. */
+export function upstreamRoute(method: string, segments: string[], search: URLSearchParams): { path: string; auth: boolean } | undefined {
+  for (const rule of rules) {
+    if (!rule.methods.includes(method)) continue;
+    const path = rule.path(segments);
+    if (path === undefined) continue;
+    const query = new URLSearchParams();
+    for (const [name, check] of Object.entries(rule.query)) {
+      const value = search.get(name);
+      if (value !== null && check(value)) query.set(name, value);
+    }
+    const text = query.toString();
+    return { path: text ? `${path}?${text}` : path, auth: rule.auth };
+  }
+  return undefined;
 }
