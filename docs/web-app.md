@@ -55,7 +55,7 @@ Each slice is on its own branch (`feat/web-<name>`), built by **builder**, revie
 
 - **W0 Foundations** (merged 26 Nov, 304eaea): `apps/webapp`, the Tailwind theme from the tokens, fonts, the sticker components, the shell (tab bar and side rail, five empty tabs, headers, sheet, confirm, toast, motion), Playwright, Dockerfile, the Railway service and domain.
 - **W1 Reading**: poetry data loading, the reader in both modes, text sheet, meaning, hold menu, marks, recitation.
-- **W2 Home, Explore, Library, Search.**
+- **W2 Home, Explore, Library, Search**, plus reading progress (iOS `ReadingProgress`: the last couplet opened in each poem, for «ادامه بده»).
 - **W3 Solo games.**
 - **W4 Accounts and sync**: the web sign-in, username, gate, onboarding, carry-over, the typed API client, divan/scores/reactions sync.
 - **W5 Me.**
