@@ -6,6 +6,11 @@ Only what is still open. These need accounts or devices the agents don't have he
 
 - Google sign-in works on a phone now (24 Nov), so shut down the old project `beyt-515410` (console.cloud.google.com → pick `beyt-515410` → IAM & Admin → Settings → Shut down; type the project id to confirm).
 
+## 1b. The web app (app.yebeyt.com)
+
+- Cloudflare DNS: add `app` as a CNAME to the target Railway shows for the `webapp` service (the lead will post it here once the service exists), proxy off (grey cloud), like `yebeyt.com`.
+- Before web sign-in (slice W4): in developer.apple.com → Identifiers → Services IDs, make `com.yebeyt.web` with Sign in with Apple on, domain `app.yebeyt.com`, return URL `https://app.yebeyt.com/auth/apple`. In Google Cloud (the yebeyt project) → Credentials, make an OAuth client of type *Web application* with origin `https://app.yebeyt.com`. Send the lead both ids (they aren't secret).
+
 ## 2. Test on a real phone
 
 These can't be tested in the simulator here (build from Xcode onto the phone):

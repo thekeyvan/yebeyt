@@ -108,6 +108,8 @@ One slice per branch, each reviewed before the next starts. The lead confirms th
 
 After these: the web app, the admin dashboard and Android, each designed first.
 
+**The web app started 26 Nov (owner: web first, at app.yebeyt.com, mobile first, Tailwind + Radix + Motion): the plan, the feature list and the slices are in [web-app.md](web-app.md).** The notes below still hold.
+
 **Getting ready for the web app (owner, 25 Nov: "at some point we need to start the web app").** It is the next big piece after the iOS submission (links and App Clip, push, App Store prep). Until then every slice keeps it possible:
 - the server API stays client-neutral: fields say what a client may do (e.g. `canPlay`), not which app it is; no iOS-only shapes or copy in responses;
 - the contract is `packages/api/openapi.json` (a web client is generated from it), and colours, type and spacing come from `packages/tokens` (already emitted as CSS for `apps/web`);
