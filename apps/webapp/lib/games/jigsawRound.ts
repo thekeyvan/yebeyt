@@ -1,6 +1,6 @@
 import { JigsawBoard, type JigsawResult } from "./jigsawBoard";
 import { canPlay, makeQuestion, type JigsawQuestion } from "./jigsawQuestion";
-import { coupletId, singlePoet, type GameCouplet, type GameDeck } from "./couplet";
+import { coupletId, type GameCouplet, type GameDeck } from "./couplet";
 import { wordsOf } from "./letters";
 import * as scoring from "./scoring";
 import type { SeededGenerator } from "./seeded";
@@ -121,10 +121,5 @@ export class JigsawRound {
     this.index++;
     this.board = new JigsawBoard(this.questions[this.index]!);
     this.secondsOnCurrent = 0;
-  }
-
-  /** «۱۰ بیت سعدی»: the poet's name when every couplet is by the same poet. */
-  get singlePoet(): string | undefined {
-    return singlePoet(this.questions.map((question) => question.couplet));
   }
 }

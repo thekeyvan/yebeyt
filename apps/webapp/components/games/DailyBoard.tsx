@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { DailyGame } from "../../lib/games/dailyGame";
 import type { LetterMark } from "../../lib/games/letterMarks";
 import { usePress } from "../../lib/motion";
+import { persianDigits } from "../../lib/persian";
 import { Reaction } from "../ui/Reaction";
 
 const fills: Record<LetterMark, string> = { green: "border-green bg-green text-ink", yellow: "border-amber bg-amber text-ink", grey: "border-ring bg-ring text-muted" };
@@ -27,7 +28,7 @@ export function DailyGrid({ game, compact }: { game: DailyGame; compact: boolean
   return (
     <div className="flex flex-col items-center gap-1.5">
       {Array.from({ length: DailyGame.maxTries }, (_, row) => (
-        <div key={row} role="group" aria-label={`فرصت ${row + 1}`} data-testid={`try-${row + 1}`} className={`flex ${compact ? "gap-1.5" : "gap-2"}`}>
+        <div key={row} role="group" aria-label={`فرصت ${persianDigits(row + 1)}`} data-testid={`try-${row + 1}`} className={`flex ${compact ? "gap-1.5" : "gap-2"}`}>
           {game.answer.map((_, column) =>
             row < game.tries.length ? (
               <Cell key={column} letter={game.tries[row]![column]} mark={marks[row]![column]} compact={compact} pops={marks[row]![column] === "green"} />
@@ -72,7 +73,6 @@ export function DailyKeyboard({ keys, marks, type, erase, compact }: { keys: rea
             key={letter}
             type="button"
             {...press}
-            aria-label={letter}
             data-key={letter}
             data-mark={mark}
             onClick={() => type(letter)}

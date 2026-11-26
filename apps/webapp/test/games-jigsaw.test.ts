@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { slotAt } from "../lib/games/drop";
 import { attemptWords, JigsawBoard, statusOf, type SlotMark } from "../lib/games/jigsawBoard";
+import { deckStart, jigsawURL, openingCouplets, parseStart, type JigsawStart } from "../lib/games/jigsawStart";
 import { canPlay, makeQuestion, missingCount, type JigsawQuestion } from "../lib/games/jigsawQuestion";
 import { comboLength, JigsawRound } from "../lib/games/jigsawRound";
 import { JigsawSession } from "../lib/games/jigsawSession";
@@ -363,12 +364,6 @@ describe("JigsawRound", () => {
     r.tick();
     expect(r.timeLeft).toBe(0);
   });
-
-  it("names the poet only when there is one", () => {
-    expect(round().singlePoet).toBe("سعدی");
-    const mixed = JigsawRound.make([couplet(1, { poet: "hafez" })], deck(60), new SeededGenerator(2n))!;
-    expect(mixed.singlePoet).toBeUndefined();
-  });
 });
 
 describe("JigsawSession", () => {
@@ -388,7 +383,7 @@ describe("JigsawSession", () => {
     for (let i = 0; i < 10; i++) {
       fill(s);
       s.check();
-      expect(s.sheetShown).toBe(true);
+      expect(s.round.sheetOpen).toBe(true);
       s.next();
     }
     expect(s.finished).toBe(true);
@@ -472,6 +467,56 @@ describe("where a sticker is let go", () => {
   it("is nothing over nothing", () => {
     expect(slotAt({ x: 100, y: 300 }, frames)).toBeUndefined();
     expect(slotAt({ x: 100, y: 123 }, [])).toBeUndefined();
+  });
+});
+
+describe("JigsawStart", () => {
+  const poem = {
+    id: 1,
+    title: "غزل ۱",
+    path: "/hafez/ghazal/sh1",
+    couplets: [
+      { m1: "الا یا ایها الساقی", m2: "ادر کأسا و ناولها", meaning: "ساقی جام را بگردان." },
+      { m1: "که عشق آسان نمود اول", m2: "ولی افتاد مشکل‌ها", ai: true as const },
+      { m1: "بیتی که مصراع دوم ندارد", m2: "" },
+    ],
+  };
+  const hafez = { slug: "hafez", name: "حافظ" };
+
+  it("is an address and back", () => {
+    const starts: JigsawStart[] = [deckStart, { kind: "poem", poem: "/hafez/ghazal/sh1" }, { kind: "couplet", poem: "/hafez/ghazal/sh1", index: 2 }];
+    expect(starts.map(jigsawURL)).toEqual(["/games/jigsaw", "/games/jigsaw?poem=%2Fhafez%2Fghazal%2Fsh1", "/games/jigsaw?poem=%2Fhafez%2Fghazal%2Fsh1&c=2"]);
+    for (const start of starts) expect(parseStart(Object.fromEntries(new URL(jigsawURL(start), "http://x").searchParams))).toEqual(start);
+  });
+
+  it("is the deck for anything that is not a poem path, and the whole poem for a couplet that is not a number", () => {
+    for (const poem of ["", "hafez", "/hafez/../x", "/a b", "//x", "/x?y"]) expect(parseStart({ poem, c: "1" }), poem).toEqual(deckStart);
+    expect(parseStart({})).toEqual(deckStart);
+    expect(parseStart({ c: "1" })).toEqual(deckStart);
+    for (const c of ["", "-1", "x", "1.5", "123456"]) expect(parseStart({ poem: "/hafez/ghazal/sh1", c }), c).toEqual({ kind: "poem", poem: "/hafez/ghazal/sh1" });
+    expect(parseStart({ poem: ["/hafez/ghazal/sh1", "/x"], c: ["0", "1"] })).toEqual({ kind: "couplet", poem: "/hafez/ghazal/sh1", index: 0 });
+  });
+
+  it("opens with the couplet asked for, from the poem, with its poet and book", () => {
+    const [only, ...none] = openingCouplets({ kind: "couplet", poem: poem.path, index: 1 }, poem, hafez, "دیوان حافظ");
+    expect(none).toEqual([]);
+    expect(only).toEqual({ poem: poem.path, index: 1, m1: "که عشق آسان نمود اول", m2: "ولی افتاد مشکل‌ها", meaning: undefined, poetSlug: "hafez", poetName: "حافظ", bookTitle: "دیوان حافظ", meaningIsAI: true });
+    expect(openingCouplets({ kind: "couplet", poem: poem.path, index: 0 }, poem, hafez, "")[0]!.meaning).toBe("ساقی جام را بگردان.");
+  });
+
+  it("opens with every couplet for a poem, none for the deck, and none for a couplet the poem does not have", () => {
+    expect(openingCouplets({ kind: "poem", poem: poem.path }, poem, hafez, "").map((couplet) => couplet.index)).toEqual([0, 1, 2]);
+    expect(openingCouplets(deckStart, poem, hafez, "")).toEqual([]);
+    expect(openingCouplets({ kind: "couplet", poem: poem.path, index: 9 }, poem, hafez, "")).toEqual([]);
+  });
+
+  it("makes a round that starts with them, the playable ones, and the deck after", () => {
+    const opening = openingCouplets({ kind: "poem", poem: poem.path }, poem, hafez, "");
+    const round = JigsawRound.make(opening, deck(60), new SeededGenerator(2n))!;
+    expect(round.questions).toHaveLength(10);
+    expect(round.questions.slice(0, 2).map((question) => question.couplet.index)).toEqual([0, 1]); // the third has no second hemistich
+    expect(round.questions[0]!.couplet.poetName).toBe("حافظ");
+    expect(round.questions[2]!.couplet.poem).not.toBe(poem.path);
   });
 });
 

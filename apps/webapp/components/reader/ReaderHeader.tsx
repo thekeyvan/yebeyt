@@ -3,7 +3,7 @@
 import type { PointerEvent } from "react";
 import type { ReaderMode } from "../../lib/reader/route";
 import { Segmented } from "../ui/Segmented";
-import { ChevronDownIcon } from "../ui/icons";
+import { ChevronDownIcon, GamesIcon } from "../ui/icons";
 import type { ReaderContent } from "./useReader";
 
 const round = "grid size-11 shrink-0 place-items-center rounded-full bg-white text-ink";
@@ -19,6 +19,7 @@ export function ReaderHeader({
   onMode,
   onClose,
   onText,
+  onPlay,
   onGrab,
   secondary,
 }: {
@@ -27,6 +28,8 @@ export function ReaderHeader({
   onMode: (mode: ReaderMode) => void;
   onClose: () => void;
   onText: () => void;
+  /** «بازی با این غزل»: جورچین with the couplets of this poem. */
+  onPlay: () => void;
   onGrab: (event: PointerEvent) => void;
   secondary: string;
 }) {
@@ -45,6 +48,9 @@ export function ReaderHeader({
             {content?.subtitle ?? " "}
           </p>
         </div>
+        <button type="button" aria-label="بازی با این غزل" disabled={!content} onClick={onPlay} className={`${round} text-lapis disabled:opacity-40`}>
+          <GamesIcon size={20} lineWidth={2.2} />
+        </button>
         <button type="button" aria-label="اندازه‌ی حروف" disabled={!content} onClick={onText} className={`${round} font-title text-lg disabled:opacity-40`}>
           <span className="pt-[3px]">آ</span>
         </button>

@@ -71,7 +71,7 @@ export function RoundEnd({ summary }: { summary: RoundSummary }) {
         <ul className="flex flex-col gap-2">
           {summary.rows.map(({ couplet, result }) => (
             <li key={`${couplet.poem}#${couplet.index}`}>
-              <Link href={routeURL(couplet.poem, couplet.index, "couplet")} data-testid="round-couplet" className="flex items-center gap-3 rounded-[20px] bg-white px-3.5 py-2.5 shadow-[0_2px_4px_rgba(20,17,43,0.05)]">
+              <Link href={routeURL(couplet.poem, couplet.index, "couplet")} prefetch={false} data-testid="round-couplet" className="flex items-center gap-3 rounded-[20px] bg-white px-3.5 py-2.5 shadow-[0_2px_4px_rgba(20,17,43,0.05)]">
                 <Result result={result} />
                 <span className="flex min-w-0 flex-1 flex-col text-ink">
                   <span className="font-poem text-base leading-[1.8]">{plain(couplet.m1)}</span>

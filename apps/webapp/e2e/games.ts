@@ -90,3 +90,15 @@ export async function holdAndMove(page: Page, browserName: string, from: { x: nu
   for (let i = 1; i <= steps; i++) await page.mouse.move(at(i).x, at(i).y);
   return () => page.mouse.up();
 }
+
+/** Holds a couplet of the open reader and presses «بازی با این بیت» in its menu (the reader takes a moment to be ready for the press). */
+export async function playWithCouplet(page: Page, index: number) {
+  const menu = page.getByRole("dialog", { name: "کارهای این بیت" });
+  await expect(page.getByTestId("reader-title")).toBeVisible();
+  await page.waitForTimeout(1000); // the reader rises and loads the poem
+  await expect(async () => {
+    await page.getByTestId(`couplet-${index}`).click({ button: "right", timeout: 2000 });
+    await expect(menu).toBeVisible({ timeout: 1000 });
+  }).toPass();
+  await menu.getByRole("button", { name: "بازی با این بیت" }).click();
+}

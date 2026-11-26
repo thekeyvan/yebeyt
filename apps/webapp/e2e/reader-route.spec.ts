@@ -36,17 +36,21 @@ test.describe("opening and closing", () => {
     await expect(page.locator("[inert]")).toHaveCount(0);
   });
 
-  test("going on to another page from the reader, «بازی با این بیت», leaves it and its menu behind", async ({ page }) => {
+  test("going on to a game from the reader, «بازی با این بیت», leaves it and its menu behind, and closing the game comes back to the page", async ({ page }) => {
     await stubNetwork(page);
     await page.goto("/dev/stickers");
     await page.getByRole("link", { name: "باز کردن غزل ۳ حافظ" }).click();
     await expect(page.getByTestId("reader-title")).toHaveText("غزل ۳");
     await page.getByTestId("couplet-1").click({ button: "right" });
     await page.getByRole("dialog", { name: "کارهای این بیت" }).getByRole("button", { name: "بازی با این بیت" }).click();
-    await expect(page).toHaveURL((url) => url.pathname === "/games");
-    await expect(page.getByRole("heading", { level: 1, name: "بازی" })).toBeVisible();
+    await expect(page).toHaveURL((url) => url.pathname === "/games/jigsaw" && url.searchParams.get("poem") === "/hafez/ghazal/sh3" && url.searchParams.get("c") === "1");
+    await expect(page.getByTestId("jigsaw-card")).toBeVisible();
     await expect(page.getByTestId("reader")).toHaveCount(0);
     await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByRole("button", { name: "بستن" }).click();
+    await page.getByRole("button", { name: "برو بیرون" }).click();
+    await expect(page).toHaveURL(/\/dev\/stickers$/);
+    await expect(page.getByTestId("game")).toHaveCount(0);
     await expect(page.locator("[inert]")).toHaveCount(0);
   });
 

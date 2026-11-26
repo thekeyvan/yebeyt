@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { answerCouplet, centreOf, clockSeconds, coupletOnCard, emptySlots, fillByTaps, fire, green, holdAndMove, openRound, savedStats } from "./games";
+import { answerCouplet, centreOf, clockSeconds, coupletOnCard, emptySlots, fillByTaps, fire, green, holdAndMove, openRound, playWithCouplet, savedStats } from "./games";
 import { copied } from "./reader";
 
 const persian = (number: number) => String(number).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]!);
@@ -120,6 +120,95 @@ test.describe("جورچین", () => {
     await page.getByRole("button", { name: "راهنما، ۲۰ امتیاز" }).click();
     await expect(page.getByTestId(`slot-${first}`)).toHaveText(words[first!]!);
     await expect(page.getByTestId("check")).toBeDisabled();
+  });
+});
+
+test.describe("starting from the reader", () => {
+  const stickers = "/dev/stickers";
+
+  test("«بازی با این بیت» starts a round with that couplet first, and «بازی با این غزل» one with the poem's couplets first", async ({ page }) => {
+    await openRound(page, stickers);
+    await page.getByRole("link", { name: "باز کردن غزل ۳ حافظ" }).click();
+    await expect(page.getByTestId("reader-title")).toHaveText("غزل ۳");
+    await page.getByTestId("couplet-1").click({ button: "right" });
+    await page.getByRole("dialog", { name: "کارهای این بیت" }).getByRole("button", { name: "بازی با این بیت" }).click();
+    await expect(page.getByTestId("jigsaw-card")).toBeVisible();
+    expect(await coupletOnCard(page)).toMatchObject({ poem: "/hafez/ghazal/sh3", index: 1 });
+    await expect(page.getByTestId("progress").locator("[data-dot=current]")).toHaveCount(1);
+    await expect(page.getByTestId("answer-sheet")).toHaveCount(0);
+
+    // The round has started, so leaving asks; back on the page, the poem's header button starts one with its couplets.
+    await page.getByRole("button", { name: "بستن" }).click();
+    await page.getByRole("button", { name: "برو بیرون" }).click();
+    await expect(page).toHaveURL(new RegExp(`${stickers}$`));
+    await page.getByRole("link", { name: "باز کردن غزل ۳ حافظ" }).click();
+    await page.getByRole("button", { name: "بازی با این غزل" }).click();
+    await expect(page).toHaveURL((url) => url.pathname === "/games/jigsaw" && url.searchParams.get("poem") === "/hafez/ghazal/sh3" && !url.searchParams.has("c"));
+    await expect(page.getByTestId("jigsaw-card")).toBeVisible();
+    expect(await coupletOnCard(page)).toMatchObject({ poem: "/hafez/ghazal/sh3", index: 0 });
+  });
+
+  test("over a round that has started it asks «از بازی بری بیرون؟» first: «بمون» keeps the reader and the round under it, «برو بیرون» starts the new game, and closing that goes to the page the old one came from", async ({ page }) => {
+    await openRound(page, "/games");
+    await page.getByTestId("game-jigsaw").click();
+    await expect(page.getByTestId("jigsaw-card")).toBeVisible();
+    const { poem, index } = await coupletOnCard(page);
+    await answerCouplet(page, "right");
+    await page.getByTestId("sheet-poem").click();
+    await expect(page.getByTestId("reader")).toBeVisible();
+    await playWithCouplet(page, index);
+    const question = page.getByRole("dialog", { name: "از بازی بری بیرون؟" });
+    await expect(question).toBeVisible();
+
+    await question.getByRole("button", { name: "بمون" }).click();
+    await expect(question).toHaveCount(0);
+    await expect(page.getByTestId("reader")).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/poem${poem}`));
+
+    await playWithCouplet(page, index);
+    await question.getByRole("button", { name: "برو بیرون" }).click();
+    await expect(page).toHaveURL((url) => url.pathname === "/games/jigsaw" && url.searchParams.get("poem") === poem && url.searchParams.get("c") === String(index));
+    await expect(page.getByTestId("reader")).toHaveCount(0);
+    await expect(page.getByTestId("answer-sheet")).toHaveCount(0); // not the old round's sheet
+    await expect(page.getByTestId("progress").locator("[data-dot=right]")).toHaveCount(0);
+    expect(await coupletOnCard(page)).toMatchObject({ poem, index });
+
+    await page.getByRole("button", { name: "بستن" }).click();
+    await page.getByRole("dialog", { name: "از بازی بری بیرون؟" }).getByRole("button", { name: "برو بیرون" }).click();
+    await expect(page).toHaveURL((url) => url.pathname === "/games");
+    await expect(page.getByTestId("game")).toHaveCount(0);
+    await expect(page.getByTestId("reader")).toHaveCount(0);
+    await expect(page.locator("[inert]")).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1, name: "بازی" })).toBeVisible();
+  });
+
+  test("a game opened by its link takes the reader over it, and the round is still there when the reader closes", async ({ page }) => {
+    await openRound(page);
+    await expect(page.getByTestId("jigsaw-card")).toBeVisible();
+    const { poem, index } = await coupletOnCard(page);
+    await answerCouplet(page, "right");
+    await page.getByTestId("sheet-poem").click();
+    await expect(page).toHaveURL(new RegExp(`/poem${poem}\\?c=${index}`));
+    await expect(page.getByTestId("reader")).toBeVisible();
+    await page.getByTestId("reader").getByRole("button", { name: "بستن" }).click();
+    await expect(page.getByTestId("reader")).toHaveCount(0);
+    await expect(page).toHaveURL((url) => url.pathname === "/games/jigsaw");
+    await expect(page.getByTestId("answer-sheet")).toBeVisible();
+    await expect(page.getByTestId("progress").locator("[data-dot=right]")).toHaveCount(1);
+
+    // «بازی با این بیت» over it asks too, and the new round takes its place: closing it goes to the games tab.
+    await page.getByTestId("sheet-poem").click();
+    await playWithCouplet(page, index);
+    await page.getByRole("dialog", { name: "از بازی بری بیرون؟" }).getByRole("button", { name: "برو بیرون" }).click();
+    await expect(page).toHaveURL((url) => url.pathname === "/games/jigsaw" && url.searchParams.get("poem") === poem);
+    await expect(page.getByTestId("progress").locator("[data-dot=right]")).toHaveCount(0);
+    await expect(page.getByTestId("reader")).toHaveCount(0);
+    await expect(page.getByTestId("jigsaw-card")).toBeVisible();
+    await expect(page.getByTestId("game")).toHaveCount(1);
+    await page.getByRole("button", { name: "بستن" }).click();
+    await page.getByRole("dialog", { name: "از بازی بری بیرون؟" }).getByRole("button", { name: "برو بیرون" }).click();
+    await expect(page).toHaveURL((url) => url.pathname === "/games");
+    await expect(page.getByTestId("game")).toHaveCount(0);
   });
 });
 

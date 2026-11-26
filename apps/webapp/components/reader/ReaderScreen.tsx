@@ -8,6 +8,7 @@ import { coverAway, coverDrop, coverRise, useVariant } from "../../lib/motion";
 import { useTextSettings } from "../../lib/reader/browser";
 import { keyStep } from "../../lib/reader/paging";
 import { routeURL, type ReaderRoute } from "../../lib/reader/route";
+import { useStartGame } from "../games/useStartGame";
 import { Button } from "../ui/Button";
 import { CoupletMode } from "./CoupletMode";
 import { HoldMenu } from "./HoldMenu";
@@ -41,6 +42,7 @@ export function ReaderScreen({ route, modal }: { route: ReaderRoute; modal: bool
   const loaded = reader.phase === "loaded";
   const { content } = reader;
 
+  const { start, question } = useStartGame(modal);
   const close = () => (modal ? setLeaving(true) : router.push("/"));
 
   // The address keeps the couplet and the mode, so a link reopens the same couplet.
@@ -99,7 +101,7 @@ export function ReaderScreen({ route, modal }: { route: ReaderRoute; modal: bool
         onDragEnd={(_, { offset, velocity }) => (offset.y > pullToClose.distance || velocity.y > pullToClose.velocity) && close()}
         className="relative mx-auto flex h-full w-full max-w-[640px] flex-col"
       >
-        <ReaderHeader content={content} mode={reader.mode} onMode={reader.setMode} onClose={close} onText={() => reader.setTextSheetOpen(true)} onGrab={(event) => controls.start(event)} secondary={theme.secondary} />
+        <ReaderHeader content={content} mode={reader.mode} onMode={reader.setMode} onClose={close} onText={() => reader.setTextSheetOpen(true)} onPlay={() => start({ kind: "poem", poem: initial.path })} onGrab={(event) => controls.start(event)} secondary={theme.secondary} />
         <div className="relative min-h-0 flex-1">
           {reader.phase === "loading" && <div aria-busy className="h-full" />}
           {reader.phase === "failed" && (
@@ -117,7 +119,8 @@ export function ReaderScreen({ route, modal }: { route: ReaderRoute; modal: bool
         {reader.player && view && view.state !== "idle" && <PlayerBar player={reader.player} view={view} couplet={reader.actionIndex} />}
       </motion.div>
       <TextSheet open={reader.textSheetOpen} onClose={() => reader.setTextSheetOpen(false)} settings={settings} update={update} />
-      {loaded && reader.holdIndex !== undefined && <HoldMenu reader={reader} index={reader.holdIndex} settings={settings} />}
+      {loaded && reader.holdIndex !== undefined && <HoldMenu reader={reader} index={reader.holdIndex} settings={settings} onPlay={(index) => start({ kind: "couplet", poem: initial.path, index })} />}
+      {question}
     </motion.div>
   );
 }

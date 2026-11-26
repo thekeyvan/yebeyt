@@ -63,7 +63,7 @@ function Actions({ couplet }: { couplet: GameCouplet }) {
   const actions = useMarkActions({ path: couplet.poem, poet: couplet.poetName, title: couplet.bookTitle, line: { m1: couplet.m1, m2: couplet.m2 } }, couplet.index);
   return (
     <div className="flex w-full gap-2.5">
-      <Link href={routeURL(couplet.poem, couplet.index, "couplet")} className={action} data-testid="sheet-poem">
+      <Link href={routeURL(couplet.poem, couplet.index, "couplet")} prefetch={false} className={action} data-testid="sheet-poem">
         <BookIcon size={22} lineWidth={2.2} />
         کل شعر
       </Link>

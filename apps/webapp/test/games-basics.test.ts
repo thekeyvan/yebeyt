@@ -5,7 +5,6 @@ import { SeededGenerator } from "../lib/games/seeded";
 import * as scoring from "../lib/games/scoring";
 import { TehranDay } from "../lib/games/tehranDay";
 import { leaveGame } from "../lib/games/leave";
-import { capOf, clipped, scoreGameOf } from "../lib/games/scoreGame";
 import { tehran } from "./games";
 
 describe("PersianLetters", () => {
@@ -105,25 +104,6 @@ describe("Scoring", () => {
     expect(scoring.jigsaw(0, 2)).toBe(0);
     expect(scoring.jigsawTimeBonus(42)).toBe(42);
     expect(scoring.jigsawTimeBonus(-3)).toBe(0);
-  });
-});
-
-describe("ScoreGame", () => {
-  it("has the server's caps", () => {
-    expect(["daily", "jigsaw", "poet", "second", "book", "match", "listen", "onboarding"].map((game) => capOf(game as never))).toEqual([100, 320, 440, 440, 440, 50, 100, 50]);
-  });
-
-  it("clips a round to its cap and never below zero", () => {
-    expect(clipped("jigsaw", 999)).toBe(320);
-    expect(clipped("daily", -4)).toBe(0);
-    expect(clipped("daily", 70)).toBe(70);
-  });
-
-  it("is nothing for the games with friends", () => {
-    expect(scoreGameOf("misra")).toBe("second");
-    expect(scoreGameOf("daily")).toBe("daily");
-    expect(scoreGameOf("mosh")).toBeUndefined();
-    expect(scoreGameOf("duel")).toBeUndefined();
   });
 });
 

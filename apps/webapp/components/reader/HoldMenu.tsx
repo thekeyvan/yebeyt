@@ -2,7 +2,6 @@
 
 import { Dialog, DialogBackdrop, DialogContent, DialogTitle } from "@ui-sdk/react/dialog";
 import { motion } from "motion/react";
-import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useAccount } from "../account/AccountProvider";
 import { bouncy, menuArrival, useVariant } from "../../lib/motion";
@@ -32,9 +31,8 @@ function Item({ icon, onPress, children }: { icon: ReactNode; onPress: () => voi
  * A long press on a couplet (Reader/HoldMenu.swift): the page blurs, the couplet is lifted on a tilted card, with a row of icons and a list.
  * A dialog (UI SDK's, so focus stays inside, Escape closes and focus goes back to the couplet) whose scrim is the page behind it, blurred.
  */
-export function HoldMenu({ reader, index, settings }: { reader: Reader; index: number; settings: TextSettings }) {
+export function HoldMenu({ reader, index, settings, onPlay }: { reader: Reader; index: number; settings: TextSettings; onPlay: (index: number) => void }) {
   const account = useAccount();
-  const router = useRouter();
   const v = useVariant();
   const actions = useCoupletActions(reader, index);
   const couplet = reader.couplets[index]!;
@@ -92,7 +90,10 @@ export function HoldMenu({ reader, index, settings }: { reader: Reader; index: n
             <Item icon={<CoupletFocusIcon size={20} lineWidth={2.2} />} onPress={() => reader.openCouplet(index)}>
               بیت به بیت، از همین بیت
             </Item>
-            <Item icon={<GamesIcon size={20} lineWidth={2.2} />} onPress={() => router.push("/games")}>
+            <Item icon={<GamesIcon size={20} lineWidth={2.2} />} onPress={() => {
+                close();
+                onPlay(index);
+              }}>
               بازی با این بیت
             </Item>
             <Item

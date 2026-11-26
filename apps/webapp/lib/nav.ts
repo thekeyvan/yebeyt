@@ -18,3 +18,6 @@ export function trackNavigation(): void {
 }
 
 export const canGoBack = (): boolean => depth > 0;
+
+/** How many pages of the app are behind this one: the steps «back» can take without leaving it. */
+export const pagesBack = (): number => depth;

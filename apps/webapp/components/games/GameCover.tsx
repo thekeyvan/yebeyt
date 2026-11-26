@@ -2,8 +2,13 @@
 
 import { motion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+import { gameInFront } from "../../lib/games/entry";
+import { isGamePage } from "../../lib/games/kinds";
+import { deckStart, jigsawURL, type JigsawStart } from "../../lib/games/jigsawStart";
 import { leaveGame } from "../../lib/games/leave";
+import { canGoBack } from "../../lib/nav";
 import { coverAway, coverDrop, coverRise, useVariant } from "../../lib/motion";
 import { ConfirmSheet } from "../ui/ConfirmSheet";
 import { DailyScreen } from "./DailyScreen";
@@ -24,23 +29,41 @@ const GameContext = createContext<Game>({ requestClose: () => {}, setAsks: () =>
 
 export const useGame = (): Game => useContext(GameContext);
 
-const screens = { daily: DailyScreen, jigsaw: JigsawScreen };
-
 /**
  * A game in front of the tabs (Games/GameHost.swift): one layer, all of it, that rises from the bottom like the reader (the page under it and the
  * tab bar stay as they are) and drops when it closes. Opened inside the app (`modal`) it closes back to where it came from; opened by its link it is
- * just there, and closes to the games tab. Escape and the × close it, asking first when a round has started. The reader opens over it («کل شعر»).
+ * just there (in a layer of the document's own), and closes to the games tab. Escape and the × close it, asking first when a round has started. The reader opens over it («کل شعر»).
  */
-export function GameCover({ kind, modal }: { kind: keyof typeof screens; modal: boolean }) {
+export function GameCover({ kind, modal, start = deckStart }: { kind: "daily" | "jigsaw"; modal: boolean; start?: JigsawStart }) {
   const router = useRouter();
   const v = useVariant();
-  const reading = usePathname().startsWith("/poem/");
+  const pathname = usePathname();
+  const reading = pathname.startsWith("/poem/");
+  // The slot keeps what it showed when the app goes to a page that is not the game's (a soft navigation does not clear it): there is no game then.
+  const here = isGamePage(pathname) || reading;
+  const inBrowser = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [leaving, setLeaving] = useState(false);
   const [asks, setAsks] = useState(false);
   const [asking, setAsking] = useState(false);
-  const Screen = screens[kind];
 
-  const close = () => (modal ? setLeaving(true) : router.push("/games"));
+  const close = () => (modal && canGoBack() ? setLeaving(true) : router.push("/games"));
+  const asksNow = here && asks;
+  useEffect(() => {
+    gameInFront.open = here;
+    return () => {
+      gameInFront.open = false;
+    };
+  }, [here]);
+  useEffect(() => {
+    gameInFront.asks = asksNow;
+    return () => {
+      gameInFront.asks = false;
+    };
+  }, [asksNow]);
   const requestClose = () => (asks ? setAsking(true) : close());
 
   // Escape closes, unless the reader is over the game, a sheet is open (it takes the key itself) or a control wants it.
@@ -53,7 +76,8 @@ export function GameCover({ kind, modal }: { kind: keyof typeof screens; modal: 
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  return (
+  if (!here) return null;
+  const cover = (
     <motion.div
       initial={modal ? coverAway(v) : false}
       animate={leaving ? coverAway(v) : { y: "0%", opacity: 1 }}
@@ -64,10 +88,12 @@ export function GameCover({ kind, modal }: { kind: keyof typeof screens; modal: 
     >
       <div inert={reading} className="mx-auto h-full w-full max-w-[640px]">
         <GameContext value={{ requestClose, setAsks, asking, active: !reading }}>
-          <Screen />
+          {kind === "daily" ? <DailyScreen /> : <JigsawScreen key={jigsawURL(start)} start={start} />}
         </GameContext>
       </div>
       <ConfirmSheet open={asking} onOpenChange={setAsking} title={leaveGame.title} message={leaveGame.message} confirm={leaveGame.leave} cancel={leaveGame.stay} onConfirm={close} />
     </motion.div>
   );
+  // Opened by its link it is the content of a page, which is inert while a game covers it: a layer of the document's own keeps the game reachable.
+  return modal ? cover : inBrowser ? createPortal(cover, document.body) : null;
 }

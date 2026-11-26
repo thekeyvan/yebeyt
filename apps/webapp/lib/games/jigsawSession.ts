@@ -24,11 +24,6 @@ export class JigsawSession extends Store<number> {
     this.generator = seed === undefined ? SeededGenerator.random() : new SeededGenerator(seed);
   }
 
-  /** The sheet with the full couplet is on screen. */
-  get sheetShown(): boolean {
-    return this.round.sheetOpen;
-  }
-
   get timeText(): string {
     return persianClock(this.round.timeLeft);
   }

@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { statsStore } from "../../lib/games/browser";
-import type { GameDeck } from "../../lib/games/couplet";
+import type { GameCouplet, GameDeck } from "../../lib/games/couplet";
+import { loadOpening } from "../../lib/games/browser";
 import { roundSeed } from "../../lib/games/debug";
 import { slotAt } from "../../lib/games/drop";
 import { attemptWords } from "../../lib/games/jigsawBoard";
 import { comboLength, JigsawRound } from "../../lib/games/jigsawRound";
 import { JigsawSession } from "../../lib/games/jigsawSession";
+import { jigsawURL, type JigsawStart } from "../../lib/games/jigsawStart";
 import * as scoring from "../../lib/games/scoring";
 import { SeededGenerator } from "../../lib/games/seeded";
 import { jigsawSummary } from "../../lib/games/summary";
-import { useStore } from "../../lib/library/browser";
+import { useLoaded, useStore } from "../../lib/library/browser";
 import { persianDigits } from "../../lib/persian";
 import { CheckIcon, ShuffleIcon } from "../ui/icons";
 import { AnswerSheet } from "./AnswerSheet";
@@ -24,14 +26,20 @@ import { StickerSheet } from "./StickerSheet";
 import { WithDeck } from "./WithDeck";
 
 /** JigsawE: ten couplets in two minutes. The first hemistich is whole, the second is word slots; stickers from the sheet go into them. Nothing teaches while the clock runs: the meaning waits in the sheet after each answer. */
-export function JigsawScreen() {
-  return <WithDeck wrap={(placeholder) => <GameLoading>{placeholder}</GameLoading>}>{(deck) => <Round deck={deck} />}</WithDeck>;
+export function JigsawScreen({ start }: { start: JigsawStart }) {
+  return <WithDeck wrap={(placeholder) => <GameLoading>{placeholder}</GameLoading>}>{(deck) => <Opening deck={deck} start={start} />}</WithDeck>;
 }
 
-function Round({ deck }: { deck: GameDeck }) {
+/** «بازی با این بیت / غزل»: the poem's couplets come first, so the round waits for the poem; one that can't be loaded just leaves a round from the deck. */
+function Opening({ deck, start }: { deck: GameDeck; start: JigsawStart }) {
+  const { value } = useLoaded(() => loadOpening(start), start.kind === "deck" ? [] : undefined, jigsawURL(start));
+  return value ? <Round deck={deck} opening={value} /> : <GameLoading><div aria-busy className="h-[60dvh]" /></GameLoading>;
+}
+
+function Round({ deck, opening }: { deck: GameDeck; opening: GameCouplet[] }) {
   const [session] = useState(() => {
     const seed = roundSeed();
-    const round = JigsawRound.make([], deck, seed === undefined ? SeededGenerator.random() : new SeededGenerator(seed));
+    const round = JigsawRound.make(opening, deck, seed === undefined ? SeededGenerator.random() : new SeededGenerator(seed));
     return round && new JigsawSession(round, statsStore(), seed);
   });
   return session ? <Play session={session} /> : <GameLoading>{null}</GameLoading>;
