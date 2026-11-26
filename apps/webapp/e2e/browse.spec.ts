@@ -333,11 +333,18 @@ const lowestContent = (page: Page) =>
     return lowest;
   });
 
-test("the web app's /api route refuses everything but the poet pictures, traversal included", async ({ request }) => {
+test("the web app's /api route refuses everything but what the app uses, traversal included, and a write from outside the page", async ({ request }) => {
   for (const path of ["/api/v1/me", "/api/v1/poets", "/api/v1/poets/hafez", "/api/v1/poets/..%2F..%2Fv1%2Fme/picture", "/api/v1/poets/%2e%2e/picture", "/api/v1/poets/Hafez/picture", "/api/v1/poets/pictures/x", "/api/v2/poets/pictures"]) {
     expect((await request.get(path, { maxRedirects: 0 })).status(), path).toBe(404);
   }
-  expect((await request.post("/api/v1/poets/pictures")).status()).toBe(405);
+  // Not allowed for that method, whatever the origin; the deletion of the account is not there either.
+  expect((await request.post("/api/v1/poets/pictures")).status()).toBe(404);
+  expect((await request.delete("/api/v1/me")).status()).toBe(404);
+  // Allowed, but a write that does not come from the app's own page is refused before anything else, and one that does but has no session is 401.
+  expect((await request.put("/api/v1/me/username", { data: { username: "niloofar" } })).status()).toBe(403);
+  expect((await request.post("/api/v1/scores", { data: {}, headers: { "sec-fetch-site": "cross-site" } })).status()).toBe(403);
+  expect((await request.post("/api/v1/scores", { data: {}, headers: { "sec-fetch-site": "same-origin" } })).status()).toBe(401);
+  expect((await request.get("/api/v1/me/divan")).status()).toBe(401);
 });
 
 test("«برگشت» goes back inside the app, and from a screen opened by its link, or once back at it, goes to the screen above", async ({ page }) => {

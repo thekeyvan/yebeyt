@@ -44,7 +44,7 @@ export function ranged(route: Route, body: Buffer) {
  * No network in e2e: the Ganjoor API answers with the recitations fixture of this poem (its first recitation has timing), the audio is a silent
  * WAV served with ranges, and the timing is `timingXML`. Anything else that is not the app itself is refused.
  */
-export async function stubNetwork(page: Page): Promise<void> {
+export async function stubNetwork(page: Page, { api = false }: { api?: boolean } = {}): Promise<void> {
   const recitations = fixture("recitations.json");
   const audio = silence(40);
   await page.route((url) => url.hostname !== "localhost", (route) => {
@@ -54,8 +54,8 @@ export async function stubNetwork(page: Page): Promise<void> {
     if (/\.(mp3|wav)$/.test(url)) return ranged(route, audio);
     return route.abort();
   });
-  // The web app's own door to the server (/api) has nothing behind it here; a test that wants an answer routes it itself.
-  await page.route((url) => url.hostname === "localhost" && url.pathname.startsWith("/api/"), (route) => route.fulfill({ status: 502 }));
+  // The web app's own door to the server (/api) has nothing behind it here, except for a test of the account (`api`), whose debug sign-in the door answers itself.
+  if (!api) await page.route((url) => url.hostname === "localhost" && url.pathname.startsWith("/api/"), (route) => route.fulfill({ status: 502 }));
   // What the page plays, for the tests that look at the audio.
   await page.addInitScript(() => {
     const play = HTMLMediaElement.prototype.play;

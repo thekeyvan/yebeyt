@@ -9,8 +9,8 @@ export const nextCouplet = { path: "/hafez/ghazal/sh195", index: 3, text: "گُ�
 export const tabBar = (page: Page) => page.getByRole("navigation", { name: "تب‌ها" });
 
 /** Opens a page of the app with no network except the app itself, on the fixed day. */
-export async function openApp(page: Page, path: string) {
-  await stubNetwork(page);
+export async function openApp(page: Page, path: string, options: { api?: boolean } = {}) {
+  await stubNetwork(page, options);
   await page.addInitScript((day) => sessionStorage.setItem("beytToday", day), today);
   await page.goto(path);
 }
@@ -22,7 +22,7 @@ export async function expectReader(page: Page, title: string | RegExp) {
 
 /** Closes the reader with its round button and waits for it to be gone. */
 export async function closeReader(page: Page) {
-  await page.getByRole("button", { name: "بستن" }).click();
+  await page.getByRole("button", { name: "بستن", exact: true }).click();
   await expect(page.getByTestId("reader")).toHaveCount(0);
 }
 
