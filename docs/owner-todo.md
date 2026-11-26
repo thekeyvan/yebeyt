@@ -23,6 +23,7 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 - Confirmations: leaving a started game, cancelling or rejecting a friend request, signing out, closing unsent feedback ask first; removing a couplet from the divan and «رد کن» on today's couplet show «برگردون».
 - The «یه بیت» demo friend: search `yebeyt`, send a request (accepted at once), send a message (it answers with a couplet).
 - Build 202611242331 and later: back/close rows stay pinned at the top while you scroll; every bottom sheet shows a grabber and closes with a drag down; tabs slide, the reader springs up, lists spring instead of fading. Invite links on yebeyt.com show your own avatar.
+- Build 202611260306 and later: in «گوش کن» the clip stops before the second line starts (tell the lead if one gives the answer away); the games tab is a grid of boards; the «یه بیت» friend has no game chips in its chat; in chat, drag down or tap outside to close the keyboard, and shake works with the keyboard open; removing your couplet from a shared divan disappears for both people; on a small phone (SE) the daily puzzle and onboarding fit without scrolling and the back swipe works from the edge.
 
 ## 3. Read when there's time
 
