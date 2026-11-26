@@ -50,8 +50,8 @@ function WordCard({ word, matched, selected, tap }: { word: MatchWord; matched: 
     <Reaction when={matched} effect="wiggle" className="flex">
       <button
         type="button"
-        onClick={tap}
-        disabled={matched}
+        onClick={matched ? undefined : tap}
+        aria-disabled={matched}
         aria-pressed={selected}
         data-testid={`word-${word.id}`}
         data-state={matched ? "matched" : selected ? "selected" : "idle"}
@@ -69,8 +69,8 @@ function MeaningCard({ word, matched, wrong, shakes, tap }: { word: MatchWord; m
       <Reaction when={matched} effect="wiggle" className="flex w-full">
         <button
           type="button"
-          onClick={tap}
-          disabled={matched}
+          onClick={matched ? undefined : tap}
+          aria-disabled={matched}
           data-testid={`meaning-${word.id}`}
           data-state={matched ? "matched" : wrong ? "wrong" : "idle"}
           aria-description={matched ? "درست" : wrong ? "نشد" : undefined}

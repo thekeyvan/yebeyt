@@ -52,6 +52,9 @@ function Play({ session }: { session: MatchSession }) {
   const [shakes, setShakes] = useState<Record<number, number>>({});
   const [wrongMeaning, setWrongMeaning] = useState<number>();
   const [sheetShown, setSheetShown] = useState(round.sheetOpen);
+  /** What a screen reader is told of the last pick; `count` makes the same words new again. */
+  const [said, setSaid] = useState({ text: "", count: 0 });
+  const say = (text: string) => setSaid(({ count }) => ({ text, count: count + 1 }));
   const asks = session.asksBeforeLeaving;
   useEffect(() => game.setAsks(asks), [game.setAsks, asks]);
 
@@ -70,13 +73,22 @@ function Play({ session }: { session: MatchSession }) {
   if (session.finished) return <RoundEnd summary={matchSummary(round)} />;
 
   function pick(meaning: number) {
-    if (session.pick(meaning) !== "wrong") return;
+    const picked = session.pick(meaning);
+    if (picked === "matched") {
+      const { text, gloss } = round.current.words[meaning]!;
+      say(`درست: ${text}، یعنی ${gloss}`);
+    }
+    if (picked !== "wrong") return;
+    say("نشد");
     setShakes((before) => ({ ...before, [meaning]: (before[meaning] ?? 0) + 1 }));
     setWrongMeaning(meaning);
   }
 
   return (
     <>
+      <p role="status" aria-live="polite" aria-atomic data-testid="match-said" className="sr-only">
+        <span key={said.count}>{said.text}</span>
+      </p>
       <div inert={sheetShown} className="h-full">
         <GamePage
           header={

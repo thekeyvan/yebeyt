@@ -135,6 +135,34 @@ test.describe("گوش کن", () => {
     await leaveAsks(page);
   });
 
+  test("skipping the last question ends the round with no sound left playing", async ({ page }) => {
+    test.setTimeout(60_000);
+    await openListen(page, "measured");
+    await page.getByRole("button", { name: "پخش" }).click();
+    for (let index = 0; index < 4; index++) {
+      await expect(page.getByTestId("listen-card")).toHaveAttribute("data-state", /loading|playing/);
+      await page.getByTestId("skip").click();
+    }
+    await expect(page.getByTestId("listen-card")).toHaveAttribute("data-state", /loading|playing/); // the fifth clip is playing
+    expect((await audioNow(page))!.paused).toBe(false);
+    await page.getByTestId("skip").click();
+    await expect(page.getByTestId("round-end")).toBeVisible();
+    await expect.poll(async () => (await audioNow(page))!.paused).toBe(true);
+    await page.waitForTimeout(1500);
+    expect((await audioNow(page))!.paused).toBe(true);
+  });
+
+  test("a round that can't be made (the poems won't load) says so and offers «دوباره», which tries again", async ({ page }) => {
+    await page.route("**/data/poets.json", (route) => route.abort());
+    await openListen(page, "measured");
+    const alert = page.getByRole("alert").filter({ hasText: "بازی باز نشد" });
+    await expect(alert).toBeVisible();
+    await expect(page.getByRole("button", { name: "بستن" })).toBeVisible(); // and a way out
+    await page.unroute("**/data/poets.json");
+    await alert.getByRole("button", { name: "دوباره" }).click();
+    await expect(page.getByTestId("listen-card")).toBeVisible();
+  });
+
   test("audio that does not load says «خوانش باز نشد» and goes back to the tab", async ({ page }) => {
     await openListen(page, "broken");
     await page.getByRole("button", { name: "پخش" }).click();

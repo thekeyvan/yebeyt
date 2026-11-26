@@ -17,7 +17,7 @@ export function webAudioFade(audio: HTMLAudioElement): Fade | undefined {
         context.createMediaElementSource(audio).connect(gain).connect(context.destination);
         graph = { context, volume: gain.gain };
       }
-      if (graph.context.state === "suspended") void graph.context.resume();
+      if (graph.context.state !== "running") void graph.context.resume(); // "suspended", or "interrupted" on an iPhone
     },
     start(from, to) {
       if (!graph) return;
@@ -27,6 +27,11 @@ export function webAudioFade(audio: HTMLAudioElement): Fade | undefined {
       volume.setValueAtTime(1, now);
       volume.setValueAtTime(1, now + Math.max(0, from));
       volume.linearRampToValueAtTime(0, now + Math.max(to, 0.001));
+    },
+    silent() {
+      if (!graph) return;
+      graph.volume.cancelScheduledValues(graph.context.currentTime);
+      graph.volume.setValueAtTime(0, graph.context.currentTime);
     },
     full() {
       if (!graph) return;

@@ -16,6 +16,8 @@ export type Fade = {
   unlock(): void;
   /** The clip is playing: the volume starts falling `from` seconds from now (full until then) and is nothing `to` seconds from now. */
   start(from: number, to: number): void;
+  /** Nothing: the clip is over, and the tail of the audio past its end must not be heard before the next `start`. */
+  silent(): void;
   /** Full volume again (paused, stopped). */
   full(): void;
   close(): void;
@@ -191,7 +193,7 @@ export class ClipPlayer extends Store<ClipView> {
     this.token++;
     this.cancelFrame();
     this.audio.pause();
-    this.options.fade?.full();
+    this.options.fade?.silent();
     this.patch({ state: "ended", progress: 1 });
   }
 }

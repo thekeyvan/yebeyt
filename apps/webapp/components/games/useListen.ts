@@ -25,7 +25,8 @@ export function useListen(session: QuizSession, onFailure: () => void): { view: 
     // `onFailure` only sets state, so the first render's is as good as any.
   }, []);
 
-  const clip = round.sheetOpen ? undefined : round.current.clip;
+  // Nothing plays over the answer sheet or the round end (which a skip of the last question reaches with no change of question).
+  const clip = round.sheetOpen || session.finished ? undefined : round.current.clip;
   useEffect(() => player?.load(clip), [player, clip]);
 
   const view = useStore(player) ?? { state: "idle" as const, progress: 0 };

@@ -12,6 +12,7 @@ import type { QuizKind } from "../../lib/games/quizQuestion";
 import { SeededGenerator } from "../../lib/games/seeded";
 import { useLoaded, useLibraryData } from "../../lib/library/browser";
 import type { Library } from "../../lib/library/library";
+import { LoadFailed } from "../library/WithLibrary";
 import { GameLoading } from "./chrome";
 import { useGame } from "./GameCover";
 import { QuizPlay } from "./QuizPlay";
@@ -46,7 +47,7 @@ function Round({ deck, kind, poet }: { deck: GameDeck; kind: QuizKind; poet?: st
   const game = useGame();
   const library = useLibraryData().value?.library;
   const seed = roundSeed();
-  const { value: round } = useLoaded(
+  const { value: round, failed, retry } = useLoaded(
     async () => (library ? makeRound(kind, deck, library, poet, seed === undefined ? SeededGenerator.random() : new SeededGenerator(seed)) : undefined),
     undefined,
     `${kind} ${poet} ${library !== undefined}`,
@@ -58,7 +59,8 @@ function Round({ deck, kind, poet }: { deck: GameDeck; kind: QuizKind; poet?: st
     if (nothing && kind !== "listen") game.leave();
   }, [nothing]);
 
-  return round ? <Started round={round} seed={seed} /> : <GameLoading><div aria-busy className="h-[60dvh]" /></GameLoading>;
+  if (round) return <Started round={round} seed={seed} />;
+  return <GameLoading>{failed ? <LoadFailed title="بازی باز نشد" onRetry={retry} /> : <div aria-busy className="h-[60dvh]" />}</GameLoading>;
 }
 
 function Started({ round, seed }: { round: QuizRound; seed?: bigint }) {

@@ -94,3 +94,35 @@ test.describe("معنی‌یاب", () => {
     await leaveAsks(page);
   });
 });
+
+test.describe("معنی‌یاب with the keyboard", () => {
+  test("a right pair and a wrong meaning are announced, focus stays on a matched card, and activating it does nothing", async ({ page }) => {
+    await openGame(page, "/games/match");
+    await expect(page.getByTestId("match-couplet")).toBeVisible();
+    const said = page.getByTestId("match-said");
+
+    await word(page, 0).focus();
+    await page.keyboard.press("Enter");
+    await meaning(page, 1).focus();
+    await page.keyboard.press("Enter");
+    await expect(said).toHaveText("نشد");
+    await expect(meaning(page, 1)).toBeFocused();
+
+    await meaning(page, 0).focus();
+    await page.keyboard.press("Enter");
+    await expect(said).toContainText("درست: ");
+    await expect(said).toContainText("یعنی ");
+    await expect(meaning(page, 0)).toHaveAttribute("aria-disabled", "true");
+    await expect(meaning(page, 0)).toBeFocused(); // still there to read, not dropped
+    await expect(page.getByTestId("score")).toHaveText("+۱۰");
+
+    // Activating a matched card, or a meaning with no word in hand, changes nothing and says nothing new.
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Space");
+    await word(page, 0).focus();
+    await page.keyboard.press("Enter");
+    await expect(word(page, 0)).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByTestId("score")).toHaveText("+۱۰");
+    await expect(said).toContainText("درست: ");
+  });
+});

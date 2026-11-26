@@ -36,6 +36,7 @@ function setup() {
   const fade: Fade = {
     unlock: () => calls.push("unlock"),
     start: (from, to) => calls.push(`start ${from.toFixed(2)} ${to.toFixed(2)}`),
+    silent: () => calls.push("silent"),
     full: () => calls.push("full"),
     close: () => calls.push("close"),
   };
@@ -68,7 +69,7 @@ describe("ClipPlayer", () => {
   });
 
   it("stops at its end, before the second hemistich, and is idle for a replay", async () => {
-    const { audio, player } = setup();
+    const { audio, calls, player } = setup();
     player.load(clip());
     player.play();
     await settled();
@@ -78,6 +79,7 @@ describe("ClipPlayer", () => {
     audio.currentTime = 19.91;
     frame();
     expect([player.snapshot().state, player.snapshot().progress, audio.paused]).toEqual(["ended", 1, true]);
+    expect(calls.at(-1)).toBe("silent"); // the gain stays at nothing until the next start
     expect(frames).toHaveLength(0); // nothing keeps watching
   });
 
