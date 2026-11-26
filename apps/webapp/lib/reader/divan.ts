@@ -7,6 +7,11 @@ export type DivanItem = { key: string; keptAt?: number; removedAt?: number };
 /** Kept when `keptAt` is after `removedAt`; a removed couplet stays as a record, so a removal reaches the other devices too. */
 export const isKept = ({ keptAt, removedAt }: DivanItem): boolean => keptAt !== undefined && (removedAt === undefined || keptAt > removedAt);
 
+const later = (a?: number, b?: number): number | undefined => (a === undefined ? b : b === undefined ? a : Math.max(a, b));
+
+/** The server's rule: the later of each time wins, so the last change per couplet wins. */
+export const merged = (a: DivanItem, b: DivanItem): DivanItem => ({ key: a.key, keptAt: later(a.keptAt, b.keptAt), removedAt: later(a.removedAt, b.removedAt) });
+
 /** «2023-11-14T22:13:20.123Z»: the wire format of the contract. */
 const timeString = (milliseconds: number): string => new Date(milliseconds).toISOString();
 

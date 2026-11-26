@@ -5,7 +5,7 @@ import { canChooseWeight, clampSize, defaultSettings, listFactor, listSize, pars
 
 const memory = () => {
   const items = new Map<string, string>();
-  return { items, getItem: (key: string) => items.get(key) ?? null, setItem: (key: string, value: string) => void items.set(key, value) };
+  return { items, getItem: (key: string) => items.get(key) ?? null, setItem: (key: string, value: string) => void items.set(key, value), removeItem: (key: string) => void items.delete(key) };
 };
 
 describe("ReaderMarks (Reader/ReaderMarks.swift)", () => {

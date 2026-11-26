@@ -45,6 +45,11 @@ export class HomeModel extends Store<HomeState> {
 
   async load(): Promise<void> {
     if (this.snapshot().pick) return;
+    await this.reloadTaste();
+  }
+
+  /** The candidates, from the poets picked in onboarding (all of them when none were), and the couplet of the day from them: also after onboarding has just been done. */
+  async reloadTaste(): Promise<void> {
     const taste = readJSON(this.storage, tastePoetsKey);
     const poets = new Set(Array.isArray(taste) ? taste.filter((slug): slug is string => typeof slug === "string") : []);
     this.candidates = candidatesOf(preferring(poets, await this.source.poems()));

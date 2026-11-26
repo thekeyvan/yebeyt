@@ -7,6 +7,7 @@ import { pickPuzzle } from "../../lib/games/dailyPuzzle";
 import { tabCards } from "../../lib/games/kinds";
 import { persianDigits } from "../../lib/persian";
 import { useAccount } from "../account/AccountProvider";
+import { useMyStats } from "../account/useMyStats";
 import { Screen } from "../shell/Screen";
 import { Badge } from "../ui/Badge";
 import { DailyPuzzleCard } from "./DailyPuzzleCard";
@@ -21,6 +22,7 @@ export function GamesScreen() {
 function Games({ deck }: { deck: GameDeck }) {
   const stats = useGameStats();
   const account = useAccount();
+  const mine = useMyStats();
   const puzzle = pickPuzzle(stats.today, deck);
   const solved = (stats.daily(stats.today)?.outcome ?? "playing") !== "playing";
   return (
@@ -29,11 +31,11 @@ function Games({ deck }: { deck: GameDeck }) {
         <div className="flex items-end">
           <h1 className="flex-1 text-[40px] leading-[1.3] text-ink">بازی</h1>
           <div className="flex items-center gap-1.5 pb-1.5">
-            <span aria-label={`رشته‌ی ${persianDigits(stats.streak)} روزه`} data-testid="streak">
-              <Badge kind="streak" value={stats.streak} />
+            <span aria-label={`رشته‌ی ${persianDigits(mine.streak)} روزه`} data-testid="streak">
+              <Badge kind="streak" value={mine.streak} />
             </span>
-            <button type="button" aria-label={`امتیاز ${persianDigits(stats.points, { grouped: true })} و رده‌بندی`} data-testid="points" onClick={() => account.require("leaderboard")}>
-              <Badge kind="points" value={stats.points} />
+            <button type="button" aria-label={`امتیاز ${persianDigits(mine.points, { grouped: true })} و رده‌بندی`} data-testid="points" onClick={() => account.require("leaderboard")}>
+              <Badge kind="points" value={mine.points} />
             </button>
           </div>
         </div>

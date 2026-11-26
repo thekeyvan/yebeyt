@@ -21,6 +21,9 @@ export class Store<T> {
 /** The part of `Storage` the stores use: what they keep, and where (localStorage in the browser). */
 export type KeyValueStorage = Pick<Storage, "getItem" | "setItem">;
 
+/** …and what the stores that also forget something use. */
+export type RemovableStorage = KeyValueStorage & Pick<Storage, "removeItem">;
+
 /** Parsed JSON saved under `key`; `undefined` when there is none or it is unreadable. */
 export function readJSON(storage: KeyValueStorage, key: string): unknown {
   try {

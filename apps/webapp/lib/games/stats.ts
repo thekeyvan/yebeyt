@@ -1,4 +1,4 @@
-import { readJSON, Store, writeJSON, type KeyValueStorage } from "../reader/store";
+import { readJSON, Store, writeJSON, type KeyValueStorage, type RemovableStorage } from "../reader/store";
 import type { DailyRecord } from "./letterMarks";
 import type { GameKind } from "./kinds";
 import { TehranDay } from "./tehranDay";
@@ -16,8 +16,18 @@ export type SavedStats = {
 
 /** Where it is kept in localStorage: the phone's own name. */
 export const statsKey = "games.stats";
+/** The account the points were carried over to, and the points that belong to accounts that have left this browser (`GameStats.ownerKey`, `claimedKey`). */
+export const statsOwnerKey = "games.stats.owner";
+export const statsClaimedKey = "games.stats.claimed";
 
-type State = { saved: SavedStats; today: TehranDay };
+type State = {
+  saved: SavedStats;
+  today: TehranDay;
+  /** The account these points were carried over to; undefined while they are a guest's. */
+  owner?: string;
+  /** The points that belong to accounts that have left this browser; only what is above them is the next account's to claim. */
+  claimed: number;
+};
 
 const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
@@ -32,16 +42,31 @@ function load(storage: KeyValueStorage): SavedStats {
   };
 }
 
+const loadOwner = (storage: KeyValueStorage): string | undefined => {
+  const owner = storage.getItem(statsOwnerKey);
+  return owner === null || owner === "" ? undefined : owner;
+};
+
+const loadClaimed = (storage: KeyValueStorage): number => {
+  const claimed = Number(storage.getItem(statsClaimedKey));
+  return Number.isFinite(claimed) && claimed > 0 ? claimed : 0;
+};
+
 /**
  * The points, the streak, the best of each game and each day's daily puzzle (Games/GameStats.swift). `now` is the clock, which a debug build can set to a
  * Tehran day (`beytToday`).
  */
 export class GameStats extends Store<State> {
+  /** Told when a round of a solo game is over, with its points (for the server). */
+  onRoundFinished?: (game: GameKind, points: number) => void;
+  /** Told when a day's puzzle is over, solved or out of tries: the day, whether it was solved, the tries it took and its points. */
+  onDailyFinished?: (day: TehranDay, solved: boolean, tries: number, points: number) => void;
+
   constructor(
-    private readonly storage: KeyValueStorage,
+    private readonly storage: RemovableStorage,
     private readonly now: () => Date = () => new Date(),
   ) {
-    super({ saved: load(storage), today: TehranDay.of(now()) });
+    super({ saved: load(storage), today: TehranDay.of(now()), owner: loadOwner(storage), claimed: loadClaimed(storage) });
   }
 
   /** The Tehran day shown; `refreshToday` moves it at midnight. */
@@ -51,6 +76,59 @@ export class GameStats extends Store<State> {
 
   get points(): number {
     return this.snapshot().saved.points;
+  }
+
+  get owner(): string | undefined {
+    return this.snapshot().owner;
+  }
+
+  /** The points a guest earned that no account has claimed: the current account's own, or the next one's. */
+  get guestPoints(): number {
+    const { saved, claimed } = this.snapshot();
+    return Math.max(0, saved.points - claimed);
+  }
+
+  /** A person signs in: the points in this browser go to the first account that does, and stay that account's. Returns whether they are `userId`'s. */
+  claim(userId: string): boolean {
+    const { owner } = this.snapshot();
+    if (owner === undefined) {
+      this.storage.setItem(statsOwnerKey, userId);
+      this.set({ ...this.snapshot(), owner: userId });
+      return true;
+    }
+    return owner === userId;
+  }
+
+  /**
+   * The account leaves this browser (signing out, deleting it): the points so far stay its own and are not offered to the next account, and its streak and
+   * best scores go (they would be carried to the next account as its own); what is earned from now on is a guest's again and the next account may claim
+   * it. The day records of the puzzle stay.
+   */
+  release(): void {
+    const { saved } = this.snapshot();
+    this.storage.removeItem(statsOwnerKey);
+    this.storage.setItem(statsClaimedKey, String(saved.points));
+    const next: SavedStats = { ...saved, solvedDays: [], best: {} };
+    writeJSON(this.storage, statsKey, next);
+    this.set({ ...this.snapshot(), saved: next, owner: undefined, claimed: saved.points });
+  }
+
+  /** What a guest carries over to an account (`PUT /v1/me/progress`, Account/ProgressCarryOver.swift): the points, the streak (its last day is today when today's puzzle is solved, else yesterday) and the best of every game played. */
+  get carryOver(): { points: number; streakDays: number; streakLastDate: string | null; bestByGame: Record<string, number> } {
+    const { saved, today } = this.snapshot();
+    const streakDays = this.streak;
+    const solvedToday = saved.daily[today.number]?.outcome === "solved";
+    return {
+      points: this.guestPoints,
+      streakDays,
+      streakLastDate: streakDays > 0 ? (solvedToday ? today : today.previous).key : null,
+      bestByGame: Object.fromEntries(Object.entries(saved.best).filter(([, score]) => score > 0)),
+    };
+  }
+
+  /** A round of a solo game is over: it is reported to the account, when there is one (`ScoreSync`). */
+  finishRound(game: GameKind, points: number): void {
+    this.onRoundFinished?.(game, points);
   }
 
   /** The days in a row the daily puzzle was solved, up to today. A day not played yet doesn't break it until the day is over. */
@@ -88,7 +166,8 @@ export class GameStats extends Store<State> {
   /** Keeps a day's puzzle. The moment it is first solved, its points are added and the day counts for the streak. */
   record(record: DailyRecord, day: TehranDay): void {
     const { saved } = this.snapshot();
-    const wasSolved = saved.daily[day.number]?.outcome === "solved";
+    const before = saved.daily[day.number]?.outcome ?? "playing";
+    const wasSolved = before === "solved";
     const next: SavedStats = { ...saved, daily: { ...saved.daily, [day.number]: record } };
     if (record.outcome === "solved" && !wasSolved) {
       next.points += record.points;
@@ -96,6 +175,7 @@ export class GameStats extends Store<State> {
       next.best = { ...next.best, daily: Math.max(next.best.daily ?? 0, record.points) };
     }
     this.keep(next);
+    if (before === "playing" && record.outcome !== "playing") this.onDailyFinished?.(day, record.outcome === "solved", record.tries.length, record.points);
   }
 
   /** Points earned in a round, as they come. */

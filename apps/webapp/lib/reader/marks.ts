@@ -1,5 +1,5 @@
-import { fromWire, isKept, toWire, type DivanItem } from "./divan";
-import { readJSON, Store, writeJSON, type KeyValueStorage } from "./store";
+import { fromWire, isKept, merged, toWire, type DivanItem } from "./divan";
+import { readJSON, Store, writeJSON, type KeyValueStorage, type RemovableStorage } from "./store";
 
 /** The line shown when a couplet is taken out of the divan, with the button that brings it back. */
 export const divanRemoved = "از دیوانت برداشته شد";
@@ -26,12 +26,17 @@ function load(storage: KeyValueStorage): State {
 
 /**
  * What the reader has marked in this browser, per couplet (Reader/ReaderMarks.swift): پسند, بازنشر and نگه دار. The first two
- * are kept as lists of keys (they need an account, which W4 brings), نگه دار is the divan: each couplet has the time it was
- * kept and the time it was taken out, so that W4 can merge it with the server's divan.
+ * are kept as lists of keys (they belong to an account: `ReactionsSync` keeps them the same on the server, and they go when the person signs out),
+ * نگه دار is the divan: each couplet has the time it was kept and the time it was taken out, so that `DivanSync` can merge it with the server's divan.
  */
 export class ReaderMarks extends Store<State> {
+  /** Called after the person keeps or un-keeps a couplet (not after a merge from the server). */
+  onKeptChange?: () => void;
+  /** Called after the person likes, un-likes, reposts or un-reposts a couplet: the key, the kind and whether it is on now. */
+  onReactionChange?: (key: string, kind: "like" | "repost", on: boolean) => void;
+
   constructor(
-    private readonly storage: KeyValueStorage,
+    private readonly storage: RemovableStorage,
     private readonly now: () => number = Date.now,
   ) {
     super(load(storage));
@@ -49,9 +54,8 @@ export class ReaderMarks extends Store<State> {
     const keys = new Set(reactions[mark]);
     const on = !keys.delete(key);
     if (on) keys.add(key);
-    const next = { ...reactions, [mark]: keys };
-    writeJSON(this.storage, marksKey, { liked: [...next.liked], reposted: [...next.reposted] });
-    this.set({ reactions: next, divan });
+    this.saveReactions({ ...reactions, [mark]: keys }, divan);
+    this.onReactionChange?.(key, mark === "liked" ? "like" : "repost", on);
     return on;
   }
 
@@ -90,9 +94,61 @@ export class ReaderMarks extends Store<State> {
     const on = !isKept(item);
     if (on) item.keptAt = Math.max(stamp, (item.removedAt ?? 0) + 1);
     else item.removedAt = Math.max(stamp, item.keptAt ?? 0);
-    const next = new Map(divan).set(key, item);
-    writeJSON(this.storage, divanKey, [...next.values()].sort((a, b) => (a.key < b.key ? -1 : 1)).map(toWire));
-    this.set({ reactions, divan: next });
+    this.saveDivan(reactions, new Map(divan).set(key, item));
+    this.onKeptChange?.();
     return on;
+  }
+
+  /** Every couplet the divan has a record of, the removed ones too, by key. */
+  divanItems(): DivanItem[] {
+    return [...this.snapshot().divan.values()].sort((a, b) => (a.key < b.key ? -1 : 1));
+  }
+
+  /** Merges what the server has (or another source): the later of each time wins. */
+  applyDivan(items: readonly DivanItem[]): void {
+    const { reactions, divan } = this.snapshot();
+    const next = new Map(divan);
+    let changed = false;
+    for (const item of items) {
+      const known = next.get(item.key);
+      const both = known ? merged(known, item) : item;
+      if (!known || both.keptAt !== known.keptAt || both.removedAt !== known.removedAt) {
+        next.set(item.key, both);
+        changed = true;
+      }
+    }
+    if (changed) this.saveDivan(reactions, next);
+  }
+
+  /** Forgets the divan and its times (after signing out or deleting the account). */
+  clearDivan(): void {
+    this.storage.removeItem(divanKey);
+    this.set({ reactions: this.snapshot().reactions, divan: new Map() });
+  }
+
+  /** Takes what the server has of one kind (likes or reposts): it replaces this browser's, except the couplets in `unsent`, which were changed here and not sent yet and keep their state. */
+  applyServer(keys: ReadonlySet<string>, mark: "liked" | "reposted", unsent: ReadonlySet<string>): void {
+    const { reactions, divan } = this.snapshot();
+    const local = reactions[mark];
+    const next = new Set([...keys].filter((key) => !unsent.has(key)));
+    for (const key of local) if (unsent.has(key)) next.add(key);
+    if (next.size === local.size && [...next].every((key) => local.has(key))) return;
+    this.saveReactions({ ...reactions, [mark]: next }, divan);
+  }
+
+  /** Forgets the likes and reposts (after signing out or deleting the account: they belong to the account). */
+  clearLikesAndReposts(): void {
+    this.storage.removeItem(marksKey);
+    this.set({ reactions: { liked: new Set(), reposted: new Set() }, divan: this.snapshot().divan });
+  }
+
+  private saveReactions(reactions: State["reactions"], divan: State["divan"]): void {
+    writeJSON(this.storage, marksKey, { liked: [...reactions.liked], reposted: [...reactions.reposted] });
+    this.set({ reactions, divan });
+  }
+
+  private saveDivan(reactions: State["reactions"], divan: State["divan"]): void {
+    writeJSON(this.storage, divanKey, [...divan.values()].sort((a, b) => (a.key < b.key ? -1 : 1)).map(toWire));
+    this.set({ reactions, divan });
   }
 }

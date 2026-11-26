@@ -90,6 +90,7 @@ export class QuizSession extends Store<number> {
     if (this.finished) return;
     this.finished = true;
     this.stats.raiseBest(this.round.kind, this.round.points);
+    this.stats.finishRound(this.round.kind, this.round.points);
   }
 
   private changed(): void {

@@ -43,6 +43,7 @@ export class MatchSession extends Store<number> {
     if (this.finished) return;
     this.finished = true;
     this.stats.raiseBest("match", this.round.points);
+    this.stats.finishRound("match", this.round.points);
   }
 
   private changed(): void {

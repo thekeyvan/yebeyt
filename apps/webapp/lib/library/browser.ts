@@ -63,6 +63,11 @@ function homeModel(): Promise<HomeModel> {
   return home;
 }
 
+/** Onboarding has been done: today's couplet is picked again from the poets that were chosen. */
+export function reloadHome(): void {
+  void home?.then((model) => model.reloadTaste());
+}
+
 /** What is loaded in the browser (`undefined` while it loads), and whether it failed: `retry` asks again. `key` names what `load` loads. */
 export function useLoaded<T>(load: () => Promise<T>, initial?: T, key = ""): { value: T | undefined; failed: boolean; retry: () => void } {
   const [state, setState] = useState<{ value: T | undefined; failed: boolean; attempt: number }>({ value: initial, failed: false, attempt: 0 });

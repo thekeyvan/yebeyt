@@ -71,6 +71,7 @@ export class JigsawSession extends Store<number> {
     this.finished = true;
     this.stats.award(this.round.timeBonus);
     this.stats.raiseBest("jigsaw", this.round.totalPoints);
+    this.stats.finishRound("jigsaw", this.round.totalPoints);
   }
 
   private changed(): void {

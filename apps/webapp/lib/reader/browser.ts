@@ -9,7 +9,8 @@ let settings: TextSettingsStore | undefined;
 let marks: ReaderMarks | undefined;
 
 const settingsStore = (): TextSettingsStore => (settings ??= new TextSettingsStore(localStorage));
-const marksStore = (): ReaderMarks => (marks ??= new ReaderMarks(localStorage));
+/** The marks of this browser (also what the account syncs). */
+export const marksStore = (): ReaderMarks => (marks ??= new ReaderMarks(localStorage));
 
 /** The text settings, and the way to change them. On the server (and while hydrating) they are the defaults. */
 export function useTextSettings(): [TextSettings, (change: Partial<TextSettings>) => void] {
