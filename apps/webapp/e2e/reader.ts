@@ -30,7 +30,8 @@ export function silence(seconds: number): Buffer {
 /** The timing file of the nine couplets of the poem: every verse starts a second after the one before, so couplet n starts at 2n seconds. */
 export const timingXML = `<A><PoemAudio><SyncArray>${Array.from({ length: 18 }, (_, verse) => `<SyncInfo><VerseOrder>${verse}</VerseOrder><AudioMiliseconds>${verse * 1000}</AudioMiliseconds></SyncInfo>`).join("")}</SyncArray></PoemAudio></A>`;
 
-function ranged(route: Route, body: Buffer) {
+/** Answers a request for audio from `body`, with the byte ranges browsers ask for. */
+export function ranged(route: Route, body: Buffer) {
   const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? "");
   const headers = { "content-type": "audio/wav", "accept-ranges": "bytes", "access-control-allow-origin": "*" };
   if (!range) return route.fulfill({ status: 200, headers, body });

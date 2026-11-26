@@ -5,18 +5,19 @@ import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { gameInFront } from "../../lib/games/entry";
-import { isGamePage } from "../../lib/games/kinds";
-import { deckStart, jigsawURL, type JigsawStart } from "../../lib/games/jigsawStart";
+import { isGamePage, type PlayableKind } from "../../lib/games/kinds";
+import { deckStart, type JigsawStart } from "../../lib/games/jigsawStart";
 import { leaveGame } from "../../lib/games/leave";
 import { canGoBack } from "../../lib/nav";
 import { coverAway, coverDrop, coverRise, useVariant } from "../../lib/motion";
 import { ConfirmSheet } from "../ui/ConfirmSheet";
-import { DailyScreen } from "./DailyScreen";
-import { JigsawScreen } from "./JigsawScreen";
+import { GameScreen } from "./GameScreen";
 
 type Game = {
   /** Closes the game, after asking when `setAsks(true)` said a round has started. */
   requestClose: () => void;
+  /** Closes the game at once, with no question: a game that can't go on (a recitation that won't play) leaves like this. */
+  leave: () => void;
   /** The screen says whether leaving now loses a round (`LeaveGame.asks`). */
   setAsks: (asks: boolean) => void;
   /** The question «از بازی بری بیرون؟» is open: the clock waits for the answer. */
@@ -25,7 +26,7 @@ type Game = {
   active: boolean;
 };
 
-const GameContext = createContext<Game>({ requestClose: () => {}, setAsks: () => {}, asking: false, active: true });
+const GameContext = createContext<Game>({ requestClose: () => {}, leave: () => {}, setAsks: () => {}, asking: false, active: true });
 
 export const useGame = (): Game => useContext(GameContext);
 
@@ -34,7 +35,7 @@ export const useGame = (): Game => useContext(GameContext);
  * tab bar stay as they are) and drops when it closes. Opened inside the app (`modal`) it closes back to where it came from; opened by its link it is
  * just there (in a layer of the document's own), and closes to the games tab. Escape and the × close it, asking first when a round has started. The reader opens over it («کل شعر»).
  */
-export function GameCover({ kind, modal, start = deckStart }: { kind: "daily" | "jigsaw"; modal: boolean; start?: JigsawStart }) {
+export function GameCover({ kind, modal, start = deckStart, poet }: { kind: PlayableKind; modal: boolean; start?: JigsawStart; poet?: string }) {
   const router = useRouter();
   const v = useVariant();
   const pathname = usePathname();
@@ -87,8 +88,8 @@ export function GameCover({ kind, modal, start = deckStart }: { kind: "daily" | 
       data-testid="game"
     >
       <div inert={reading} className="mx-auto h-full w-full max-w-[640px]">
-        <GameContext value={{ requestClose, setAsks, asking, active: !reading }}>
-          {kind === "daily" ? <DailyScreen /> : <JigsawScreen key={jigsawURL(start)} start={start} />}
+        <GameContext value={{ requestClose, leave: close, setAsks, asking, active: !reading }}>
+          <GameScreen kind={kind} start={start} poet={poet} />
         </GameContext>
       </div>
       <ConfirmSheet open={asking} onOpenChange={setAsking} title={leaveGame.title} message={leaveGame.message} confirm={leaveGame.leave} cancel={leaveGame.stay} onConfirm={close} />

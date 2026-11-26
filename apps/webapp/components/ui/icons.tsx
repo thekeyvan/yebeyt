@@ -196,6 +196,13 @@ export const ShuffleIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) =
   </IconBox>
 );
 
+/** «رد کن»: the bar and arrow of the board. */
+export const SkipIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) => (
+  <IconBox size={size} lineWidth={lineWidth} fill={fill}>
+    <path d="M18 6l-8 6 8 6zM6 6v12" />
+  </IconBox>
+);
+
 /** The clock of the timer capsule. */
 export const TimerIcon = ({ size = 24, lineWidth = 2, fill }: LineIconProps) => (
   <IconBox size={size} lineWidth={lineWidth} fill={fill}>

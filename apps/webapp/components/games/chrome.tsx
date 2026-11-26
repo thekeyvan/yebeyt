@@ -38,14 +38,14 @@ export function GameLoading({ children }: { children: ReactNode }) {
   return <GamePage header={<GameCloseButton />}>{children}</GamePage>;
 }
 
-/** «بچسبون!» and «بیت بعدی»: a big lapis button with a white border. */
-export function BigButton({ className = "", children, ...props }: ComponentProps<typeof motion.button>) {
+/** «بچسبون!» and «بیت بعدی»: a big lapis button with a white border; `compact` is the quiz games' «همینه!» (58 px, a 4 px border). */
+export function BigButton({ className = "", compact, children, ...props }: ComponentProps<typeof motion.button> & { compact?: boolean }) {
   const press = usePress();
   return (
     <motion.button
       type="button"
       {...press}
-      className={`flex h-[60px] w-full items-center justify-center rounded-[20px] border-[5px] border-white bg-lapis pt-1 font-title text-[25px] leading-none text-white shadow-card disabled:opacity-45 ${className}`}
+      className={`flex w-full items-center justify-center rounded-[20px] bg-lapis pt-1 font-title leading-none text-white shadow-card disabled:opacity-45 ${compact ? "h-[58px] border-4 border-white text-[22px]" : "h-[60px] border-[5px] border-white text-[25px]"} ${className}`}
       {...props}
     >
       {children}
@@ -54,7 +54,7 @@ export function BigButton({ className = "", children, ...props }: ComponentProps
 }
 
 /** The 58 px round button beside it: the bulb (amber, with a white ring) or shuffle (white). */
-export function RoundAction({ label, amber, onClick, disabled, children }: { label: string; amber?: boolean; onClick: () => void; disabled?: boolean; children: ReactNode }) {
+export function RoundAction({ label, amber, onClick, disabled, testId, children }: { label: string; amber?: boolean; onClick: () => void; disabled?: boolean; testId?: string; children: ReactNode }) {
   const press = usePress();
   return (
     <motion.button
@@ -63,6 +63,7 @@ export function RoundAction({ label, amber, onClick, disabled, children }: { lab
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
+      data-testid={testId}
       className={`grid size-[58px] shrink-0 place-items-center rounded-full bg-white text-ink shadow-[0_3px_4px_rgba(20,17,43,0.2)] disabled:opacity-45 ${amber ? "p-1" : ""}`}
     >
       {amber ? <span className="grid size-full place-items-center rounded-full bg-amber">{children}</span> : children}

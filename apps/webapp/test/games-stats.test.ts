@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { singlePoet, sourceOf } from "../lib/games/couplet";
-import { backgroundOf, allKinds, aboutOf, metaOf, nameOf, opening, tabCards, taglineOf } from "../lib/games/kinds";
+import { backgroundOf, allKinds, aboutOf, isGamePage, metaOf, nameOf, opening, parsePoet, poetGameURL, tabCards, taglineOf } from "../lib/games/kinds";
 import { newRecord, type DailyRecord } from "../lib/games/letterMarks";
 import { GameStats, statsKey } from "../lib/games/stats";
 import { roundSeed, tehranNow } from "../lib/games/debug";
@@ -134,11 +134,18 @@ describe("the games", () => {
     expect(backgroundOf("duel")).toHaveLength(2);
   });
 
-  it("opens the two that are on the web, asks an account for the friends' games and says the rest is coming", () => {
-    expect(opening("daily")).toEqual({ page: "/games/daily" });
-    expect(opening("jigsaw")).toEqual({ page: "/games/jigsaw" });
-    expect(["poet", "misra", "book", "match", "listen"].map((kind) => opening(kind as never))).toEqual(Array(5).fill("soon"));
+  it("opens every solo game at its own page and asks an account for the friends' games", () => {
+    expect(["daily", "jigsaw", "poet", "misra", "book", "match", "listen"].map((kind) => opening(kind as never))).toEqual(
+      ["daily", "jigsaw", "poet", "misra", "book", "match", "listen"].map((kind) => ({ page: `/games/${kind}` })),
+    );
     expect([opening("mosh"), opening("duel")]).toEqual(["account", "account"]);
+  });
+
+  it("knows the pages that cover the tabs, a poet's round and a poet in an address", () => {
+    expect(["/games/poet", "/games/listen", "/games/daily"].map(isGamePage)).toEqual([true, true, true]);
+    expect(["/games", "/games/catalog", "/games/poet/x", "/games/mosh"].map(isGamePage)).toEqual([false, false, false, false]);
+    expect(poetGameURL("hafez")).toBe("/games/misra?poet=hafez");
+    expect([parsePoet("hafez"), parsePoet(["saadi", "x"]), parsePoet("../x"), parsePoet(""), parsePoet(undefined)]).toEqual(["hafez", "saadi", undefined, undefined, undefined]);
   });
 
   it("names a couplet's source and the poet of a set", () => {

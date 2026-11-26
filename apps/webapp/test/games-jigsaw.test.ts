@@ -500,7 +500,7 @@ describe("JigsawStart", () => {
   it("opens with the couplet asked for, from the poem, with its poet and book", () => {
     const [only, ...none] = openingCouplets({ kind: "couplet", poem: poem.path, index: 1 }, poem, hafez, "دیوان حافظ");
     expect(none).toEqual([]);
-    expect(only).toEqual({ poem: poem.path, index: 1, m1: "که عشق آسان نمود اول", m2: "ولی افتاد مشکل‌ها", meaning: undefined, poetSlug: "hafez", poetName: "حافظ", bookTitle: "دیوان حافظ", meaningIsAI: true });
+    expect(only).toEqual({ poem: poem.path, index: 1, m1: "که عشق آسان نمود اول", m2: "ولی افتاد مشکل‌ها", meaning: undefined, poetSlug: "hafez", poetName: "حافظ", bookTitle: "دیوان حافظ", bookPath: "", meaningIsAI: true });
     expect(openingCouplets({ kind: "couplet", poem: poem.path, index: 0 }, poem, hafez, "")[0]!.meaning).toBe("ساقی جام را بگردان.");
   });
 

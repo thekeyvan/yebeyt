@@ -88,18 +88,27 @@ export const backgroundOf = (kind: GameKind): readonly [string, string?] => info
 /** The games with a card on the games tab, in the order of the board. */
 export const tabCards: readonly GameKind[] = ["jigsaw", "poet", "misra", "book"];
 
-/** The games that are on the web: a page of their own. */
-const pages: Partial<Record<GameKind, string>> = { daily: "/games/daily", jigsaw: "/games/jigsaw" };
+/** The games that are on the web: all the solo ones, each with a page of its own at `/games/<kind>` (the names are `GameKind`'s). */
+export const playableKinds = ["daily", "jigsaw", "poet", "misra", "book", "match", "listen"] as const;
+export type PlayableKind = (typeof playableKinds)[number];
+
+export const isPlayable = (kind: string): kind is PlayableKind => (playableKinds as readonly string[]).includes(kind);
+
+const pageOf = (kind: PlayableKind): string => `/games/${kind}`;
 
 /** Whether the path is a game's page: it covers the tabs, as the reader does. */
-export const isGamePage = (pathname: string): boolean => Object.values(pages).includes(pathname);
+export const isGamePage = (pathname: string): boolean => playableKinds.some((kind) => pageOf(kind) === pathname);
 
-/**
- * What a tap on the game does: opens its page; asks for an account (the games with a friend, which need the server); or says it is coming
- * (the quiz games, which W3b brings).
- */
-export function opening(kind: GameKind): { page: string } | "account" | "soon" {
-  const page = pages[kind];
-  if (page) return { page };
-  return kind === "mosh" || kind === "duel" ? "account" : "soon";
+/** مصراع دوم with the couplets of one poet only (from the poet's page): `/games/misra?poet=hafez`. */
+export const poetGameURL = (slug: string): string => `${pageOf("misra")}?${new URLSearchParams({ poet: slug })}`;
+
+/** The poet an address asks for; anything that is not a slug (letters, digits, «_» and «-») is none. */
+export function parsePoet(value: string | string[] | undefined): string | undefined {
+  const slug = Array.isArray(value) ? value[0] : value;
+  return slug !== undefined && /^[A-Za-z0-9_-]+$/.test(slug) ? slug : undefined;
+}
+
+/** What a tap on the game does: opens its page, or (the games with a friend, which need the server) asks for an account. */
+export function opening(kind: GameKind): { page: string } | "account" {
+  return isPlayable(kind) ? { page: pageOf(kind) } : "account";
 }

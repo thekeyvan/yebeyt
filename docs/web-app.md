@@ -56,7 +56,7 @@ Each slice is on its own branch (`feat/web-<name>`), built by **builder**, revie
 - **W0 Foundations** (merged 26 Nov, 304eaea): `apps/webapp`, the Tailwind theme from the tokens, fonts, the sticker components, the shell (tab bar and side rail, five empty tabs, headers, sheet, confirm, toast, motion), Playwright, Dockerfile, the Railway service and domain.
 - **W1 Reading** (merged 26 Nov): poetry data loading, the reader in both modes, text sheet, meaning, hold menu, marks, recitation.
 - **W2 Home, Explore, Library, Search** (merged 26 Nov), plus reading progress (iOS `ReadingProgress`: the last couplet opened in each poem, for «ادامه بده»).
-- **W3 Solo games**, in two parts: **W3a** the catalog, معمای امروز, جورچین, the after-answer sheet, round end and stats; **W3b** شاعر کیه، مصراع دوم، کدوم کتاب، جفت‌ها، گوش کن.
+- **W3 Solo games**, in two parts: **W3a** (merged 26 Nov) the catalog, معمای امروز, جورچین, the after-answer sheet, round end and stats; **W3b** حدس شاعر، مصراع دوم، از کدوم کتاب؟، معنی‌یاب، گوش کن (the iOS names), with the poet page's game card. گوش کن stops its clip with `timeupdate` plus an animation-frame check and fades it with a Web Audio gain.
 - **W4 Accounts and sync**: the web sign-in, username, gate, onboarding, carry-over, the typed API client, divan/scores/reactions sync.
 - **W5 Me.**
 - **W6 Friends and leaderboard.**

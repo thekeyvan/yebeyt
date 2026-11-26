@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openApp } from "./browse";
 import { answerCouplet, daily, openRound, tapKeys } from "./games";
+import { answerRight, answerWrong, options } from "./quiz";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -120,6 +122,43 @@ test("with reduced motion a game rises as a fade, and its sheet, pops and confir
   await page.waitForTimeout(500);
   await page.getByRole("button", { name: "برو بیرون" }).click();
   await expect(page.getByTestId("game")).toHaveCount(0);
+
+  const { longest, animations } = await page.evaluate(() => (window as unknown as { __moves: () => Moves }).__moves());
+  expect(longest.ms, `${longest.what} moved for ${longest.ms} ms`).toBeLessThanOrEqual(170);
+  for (const { what, ms } of animations) expect(ms, `${what} animates for ${ms} ms`).toBeLessThanOrEqual(150);
+});
+
+test("with reduced motion the quiz and match games move for no longer than 0.15 s: the options, a wrong answer, the pairs and the sheets", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.addInitScript(() => sessionStorage.setItem("beytSeed", "1"));
+  await openApp(page, "/games");
+  await expect(page.getByTestId("daily-card")).toBeVisible();
+  await watchMoves(page);
+
+  // حدس شاعر: a wrong answer (the shake), a right one (the pop), the question before leaving.
+  await page.getByTestId("game-poet").click();
+  await expect(options(page).first()).toBeVisible();
+  await answerWrong(page, "poet");
+  await page.waitForTimeout(500);
+  await page.getByTestId("next").click();
+  await answerRight(page, "poet");
+  await page.waitForTimeout(500);
+  await page.getByTestId("next").click();
+  await page.getByRole("button", { name: "بستن" }).click();
+  await page.getByRole("dialog").waitFor();
+  await page.getByRole("button", { name: "برو بیرون" }).click();
+  await expect(page.getByTestId("game")).toHaveCount(0);
+  await expect(page).toHaveURL((url) => url.pathname === "/games");
+
+  // معنی‌یاب: a wrong meaning (the shake), a pair (the pop) and the pairs that follow.
+  await page.getByTestId("all-games").click();
+  await page.getByTestId("catalog-match").click();
+  await expect(page.getByTestId("match-couplet")).toBeVisible();
+  await page.getByTestId("word-0").click();
+  await page.getByTestId("meaning-1").click();
+  await page.waitForTimeout(300);
+  await page.getByTestId("meaning-0").click();
+  await page.waitForTimeout(500);
 
   const { longest, animations } = await page.evaluate(() => (window as unknown as { __moves: () => Moves }).__moves());
   expect(longest.ms, `${longest.what} moved for ${longest.ms} ms`).toBeLessThanOrEqual(170);

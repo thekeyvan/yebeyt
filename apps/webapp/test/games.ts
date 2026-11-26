@@ -15,6 +15,7 @@ export function couplet(
     poetSlug: poet,
     poetName: "سعدی",
     bookTitle: "گلستان",
+    bookPath: "/saadi/golestan",
     meaningIsAI: false,
   };
 }

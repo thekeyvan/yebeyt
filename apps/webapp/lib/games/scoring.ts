@@ -22,3 +22,16 @@ export const jigsaw = (correctWords: number, hints: number): number => Math.max(
 
 /** The bonus of a round that was finished before the time ran out. */
 export const jigsawTimeBonus = (secondsLeft: number): number => Math.max(0, secondsLeft) * jigsawSecondLeft;
+
+/** The quiz games (حدس شاعر, مصراع دوم, از کدوم کتاب؟, گوش کن): 20 for a right answer. */
+export const quizBase = 20;
+/** … and 2 for each second left of the 12 a question gets. */
+export const quizSecondLeft = 2;
+export const quizWindow = 12;
+/** ۵۰:۵۰ and «یه کلمه» cost this much each. */
+export const quizHintCost = 20;
+/** معنی‌یاب: points for each pair. */
+export const matchPair = 10;
+
+/** A right answer of a quiz: 20 and 2 per second left, less the hints used; never below zero. */
+export const quiz = (secondsLeft: number, hints: number): number => Math.max(0, quizBase + Math.max(0, secondsLeft) * quizSecondLeft - hints * quizHintCost);

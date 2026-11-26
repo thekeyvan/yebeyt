@@ -10,6 +10,7 @@ import { poetChips, topPoems, type TopPoems } from "../../lib/library/poetPage";
 import { usePress } from "../../lib/motion";
 import { persianDigits } from "../../lib/persian";
 import { routeURL } from "../../lib/reader/route";
+import { PoetGameCard } from "../games/PoetGameCard";
 import { Screen } from "../shell/Screen";
 import { ChevronDownIcon, ChevronLeftIcon } from "../ui/icons";
 import { PoetCircle } from "./PoetCircle";
@@ -92,7 +93,7 @@ function TopCard({ top }: { top: TopPoems }) {
   );
 }
 
-/** A poet's page: follow, the card in the poet's colour, their books or sections and the most read poems (Library/PoetScreen.swift). The game card comes with the games (W3). */
+/** A poet's page: follow, the card in the poet's colour, their books or sections, the game card and the most read poems (Library/PoetScreen.swift). */
 export function PoetScreen({ slug }: { slug: string }) {
   return (
     <WithLibrary>
@@ -126,6 +127,7 @@ function Poet({ data, poet }: { data: LibraryData; poet: LibraryPoet }) {
             </Link>
           ))}
         </div>
+        <PoetGameCard poet={poet} />
         {top && top.poems.length > 0 && <TopCard top={top} />}
       </div>
     </Screen>

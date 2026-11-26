@@ -1,3 +1,6 @@
+/** Where a گوش کن clip of a deck couplet starts and ends, in seconds of recitation `recitation`'s mp3: measured at data-build time (tools/ganjoor/clips.py) as the real silence after the first hemistich. Only good for that recitation. */
+export type ListenRange = { recitation: number; start: number; end: number };
+
 /** A couplet in a game: from the deck, or from a poem the reader has open (Games/GameDeck.swift). */
 export type GameCouplet = {
   poem: string;
@@ -11,8 +14,12 @@ export type GameCouplet = {
   /** The poet's short name. */
   poetName: string;
   bookTitle: string;
+  /** The curated book's path (`/moulavi/masnavi`): its title and colour are in library.json. Empty for a couplet of a poem the reader has open. */
+  bookPath: string;
   /** The meaning was written by an AI: the sheet shows the sparkle by its heading. */
   meaningIsAI: boolean;
+  /** گوش کن, a Hafez couplet of the deck: where its clip really ends (none: the margin rule of `ListenClipRange` decides). */
+  listenRange?: ListenRange;
 };
 
 /** «/saadi/golestan/sh1#0»: what the server accepts in a challenge. */
@@ -38,7 +45,7 @@ export class GameDeck {
 }
 
 /** One entry of games.json. */
-type Entry = { poem: string; index: number; m1: string; m2: string; meaning: string; ai?: boolean; poet: string; bookTitle: string };
+type Entry = { poem: string; index: number; m1: string; m2: string; meaning: string; ai?: boolean; poet: string; book?: string; bookTitle: string; clip?: ListenRange | null };
 
 /** The deck from the text of games.json; `poetNames` maps a poet's slug to the short name shown next to the couplet. */
 export function parseDeck(entries: unknown, poetNames: (slug: string) => string | undefined): GameDeck {
@@ -53,7 +60,9 @@ export function parseDeck(entries: unknown, poetNames: (slug: string) => string 
       poetSlug: entry.poet,
       poetName: poetNames(entry.poet) ?? "",
       bookTitle: entry.bookTitle,
+      bookPath: entry.book ?? "",
       meaningIsAI: entry.ai === true,
+      listenRange: entry.clip ?? undefined,
     })),
   );
 }

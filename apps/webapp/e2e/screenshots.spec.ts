@@ -1,6 +1,8 @@
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { openApp } from "./browse";
 import { answerCouplet, centreOf, coupletOnCard, daily, emptySlots, holdAndMove, openRound, tapKeys } from "./games";
+import { openListen } from "./listen";
+import { openGame, options } from "./quiz";
 import { openPoem, stubNetwork } from "./reader";
 
 // Screenshots of the screens that prove the shell (not committed: e2e/__screenshots__ is ignored).
@@ -172,5 +174,47 @@ test.describe("the games", () => {
     await page.getByTestId("round-end").waitFor();
     await page.waitForTimeout(1200);
     await page.screenshot(shot(`web3a-round-end-${size}`));
+  });
+});
+
+// The screens of W3b (the quiz games, معنی‌یاب and گوش کن), on the fixed round with nothing from the network.
+test.describe("the quiz games", () => {
+  test.beforeEach(async ({ page }, info) => {
+    test.skip(!info.project.name.startsWith("chromium") || page.viewportSize()!.width !== 375, "the phone size of the brief");
+  });
+
+  for (const kind of ["poet", "misra", "book"] as const) {
+    test(`${kind} mid-question, and its sheet after a wrong answer`, async ({ page }) => {
+      await openGame(page, `/games/${kind}`);
+      await options(page).first().waitFor();
+      await page.waitForTimeout(900);
+      await options(page).nth(1).click();
+      await page.screenshot(shot(`web3b-${kind}-375x667`));
+      if (kind !== "poet") return;
+      await page.getByTestId("confirm").click();
+      await page.getByTestId("answer-sheet").waitFor();
+      await page.waitForTimeout(1000);
+      await page.screenshot(shot("web3b-answer-sheet-375x667"));
+    });
+  }
+
+  test("معنی‌یاب with a pair made and a word in hand", async ({ page }) => {
+    await openGame(page, "/games/match");
+    await page.getByTestId("match-couplet").waitFor();
+    await page.waitForTimeout(900);
+    await page.getByTestId("word-0").click();
+    await page.getByTestId("meaning-0").click();
+    await page.getByTestId("word-1").click();
+    await page.getByTestId("meaning-2").click();
+    await page.waitForTimeout(900);
+    await page.screenshot(shot("web3b-match-375x667"));
+  });
+
+  test("گوش کن while the clip plays", async ({ page }) => {
+    await openListen(page, "measured");
+    await page.getByRole("button", { name: "پخش" }).click();
+    await expect(page.getByRole("button", { name: "مکث" })).toBeVisible();
+    await page.waitForTimeout(1800);
+    await page.screenshot(shot("web3b-listen-375x667"));
   });
 });

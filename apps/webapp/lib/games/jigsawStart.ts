@@ -39,6 +39,7 @@ export function openingCouplets(start: JigsawStart, poem: Poem, poet: { slug: st
       poetSlug: poet.slug,
       poetName: poet.name,
       bookTitle,
+      bookPath: "",
       meaningIsAI: couplet.ai === true,
     }),
   );

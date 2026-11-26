@@ -5,6 +5,11 @@ import { libraryData, useLoaded, useStore } from "../library/browser";
 import { poetryStore } from "../poetry/browser";
 import { GameDeck, parseDeck, type GameCouplet } from "./couplet";
 import { openingCouplets, type JigsawStart } from "./jigsawStart";
+import type { ListenLoader } from "./listenLoader";
+import { parseGlossary } from "./matchGlossary";
+import { makeMatchRound } from "./matchStart";
+import type { MatchRound } from "./matchRound";
+import type { SeededGenerator } from "./seeded";
 import { GameStats } from "./stats";
 import { tehranNow } from "./debug";
 
@@ -57,4 +62,24 @@ export async function loadOpening(start: JigsawStart): Promise<GameCouplet[]> {
   } catch {
     return [];
   }
+}
+
+/** Ganjoor's real answers for گوش کن: the poem from the store, its recitations from the API, the timing file from its URL. */
+export async function liveListenLoader(): Promise<ListenLoader> {
+  const store = await poetryStore();
+  return {
+    poem: (path) => store.poem(path),
+    recitations: (poemId) => store.recitations(poemId),
+    timing: async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`timing ${response.status}`);
+      return response.text();
+    },
+  };
+}
+
+/** A round of معنی‌یاب from glossary.json (copied into /data at build) and the poems; null when there is nothing to play. */
+export async function loadMatchRound(generator: SeededGenerator): Promise<MatchRound | null> {
+  const [{ library }, store, file] = await Promise.all([libraryData(), poetryStore(), fetch("/data/glossary.json").then((response) => (response.ok ? response.json() : Promise.reject(new Error("missing bundled file glossary"))))]);
+  return (await makeMatchRound(parseGlossary(file), (path) => store.poem(path), library, generator)) ?? null;
 }

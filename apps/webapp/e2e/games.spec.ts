@@ -21,7 +21,7 @@ test.describe("the tab and the catalog", () => {
     for (const name of ["جورچین بیت", "حدس شاعر", "مصراع دوم", "از کدوم کتاب؟"]) await expect(page.getByRole("link", { name }).or(page.getByRole("button", { name }))).toBeVisible();
   });
 
-  test("the catalog shows every game, and a game that is not on the web yet says it is coming", async ({ page }) => {
+  test("the catalog shows every game", async ({ page }) => {
     await openApp(page, "/games");
     await page.getByTestId("all-games").click();
     await expect(page).toHaveURL((url) => url.pathname === "/games/catalog");
@@ -30,10 +30,6 @@ test.describe("the tab and the catalog", () => {
     const names = await page.locator("[data-testid^=catalog-]").evaluateAll((cards) => cards.map((card) => card.getAttribute("aria-label")!.split("،")[0]));
     expect(names).toEqual(allGames);
     await expect(page.getByTestId("catalog-daily")).toHaveAccessibleName("معمای امروز، روزانه · ۱ دقیقه · رشته‌ی روزها");
-
-    await page.getByTestId("catalog-poet").click();
-    await expect(page.getByText("به‌زودی روی وب")).toBeVisible();
-    await expect(page).toHaveURL((url) => url.pathname === "/games/catalog");
   });
 
   test("the games with a friend and the leaderboard ask for an account, as they do for a guest on the phone", async ({ page }) => {
@@ -50,11 +46,13 @@ test.describe("the tab and the catalog", () => {
     await expect(page.getByRole("dialog")).toContainText("برای دیدن رده‌بندی");
   });
 
-  test("the catalog's cards open the two games that are on the web", async ({ page }) => {
-    await openApp(page, "/games/catalog");
-    await page.getByTestId("catalog-daily").click();
-    await expect(page).toHaveURL((url) => url.pathname === "/games/daily");
-    await expect(page.getByTestId("game")).toBeVisible();
+  test("the catalog's cards open every solo game at its page", async ({ page }) => {
+    for (const kind of ["daily", "poet", "misra", "book", "match", "listen"]) {
+      await openApp(page, "/games/catalog");
+      await page.getByTestId(`catalog-${kind}`).click();
+      await expect(page).toHaveURL((url) => url.pathname === `/games/${kind}`);
+      await expect(page.getByTestId("game")).toBeVisible();
+    }
   });
 });
 

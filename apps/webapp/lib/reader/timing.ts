@@ -59,4 +59,16 @@ export class RecitationTiming {
     const start = this.starts.find((entry) => entry.verse === verse);
     return start && start.milliseconds / 1000;
   }
+
+  /**
+   * The seconds the first hemistich of a couplet is read: from the start of its verse to the start of the next verse. Undefined when the couplet has no
+   * second hemistich, or either verse has no timing.
+   */
+  firstHemistich(index: number, couplets: Couplet[]): [number, number] | undefined {
+    if (!couplets[index]?.m2) return undefined;
+    const verse = couplets.slice(0, index).reduce((count, couplet) => count + versesIn(couplet), 0);
+    const start = this.starts.find((entry) => entry.verse === verse);
+    const end = this.starts.find((entry) => entry.verse === verse + 1);
+    return start && end && end.milliseconds > start.milliseconds ? [start.milliseconds / 1000, end.milliseconds / 1000] : undefined;
+  }
 }
