@@ -29,8 +29,8 @@ export function SwitchRow({ title, note, on, onChange, testId }: { title: string
         <span className="text-sm font-medium leading-[1.7] text-ink">{title}</span>
         {note && <span className="text-xs text-muted">{note}</span>}
       </span>
-      <span className={cn("flex h-[30px] w-[50px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-150 motion-reduce:transition-none", on ? "justify-end bg-green" : "justify-start bg-ring")}>
-        <span className="size-6 rounded-full bg-white shadow-[0_1px_1.5px_rgba(20,17,43,0.3)]" />
+      <span className={cn("relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors duration-150 motion-reduce:transition-none", on ? "bg-green" : "bg-ring")}>
+        <span className={cn("absolute start-[3px] top-[3px] size-6 rounded-full bg-white shadow-[0_1px_1.5px_rgba(20,17,43,0.3)] transition-transform duration-150 motion-reduce:transition-none", on && "ltr:translate-x-5 rtl:-translate-x-5")} />
       </span>
     </button>
   );

@@ -116,6 +116,18 @@ describe("the proxy turns the session cookie into a Bearer token", () => {
     }
   });
 
+  it("passes on the code of the server's 502 only when it is on the short list: Apple could not be reached to revoke its token", async () => {
+    const asked = async (answer: () => Response) => proxy(createBff(upstream(answer).send), request("DELETE", "/api/v1/me", { cookie: signedIn }));
+    const revoke = await asked(() => json(502, { error: "apple_revoke_failed" }));
+    expect(revoke.status).toBe(502);
+    expect(await revoke.json()).toEqual({ error: "apple_revoke_failed" });
+    for (const answer of [() => json(502, { error: "something_else", detail: "secret" }), () => new Response("<html>", { status: 502 }), () => json(500, { error: "apple_revoke_failed" })]) {
+      const other = await asked(answer);
+      expect(other.status).toBe(502);
+      expect(await other.text()).toBe("");
+    }
+  });
+
   it("passes a write that has no body, a reaction, whose key is in the query", async () => {
     const up = upstream(() => json(200, { likes: 1 }));
     const bare = new Request(`${origin}/api/v1/reactions/like?key=%2Fa%2Fb%230`, { method: "PUT", headers: { host: "app.yebeyt.com", "sec-fetch-site": "same-origin", cookie: signedIn } });

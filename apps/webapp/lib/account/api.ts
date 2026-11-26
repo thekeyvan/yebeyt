@@ -36,6 +36,8 @@ export class ApiError extends Error {
 
   /** The Persian line shown to the person. The codes themselves never reach the screen. */
   get persianMessage(): string {
+    // Apple could not be reached to revoke its token: the account was kept (the one 502 the door passes on with its code).
+    if (this.code === "apple_revoke_failed") return "الان نشد، یه کم دیگه دوباره امتحان کن";
     if (this.status === 0 || this.status === 502) return "اینترنت نیست؛ یه بار دیگه امتحان کن.";
     switch (this.code) {
       case "username_taken":

@@ -102,10 +102,18 @@ export function drawStoryCard(ctx: Canvas2D, link: string): void {
   ctx.restore();
 }
 
-/** The card as a PNG (the fonts are loaded first, or the canvas would draw in a fallback). */
-export async function storyImage(link: string): Promise<Blob> {
-  await Promise.all(storyFonts.map((font) => document.fonts.load(font)));
-  const canvas = document.createElement("canvas");
+/** What drawing the picture asks of the browser: loading a font, and a canvas (a test gives its own). */
+export type StoryEnvironment = {
+  loadFont: (font: string) => Promise<unknown>;
+  makeCanvas: () => Pick<HTMLCanvasElement, "width" | "height" | "getContext" | "toBlob">;
+};
+
+const browser: StoryEnvironment = { loadFont: (font) => document.fonts.load(font), makeCanvas: () => document.createElement("canvas") };
+
+/** The card as a PNG: the fonts are loaded first, or the canvas would draw in a fallback. */
+export async function storyImage(link: string, { loadFont, makeCanvas } = browser): Promise<Blob> {
+  await Promise.all(storyFonts.map(loadFont));
+  const canvas = makeCanvas();
   canvas.width = storySize.width;
   canvas.height = storySize.height;
   drawStoryCard(canvas.getContext("2d")!, link);

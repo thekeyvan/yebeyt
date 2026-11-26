@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { channels, inviteLink, inviteMessage, inviteOpener, inviteTones, shareUrl } from "../lib/me/invite";
-import { drawStoryCard, storySize, type Canvas2D } from "../lib/me/storyCard";
+import { drawStoryCard, storyImage, storySize, type Canvas2D } from "../lib/me/storyCard";
 
 // Ported from apps/ios/YebeytTests/InviteTests.swift (tones, message, link, channels).
 
@@ -111,5 +111,29 @@ describe("the story card", () => {
     expect(lines.join(" ")).toContain("«الا یا ایها الساقی ادر کأسا و ناولها»");
     expect(lines.at(-1)).toBe("yebeyt.com/i/niloofar");
     expect(written.find((item) => item.text === "یه بیت")!.font).toContain("yebeyt-title");
+  });
+
+  it("is drawn only once the fonts have loaded", async () => {
+    const events: string[] = [];
+    let loaded: () => void = () => {};
+    const fonts = new Promise<void>((resolve) => (loaded = resolve));
+    const { ctx } = recorder();
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => (events.push("draw"), ctx),
+      toBlob: (done: BlobCallback) => done(new Blob(["png"], { type: "image/png" })),
+    };
+    const making = storyImage("yebeyt.com/i/niloofar", {
+      loadFont: (font) => (events.push(`font ${font}`), fonts),
+      makeCanvas: () => canvas as unknown as HTMLCanvasElement,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(events.every((event) => event.startsWith("font "))).toBe(true); // nothing is drawn while a font is loading
+    expect(events).toHaveLength(4);
+    loaded();
+    expect((await making).type).toBe("image/png");
+    expect(events.at(-1)).toBe("draw");
+    expect([canvas.width, canvas.height]).toEqual([1080, 1920]);
   });
 });

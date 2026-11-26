@@ -303,10 +303,15 @@ test("deleting an account that the server cannot delete says so and keeps everyt
   await openMe(page, "/me", { seed: true });
   await signInFromProfile(page);
   await openSettings(page);
-  await page.route((url) => url.pathname === "/api/v1/me", (route) => (route.request().method() === "DELETE" ? route.fulfill({ status: 502 }) : route.fallback()));
+  let answer: { status: number; json?: unknown } = { status: 502 };
+  await page.route((url) => url.pathname === "/api/v1/me", (route) => (route.request().method() === "DELETE" ? route.fulfill(answer) : route.fallback()));
   await page.getByTestId("delete-account").click();
   await page.getByTestId("delete-confirm").click();
   await expect(page.getByTestId("delete-error")).toHaveText("اینترنت نیست؛ یه بار دیگه امتحان کن.");
+  // Apple could not be reached to revoke its token: the door passes the server's code on, and the line says so.
+  answer = { status: 502, json: { error: "apple_revoke_failed" } };
+  await page.getByTestId("delete-confirm").click();
+  await expect(page.getByTestId("delete-error")).toHaveText("الان نشد، یه کم دیگه دوباره امتحان کن");
   await page.getByTestId("delete-cancel").click();
   await expect(page.getByTestId("settings-username")).toBeVisible();
   expect(await kept(page, "reader.divan")).not.toBeNull();

@@ -186,6 +186,17 @@ describe("AccountDeletion", () => {
     expect(f.avatar.parts.hair).toBe("fire");
   });
 
+  it("says «الان نشد…» when Apple cannot be reached to revoke its token, and keeps the account and its data", async () => {
+    const f = fixture(async () => Promise.reject(new ApiError(502, "apple_revoke_failed")));
+    fill(f);
+    expect(await f.deletion.delete()).toBe("الان نشد، یه کم دیگه دوباره امتحان کن");
+    expect(f.session.isSignedIn).toBe(true);
+    expect([...f.marks.keys("kept")]).toEqual(["/a/b/c#0"]);
+    expect([...f.marks.keys("liked")]).toEqual(["/a/b/c#1"]);
+    expect(f.privacy.settings.allowReposts).toBe(false);
+    expect(f.avatar.parts.hair).toBe("fire");
+  });
+
   it("says there is no network and changes nothing when the server is not reached", async () => {
     const f = fixture(async () => Promise.reject(offline()));
     f.marks.toggle("kept", "/a/b/c", 0);

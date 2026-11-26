@@ -1,10 +1,11 @@
 "use client";
 
 import { motion } from "motion/react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { messageOf } from "../../lib/account/api";
 import { cn } from "../../lib/cn";
 import { channels, shareUrl, type Channel, type SharePayload } from "../../lib/me/invite";
-import { shareStory } from "../../lib/me/shareStory";
+import { shareStory, storyFile } from "../../lib/me/shareStory";
 import { usePress } from "../../lib/motion";
 import { browserEnvironment, copy, send } from "../../lib/reader/send";
 import { MessagesIcon } from "../ui/icons";
@@ -34,6 +35,23 @@ function Action({ title, id, lapis, disabled, onPress, children }: { title: stri
 export function ShareRow({ payload, link }: { payload: SharePayload | undefined; link: string }) {
   const off = payload === undefined;
   const copied = () => toast("کپی شد");
+  // The picture is drawn as soon as there is a link, so that the share sheet opens inside the tap.
+  const story = useRef<Promise<File>>(undefined);
+  const ready = useRef<File>(undefined);
+  useEffect(() => {
+    if (off) return;
+    ready.current = undefined;
+    story.current = storyFile(link);
+    story.current.then(
+      (file) => (ready.current = file),
+      () => {}, // told when «استوری» is pressed
+    );
+  }, [off, link]);
+  const shareStoryNow = () => {
+    const failed = () => toast(messageOf(new Error("story")));
+    if (ready.current) void shareStory(ready.current).catch(failed);
+    else void story.current?.then(shareStory).catch(failed);
+  };
   const open = (channel: Channel) => {
     if (!payload) return;
     const address = shareUrl(channel, payload);
@@ -47,7 +65,7 @@ export function ShareRow({ payload, link }: { payload: SharePayload | undefined;
           {icons[channel.id]}
         </Action>
       ))}
-      <Action title="استوری" id="story" disabled={off} onPress={() => void shareStory(link)}>
+      <Action title="استوری" id="story" disabled={off} onPress={shareStoryNow}>
         <StoryIcon size={22} />
       </Action>
       <Action title="کپی لینک" id="copy-link" lapis disabled={off} onPress={() => payload && void copy(payload.url, browserEnvironment(), copied)}>

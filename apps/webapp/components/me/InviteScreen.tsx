@@ -85,7 +85,7 @@ function Invite({ services }: { services: Services }) {
                 autoFocus
                 rows={4}
                 onChange={(event) => setText(event.target.value)}
-                className="block w-full resize-none bg-transparent text-sm leading-[2.1] outline-none"
+                className="block w-full resize-none rounded-md bg-transparent text-sm leading-[2.1]"
               />
             ) : (
               <p data-testid="invite-body">{text}</p>

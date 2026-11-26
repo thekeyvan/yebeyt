@@ -19,10 +19,16 @@ const secureAnswer = (body: unknown, status: number, cookies: string[] = []): Re
   return body === null ? new Response(null, { status, headers }) : Response.json(body, { status, headers });
 };
 
-const answerOf = (upstream: Response, cookies: string[], session: boolean): Response => {
+/** The codes of the server's own 502 that the page may be told: Apple could not be reached to revoke its token, so nothing was deleted and the person must try again. */
+const badGatewayCodes: readonly string[] = ["apple_revoke_failed"];
+
+const answerOf = async (upstream: Response, cookies: string[], session: boolean): Promise<Response> => {
   const { status } = upstream;
-  // The server's 2xx, 304 and refusals (400s) go on as they are; anything else (an error, a redirect) is a bad gateway.
-  if (!((status >= 200 && status < 300) || status === 304 || (status >= 400 && status < 500))) return new Response(null, { status: 502 });
+  // The server's 2xx, 304 and refusals (400s) go on as they are; anything else (an error, a redirect) is a bad gateway, with only a code from the short list above passed on.
+  if (!((status >= 200 && status < 300) || status === 304 || (status >= 400 && status < 500))) {
+    const code = status === 502 ? ((await upstream.json().catch(() => undefined)) as { error?: unknown } | undefined)?.error : undefined;
+    return typeof code === "string" && badGatewayCodes.includes(code) ? secureAnswer({ error: code }, 502) : new Response(null, { status: 502 });
+  }
   const headers = new Headers();
   for (const name of passed) {
     const value = upstream.headers.get(name);
@@ -76,7 +82,7 @@ export function createBff(send: Upstream) {
   const ended = (request: Request): string[] => clearSession(isSecure(request));
 
   /** The server's answer to a call with the session, as the page gets it. */
-  function finish(run: Run, request: Request): Response {
+  async function finish(run: Run, request: Request): Promise<Response> {
     switch (run.kind) {
       case "none":
         return secureAnswer({ error: "unauthorized" }, 401);
@@ -85,7 +91,7 @@ export function createBff(send: Upstream) {
       case "offline":
         return new Response(null, { status: 502 });
       case "answer":
-        return answerOf(run.response, run.tokens ? writeSession(run.tokens, isSecure(request)) : [], true);
+        return await answerOf(run.response, run.tokens ? writeSession(run.tokens, isSecure(request)) : [], true);
     }
   }
 
@@ -112,12 +118,12 @@ export function createBff(send: Upstream) {
       if (!route.auth) {
         const match = request.headers.get("if-none-match");
         try {
-          return answerOf(await send({ ...call, ...(match ? { headers: { "if-none-match": match } } : {}) }), [], false);
+          return await answerOf(await send({ ...call, ...(match ? { headers: { "if-none-match": match } } : {}) }), [], false);
         } catch {
           return new Response(null, { status: 502 });
         }
       }
-      return finish(await withSession(request, (access) => send({ ...call, credential: access })), request);
+      return await finish(await withSession(request, (access) => send({ ...call, credential: access })), request);
     },
 
     /** `/auth/apple` and `/auth/google`: the provider's token goes to the server, the session's tokens into the cookies, and the page gets the user. */
@@ -133,7 +139,7 @@ export function createBff(send: Upstream) {
       } catch {
         return new Response(null, { status: 502 });
       }
-      if (!upstream.ok) return answerOf(upstream, [], true);
+      if (!upstream.ok) return await answerOf(upstream, [], true);
       const session = (await upstream.json().catch(() => undefined)) as (Tokens & { user?: unknown }) | undefined;
       if (!session || typeof session.accessToken !== "string" || typeof session.refreshToken !== "string" || typeof session.user !== "object") return new Response(null, { status: 502 });
       return secureAnswer({ user: session.user }, 200, writeSession(session, isSecure(request)));
