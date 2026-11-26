@@ -4,7 +4,12 @@
 **/.next
 **/.turbo
 **/test-results
-apps/ios
+apps/ios/*
+!apps/ios/Yebeyt
+apps/ios/Yebeyt/*
+!apps/ios/Yebeyt/Resources
+apps/ios/Yebeyt/Resources/*
+!apps/ios/Yebeyt/Resources/Data
 apps/server
 apps/web
 apps/admin

@@ -25,6 +25,16 @@ describe("Sheet", () => {
     expect(screen.getByTestId("grabber")).toBeInTheDocument();
   });
 
+  it("lets a sheet set its own heading, which still names the dialog", async () => {
+    render(
+      <Sheet open onOpenChange={() => {}} header={(Title) => <div><span data-testid="icon" /><Title>برای پسند</Title></div>}>
+        <button>یکی</button>
+      </Sheet>,
+    );
+    const dialog = await screen.findByRole("dialog", { name: "برای پسند" });
+    expect(dialog).toContainElement(screen.getByTestId("icon"));
+  });
+
   it("renders nothing while closed", () => {
     render(<Sheet open={false} onOpenChange={() => {}} title="بسته" />);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

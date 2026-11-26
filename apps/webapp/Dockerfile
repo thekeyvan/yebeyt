@@ -13,6 +13,8 @@ COPY apps/webapp apps/webapp
 # and the colours of tokens.json are read by the app (lib/tokens.ts).
 COPY packages/tokens packages/tokens
 COPY assets/fonts assets/fonts
+# …and the poetry data of the iOS app is copied into public/data (scripts/copy-data.mjs); it is the web app's bundled poetry.
+COPY apps/ios/Yebeyt/Resources/Data apps/ios/Yebeyt/Resources/Data
 RUN pnpm --filter @yebeyt/webapp build
 
 FROM node:24-slim

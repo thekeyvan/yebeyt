@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Shell } from "../../components/shell/Shell";
 
-export default function ShellLayout({ children }: { children: ReactNode }) {
-  return <Shell>{children}</Shell>;
+/** `reader` is the slot a poem opened from inside the app fills (`@reader/(.)poem`), over the tab. */
+export default function ShellLayout({ children, reader }: { children: ReactNode; reader: ReactNode }) {
+  return <Shell reader={reader}>{children}</Shell>;
 }

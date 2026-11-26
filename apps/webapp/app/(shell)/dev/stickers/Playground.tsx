@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Badge } from "../../../../components/ui/Badge";
 import { Button } from "../../../../components/ui/Button";
@@ -116,6 +117,12 @@ export function Playground() {
         cancel="نه، بمون"
         onConfirm={() => {}}
       />
+
+      <Section title="خوانش">
+        <Link href="/poem/hafez/ghazal/sh3?c=1" className="text-lapis underline">
+          باز کردن غزل ۳ حافظ
+        </Link>
+      </Section>
 
       <Section title="یه فهرست بلند">
         <ul className="flex flex-col gap-2">

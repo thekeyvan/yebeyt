@@ -7,30 +7,33 @@ import type { ComponentType, ReactNode } from "react";
 import { useMediaQuery } from "../../lib/media";
 import { bouncy, menuArrival, useVariant } from "../../lib/motion";
 
+type Part = ComponentType<{ className?: string; children?: ReactNode }>;
+
 type SheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
   description?: string;
   children?: ReactNode;
-};
-
-type Part = ComponentType<{ className?: string; children?: ReactNode }>;
+} & (
+  | { title: string; header?: undefined }
+  /** Sets its own heading (an icon beside it, a button at its end) instead of the centred title; it must put the `Title` it is given in it, which names the dialog. */
+  | { header: (Title: Part) => ReactNode; title?: undefined }
+);
 
 const backdrop = "fixed inset-0 z-40 bg-ink/30 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0";
 const surface = "z-50 bg-white px-[22px] text-ink outline-none";
 
-function Words({ Title, Description, title, description }: { Title: Part; Description: Part; title: string; description?: string }) {
+function Words({ Title, Description, title, header, description }: { Title: Part; Description: Part; title?: string; header?: (Title: Part) => ReactNode; description?: string }) {
   return (
     <>
-      <Title className="text-center font-title text-2xl leading-[1.3]">{title}</Title>
+      {header ? header(Title) : <Title className="text-center font-title text-2xl leading-[1.3]">{title}</Title>}
       {description && <Description className="text-center text-sm text-muted">{description}</Description>}
     </>
   );
 }
 
 /** From the bottom: a grabber, 30 corners, as tall as its content (and scrolling when that is more than fits). */
-function BottomSheet({ open, onOpenChange, title, description, children }: SheetProps) {
+function BottomSheet({ open, onOpenChange, title, header, description, children }: SheetProps) {
   return (
     // The pointer driver follows the finger and honours Reduce Motion (the scroll-snap one, which touch screens get by default, does not).
     <Drawer open={open} onOpenChange={onOpenChange} driver="pointer">
@@ -41,7 +44,7 @@ function BottomSheet({ open, onOpenChange, title, description, children }: Sheet
         <div aria-hidden className="h-[5px] w-10 shrink-0 rounded-pill bg-ring" data-testid="grabber" />
         {/* Only this part scrolls (when the content is more than fits): the white strip under the sheet, for overscroll, is outside it. */}
         <div className="flex min-h-0 w-full flex-col items-center gap-4 overflow-y-auto">
-          <Words Title={DrawerTitle} Description={DrawerDescription} title={title} description={description} />
+          <Words Title={DrawerTitle} Description={DrawerDescription} title={title} header={header} description={description} />
           {children}
         </div>
       </DrawerContent>
@@ -50,7 +53,7 @@ function BottomSheet({ open, onOpenChange, title, description, children }: Sheet
 }
 
 /** In the middle of the screen from 768 px: the same content, growing from a little smaller. */
-function CentredDialog({ open, onOpenChange, title, description, children }: SheetProps) {
+function CentredDialog({ open, onOpenChange, title, header, description, children }: SheetProps) {
   const v = useVariant();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -59,7 +62,7 @@ function CentredDialog({ open, onOpenChange, title, description, children }: She
         className={`${surface} fixed inset-0 m-auto h-fit max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100%-2rem))] overflow-y-auto rounded-[30px] py-7 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0`}
       >
         <motion.div initial={menuArrival(v)} animate={{ scale: 1 }} transition={bouncy} className="flex flex-col items-center gap-4">
-          <Words Title={DialogTitle} Description={DialogDescription} title={title} description={description} />
+          <Words Title={DialogTitle} Description={DialogDescription} title={title} header={header} description={description} />
           {children}
         </motion.div>
       </DialogContent>

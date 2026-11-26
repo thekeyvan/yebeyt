@@ -3,6 +3,8 @@ next-env.d.ts
 tsconfig.tsbuildinfo
 # Copied from assets/fonts by packages/tokens/copy-fonts.mjs
 public/fonts/
+# Copied from apps/ios/Yebeyt/Resources/Data by scripts/copy-data.mjs
+public/data/
 # Playwright's screenshots and traces
 test-results/
 e2e/__screenshots__/

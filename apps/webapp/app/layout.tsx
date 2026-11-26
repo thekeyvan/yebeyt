@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { AccountProvider } from "../components/account/AccountProvider";
 import { ToastHost } from "../components/ui/Toast";
 import { colors } from "../lib/tokens";
 import "./globals.css";
@@ -19,7 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         {/* The paper stays put while the page scrolls over it, like the sheet behind a sticker. */}
         <div aria-hidden className="dotted-paper fixed inset-0 -z-10" />
-        {children}
+        <AccountProvider>{children}</AccountProvider>
         <ToastHost />
       </body>
     </html>
