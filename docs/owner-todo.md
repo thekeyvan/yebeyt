@@ -40,7 +40,7 @@ The lead is logged in to App Store Connect in the agent browser and uploads Test
 
 State now:
 - **Version 1.0.0 was rejected** (21 Nov, guideline 2.1 "Information Needed"). Apple asked, in the App Review Notes, for: a screen recording on a real device from launch through the main flow, including sign-in, **account deletion**, user content with **report and block**; the app's purpose and audience; how to reach the main features (and login details if needed); the external services used; regional differences; and proof of rights to third-party material. 2.0 replaces 1.0: the same in-flight version is renamed 2.0.0, the 2.0 build attached, and the Notes rewritten.
-- The listing text (promo text, description, keywords) still describes the 1.0 reader. 2.0 needs new text: games, friends, messages.
+- The listing text (promo text, description, keywords) still describes the 1.0 reader. 2.0 needs new text: games, friends, messages. **The lead's draft (both languages, plus the App Review notes) is in [app-store.md](app-store.md); please read and correct it.**
 - The screenshots are of 1.0. 2.0 needs new ones (the lead makes them in the simulator).
 - The icon shown is 1.0's crescent. It goes away with the first 2.0 build (the 2.0 icon is the two sticker cards).
 - Category: Books / Reference now. The lead suggests **Games (Word, Trivia) + Books** for 2.0; set it when the 2.0 listing is written, if the owner agrees.
