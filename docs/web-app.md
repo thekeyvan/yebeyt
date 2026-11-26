@@ -11,9 +11,10 @@ The web app does everything the iOS app does, so people can read and play in a b
   - from 1024 px, the bottom tab bar becomes a right-hand side rail (RTL);
   - from 1024 px, messages and the library show list and detail side by side;
   - bottom sheets become centred dialogs at ≥ 768 px, with the same content.
-- **Design system: Tailwind v4 + Radix + Motion, with our own sticker components.**
+- **Design system: Tailwind v4 + UI SDK + Motion, with our own sticker components.**
   - The Tailwind theme (`@theme`) is generated from `packages/tokens/tokens.json` by `tools/make_tokens.py`, like the Swift and CSS files: colours, fonts, sticker border widths, radii and shadows. Never hand-edit it.
-  - Behaviour and accessibility come from Radix primitives (dialog/sheet, tabs, dropdown and context menu, toast, toggle group, slider). The look is ours, in `components/ui/` (Sticker card, Button, Badge, WordSticker, IconBox, Sheet, ConfirmSheet, Tabs, Toast, TabBar).
+  - Behaviour and accessibility come from **UI SDK** (`@ui-sdk/react` + `@ui-sdk/core`, github.com/vercel-labs/ui, Apache-2.0; owner, 26 Nov). It is headless, so the look stays ours. It covers drawer (drag to close, snap points), dialog/alert-dialog, tabs, toast, menu, segmented control and slider, and it reads `direction: rtl`. It is in beta, so the exact version is pinned and upgraded only on purpose. If it fails W0's sheet/RTL tests, the fallback is Radix + vaul.
+  - The look is ours, in `components/ui/` (Sticker card, Button, Badge, WordSticker, IconBox, Sheet, ConfirmSheet, Tabs, Toast, TabBar).
   - Motion (`motion/react`) gives the same springs and pop-ups as `Design/Motion.swift`, and respects `prefers-reduced-motion`.
   - RTL first: `<html lang="fa" dir="rtl">`, logical properties only (`ms-`, `pe-`, `start`, `end`). Drag directions follow the finger.
   - Icons are the same SVG paths as on iOS (`Design/Icons.swift`, `LibraryIcons.swift`, …), ported once as React components.
