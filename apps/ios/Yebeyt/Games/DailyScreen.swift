@@ -16,12 +16,9 @@ struct DailyScreen: View {
 
     var body: some View {
         GeometryReader { screen in
-            // The board's sizes need about 700 pt between the status bar and the home indicator; below that (an iPhone SE) set it tighter.
-            page(DailyDensity(compact: screen.size.height < Self.compactBelow))
+            page(DailyDensity(compact: CompactHeight.isCompact(screen.size.height)))
         }
     }
-
-    private static let compactBelow: CGFloat = 700
 
     private func page(_ density: DailyDensity) -> some View {
         ZStack {

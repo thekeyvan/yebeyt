@@ -8,9 +8,13 @@ struct OnbWelcomeView: View {
     var body: some View {
         OnbScreen {
             HStack {
-                Button("از قبل حساب داری؟ وارد شو") { onboarding.signIn() }
-                    .font(.ui(14, weight: .bold)).foregroundStyle(Tokens.Colors.lapis)
-                    .buttonStyle(.plain)
+                Button { onboarding.signIn() } label: {
+                    Text("از قبل حساب داری؟ وارد شو")
+                        .font(.ui(14, weight: .bold)).foregroundStyle(Tokens.Colors.lapis)
+                        .frame(minHeight: OnbTopBar.tapHeight, alignment: .top)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
                     .accessibilityIdentifier("onbHaveAccount")
                 Spacer()
             }

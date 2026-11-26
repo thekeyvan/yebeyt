@@ -17,7 +17,7 @@ struct OnbGameView: View {
         } content: { density in
             VStack(spacing: density.gap) {
                 heading(iconSize: density.gameIconSize)
-                    .padding(.bottom, density.compact ? 8 : 0)  // the card's tag rises above its top edge
+                    .padding(.bottom, density.cardTagRoom)
                 if let game { play(game) }
             }
             .coordinateSpace(name: JigsawSpace.name)

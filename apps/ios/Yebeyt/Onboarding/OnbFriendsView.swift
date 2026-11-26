@@ -12,9 +12,13 @@ struct OnbFriendsView: View {
     var body: some View {
         OnbScreen {
             HStack {
-                Button("بعداً") { onboarding.finish() }
-                    .font(.ui(13, weight: .bold)).foregroundStyle(Color(hex: 0x8A8698))
-                    .buttonStyle(.plain)
+                Button { onboarding.finish() } label: {
+                    Text("بعداً")
+                        .font(.ui(13, weight: .bold)).foregroundStyle(Color(hex: 0x8A8698))
+                        .frame(minHeight: OnbTopBar.tapHeight, alignment: .top)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
                     .accessibilityIdentifier("onbLater")
                 Spacer()
             }

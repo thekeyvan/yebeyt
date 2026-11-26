@@ -43,6 +43,9 @@ final class OnboardingFitUITests: XCTestCase {
         XCTAssertTrue(top.exists, "\(step.name): \(step.top)", file: file, line: line)
         XCTAssertGreaterThanOrEqual(top.frame.minY, statusBar, "\(step.name): \(step.top) is below the status bar (\(statusBar)): \(top.frame)", file: file, line: line)
         XCTAssertTrue(top.isHittable, "\(step.name): \(step.top) can be tapped", file: file, line: line)
+        if step.top != "displayName" {
+            XCTAssertGreaterThanOrEqual(top.frame.height, 44, "\(step.name): \(step.top) is 44 pt to touch: \(top.frame)", file: file, line: line)
+        }
         for identifier in (large ? step.pinnedWhenLarge : nil) ?? step.bottom {
             let button = app.buttons[identifier]
             XCTAssertTrue(button.exists, "\(step.name): \(identifier)", file: file, line: line)
@@ -50,6 +53,9 @@ final class OnboardingFitUITests: XCTestCase {
             XCTAssertGreaterThanOrEqual(button.frame.minX, 0, "\(step.name): \(identifier)", file: file, line: line)
             XCTAssertLessThanOrEqual(button.frame.maxX, screen.maxX, "\(step.name): \(identifier)", file: file, line: line)
             XCTAssertTrue(button.isHittable, "\(step.name): \(identifier) can be tapped", file: file, line: line)
+            if identifier == "onbNoAccount" {
+                XCTAssertGreaterThanOrEqual(button.frame.height, 44, "\(step.name): \(identifier) is 44 pt to touch", file: file, line: line)
+            }
         }
     }
 
@@ -87,16 +93,27 @@ final class OnboardingFitUITests: XCTestCase {
         XCTAssertLessThanOrEqual(next.maxY, screen.maxY)
     }
 
-    @MainActor func testEveryStepKeepsItsTopControlAndMainButtonAtALargeTextSize() {
-        for step in steps {
-            let app = launch(step, ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"])
-            assertFits(step, app, large: true)
-            app.terminate()
+    @MainActor func testEveryStepKeepsItsTopControlAndMainButtonAtLargeTextSizes() {
+        for size in ["UICTContentSizeCategoryExtraExtraLarge", "UICTContentSizeCategoryAccessibilityXL"] {
+            for step in steps {
+                let app = launch(step, ["-UIPreferredContentSizeCategoryName", size])
+                assertFits(step, app, large: true)
+                app.terminate()
+            }
         }
     }
 
+    @MainActor func testTheWelcomeStepDoesNotScrollAtTheDefaultTextSize() {
+        let app = launch(steps[0])
+        let title = app.staticTexts["یه بیت"]
+        XCTAssertTrue(title.exists)
+        let before = title.frame
+        app.swipeUp()
+        XCTAssertEqual(title.frame, before, "the title did not move")
+    }
+
     @MainActor func testTheAccountStepScrollsToItsLaterButtonAtALargeTextSize() {
-        let app = launch(steps[3], ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"])
+        let app = launch(steps[3], ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryExtraExtraLarge"])
         let later = app.buttons["onbNoAccount"]
         XCTAssertTrue(later.waitForExistence(timeout: 5))
         for _ in 0..<6 where !later.isHittable { app.swipeUp() }
