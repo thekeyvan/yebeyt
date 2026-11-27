@@ -25,9 +25,11 @@ type Game = {
   asking: boolean;
   /** False while the reader is over the game: nothing under it takes keys. */
   active: boolean;
+  /** Opened inside the app, over the page it came from: another game goes in its place with `router.replace`; one opened by its link has nothing of the app under it, and is replaced by a page load. */
+  modal: boolean;
 };
 
-const GameContext = createContext<Game>({ requestClose: () => {}, leave: () => {}, setAsks: () => {}, asking: false, active: true });
+const GameContext = createContext<Game>({ requestClose: () => {}, leave: () => {}, setAsks: () => {}, asking: false, active: true, modal: true });
 
 export const useGame = (): Game => useContext(GameContext);
 
@@ -100,7 +102,7 @@ export function GameLayer({ modal, children }: { modal: boolean; children: React
       data-testid="game"
     >
       <div inert={reading} className="mx-auto h-full w-full max-w-[640px]">
-        <GameContext value={{ requestClose, leave: close, setAsks, asking, active: !reading }}>
+        <GameContext value={{ requestClose, leave: close, setAsks, asking, active: !reading, modal }}>
           {children}
         </GameContext>
       </div>

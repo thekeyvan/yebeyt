@@ -49,6 +49,7 @@ function LobbyFrame({ children }: { children: ReactNode }) {
 
 function Lobby({ services, start }: { services: Services; start: LobbyStart }) {
   const router = useRouter();
+  const { modal } = useGame();
   const [model] = useState(() => new LobbyModel(start, services.api));
   useStore(model);
   const [picking, setPicking] = useState(false);
@@ -77,14 +78,17 @@ function Lobby({ services, start }: { services: Services; start: LobbyStart }) {
     }
   }
 
+  /** The game takes the lobby's place: over a page of the app the address is replaced; a lobby opened by its link has no page of the app under it, so the game is loaded afresh. */
+  const goTo = (url: string) => (modal ? router.replace(url) : window.location.replace(url));
+
   async function submit() {
     if (busy) return;
     setBusy(true);
     try {
       const { plan } = model;
-      if (plan.kind === "challenge") return router.replace(challengeRoundURL(plan.game, plan.invite));
+      if (plan.kind === "challenge") return goTo(challengeRoundURL(plan.game, plan.invite));
       const made = await make();
-      if (made) router.replace(gameURL(plan.game, made.id));
+      if (made) goTo(gameURL(plan.game, made.id));
     } catch (error) {
       toast(playCopy.gameError(error));
     } finally {
