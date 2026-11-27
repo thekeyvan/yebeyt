@@ -98,7 +98,7 @@ export const maxRecordingBytes = 25 * MB;
 
 /**
  * The only paths the web app's `/api` route passes on, each with its methods: the poet pictures (W2, no session) and, from W4, what the account, the
- * divan, the reactions and the scores use, which go with the session's access token, from W5 the avatar, the privacy settings and the deletion
+ * divan, the reactions and the scores use, which go with the session's access token, from W5 the avatar, the privacy settings, the choice of news by email (`PUT /v1/me/news`) and the deletion
  * of the account (only `DELETE /v1/me`: reading the account is `/auth/session`'s), from W6 the friends: searching people, a person's profile, the friend
  * requests and friends, blocking and reporting, the leaderboard, the feed, the reactions' counts and the unread count (not unblocking, not the blocks list), and from W7
  * the messages: the chats, their messages and read marks, deleting a message, and the shared divans with their couplets and likes, and from W8 the games with friends
@@ -114,6 +114,7 @@ const rules: readonly Rule[] = [
   { methods: ["PUT"], path: exact("v1", "me", "profile"), query: {}, auth: true },
   { methods: ["PUT"], path: exact("v1", "me", "avatar"), query: {}, auth: true },
   { methods: ["GET", "PUT"], path: exact("v1", "me", "privacy"), query: {}, auth: true },
+  { methods: ["PUT"], path: exact("v1", "me", "news"), query: {}, auth: true },
   { methods: ["DELETE"], path: exact("v1", "me"), query: {}, auth: true },
   { methods: ["GET", "PUT"], path: exact("v1", "me", "divan"), query: {}, auth: true },
   { methods: ["GET"], path: exact("v1", "me", "reactions"), query: { cursor: plain }, auth: true },

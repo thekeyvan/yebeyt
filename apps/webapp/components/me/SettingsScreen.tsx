@@ -13,7 +13,9 @@ import { Screen } from "../shell/Screen";
 import { ConfirmSheet } from "../ui/ConfirmSheet";
 import { ChevronLeftIcon } from "../ui/icons";
 import { openFeedback } from "../feedback/center";
-import { MeHeader, RowsCard } from "./chrome";
+import { emailLine, newsCopy, setNews } from "../../lib/me/newsChoice";
+import { toast } from "../ui/Toast";
+import { MeHeader, RowsCard, SwitchRow } from "./chrome";
 import { DeleteAccountSheet } from "./DeleteAccountSheet";
 import { UnsyncedSignOutSheet } from "./UnsyncedSignOutSheet";
 import { WithServices } from "./WithServices";
@@ -40,6 +42,16 @@ function RowBody({ label, value, tint, chevron = true, latin }: RowProps) {
   );
 }
 
+/** «ایمیل»: the address (Latin, left to right), not a button; the relay address of Apple shows as «مخفی (اپل)». */
+function EmailRow({ line }: { line: string }) {
+  const hidden = line === newsCopy.hiddenEmail;
+  return (
+    <div data-testid="settings-email" className={rowClass}>
+      <RowBody label={newsCopy.emailTitle} value={line} latin={!hidden} testId="settings-email" chevron={false} />
+    </div>
+  );
+}
+
 const Row = ({ onClick, ...props }: RowProps & { onClick: () => void }): ReactNode => (
   <button type="button" onClick={onClick} data-testid={props.testId} className={rowClass}>
     <RowBody {...props} />
@@ -58,7 +70,7 @@ const LinkRow = ({ href, internal, ...props }: RowProps & { href: string; intern
   );
 
 /**
- * تنظیمات (Me/Settings/SettingsScreen.swift): a plain list in the app's card style. The account (name, username, sign out, delete), the text sheet, privacy, and about. A guest
+ * تنظیمات (Me/Settings/SettingsScreen.swift): a plain list in the app's card style. The account (name, username, the email and the news switch, sign out, delete), the text sheet, privacy, and about. A guest
  * sees «ورود با اپل یا گوگل» instead of the account rows. Left out as they make no sense in a browser: the shake for feedback and the version.
  */
 export function SettingsScreen() {
@@ -77,6 +89,7 @@ function Settings({ services }: { services: Services }) {
   const [chosen, setChosen] = useState(false);
   const [unsynced, setUnsynced] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [savingNews, setSavingNews] = useState(false);
 
   useEffect(() => {
     if (asking || !chosen) return;
@@ -90,6 +103,15 @@ function Settings({ services }: { services: Services }) {
 
   if (!state || state.status === "loading") return <Screen header={<MeHeader title="تنظیمات" />} />;
   const user = state.user;
+  const email = emailLine(user?.email);
+  const changeNews = (optIn: boolean) => {
+    if (savingNews) return;
+    setSavingNews(true);
+    void setNews(optIn, services.session, services.api).then((failure) => {
+      if (failure) toast(failure);
+      setSavingNews(false);
+    });
+  };
   return (
     <Screen header={<MeHeader title="تنظیمات" />}>
       <div className="flex flex-col gap-3.5">
@@ -97,6 +119,8 @@ function Settings({ services }: { services: Services }) {
           <RowsCard title="حساب">
             <Row label="اسم" value={user?.displayName ?? services.account.snapshot().providerName ?? ""} testId="settings-name" onClick={() => setEditing(true)} />
             <Row label="نام کاربری" value={user?.username ? `@${user.username}` : ""} latin testId="settings-username" onClick={() => setEditing(true)} />
+            {email && <EmailRow line={email} />}
+            {email && <SwitchRow title={newsCopy.switchTitle} note={newsCopy.switchNote} on={user?.newsOptIn ?? false} onChange={changeNews} testId="settings-news" />}
             <Row label="خروج از حساب" chevron={false} testId="sign-out" onClick={() => !leaving && setAsking(true)} />
             <Row label="پاک کردن حساب" chevron={false} tint="text-fire" testId="delete-account" onClick={() => setDeleting(true)} />
           </RowsCard>

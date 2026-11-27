@@ -593,6 +593,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/news": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Choose whether to get news and offers by email
+         * @description Off by default. `optIn: true` records now as the time of the choice (a repeat keeps the first time); `false` clears it. Only the person's own choice sends anything: the email is the one in `GET /v1/me`.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetNewsRequest"];
+                };
+            };
+            responses: {
+                /** @description The user with the new choice. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["User"];
+                    };
+                };
+                /** @description invalid_request: `optIn` is missing or not a boolean. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/progress": {
         parameters: {
             query?: never;
@@ -4877,6 +4938,9 @@ export interface components {
             /** @description Opaque, valid 60 days, single use: every refresh returns a new one. */
             refreshToken: string;
             user: components["schemas"]["User"];
+        };
+        SetNewsRequest: {
+            optIn: boolean;
         };
         SetProfileRequest: {
             /**

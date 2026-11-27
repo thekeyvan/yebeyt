@@ -17,6 +17,7 @@ export const usedPaths = [
   "/v1/me/username",
   "/v1/me/avatar",
   "/v1/me/privacy",
+  "/v1/me/news",
   "/v1/me/progress",
   "/v1/me/divan",
   "/v1/me/reactions",

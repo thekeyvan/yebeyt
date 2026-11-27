@@ -247,6 +247,75 @@ test("the settings: a guest's sign-in row; the text, privacy, feedback, terms an
   await expect(page.getByRole("heading", { name: "مجوزها" })).toBeVisible();
 });
 
+test("the settings show the account's email and the news switch, which is off at first and stays on after a reload", async ({ page }) => {
+  await openMe(page, "/me");
+  await signInFromProfile(page);
+  await openSettings(page);
+  const email = page.getByTestId("settings-email");
+  await expect(email).toContainText("ایمیل");
+  await expect(email).toContainText("niloofar@example.com");
+  await expect(email.locator("[dir=ltr]")).toHaveText("niloofar@example.com");
+  await expect(email.getByRole("button")).toHaveCount(0); // not a button, not editable
+  await expect(email.locator("svg")).toHaveCount(0); // no chevron
+  const news = page.getByRole("switch", { name: /خبرهای یه بیت رو برام ایمیل کن/ });
+  await expect(page.getByTestId("settings-news")).toContainText("هر وقت بخوای خاموشش کن");
+  await expect(news).toHaveAttribute("aria-checked", "false");
+  expect(await noSidewaysScroll(page)).toBe(true);
+
+  await news.click();
+  await expect(news).toHaveAttribute("aria-checked", "true");
+  await expect.poll(async () => (await sessionUser(page))?.newsOptIn).toBe(true);
+  await page.reload();
+  await expect(page.getByRole("switch", { name: /خبرهای یه بیت رو برام ایمیل کن/ })).toHaveAttribute("aria-checked", "true");
+
+  await page.getByRole("switch", { name: /خبرهای یه بیت/ }).click();
+  await expect(page.getByRole("switch", { name: /خبرهای یه بیت/ })).toHaveAttribute("aria-checked", "false");
+  await expect.poll(async () => (await sessionUser(page))?.newsOptIn).toBe(false);
+});
+
+test("Apple's relay address shows as «مخفی (اپل)»", async ({ page }) => {
+  await openMe(page, "/me");
+  await signInFromProfile(page, { email: "x7k2@privaterelay.appleid.com" });
+  await openSettings(page);
+  await expect(page.getByTestId("settings-email")).toContainText("مخفی (اپل)");
+  await expect(page.getByTestId("settings-email")).not.toContainText("privaterelay");
+  await expect(page.getByTestId("settings-news")).toBeVisible();
+});
+
+test("an account with no email has neither the email row nor the news switch", async ({ page }) => {
+  await openMe(page, "/me");
+  await signInFromProfile(page, { email: null });
+  await openSettings(page);
+  await expect(page.getByTestId("settings-username")).toBeVisible();
+  await expect(page.getByTestId("settings-email")).toHaveCount(0);
+  await expect(page.getByTestId("settings-news")).toHaveCount(0);
+});
+
+test("a news choice the server refuses flips back and says so", async ({ page }) => {
+  await openMe(page, "/me");
+  await signInFromProfile(page);
+  await openSettings(page);
+  await page.route("**/api/v1/me/news", (route) => route.fulfill({ status: 500, contentType: "application/json", body: '{"error":"internal_error"}' }));
+  const news = page.getByRole("switch", { name: /خبرهای یه بیت/ });
+  await news.click();
+  await expect(toasts(page)).toContainText("یه مشکلی پیش اومد؛ یه بار دیگه امتحان کن.");
+  await expect(news).toHaveAttribute("aria-checked", "false");
+  expect((await sessionUser(page))?.newsOptIn).toBe(false);
+  await page.unroute("**/api/v1/me/news");
+  await news.click(); // and a later try goes through
+  await expect(news).toHaveAttribute("aria-checked", "true");
+  await expect.poll(async () => (await sessionUser(page))?.newsOptIn).toBe(true);
+});
+
+test("a guest sees neither the email nor the news switch in the settings", async ({ page }) => {
+  await openMe(page, "/");
+  await openSettings(page);
+  await expect(page.getByTestId("settings-sign-in")).toBeVisible();
+  await expect(page.getByTestId("settings-email")).toHaveCount(0);
+  await expect(page.getByTestId("settings-news")).toHaveCount(0);
+  await expect(page.getByRole("switch")).toHaveCount(0);
+});
+
 test("signing out from the settings warns when the divan did not reach the account, and goes when the person insists", async ({ page }) => {
   await openMe(page, "/me", { seed: true });
   await signInFromProfile(page, { syncFails: true }); // the debug server refuses the divan

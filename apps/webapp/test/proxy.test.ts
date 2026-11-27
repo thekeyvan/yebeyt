@@ -34,6 +34,13 @@ describe("what the /api proxy lets through", () => {
     expect(route("DELETE", "v1/me")).toEqual({ path: "/v1/me", auth: true });
   });
 
+  it("allows the choice of news by email with a session, for PUT only", () => {
+    expect(route("PUT", "v1/me/news")).toEqual({ path: "/v1/me/news", auth: true });
+    expect(route("PUT", "v1/me/news", "x=1")).toEqual({ path: "/v1/me/news", auth: true });
+    for (const method of ["GET", "POST", "DELETE", "PATCH"]) expect(route(method, "v1/me/news"), method).toBeUndefined();
+    for (const path of ["v1/me/news/x", "v1/me/news/optIn", "v1/news"]) expect(route("PUT", path), path).toBeUndefined();
+  });
+
   it("allows nothing else of Me: no reading of the account through the door, no other method on the new paths", () => {
     for (const [method, path] of [["GET", "v1/me"], ["PUT", "v1/me"], ["POST", "v1/me"], ["GET", "v1/me/avatar"], ["POST", "v1/me/avatar"], ["DELETE", "v1/me/avatar"], ["POST", "v1/me/privacy"], ["DELETE", "v1/me/privacy"], ["PATCH", "v1/me/privacy"], ["DELETE", "v1/me/profile"], ["DELETE", "v1/me/username"], ["GET", "v1/me/blocks"]]) {
       expect(route(method!, path!), `${method} ${path}`).toBeUndefined();

@@ -12,7 +12,7 @@ const spec = (account: object) => `debug-${Buffer.from(JSON.stringify(account)).
 /** Signs in with the debug provider token and returns the session. */
 async function signIn(account: object = {}) {
   const answer = await upstream({ method: "POST", path: "/v1/auth/apple", body: JSON.stringify({ identityToken: spec(account), nonce: "n" }) });
-  return (await answer.json()) as { accessToken: string; refreshToken: string; user: { id: string; username: string | null } };
+  return (await answer.json()) as { accessToken: string; refreshToken: string; user: { id: string; username: string | null; email: string | null; newsOptIn: boolean } };
 }
 
 const call = (session: { accessToken: string }, method: string, path: string, body?: unknown) =>
@@ -92,6 +92,21 @@ describe("the debug server (only in a build with the debug pages)", () => {
     expect((await call(session, "POST", "/v1/scores", round)).status).toBe(409);
     await call(session, "PUT", "/v1/me/progress", { points: 140, streakDays: 2, streakLastDate: "2026-11-22", bestByGame: { jigsaw: 215 } });
     expect(await (await call(session, "GET", "/v1/me/stats")).json()).toMatchObject({ totalPoints: 60, streakDays: 2 }); // the carried-over points are not rounds
+  });
+
+  it("answers an email and the news choice as the server does: the choice is off at first, kept once made, and only a boolean is taken", async () => {
+    vi.stubEnv("NEXT_PUBLIC_DEV_PAGES", "1");
+    const session = await signIn({ username: "niloofar" });
+    expect(session.user).toMatchObject({ email: "niloofar@example.com", newsOptIn: false });
+    const on = (await (await call(session, "PUT", "/v1/me/news", { optIn: true })).json()) as { newsOptIn: boolean; email: string };
+    expect(on).toMatchObject({ newsOptIn: true, email: "niloofar@example.com" });
+    expect(await (await call(session, "GET", "/v1/me")).json()).toMatchObject({ newsOptIn: true });
+    expect(((await (await call(session, "PUT", "/v1/me/news", { optIn: false })).json()) as { newsOptIn: boolean }).newsOptIn).toBe(false);
+    expect((await call(session, "PUT", "/v1/me/news", { optIn: "yes" })).status).toBe(400);
+    expect((await call(session, "PUT", "/v1/me/news", {})).status).toBe(400);
+    const relay = await signIn({ username: "x", email: "x7k2@privaterelay.appleid.com" });
+    expect(relay.user).toMatchObject({ email: "x7k2@privaterelay.appleid.com" });
+    expect((await signIn({ username: "y", email: null })).user).toMatchObject({ email: null });
   });
 
   it("keeps the avatar and the privacy settings (the defaults, then only the fields sent) and forgets a deleted account", async () => {

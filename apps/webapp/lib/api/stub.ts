@@ -9,7 +9,7 @@ import { playAnswer, PlayWorld } from "./stubPlay";
 // NEXT_PUBLIC_DEV_PAGES=1 (`lib/dev.ts`; the switch is baked in at build time, so a variable set on a running server cannot turn it on), a session whose
 // tokens begin with «debug-» is answered here, in memory, and never reaches the real server. Any other build never asks it.
 
-type Spec = { id: string; username: string | null; displayName: string | null; provider: "apple" | "google"; syncFails: boolean };
+type Spec = { id: string; username: string | null; displayName: string | null; provider: "apple" | "google"; syncFails: boolean; email: string | null };
 
 type Account = {
   spec: Spec;
@@ -45,7 +45,7 @@ const isDebugToken = (token: unknown): token is string => typeof token === "stri
 
 /** The session of a debug sign-in; the access token carries who it is, so the server needs no table of sessions. */
 function debugSession(given: Partial<Spec>): Response {
-  const spec: Spec = { id: crypto.randomUUID(), username: null, displayName: null, provider: "apple", syncFails: false, ...given };
+  const spec: Spec = { id: crypto.randomUUID(), username: null, displayName: null, provider: "apple", syncFails: false, email: "niloofar@example.com", ...given };
   deleted.delete(spec.id); // signing in again after a deletion makes a new account
   return Response.json({ accessToken: accessToken(spec), refreshToken: `debug-refresh.${encode(spec)}`, user: accountOf(spec).user });
 }
@@ -53,7 +53,7 @@ function debugSession(given: Partial<Spec>): Response {
 function accountOf(spec: Spec): Account {
   let account = accounts.get(spec.id);
   if (!account) {
-    const user = { id: spec.id, username: spec.username, displayName: spec.displayName, avatar: null, usernameChangedAt: null, createdAt: "2026-11-20T08:00:00.000Z", providers: [spec.provider], email: null, newsOptIn: false };
+    const user = { id: spec.id, username: spec.username, displayName: spec.displayName, avatar: null, usernameChangedAt: null, createdAt: "2026-11-20T08:00:00.000Z", providers: [spec.provider], email: spec.email ?? null, newsOptIn: false };
     account = { spec, user, divan: new Map(), reactions: new Map(), rounds: new Set(), points: 0, progress: { points: 0, streakDays: 0, streakLastDate: null, bestByGame: {} }, privacy: { ...privacyDefaults }, world: new World(), messages: new MessagesWorld(), play: new PlayWorld() };
     accounts.set(spec.id, account);
   }
@@ -68,8 +68,8 @@ const specOf = (token: string): Spec => JSON.parse(Buffer.from(token.split(".")[
 const usernameCodes = { too_short: "username_too_short", too_long: "username_too_long", bad_chars: "username_bad_chars", reserved: "username_reserved" } as const;
 
 /**
- * The debug sign-in (the phone's `-beytSignedIn 1`): a sign-in with a fake provider token `debug-<base64url of {id, username, displayName, provider, syncFails}>`
- * (`id` makes it the same account on a later sign-in, `username` null: a new account that still has to choose one; `syncFails`: the divan is refused, for the sign-out warning) starts a session, and a call
+ * The debug sign-in (the phone's `-beytSignedIn 1`): a sign-in with a fake provider token `debug-<base64url of {id, username, displayName, provider, syncFails, email}>`
+ * (`id` makes it the same account on a later sign-in, `username` null: a new account that still has to choose one; `syncFails`: the divan is refused, for the sign-out warning; `email` is niloofar@example.com unless given, null for an account with none) starts a session, and a call
  * with the tokens of one is answered here. Undefined for everything else, which goes to the real server.
  */
 export function debugAnswer(call: Call): Response | undefined {
@@ -111,6 +111,10 @@ function stubAnswer({ method, path, credential, body }: Call): Response {
       return new Response(null, { status: 204 });
     case "PUT /v1/me/avatar":
       account.user = { ...account.user, avatar: given };
+      return Response.json(account.user);
+    case "PUT /v1/me/news":
+      if (typeof given.optIn !== "boolean") return error(400, "invalid_request");
+      account.user = { ...account.user, newsOptIn: given.optIn };
       return Response.json(account.user);
     case "GET /v1/me/privacy":
       return Response.json(account.privacy);

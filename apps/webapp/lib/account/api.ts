@@ -119,6 +119,8 @@ export function createApi(onSignedOut: () => void = () => {}, send: Fetch = (...
     setDisplayName: (displayName: string) => call<User>("PUT", "/v1/me/profile", { body: { displayName } }),
     setUsername: (username: string) => call<User>("PUT", "/v1/me/username", { body: { username } }),
     setAvatar: (avatar: Avatar) => call<User>("PUT", "/v1/me/avatar", { body: avatar }),
+    /** «خبرهای یه بیت رو برام ایمیل کن»: the person's own choice; answers the user with it. */
+    setNews: (optIn: boolean) => call<User>("PUT", "/v1/me/news", { body: { optIn } }),
     privacy: () => call<PrivacySettings>("GET", "/v1/me/privacy"),
     putPrivacy: (patch: PrivacyPatch) => call<PrivacySettings>("PUT", "/v1/me/privacy", { body: patch }),
     /** Deletes the account and everything stored for it. */

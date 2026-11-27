@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 import { openApp } from "./browse";
 
 /** What a debug sign-in is made as (`DebugAccount`): the account of the phone's `-beytSignedIn 1`, answered by the web app's own door. */
-export type FakeAccount = { id?: string; username?: string | null; displayName?: string | null; providerName?: string; provider?: "apple" | "google"; syncFails?: boolean };
+export type FakeAccount = { id?: string; username?: string | null; displayName?: string | null; providerName?: string; provider?: "apple" | "google"; syncFails?: boolean; email?: string | null };
 
 /** Opens a page with the web app's door to the server open (its debug server answers the fake sign-in) and no onboarding, as a debug build does. */
 export const openAccountApp = (page: Page, path: string) => openApp(page, path, { api: true });
