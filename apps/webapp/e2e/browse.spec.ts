@@ -278,7 +278,7 @@ test("a poem read to its last couplet, or the whole poem to its end, is «خون
   await expect(page.getByText("۲ تا خوندی")).toBeVisible();
 });
 
-test("poet pictures come from the server through the web app's own route, and the letters show until they load", async ({ page }) => {
+test("poet pictures come from the server through the web app's own route, and the letter shows until the picture has loaded, then not under it", async ({ page }) => {
   let pictureAsked = 0;
   await openApp(page, "/explore");
   await page.route("**/api/v1/poets/pictures", (route) => route.fulfill({ json: [{ slug: "hafez", version: "ab12", url: "/v1/poets/hafez/picture?v=ab12" }] }));
@@ -286,16 +286,30 @@ test("poet pictures come from the server through the web app's own route, and th
     pictureAsked++;
     return route.fulfill({ body: png, contentType: "image/png", headers: { etag: '"ab12"', "cache-control": "public, max-age=86400" } });
   });
-  const circle = page.getByTestId("circle-hafez").first();
-  await expect(circle).toContainText("ح"); // the default circle
   await page.reload();
   const image = page.getByTestId("circle-hafez").first().locator("img");
   await expect(image).toHaveAttribute("src", "/api/v1/poets/hafez/picture?v=ab12");
   await expect(image).toHaveCSS("opacity", "1");
   expect(await image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
   expect(pictureAsked).toBeGreaterThan(0);
+  // The picture is there instead of the letter, never over it (the portraits are transparent).
+  await expect(page.getByTestId("circle-hafez").first()).not.toContainText("ح");
   // Another poet has no picture: its letter stays.
   await expect(page.getByTestId("circle-saadi").first().locator("img")).toHaveCount(0);
+  await expect(page.getByTestId("circle-saadi").first()).toContainText("س");
+});
+
+test("a poet's letter stays when the picture fails to load", async ({ page }) => {
+  await openApp(page, "/explore");
+  await page.route("**/api/v1/poets/pictures", (route) => route.fulfill({ json: [{ slug: "hafez", version: "ab12", url: "/v1/poets/hafez/picture?v=ab12" }] }));
+  let asked = 0;
+  await page.route("**/api/v1/poets/hafez/picture?v=ab12", (route) => {
+    asked++;
+    return route.fulfill({ status: 404, body: "" });
+  });
+  await page.reload();
+  await expect.poll(() => asked).toBeGreaterThan(0);
+  await expect(page.getByTestId("circle-hafez").first()).toContainText("ح");
 });
 
 // Every screen of the slice: right to left, nothing sideways, and the last of the content clear of the tab bar.
