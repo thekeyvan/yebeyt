@@ -278,7 +278,7 @@ test("a poem read to its last couplet, or the whole poem to its end, is «خون
   await expect(page.getByText("۲ تا خوندی")).toBeVisible();
 });
 
-test("poet pictures come from the server through the web app's own route, and the letter shows until the picture has loaded, then not under it", async ({ page }) => {
+test("poet pictures come from the server through the web app's own route, and the letter gives way to the picture once it has loaded, never showing under it", async ({ page }) => {
   let pictureAsked = 0;
   await openApp(page, "/explore");
   await page.route("**/api/v1/poets/pictures", (route) => route.fulfill({ json: [{ slug: "hafez", version: "ab12", url: "/v1/poets/hafez/picture?v=ab12" }] }));
@@ -299,7 +299,7 @@ test("poet pictures come from the server through the web app's own route, and th
   await expect(page.getByTestId("circle-saadi").first()).toContainText("س");
 });
 
-test("a poet's letter stays when the picture fails to load", async ({ page }) => {
+test("a poet's letter stays when the picture request fails", async ({ page }) => {
   await openApp(page, "/explore");
   await page.route("**/api/v1/poets/pictures", (route) => route.fulfill({ json: [{ slug: "hafez", version: "ab12", url: "/v1/poets/hafez/picture?v=ab12" }] }));
   let asked = 0;
@@ -308,8 +308,10 @@ test("a poet's letter stays when the picture fails to load", async ({ page }) =>
     return route.fulfill({ status: 404, body: "" });
   });
   await page.reload();
-  await expect.poll(() => asked).toBeGreaterThan(0);
-  await expect(page.getByTestId("circle-hafez").first()).toContainText("ح");
+  const circle = page.getByTestId("circle-hafez").first();
+  await expect.poll(() => circle.locator("img").evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth === 0)).toBe(true); // it has failed
+  expect(asked).toBeGreaterThan(0);
+  await expect(circle).toContainText("ح");
 });
 
 // Every screen of the slice: right to left, nothing sideways, and the last of the content clear of the tab bar.
