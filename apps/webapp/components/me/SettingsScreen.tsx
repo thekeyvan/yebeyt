@@ -12,6 +12,7 @@ import { TextSheet } from "../reader/TextSheet";
 import { Screen } from "../shell/Screen";
 import { ConfirmSheet } from "../ui/ConfirmSheet";
 import { ChevronLeftIcon } from "../ui/icons";
+import { feedbackPrivate } from "../../lib/feedbackPrivate";
 import { openFeedback } from "../feedback/center";
 import { emailLine, newsCopy, setNews } from "../../lib/me/newsChoice";
 import { toast } from "../ui/Toast";
@@ -42,12 +43,24 @@ function RowBody({ label, value, tint, chevron = true, latin }: RowProps) {
   );
 }
 
-/** «ایمیل»: the address (Latin, left to right), not a button; the relay address of Apple shows as «مخفی (اپل)». */
+/** The address cut in the middle when it is too long, as on the phone: the head gives way, the last characters (the end of the domain) stay. The full address is the `title`. */
+function MiddleTruncated({ text }: { text: string }) {
+  const cut = Math.max(0, text.length - 10);
+  return (
+    <span dir="ltr" title={text} className="flex min-w-0 max-w-[50%] text-[13px] text-muted">
+      <span className="truncate">{text.slice(0, cut)}</span>
+      <span className="shrink-0 whitespace-pre">{text.slice(cut)}</span>
+    </span>
+  );
+}
+
+/** «ایمیل»: the address (Latin, left to right), not a button; the relay address of Apple shows as «مخفی (اپل)». It is private: the feedback screenshot blanks it. */
 function EmailRow({ line }: { line: string }) {
   const hidden = line === newsCopy.hiddenEmail;
   return (
-    <div data-testid="settings-email" className={rowClass}>
-      <RowBody label={newsCopy.emailTitle} value={line} latin={!hidden} testId="settings-email" chevron={false} />
+    <div data-testid="settings-email" {...feedbackPrivate} className={rowClass}>
+      <span className="flex-1 text-sm font-medium text-ink">{newsCopy.emailTitle}</span>
+      {hidden ? <span className="max-w-[50%] truncate text-[13px] text-muted">{line}</span> : <MiddleTruncated text={line} />}
     </div>
   );
 }
@@ -120,7 +133,7 @@ function Settings({ services }: { services: Services }) {
             <Row label="اسم" value={user?.displayName ?? services.account.snapshot().providerName ?? ""} testId="settings-name" onClick={() => setEditing(true)} />
             <Row label="نام کاربری" value={user?.username ? `@${user.username}` : ""} latin testId="settings-username" onClick={() => setEditing(true)} />
             {email && <EmailRow line={email} />}
-            {email && <SwitchRow title={newsCopy.switchTitle} note={newsCopy.switchNote} on={user?.newsOptIn ?? false} onChange={changeNews} testId="settings-news" />}
+            {email && <SwitchRow title={newsCopy.switchTitle} note={newsCopy.switchNote} on={user?.newsOptIn ?? false} onChange={changeNews} busy={savingNews} testId="settings-news" />}
             <Row label="خروج از حساب" chevron={false} testId="sign-out" onClick={() => !leaving && setAsking(true)} />
             <Row label="پاک کردن حساب" chevron={false} tint="text-fire" testId="delete-account" onClick={() => setDeleting(true)} />
           </RowsCard>

@@ -257,6 +257,7 @@ test("the settings show the account's email and the news switch, which is off at
   await expect(email.locator("[dir=ltr]")).toHaveText("niloofar@example.com");
   await expect(email.getByRole("button")).toHaveCount(0); // not a button, not editable
   await expect(email.locator("svg")).toHaveCount(0); // no chevron
+  await expect(email).toHaveAttribute("data-feedback-private", ""); // the feedback screenshot blanks it
   const news = page.getByRole("switch", { name: /خبرهای یه بیت رو برام ایمیل کن/ });
   await expect(page.getByTestId("settings-news")).toContainText("هر وقت بخوای خاموشش کن");
   await expect(news).toHaveAttribute("aria-checked", "false");
@@ -271,6 +272,44 @@ test("the settings show the account's email and the news switch, which is off at
   await page.getByRole("switch", { name: /خبرهای یه بیت/ }).click();
   await expect(page.getByRole("switch", { name: /خبرهای یه بیت/ })).toHaveAttribute("aria-checked", "false");
   await expect.poll(async () => (await sessionUser(page))?.newsOptIn).toBe(false);
+});
+
+test("a long address is cut in the middle, keeps its end, and the full one is the title", async ({ page }) => {
+  const long = "a.very.long.first.name.and.surname.of.a.person@a-rather-long-company-domain.example.com";
+  await openMe(page, "/me");
+  await signInFromProfile(page, { email: long });
+  await openSettings(page);
+  const address = page.getByTestId("settings-email").locator("[dir=ltr]");
+  await expect(address).toHaveText(long);
+  await expect(address).toHaveAttribute("title", long);
+  await expect(address.locator("span").first()).toHaveCSS("text-overflow", "ellipsis");
+  expect(await address.locator("span").last().evaluate((tail) => tail.getBoundingClientRect().width > 0)).toBe(true);
+  expect(await noSidewaysScroll(page)).toBe(true);
+});
+
+test("a second tap while the choice is being saved sends nothing more, and the switch ends up on", async ({ page }) => {
+  await openMe(page, "/me");
+  await signInFromProfile(page);
+  await openSettings(page);
+  let puts = 0;
+  let release: () => void = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route("**/api/v1/me/news", async (route) => {
+    if (route.request().method() !== "PUT") return route.fallback();
+    puts++;
+    await held;
+    await route.fallback();
+  });
+  const news = page.getByRole("switch", { name: /خبرهای یه بیت/ });
+  await news.click();
+  await expect(news).toHaveAttribute("aria-disabled", "true");
+  await news.click({ force: true }); // Playwright waits for an aria-disabled control; the tap is made anyway
+  expect(puts).toBe(1);
+  release();
+  await expect(news).not.toHaveAttribute("aria-disabled", "true");
+  await expect(news).toHaveAttribute("aria-checked", "true");
+  await expect.poll(async () => (await sessionUser(page))?.newsOptIn).toBe(true);
+  expect(puts).toBe(1);
 });
 
 test("Apple's relay address shows as «مخفی (اپل)»", async ({ page }) => {

@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import os
 
 /// Debug launch arguments of the accounts slice, for simulator screenshots and UI tests:
 /// `-beytOnboarding welcome|taste|game|account|username|friends` starts onboarding at that screen (`account` as after
@@ -112,14 +113,16 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
     private static let privacyJSON = #"{"keptVisibility":"friends","dailyVisibility":"friends","showOnline":true,"inGlobalLeaderboard":false,"messagesFrom":"friends","gameInvitesFrom":"all","allowReposts":true}"#
 
     /// The news choice, kept for the run (`PUT /v1/me/news`), so a reopened screen still has it.
-    nonisolated(unsafe) private static var newsOptIn = false
+    private static let newsOptInLock = OSAllocatedUnfairLock(initialState: false)
 
     private static var userJSON: String {
-        #"{"id":"00000000-0000-0000-0000-000000000001","username":"niloofar","displayName":null,"usernameChangedAt":null,"createdAt":"2026-11-23T08:00:00.000Z","providers":["apple"],"email":"niloofar@example.com","newsOptIn":\#(newsOptIn)}"#
+        #"{"id":"00000000-0000-0000-0000-000000000001","username":"niloofar","displayName":null,"usernameChangedAt":null,"createdAt":"2026-11-23T08:00:00.000Z","providers":["apple"],"email":"niloofar@example.com","newsOptIn":\#(newsOptInLock.withLock { $0 })}"#
     }
 
     private static func setNews(_ body: Data) -> String {
-        newsOptIn = (try? JSONSerialization.jsonObject(with: body) as? [String: Any])?["optIn"] as? Bool ?? newsOptIn
+        if let optIn = (try? JSONSerialization.jsonObject(with: body) as? [String: Any])?["optIn"] as? Bool {
+            newsOptInLock.withLock { $0 = optIn }
+        }
         return userJSON
     }
 }

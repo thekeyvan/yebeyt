@@ -187,8 +187,8 @@ final class MeUITests: XCTestCase {
         XCTAssertTrue(email.label.contains("niloofar@example.com"))
         XCTAssertTrue(email.label.contains("ایمیل"))
         XCTAssertFalse(app.buttons["settingsEmail"].exists, "the email is not a button")
-        let note = app.staticTexts["settingsNewsNote"]
-        XCTAssertEqual(note.label, "هر وقت بخوای خاموشش کن")
+        // The note is the switch's hint, so VoiceOver reads it once: the line itself is hidden from accessibility.
+        XCTAssertFalse(app.staticTexts["settingsNewsNote"].exists)
         let news = element(app, "settingsNews")
         XCTAssertTrue(news.exists)
         XCTAssertEqual(news.value as? String, "0")  // the switch is off

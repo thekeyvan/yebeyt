@@ -118,6 +118,7 @@ struct SettingsScreen: View {
             Text(NewsChoice.emailTitle).font(.ui(14, weight: .medium)).foregroundStyle(Tokens.Colors.ink)
             Spacer(minLength: 8)
             Text(line).font(.ui(13)).foregroundStyle(Tokens.Colors.muted).lineLimit(1).truncationMode(.middle)
+                .feedbackPrivate()
                 .environment(\.layoutDirection, line == NewsChoice.hiddenEmail ? .rightToLeft : .leftToRight)
         }
         .padding(.vertical, 13)
@@ -133,8 +134,10 @@ struct SettingsScreen: View {
             }
             .toggleStyle(MeSwitchStyle())
             .disabled(savingNews)
+            .accessibilityHint(NewsChoice.switchNote)
             .accessibilityIdentifier("settingsNews")
             Text(NewsChoice.switchNote).font(.ui(12)).foregroundStyle(Tokens.Colors.muted)
+                .accessibilityHidden(true)
                 .accessibilityIdentifier("settingsNewsNote")
         }
         .padding(.vertical, 10)

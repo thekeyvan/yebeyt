@@ -21,10 +21,10 @@ export function RowsCard({ title, children }: { title?: string; children: ReactN
   );
 }
 
-/** The board's switch row: the label at the start, a 50×30 switch at the end (green when on, the knob at the end when on). */
-export function SwitchRow({ title, note, on, onChange, testId }: { title: string; note?: string; on: boolean; onChange: (on: boolean) => void; testId: string }) {
+/** The board's switch row: the label at the start, a 50×30 switch at the end (green when on, the knob at the end when on). `busy` marks it `aria-disabled` while a change is saved. */
+export function SwitchRow({ title, note, on, onChange, testId, busy }: { title: string; note?: string; on: boolean; onChange: (on: boolean) => void; testId: string; busy?: boolean }) {
   return (
-    <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} data-testid={testId} className="flex w-full items-center gap-2.5 py-3 text-start">
+    <button type="button" role="switch" aria-checked={on} aria-disabled={busy || undefined} onClick={() => onChange(!on)} data-testid={testId} className="flex w-full items-center gap-2.5 py-3 text-start">
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="text-sm font-medium leading-[1.7] text-ink">{title}</span>
         {note && <span className="text-xs text-muted">{note}</span>}
