@@ -282,7 +282,9 @@ test("a long address is cut in the middle, keeps its end, and the full one is th
   const address = page.getByTestId("settings-email").locator("[dir=ltr]");
   await expect(address).toHaveText(long);
   await expect(address).toHaveAttribute("title", long);
-  await expect(address.locator("span").first()).toHaveCSS("text-overflow", "ellipsis");
+  const head = address.locator("span").first();
+  await expect(head).toHaveCSS("text-overflow", "ellipsis");
+  expect(await head.evaluate((e) => e.scrollWidth > e.clientWidth)).toBe(true);
   expect(await address.locator("span").last().evaluate((tail) => tail.getBoundingClientRect().width > 0)).toBe(true);
   expect(await noSidewaysScroll(page)).toBe(true);
 });
