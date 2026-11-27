@@ -25,7 +25,7 @@ export function InboxRow({ row, last, open, active, now }: { row: ConversationIt
       <ChatFace parts={row.other.avatar} size={52} online={row.other.online === true} />
       <span className="flex min-w-0 flex-1 flex-col items-start">
         <span className={cn("max-w-full truncate text-[15px] text-ink", unread ? "font-bold" : "font-medium")}>{name}</span>
-        <span {...feedbackPrivate} className={cn("max-w-full truncate text-[13px]", unread ? "font-medium text-ink" : "text-muted")}>
+        <span {...feedbackPrivate} data-testid="inbox-preview" className={cn("max-w-full truncate text-[13px]", unread ? "font-medium text-ink" : "text-muted")}>
           {inboxPreview(row.last)}
         </span>
       </span>

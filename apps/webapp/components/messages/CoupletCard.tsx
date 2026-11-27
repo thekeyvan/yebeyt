@@ -20,7 +20,7 @@ export function CoupletCard({ coupletKey, id, mine }: { coupletKey: string; id: 
   if (!resolved) {
     return (
       <div data-testid={`couplet-card-${id}`} className={card}>
-        <p className="py-5 text-center text-lg text-muted">…</p>
+        <span className="block py-5 text-center text-lg text-muted">…</span>
       </div>
     );
   }

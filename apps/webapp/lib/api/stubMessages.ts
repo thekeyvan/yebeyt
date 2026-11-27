@@ -65,6 +65,9 @@ function startingChats(): Map<string, Message[]> {
 
 const startingUnread: Record<string, number> = { "sara.ghazal": 1, aryan: 1 };
 
+/** Kian's chat has an older page (`before=older`): two messages two days back. */
+const older = (): Message[] => [text("o2", "kian_k", "چطوری؟", at(2, 20, 5)), text("o1", "kian_k", "سلام کیان", at(2, 20, 0), true)];
+
 /** The inbox's row for a chat: its last message, whose kind and event `last` says. */
 function row(username: string, messages: Message[], unread: number) {
   const last = messages[0]!;
@@ -149,16 +152,31 @@ export function messagesAnswer({ method, pathname, search, given, world, friends
     }
   }
   if (parts[1] === "conversations" && parts.length === 4) return chatAnswer(method, parts[2]!, parts[3]!, search, given, world);
-  if (method === "DELETE" && parts[1] === "messages" && parts.length === 3) return nothing();
+  if (method === "DELETE" && parts[1] === "messages" && parts.length === 3) return deleteMessage(parts[2]!, world);
   if (parts[1] === "shared-divans" && parts.length >= 4) return divanAnswer(method, parts, search, given, world);
   return undefined;
+}
+
+/** Only the sender takes a text or a couplet back: the row stays, cleared. */
+function deleteMessage(id: string, world: MessagesWorld): Response {
+  for (const [username, messages] of world.chats) {
+    const found = messages.find((one) => one.id === id);
+    if (!found) continue;
+    if (!found.fromMe || (found.kind !== "text" && found.kind !== "couplet")) return error(403, "forbidden");
+    world.chats.set(username, messages.map((one) => (one === found ? { ...one, deleted: true, text: null, key: null, note: null, payload: null } : one)));
+    return nothing();
+  }
+  return error(404, "not_found");
 }
 
 function chatAnswer(method: string, id: string, what: string, search: URLSearchParams, given: Record<string, unknown>, world: MessagesWorld): Response | undefined {
   const username = usernameOfChat(id);
   if (!username) return error(404, "not_found");
   const messages = world.chats.get(username) ?? [];
-  if (what === "messages" && method === "GET") return Response.json({ items: search.has("before") ? [] : messages, nextBefore: null, otherReadMessageId: username === "sara.ghazal" ? "m3" : null });
+  if (what === "messages" && method === "GET") {
+    const paged = username === "kian_k";
+    return Response.json({ items: search.has("before") ? (paged ? older() : []) : messages, nextBefore: paged && !search.has("before") ? "older" : null, otherReadMessageId: username === "sara.ghazal" ? "m3" : null });
+  }
   if (what === "messages" && method === "POST") {
     const clientId = String(given.clientId ?? world.nextId("k"));
     const known = messages.find((one) => one.id === `sent-${clientId}`);

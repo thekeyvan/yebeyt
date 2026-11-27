@@ -63,6 +63,28 @@ describe("the debug server's chats", () => {
   });
 });
 
+describe("the debug server's older pages and deleted messages", () => {
+  it("Kian's chat has an older page, and the others have none", async () => {
+    const call = await account();
+    const newest = (await call("GET", "/v1/conversations/c-kian_k/messages")).json;
+    expect(newest.nextBefore).toBe("older");
+    const older = (await call("GET", "/v1/conversations/c-kian_k/messages?before=older")).json;
+    expect(older.items.map((one: any) => one.id)).toEqual(["o2", "o1"]);
+    expect(older.nextBefore).toBeNull();
+    expect((await call("GET", "/v1/conversations/c-sara_ghazal/messages")).json.nextBefore).toBeNull();
+  });
+
+  it("deleting my message clears it for good; another's, a system line and an unknown one are refused", async () => {
+    const call = await account();
+    expect((await call("DELETE", "/v1/messages/m3")).status).toBe(204);
+    const sara = (await call("GET", "/v1/conversations/c-sara_ghazal/messages")).json;
+    expect(sara.items.find((one: any) => one.id === "m3")).toMatchObject({ deleted: true, text: null });
+    expect((await call("DELETE", "/v1/messages/m1")).status).toBe(403); // hers
+    expect((await call("DELETE", "/v1/messages/k2")).status).toBe(403); // a system line
+    expect((await call("DELETE", "/v1/messages/nope")).status).toBe(404);
+  });
+});
+
 describe("the debug server's shared divans", () => {
   it("Sara's divan has 24 couplets (13 hers, 11 mine), three of them listed, and the chips filter by who added", async () => {
     const call = await account();

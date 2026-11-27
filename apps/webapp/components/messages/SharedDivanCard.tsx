@@ -48,9 +48,9 @@ function Card({ item, name, otherFace, myFace, like, askRemove }: { item: Shared
           <CoupletText couplet={resolved.couplet} settings={defaultSettings} size={17} factor={1.85} className="text-ink" />
         </Link>
       ) : (
-        <p {...hold} data-testid={`shared-couplet-${item.id}`} className="py-5 text-center text-[17px] text-muted">
+        <span {...hold} data-testid={`shared-couplet-${item.id}`} className="block py-5 text-center text-[17px] text-muted">
           …
-        </p>
+        </span>
       )}
       <div className="flex items-center">
         <span className="flex-1 text-xs text-[#8A8698]">{resolved ? sourceOf(resolved) : ""}</span>
