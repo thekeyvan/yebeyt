@@ -17,6 +17,8 @@ describe("challengeView", () => {
       codeLabel: "کد چالش",
       code: "7KQ2",
       url: "https://yebeyt.com/c/7kq2",
+      webUrl: "https://app.yebeyt.com/c/7kq2",
+      webLabel: "روی وب بازی کن",
     });
   });
 
@@ -55,7 +57,13 @@ describe("inviteView and gameView", () => {
     expect(inviteView(creator).webUrl).toBe("https://app.yebeyt.com/u/niloofar");
     expect(inviteView({ ...creator, username: "kian_k.2" }).webUrl).toBe("https://app.yebeyt.com/u/kian_k.2");
     expect(gameView({ kind: "mosh", creator, status: "waiting" }, "k3m9").webUrl).toBeUndefined();
-    expect(challengeView(challenge, "7KQ2").webUrl).toBeUndefined();
+  });
+
+  it("challenge: «روی وب بازی کن» opens the board in the web app, and only for a code of four letters or digits", () => {
+    expect(challengeView(challenge, "7KQ2")).toMatchObject({ webUrl: "https://app.yebeyt.com/c/7KQ2", webLabel: "روی وب بازی کن" });
+    expect(challengeView(challenge, "a1b2").webUrl).toBe("https://app.yebeyt.com/c/a1b2");
+    for (const code of ["7KQ", "7KQ22", "7K/2", "7K 2", "../x", "7K?2", ""]) expect(challengeView(challenge, code).webUrl, code).toBeUndefined();
+    expect(inviteView(creator).webLabel).toBeUndefined();
   });
 
   it("game: مشاعره or بازی رودررو, with the code", () => {

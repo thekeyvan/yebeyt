@@ -50,7 +50,7 @@ export function LinkPage({ view, appClip = APP_CLIP_READY }: { view: LinkView | 
         <StoreButton pageUrl={view.url} primary={!appClip} />
         {view.webUrl && (
           <a className="button secondary" href={view.webUrl}>
-            روی وب باز کن
+            {view.webLabel ?? "روی وب باز کن"}
           </a>
         )}
         <p className="after">

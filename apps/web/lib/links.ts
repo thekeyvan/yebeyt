@@ -12,8 +12,10 @@ export type LinkView = {
   codeLabel: string;
   code: string;
   url: string;
-  /** Where the same thing opens in the web app (the invite: the person's page), when it does. */
+  /** Where the same thing opens in the web app (the invite: the person's page; the challenge: its board), when it does. */
   webUrl?: string;
+  /** What the web button says when it is not «روی وب باز کن». */
+  webLabel?: string;
 };
 export type ChallengeView = LinkView & { mine: string; yours: string };
 
@@ -24,6 +26,9 @@ const thingsOf = (label: string | null, count: number) => {
   const match = label?.match(/^(.+? بیت) (.+)$/);
   return match ? `${match[1]} از ${match[2]}` : `${persianNumber(count)} بیت`;
 };
+
+/** The server's code of a challenge or a game: four letters or digits. Nothing else is put in an address of the web app. */
+const CODE = /^[0-9A-Za-z]{4}$/;
 
 export function challengeView(challenge: Challenge, code: string): ChallengeView {
   const name = nameOf(challenge.creator);
@@ -43,6 +48,7 @@ export function challengeView(challenge: Challenge, code: string): ChallengeView
     codeLabel: "کد چالش",
     code: code.toUpperCase(),
     url: `${SITE_URL}/c/${code}`,
+    ...(CODE.test(code) && { webUrl: `${WEBAPP_URL}/c/${code}`, webLabel: "روی وب بازی کن" }),
   };
 }
 
