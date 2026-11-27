@@ -23,8 +23,8 @@ function upstream(answer: (call: Call) => Response | Promise<Response>): { send:
   };
 }
 
-const post = (cookie?: string, headers: Record<string, string> = { "sec-fetch-site": "same-origin" }) =>
-  new Request(`${origin}/auth/live`, { method: "POST", headers: { host: "app.yebeyt.com", "x-forwarded-proto": "https", ...headers, ...(cookie ? { cookie } : {}) } });
+const post = (cookie?: string, headers: Record<string, string> = { "sec-fetch-site": "same-origin" }, query = "") =>
+  new Request(`${origin}/auth/live${query}`, { method: "POST", headers: { host: "app.yebeyt.com", "x-forwarded-proto": "https", ...headers, ...(cookie ? { cookie } : {}) } });
 
 describe("the token for the live socket", () => {
   it("hands out the access token of the cookie while it has time left, without asking the server, and never a refresh token", async () => {
@@ -50,6 +50,21 @@ describe("the token for the live socket", () => {
     expect(cookies).toHaveLength(2);
     expect(cookies.join(";")).toContain(`yb_access=${fresh}`);
     expect(cookies.every((cookie) => cookie.includes("HttpOnly"))).toBe(true);
+  });
+
+  it("refreshes when the page says the server refused the token (?renew=1), though the cookie's has time left; without it the same token goes out again", async () => {
+    const stale = jwt(600, "stale");
+    const fresh = jwt(900, "new");
+    const up = upstream(() => json(200, { accessToken: fresh, refreshToken: "refresh-2", user: {} }));
+    const bff = createBff(up.send);
+    const cookie = `yb_access=${stale}; yb_refresh=refresh-1`;
+    expect((await (await bff.live(post(cookie), url)).json()).token).toBe(stale);
+    expect((await (await bff.live(post(cookie), url)).json()).token).toBe(stale); // the same twice: what a refused token would get again
+    expect(up.calls).toEqual([]);
+    const renewed = await bff.live(post(cookie, undefined, "?renew=1"), url);
+    expect((await renewed.json()).token).toBe(fresh);
+    expect(up.calls.map((call) => call.credential)).toEqual(["refresh-1"]);
+    expect(renewed.headers.getSetCookie()).toHaveLength(2);
   });
 
   it("refreshes when only the refresh cookie is left, and when the token is not a JWT at all", async () => {

@@ -59,12 +59,47 @@ export async function endsClearOfTabs(page: Page, selector: string): Promise<boo
   }, selector);
 }
 
-/** Whether every element of `selector` is, or is inside, a view marked private to the feedback screenshot; the number of elements checked. */
-export async function privateness(page: Page, selector: string): Promise<{ checked: number; unmarked: number }> {
-  return page.evaluate((sel) => {
-    const nodes = [...document.querySelectorAll(sel)];
-    return { checked: nodes.length, unmarked: nodes.filter((node) => !node.closest("[data-feedback-private]")).length };
-  }, selector);
+/** The message text, previews and notes of the debug server's chats and shared divans (`lib/api/stubMessages.ts`), and what the tests write. */
+export const chatTexts = [
+  "وای چقدر قشنگه! ممنون",
+  "اینو دیدم یاد تو افتادم",
+  "بیت قشنگی بود",
+  "فردا معما رو با هم حل کنیم؟",
+  "این رباعی رو ببین",
+  "مهسا تو رو به جورچین بیت چالش کشید",
+  "سلام کیان",
+  "چطوری؟",
+  "یاد سفر شیراز افتادم",
+  "دعوتت کرد به بازی",
+  "یه بیت فرستاد",
+  "پیام آزمایشی خصوصی",
+  "یه پیام زنده خصوصی",
+  "یادداشت خصوصی",
+];
+
+/**
+ * Walks every text node and every field of the page: each text of `chatTexts` must sit inside a view marked private to the feedback screenshot, and so must every field that takes typed
+ * text (an input that is not a slider, a box or a button, and a textarea). `texts` is how many of the known texts are on the screen (a screen that shows none would prove nothing), `fields` how many fields.
+ */
+export async function expectAllPrivate(page: Page, expected: { texts: number; fields?: number }): Promise<void> {
+  const found = await page.evaluate((known) => {
+    const unmarked: string[] = [];
+    let texts = 0;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent ?? "";
+      if (!known.some((one) => text.includes(one))) continue;
+      texts += 1;
+      if (!node.parentElement?.closest("[data-feedback-private]")) unmarked.push(text.trim());
+    }
+    const fields = [...document.querySelectorAll("input:not([type=hidden], [type=range], [type=checkbox], [type=radio], [type=button], [type=submit]), textarea")];
+    const loose = fields.filter((field) => !field.closest("[data-feedback-private]")).map((field) => field.getAttribute("data-testid") ?? field.getAttribute("aria-label") ?? field.tagName);
+    return { texts, unmarked, fields: fields.length, loose };
+  }, chatTexts);
+  expect(found.unmarked, "message text outside a private view").toEqual([]);
+  expect(found.loose, "fields outside a private view").toEqual([]);
+  expect(found.texts, "known texts on the screen").toBeGreaterThanOrEqual(expected.texts);
+  expect(found.fields, "fields on the screen").toBeGreaterThanOrEqual(expected.fields ?? 0);
 }
 
 /**

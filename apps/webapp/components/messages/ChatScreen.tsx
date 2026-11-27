@@ -18,6 +18,7 @@ import { DayLabel } from "./Bubbles";
 import { ChatHeader } from "./ChatHeader";
 import { CoupletMessage, DivanLine, GameLine, PendingMessage, TextMessage } from "./ChatMessages";
 import { Composer } from "./Composer";
+import { NewMessageAnnouncer } from "./NewMessageAnnouncer";
 import { CoupletPickerSheet } from "./CoupletPickerSheet";
 import { useChatScroll } from "./useChatScroll";
 import { useMessageActions } from "./useMessageActions";
@@ -30,26 +31,29 @@ export function ChatScreen({ username }: { username: string }) {
 
 function Opened({ services, username }: { services: Services; username: string }) {
   const account = useAccount();
-  const signedIn = useStore(services.session)?.status === "in";
-  const [opened, setOpened] = useState<{ chat: ChatModel } | { error: string }>();
+  const status = useStore(services.session)?.status;
+  const signedIn = status === "in";
+  // What was opened is kept for the address it was opened for: the session settling (loading, then in) asks again, and must not draw the chat anew (it would lose what is being typed).
+  const [opened, setOpened] = useState<{ username: string; result: { chat: ChatModel } | { error: string } }>();
 
   useEffect(() => {
-    setOpened(undefined);
-    if (!isUsername(username)) return setOpened({ error: "این آدم پیدا نشد" });
+    if (!isUsername(username)) return setOpened({ username, result: { error: "این آدم پیدا نشد" } });
+    if (status === "guest") setOpened(undefined);
     let current = true;
-    account.require("messages", () => void services.messages.openChat(username).then((result) => current && setOpened(result)));
+    account.require("messages", () => void services.messages.openChat(username).then((result) => current && setOpened({ username, result })));
     return () => {
       current = false;
     };
   }, [username, signedIn]);
 
-  if (opened && "chat" in opened) return <ChatView key={opened.chat.id} chat={opened.chat} services={services} />;
+  const result = opened?.username === username ? opened.result : undefined;
+  if (result && "chat" in result) return <ChatView key={result.chat.id} chat={result.chat} services={services} />;
   return (
     <div className="flex h-dvh flex-col px-[18px] pt-[calc(env(safe-area-inset-top)+8px)]">
       <div className="lg:hidden">
         <BackButton fallback="/messages" />
       </div>
-      {opened ? <Note top="pt-10">{opened.error}</Note> : <Busy />}
+      {result ? <Note top="pt-10">{result.error}</Note> : <Busy />}
     </div>
   );
 }
@@ -60,7 +64,7 @@ function Row({ entry, chat, services, hold }: { entry: Entry; chat: ChatModel; s
   if (entry.kind === "pending") return <PendingMessage pending={entry.pending} retry={() => chat.retry(entry.pending.clientId)} hold={() => hold.holdPending(entry.pending.clientId)} />;
   const { message, seen } = entry;
   const myId = services.session.user?.id;
-  if (message.kind === "text" || (message.kind === "couplet" && message.deleted)) return <TextMessage message={message} seen={seen} hold={() => hold.holdMessage(message)} />;
+  if (message.kind === "text" || (message.kind === "couplet" && message.deleted)) return <TextMessage message={message} other={other} seen={seen} hold={() => hold.holdMessage(message)} />;
   if (message.kind === "couplet") return <CoupletMessage message={message} other={other} seen={seen} hold={() => hold.holdMessage(message)} />;
   if (message.kind === "system" && message.payload?.event === "divan_add") return <DivanLine message={message} other={other} />;
   return <GameLine message={message} other={other} myId={myId} />;
@@ -151,6 +155,7 @@ function ChatView({ chat, services }: { chat: ChatModel; services: Services }) {
           </button>
         )}
       </div>
+      <NewMessageAnnouncer chat={chat} />
       <Composer chat={chat} pick={() => setPicking(true)} />
       <CoupletPickerSheet open={picking} onClose={() => setPicking(false)} title="بیت بفرست" action="بفرست" choose={(key, note) => chat.sendCouplet(key, note)} />
       {hold.sheets}

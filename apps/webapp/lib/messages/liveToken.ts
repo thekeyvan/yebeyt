@@ -1,11 +1,11 @@
 import { ApiError } from "../account/api";
 import type { LiveToken } from "./liveConnection";
 
-/** Asks the web app's own `/auth/live` for a token for the socket (the one place a token reaches the page, only to be sent as the socket's first message). A 401 means signed out. */
-export async function fetchLiveToken(send: typeof fetch = (...args) => fetch(...args)): Promise<LiveToken> {
+/** Asks the web app's own `/auth/live` for a token for the socket (the one place a token reaches the page, only to be sent as the socket's first message). `renew` says the server refused the last token, so the route refreshes the session. A 401 means signed out. */
+export async function fetchLiveToken(renew = false, send: typeof fetch = (...args) => fetch(...args)): Promise<LiveToken> {
   let response: Response;
   try {
-    response = await send("/auth/live", { method: "POST", credentials: "same-origin" });
+    response = await send(renew ? "/auth/live?renew=1" : "/auth/live", { method: "POST", credentials: "same-origin" });
   } catch {
     throw new ApiError(0);
   }

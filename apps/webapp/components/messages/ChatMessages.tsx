@@ -12,12 +12,16 @@ import { CoupletCard } from "./CoupletCard";
 
 const clock = (message: Pick<Message, "createdAt">) => chatTime.clock(new Date(message.createdAt));
 
+/** What a screen reader says of a bubble (`TextMessageView.spoken`): «سارا: سلام، ۹:۴۰» · «تو: سلام، ۹:۴۲، دیده شد». */
+const spoken = (who: string, body: string, time: string, seen = false): string => `${who}: ${body}، ${time}${seen ? `، ${messageCopy.seen}` : ""}`;
+
 /** A text of either person: the bubble and its time; a long press reports it (theirs) or takes it back (mine). A deleted one says so, muted. */
-export function TextMessage({ message, seen, hold }: { message: Message; seen: boolean; hold: () => void }) {
+export function TextMessage({ message, other, seen, hold }: { message: Message; other: ChatPerson; seen: boolean; hold: () => void }) {
   const mine = message.fromMe;
+  const body = message.deleted ? messageCopy.deletedMessage : (message.text ?? "");
   return (
-    <Holdable mine={mine} testId={`bubble-${message.id}`} onHold={message.deleted ? () => {} : hold}>
-      <TextBubble text={message.deleted ? messageCopy.deletedMessage : (message.text ?? "")} mine={mine} muted={message.deleted} />
+    <Holdable mine={mine} testId={`bubble-${message.id}`} onHold={message.deleted ? () => {} : hold} label={spoken(mine ? "تو" : chatName(other), body, clock(message), seen)}>
+      <TextBubble text={body} mine={mine} muted={message.deleted} />
       <MessageMeta time={clock(message)} mine={mine} seen={seen} />
     </Holdable>
   );
@@ -29,7 +33,7 @@ export function CoupletMessage({ message, other, seen, hold }: { message: Messag
   const time = clock(message);
   return (
     <div data-testid={`couplet-message-${message.id}`} className={`flex w-full flex-col gap-1.5 ${mine ? "items-end" : "items-start"}`}>
-      <Holdable mine={mine} onHold={hold}>
+      <Holdable mine={mine} onHold={hold} label={mine ? `تو یه بیت فرستادی، ${time}` : `${chatName(other)} یه بیت برات فرستاد، ${time}`}>
         <span className="text-xs text-muted">
           {mine ? (
             `تو یه بیت فرستادی · ${time}`
@@ -42,7 +46,7 @@ export function CoupletMessage({ message, other, seen, hold }: { message: Messag
       </Holdable>
       <CoupletCard coupletKey={message.key ?? ""} id={message.id} mine={mine} />
       {message.note ? (
-        <Holdable mine={mine} onHold={hold}>
+        <Holdable mine={mine} onHold={hold} label={spoken(mine ? "تو" : chatName(other), message.note, time, seen)}>
           <TextBubble text={message.note} mine={mine} />
           <MessageMeta time={time} mine={mine} seen={seen} />
         </Holdable>
@@ -57,7 +61,7 @@ export function CoupletMessage({ message, other, seen, hold }: { message: Messag
 export function PendingMessage({ pending, retry, hold }: { pending: Pending; retry: () => void; hold: () => void }) {
   const { content } = pending;
   return (
-    <Holdable mine testId={`pending-${pending.clientId}`} onHold={pending.failed ? hold : () => {}}>
+    <Holdable mine testId={`pending-${pending.clientId}`} onHold={pending.failed ? hold : () => {}} label={`تو: ${content.kind === "text" ? content.text : (content.note ?? messageCopy.couplet)}، ${pending.refused ? messageCopy.refused : pending.failed ? messageCopy.notSent : messageCopy.sending}`}>
       {content.kind === "text" ? (
         <TextBubble text={content.text} mine faded />
       ) : (

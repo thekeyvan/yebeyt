@@ -3,7 +3,7 @@ import { expectReader, tabBar } from "./browse";
 import { openAccountApp } from "./account";
 import { asked, expectRightToLeftAndFits, openSignedIn } from "./friends";
 import { toasts } from "./me";
-import { endsClearOfTabs, fakeLive, messagesTab, privateness, serverUnread } from "./messages";
+import { endsClearOfTabs, expectAllPrivate, fakeLive, messagesTab, serverUnread } from "./messages";
 
 const gate = (page: import("@playwright/test").Page) => page.getByRole("dialog", { name: /یه حساب لازمه/ });
 const wide = (page: import("@playwright/test").Page) => (page.viewportSize()?.width ?? 0) >= 1024;
@@ -149,11 +149,11 @@ test.describe("a chat", () => {
   test("a send that fails says «نرسید · دوباره», and tapping it sends the same message once", async ({ page }) => {
     await openSignedIn(page, sara);
     let failing = true;
-    const posts: string[] = [];
+    let tries = 0;
     await page.route("**/api/v1/conversations/*/messages", (route) => {
       if (route.request().method() !== "POST") return route.fallback();
-      posts.push(route.request().postData() ?? "");
-      return failing ? route.abort() : route.fallback();
+      tries += 1;
+      return failing ? route.abort("failed") : route.fallback();
     });
     await page.getByTestId("composer").fill("دوباره بفرست");
     await page.getByTestId("composer").press("Enter");
@@ -163,7 +163,10 @@ test.describe("a chat", () => {
     await retry.click();
     await expect(page.locator("[data-testid^=bubble-sent-]").filter({ hasText: "دوباره بفرست" })).toBeVisible();
     await expect(retry).toHaveCount(0);
-    expect(new Set(posts.map((body) => JSON.parse(body).clientId)).size).toBe(1);
+    expect(tries).toBe(2);
+    // The server has it once: the same clientId made one message.
+    const mine = await page.evaluate(async () => ((await (await fetch("/api/v1/conversations/c-sara_ghazal/messages")).json()) as { items: { text: string | null }[] }).items.filter((one) => one.text === "دوباره بفرست").length);
+    expect(mine).toBe(1);
   });
 
   test("a couplet through the picker: search, choose, a note, send; the card appears and opens the poem at it", async ({ page }) => {
@@ -277,6 +280,22 @@ test.describe("live", () => {
     expect(await page.locator("[data-testid^=inbox-row-]").first().getAttribute("data-testid")).toBe("inbox-row-sara.ghazal");
   });
 
+  test("a new message of hers is announced by a polite live region; older pages, the first load and my own sends are not", async ({ page }) => {
+    const live = await fakeLive(page);
+    await openSignedIn(page, "/messages/kian_k");
+    const announcer = page.getByTestId("new-message-announcer");
+    await expect(announcer).toHaveAttribute("aria-live", "polite");
+    await expect(announcer).toHaveAttribute("role", "status");
+    await expect(page.getByTestId("bubble-o2")).toBeVisible(); // the older page was added at the top
+    await expect(announcer).toHaveText("");
+    await page.getByTestId("composer").fill("از طرف من");
+    await page.getByTestId("composer").press("Enter");
+    await expect(page.locator("[data-testid^=bubble-sent-]")).toBeVisible();
+    await expect(announcer).toHaveText("");
+    await live.push({ type: "message", message: { id: "live-a", conversationId: "c-kian_k", kind: "text", fromMe: false, text: "سلام از کیان", key: null, note: null, payload: null, deleted: false, createdAt: new Date().toISOString() } });
+    await expect(announcer).toHaveText("کیان: سلام از کیان");
+  });
+
   test("a friend request comes live: the requests row and the badge count it, and the list has the row; an acceptance says so and takes the sent request away", async ({ page }) => {
     const live = await fakeLive(page);
     const setUnread = await serverUnread(page, { total: 2, friendRequests: 2 });
@@ -369,6 +388,34 @@ test.describe("the shared divan", () => {
     await expect(page.getByTestId("shared-item-i2")).toHaveCount(0);
   });
 
+  test("a ⋯ button on a couplet I added opens the same question for a mouse or a key, and none is on one of hers", async ({ page, browserName }) => {
+    await openSignedIn(page, "/messages/sara.ghazal/divan");
+    await expect(page.getByTestId("shared-item-i2")).toBeVisible();
+    await expect(page.getByTestId("divan-more-i1")).toHaveCount(0); // hers
+    const more = page.getByTestId("divan-more-i2");
+    const fine = await page.evaluate(() => matchMedia("(pointer: fine)").matches);
+    if (fine) await expect(more).toHaveCSS("opacity", "1"); // drawn for a mouse; a finger long-presses the couplet
+    else await expect(more).toHaveCSS("opacity", "0");
+    await more.focus();
+    if (browserName === "chromium") {
+      // …and a key reaches it either way, and shows it (Safari does not Tab onto buttons unless its setting says so).
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Shift+Tab");
+      await expect(more).toBeFocused();
+      await expect(more).toHaveCSS("opacity", "1");
+    }
+    await page.keyboard.press("Enter");
+    const question = asked(page, "از دیوان مشترک برداشته بشه؟");
+    await expect(question).toContainText("برای سارا هم برداشته می‌شه.");
+    await question.getByRole("button", { name: "نه" }).click();
+    await expect(page.getByTestId("shared-item-i2")).toBeVisible();
+    await more.focus();
+    await page.keyboard.press("Enter");
+    await question.getByRole("button", { name: "بردار" }).click();
+    await expect(page.getByTestId("shared-item-i2")).toHaveCount(0);
+    await expect(page.getByTestId("divan-subtitle")).toHaveText("۲۳ بیت · سارا ۱۳، تو ۱۰");
+  });
+
   test("«+» adds a couplet through the picker, and a live one of hers comes in at the top", async ({ page }) => {
     const live = await fakeLive(page);
     await openSignedIn(page, "/messages/sara.ghazal/divan");
@@ -436,41 +483,51 @@ test.describe("the shared divan", () => {
 });
 
 test.describe("what is private to the feedback screenshot", () => {
-  test("every view that shows message text or typed text is marked, on every messages screen", async ({ page }) => {
+  test("on every messages screen, any message, preview or note text and every field sits inside a private view", async ({ page }) => {
+    const live = await fakeLive(page);
     await openSignedIn(page, "/messages");
-    const marked = async (selector: string) => {
-      const { checked, unmarked } = await privateness(page, selector);
-      expect(checked, selector).toBeGreaterThan(0);
-      expect(unmarked, selector).toBe(0);
-    };
     await expect(page.locator("[data-testid^=inbox-row-]")).toHaveCount(5);
-    await marked("[data-testid=inbox-preview]"); // the previews
-    await marked("input[type=search]"); // the search over the chats
+    await expectAllPrivate(page, { texts: 4, fields: 1 }); // the previews, the search
+    await page.getByTestId("inbox-compose").click();
+    await expect(page.getByRole("dialog", { name: "پیام تازه" })).toBeVisible();
+    await expectAllPrivate(page, { texts: 4, fields: 2 }); // the people search too
+    await page.keyboard.press("Escape");
+
     await page.goto(sara);
     await expect(page.getByTestId("bubble-m3")).toBeVisible();
-    await marked("[data-testid^=bubble-] p"); // the bubbles
-    await marked("[data-testid^=couplet-message-] p"); // the note under a couplet
-    await marked("[data-testid=composer]");
+    await page.getByTestId("composer").fill("پیام آزمایشی خصوصی");
+    await page.getByTestId("composer").press("Enter");
+    await expect(page.locator("[data-testid^=bubble-sent-]")).toBeVisible();
+    await live.push({ type: "message", message: { id: "live-p", conversationId: "c-sara_ghazal", kind: "text", fromMe: false, text: "یه پیام زنده خصوصی", key: null, note: null, payload: null, deleted: false, createdAt: new Date().toISOString() } });
+    await expect(page.getByTestId("bubble-live-p")).toBeVisible();
+    await expect(page.getByTestId("new-message-announcer")).toContainText("یه پیام زنده خصوصی"); // the live region says the text: it is private too
+    await expectAllPrivate(page, { texts: 5, fields: 1 }); // the bubbles, the note under the couplet, the announcer, the composer
     await page.getByTestId("quick-couplet").click();
     const picker = page.getByRole("dialog", { name: "بیت بفرست" });
-    await marked("[role=dialog] input[type=search]");
+    await expectAllPrivate(page, { texts: 5, fields: 2 });
     await picker.getByRole("searchbox").fill("اگر آن ترک");
     await picker.getByTestId("pick-/hafez/ghazal/sh3#0").click();
-    await marked("[data-testid=picker-note]");
+    await picker.getByTestId("picker-note").fill("یادداشت خصوصی");
+    await expectAllPrivate(page, { texts: 5, fields: 2 });
     await page.keyboard.press("Escape");
+
+    await page.goto("/messages/kian_k");
+    await expect(page.getByTestId("bubble-o2")).toBeVisible(); // the older page too
+    await expectAllPrivate(page, { texts: 3, fields: 1 });
+
     await page.goto("/messages/sara.ghazal/divan");
     await expect(page.getByTestId("shared-item-i1")).toBeVisible();
-    await marked("[data-testid=shared-item-i1] p"); // her note on a couplet
+    await expectAllPrivate(page, { texts: 1 }); // her note on a couplet
     await page.getByTestId("add-to-divan").click();
-    await marked("[role=dialog] input[type=search]");
+    await expectAllPrivate(page, { texts: 1, fields: 1 });
   });
 
-  test("the note field of the sheet «به دیوان مشترک» is marked", async ({ page }) => {
+  test("the note field of the sheet «به دیوان مشترک» is private", async ({ page }) => {
     await openSignedIn(page, "/poem/hafez/ghazal/sh3?c=1");
     await page.getByTestId("couplet-1").click({ button: "right" });
     await page.getByRole("dialog", { name: "کارهای این بیت" }).getByRole("button", { name: "به دیوان مشترک" }).click();
     await page.getByTestId("divan-with-sara.ghazal").click();
-    const { checked, unmarked } = await privateness(page, "[data-testid=divan-note]");
-    expect([checked, unmarked]).toEqual([1, 0]);
+    await page.getByTestId("divan-note").fill("یادداشت خصوصی");
+    await expectAllPrivate(page, { texts: 0, fields: 1 }); // what is typed is the field's value, not a text node
   });
 });

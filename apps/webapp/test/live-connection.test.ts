@@ -15,11 +15,13 @@ function rig() {
   let readyCount = 0;
   let tokenCalls = 0;
   let tokenError: unknown;
+  const renews: boolean[] = [];
   let hold: (() => void) | undefined;
   let holdsToken = false;
   const connection = new LiveConnection({
     factory: sockets,
-    token: async () => {
+    token: async (renew) => {
+      renews.push(renew);
       if (tokenError) throw tokenError;
       tokenCalls += 1;
       const mine = `t${tokenCalls}`;
@@ -40,6 +42,7 @@ function rig() {
   return {
     sockets,
     waits,
+    renews,
     events,
     connection,
     ready: () => readyCount,
@@ -65,20 +68,6 @@ describe("the live connection", () => {
     r.connection.stop();
   });
 
-  it("sends a frame only while the socket is ready", async () => {
-    const r = rig();
-    expect(r.connection.send("early")).toBe(false);
-    r.connection.start();
-    expect(await eventually(() => r.sockets.sockets.length === 1)).toBe(true);
-    const socket = r.sockets.sockets[0]!;
-    expect(r.connection.send("not ready")).toBe(false);
-    socket.ready();
-    expect(r.connection.send('{"type":"duel.answer"}')).toBe(true);
-    expect(socket.sent.at(-1)).toBe('{"type":"duel.answer"}');
-    r.connection.stop();
-    expect(r.connection.send("late")).toBe(false);
-  });
-
   it("hands events on and skips frames it cannot read, and anything before ready", async () => {
     const r = rig();
     r.connection.start();
@@ -93,6 +82,22 @@ describe("the live connection", () => {
       { type: "presence", username: "sara", online: true },
       { type: "other", name: "game.started" },
     ]);
+    r.connection.stop();
+  });
+
+  it("asks for a plain token after any other loss, and again after a good connection", async () => {
+    const r = rig();
+    r.connection.start();
+    expect(await eventually(() => r.sockets.sockets.length === 1)).toBe(true);
+    r.sockets.sockets[0]!.end(1006);
+    expect(await eventually(() => r.sockets.sockets.length === 2)).toBe(true);
+    r.sockets.sockets[1]!.ready();
+    r.sockets.sockets[1]!.end(4401);
+    expect(await eventually(() => r.sockets.sockets.length === 3)).toBe(true);
+    r.sockets.sockets[2]!.ready();
+    r.sockets.sockets[2]!.end();
+    expect(await eventually(() => r.sockets.sockets.length === 4)).toBe(true);
+    expect(r.renews).toEqual([false, false, true, false]);
     r.connection.stop();
   });
 
@@ -130,6 +135,7 @@ describe("the live connection", () => {
     expect(await eventually(() => r.sockets.sockets.length === 2 && r.sockets.sockets[1]!.sent.length === 1)).toBe(true);
     expect(r.sockets.sockets[1]!.authToken).toBe("t2");
     expect(r.waits).toEqual([]);
+    expect(r.renews).toEqual([false, true]); // the second token is asked for as one that replaces a refused one
     r.connection.stop();
   });
 
@@ -142,6 +148,7 @@ describe("the live connection", () => {
     r.sockets.sockets[1]!.end(4401);
     expect(await eventually(() => r.sockets.sockets.length === 3)).toBe(true);
     expect(r.waits).toEqual([2000]);
+    expect(r.renews).toEqual([false, true, true]);
     r.connection.stop();
   });
 
@@ -231,11 +238,13 @@ describe("the token of the socket", () => {
   it("is asked of the web app's own route, and a 401 says signed out", async () => {
     const asked: [string, RequestInit | undefined][] = [];
     const answer = (status: number, body: unknown) => (async (url: string, init?: RequestInit) => (asked.push([url, init]), Response.json(body, { status }))) as unknown as typeof fetch;
-    expect(await fetchLiveToken(answer(200, { token: "a.b.c", url: "wss://x/v1/live" }))).toEqual({ token: "a.b.c", url: "wss://x/v1/live" });
+    expect(await fetchLiveToken(false, answer(200, { token: "a.b.c", url: "wss://x/v1/live" }))).toEqual({ token: "a.b.c", url: "wss://x/v1/live" });
     expect(asked[0]).toEqual(["/auth/live", { method: "POST", credentials: "same-origin" }]);
-    await expect(fetchLiveToken(answer(401, { error: "unauthorized" }))).rejects.toMatchObject({ status: 401 });
-    await expect(fetchLiveToken(answer(200, { nope: 1 }))).rejects.toMatchObject({ status: 502 });
-    await expect(fetchLiveToken((async () => Promise.reject(new TypeError("offline"))) as unknown as typeof fetch)).rejects.toMatchObject({ status: 0 });
+    await fetchLiveToken(true, answer(200, { token: "a.b.c", url: "wss://x/v1/live" }));
+    expect(asked[1]![0]).toBe("/auth/live?renew=1"); // after a refused token
+    await expect(fetchLiveToken(false, answer(401, { error: "unauthorized" }))).rejects.toMatchObject({ status: 401 });
+    await expect(fetchLiveToken(false, answer(200, { nope: 1 }))).rejects.toMatchObject({ status: 502 });
+    await expect(fetchLiveToken(false, (async () => Promise.reject(new TypeError("offline"))) as unknown as typeof fetch)).rejects.toMatchObject({ status: 0 });
   });
 });
 

@@ -23,7 +23,8 @@ type Outcome = { kind: "noToken"; error: unknown } | { kind: "lost"; wasReady: b
 
 type Options = {
   factory: LiveSocketFactory;
-  token: () => Promise<LiveToken>;
+  /** A token for the socket; `renew` is true after the server refused the last one (4401), so the session is refreshed and the same token is not handed out again. */
+  token: (renew: boolean) => Promise<LiveToken>;
   onEvent: (event: LiveEvent) => void;
   onReady: () => void;
   /** What the backoff sleeps with (tests make it instant). */
@@ -58,13 +59,6 @@ export class LiveConnection {
     void this.loop(++this.run);
   }
 
-  /** Sends a text frame; false when the socket is not ready. */
-  send(text: string): boolean {
-    if (this.current !== "ready" || !this.socket) return false;
-    this.socket.send(text);
-    return true;
-  }
-
   /** Closes the socket and forgets an eviction: the page went away for long or someone signed out. */
   stop(): void {
     this.run += 1;
@@ -78,10 +72,12 @@ export class LiveConnection {
     const wait = this.options.wait ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
     const backoff = this.options.backoff ?? backoffMs;
     let failures = 0;
+    let renew = false;
     while (run === this.run) {
       this.current = "connecting";
-      const outcome = await this.connectOnce(run);
+      const outcome = await this.connectOnce(run, renew);
       if (run !== this.run) return;
+      renew = outcome.kind === "lost" && outcome.code === 4401;
       if (outcome.kind === "noToken") {
         if (outcome.error instanceof ApiError && outcome.error.isUnauthorized) return this.finish("stopped"); // signed out
         failures += 1;
@@ -104,10 +100,10 @@ export class LiveConnection {
     this.socket = undefined;
   }
 
-  private async connectOnce(run: number): Promise<Outcome> {
+  private async connectOnce(run: number, renew: boolean): Promise<Outcome> {
     let given;
     try {
-      given = await this.options.token();
+      given = await this.options.token(renew);
     } catch (error) {
       return { kind: "noToken", error };
     }

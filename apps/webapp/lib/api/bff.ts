@@ -169,12 +169,13 @@ export function createBff(send: Upstream) {
 
     /**
      * `/auth/live`: the access token for the live socket (its first message) and the socket's address, the one place a token reaches page script. The token is the
-     * cookie's while it has time left, else the session is refreshed first (the cookies are set, and the page still never sees a refresh token).
+     * cookie's while it has time left, else the session is refreshed first (the cookies are set, and the page still never sees a refresh token); `?renew=1` is the page saying the
+     * server refused the last token (close 4401), which a token with time left in its cookie does not mean to be good: the session is refreshed then too.
      */
     async live(request: Request, url: string): Promise<Response> {
       if (!isSameOrigin(request)) return new Response(null, { status: 403 });
       const { access } = readSession(request);
-      const renewFirst = access === undefined || secondsLeft(access) < minLiveSeconds;
+      const renewFirst = new URL(request.url).searchParams.get("renew") === "1" || access === undefined || secondsLeft(access) < minLiveSeconds;
       return await finish(await withSession(request, async (token) => Response.json({ token, url }), renewFirst), request);
     },
 

@@ -42,11 +42,11 @@ export function DayLabel({ text }: { text: string }) {
   );
 }
 
-/** What a message does on a long press, a right click or the menu key: the chat opens its sheet for it (the phone's context menu). */
-export function Holdable({ onHold, testId, mine, children }: { onHold: () => void; testId?: string; mine: boolean; children: ReactNode }) {
+/** What a message does on a long press, a right click or the menu key: the chat opens its sheet for it (the phone's context menu). It is focusable for the key, and named as the phone reads a bubble: «سارا: سلام، ۹:۴۰» (`label`). */
+export function Holdable({ onHold, testId, mine, label, children }: { onHold: () => void; testId?: string; mine: boolean; label: string; children: ReactNode }) {
   const hold = useLongPress(onHold);
   return (
-    <div {...hold} tabIndex={0} data-testid={testId} className={cn("flex w-full flex-col gap-[3px] outline-offset-4 select-none", mine ? "items-end" : "items-start")}>
+    <div {...hold} role="group" aria-label={label} tabIndex={0} data-testid={testId} className={cn("flex w-full flex-col gap-[3px] outline-offset-4 select-none", mine ? "items-end" : "items-start")}>
       {children}
     </div>
   );

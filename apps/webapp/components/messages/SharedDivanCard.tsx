@@ -12,6 +12,7 @@ import { bouncy, rowArrival, useVariant } from "../../lib/motion";
 import { routeURL } from "../../lib/reader/route";
 import { MarkButton } from "../ui/MarkButton";
 import { HeartIcon } from "../ui/icons";
+import { MoreIcon } from "../me/icons";
 import { CoupletText } from "../reader/CoupletText";
 import { useLongPress } from "../reader/useLongPress";
 import { defaultSettings } from "../../lib/reader/settings";
@@ -54,6 +55,18 @@ function Card({ item, name, otherFace, myFace, like, askRemove }: { item: Shared
       )}
       <div className="flex items-center">
         <span className="flex-1 text-xs text-[#8A8698]">{resolved ? sourceOf(resolved) : ""}</span>
+        {item.addedByMe && (
+          // The question «از دیوان مشترک برداشته بشه؟» for a mouse and a keyboard; a finger long-presses the couplet instead, so it is not drawn for one (until focused by a key).
+          <button
+            type="button"
+            aria-label="بیشتر"
+            data-testid={`divan-more-${item.id}`}
+            onClick={askRemove}
+            className="grid size-8 place-items-center rounded-full text-muted opacity-0 pointer-coarse:pointer-events-none pointer-coarse:focus-visible:pointer-events-auto pointer-fine:opacity-100 focus-visible:opacity-100"
+          >
+            <MoreIcon size={18} />
+          </button>
+        )}
         <MarkButton action="like" label={item.likedByMe ? "پسندت رو بردار" : "پسند"} selected={item.likedByMe} onPress={() => (like(), !item.likedByMe)} className="flex items-center gap-1 py-1">
           <span data-testid={`like-${item.id}`} className={cn("flex items-center gap-1", any ? "text-magenta" : "text-ink")}>
             <HeartIcon size={18} lineWidth={2} fill={any ? "currentColor" : undefined} />
