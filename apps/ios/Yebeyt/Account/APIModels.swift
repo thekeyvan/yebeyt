@@ -14,6 +14,10 @@ struct APIUser: Codable, Equatable, Sendable {
     var providers: [AuthProvider]
     /// The face; nil until the person saves one.
     var avatar: AvatarParts? = nil
+    /// The verified email of the newest sign-in method that has one (Apple's relay address counts); nil when none.
+    var email: String? = nil
+    /// Whether the person chose news by email; nil from a server that does not say.
+    var newsOptIn: Bool? = nil
 }
 
 /// `Divan` of the contract.

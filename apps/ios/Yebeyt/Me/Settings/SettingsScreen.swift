@@ -23,6 +23,7 @@ struct SettingsScreen: View {
     @State private var signOutChosen = false
     @State private var confirmingSignOut = false
     @State private var signingOut = false
+    @State private var savingNews = false
 
     static let termsURL = URL(string: "https://yebeyt.com/terms")!
     static let privacyURL = URL(string: "https://yebeyt.com/privacy")!
@@ -93,6 +94,12 @@ struct SettingsScreen: View {
                 row("اسم", value: session.user?.displayName ?? account.providerName ?? "", id: "settingsName") { editingProfile = true }
                 divider
                 row("نام کاربری", value: session.user?.username.map { "@\($0)" } ?? "", id: "settingsUsername", valueIsLatin: true) { editingProfile = true }
+                if let email = NewsChoice.emailLine(session.user?.email) {
+                    divider
+                    emailRow(email)
+                    divider
+                    newsRow
+                }
                 divider
                 row("خروج از حساب", id: "signOut", chevron: false) { askingSignOut = true }
                 divider
@@ -102,6 +109,42 @@ struct SettingsScreen: View {
             card {
                 row("ورود با اپل یا گوگل", id: "settingsSignIn") { account.require(.profile) {} }
             }
+        }
+    }
+
+    /// «ایمیل»: the address (Latin, left to right), not a button.
+    private func emailRow(_ line: String) -> some View {
+        HStack(spacing: 8) {
+            Text(NewsChoice.emailTitle).font(.ui(14, weight: .medium)).foregroundStyle(Tokens.Colors.ink)
+            Spacer(minLength: 8)
+            Text(line).font(.ui(13)).foregroundStyle(Tokens.Colors.muted).lineLimit(1).truncationMode(.middle)
+                .environment(\.layoutDirection, line == NewsChoice.hiddenEmail ? .rightToLeft : .leftToRight)
+        }
+        .padding(.vertical, 13)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("settingsEmail")
+    }
+
+    /// The news switch with its muted line; it flips at once and goes back with a toast when the server says no.
+    private var newsRow: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Toggle(isOn: Binding(get: { session.user?.newsOptIn ?? false }, set: changeNews)) {
+                Text(NewsChoice.switchTitle).font(.ui(14, weight: .medium)).foregroundStyle(Tokens.Colors.ink)
+            }
+            .toggleStyle(MeSwitchStyle())
+            .disabled(savingNews)
+            .accessibilityIdentifier("settingsNews")
+            Text(NewsChoice.switchNote).font(.ui(12)).foregroundStyle(Tokens.Colors.muted)
+                .accessibilityIdentifier("settingsNewsNote")
+        }
+        .padding(.vertical, 10)
+    }
+
+    private func changeNews(_ optIn: Bool) {
+        savingNews = true
+        Task {
+            if let failure = await NewsChoice.set(optIn, session: session) { model.showToast(failure.persianMessage) }
+            savingNews = false
         }
     }
 

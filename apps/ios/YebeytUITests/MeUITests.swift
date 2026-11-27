@@ -180,6 +180,36 @@ final class MeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["profileSignIn"].exists)
     }
 
+    @MainActor func testSettingsShowTheEmailAndTheNewsSwitchStaysOnAfterReopening() {
+        let app = launch(["-beytRoute", "settings", "-beytSignedIn", "1"])
+        let email = element(app, "settingsEmail")
+        XCTAssertTrue(email.waitForExistence(timeout: 10))
+        XCTAssertTrue(email.label.contains("niloofar@example.com"))
+        XCTAssertTrue(email.label.contains("ایمیل"))
+        XCTAssertFalse(app.buttons["settingsEmail"].exists, "the email is not a button")
+        let note = app.staticTexts["settingsNewsNote"]
+        XCTAssertEqual(note.label, "هر وقت بخوای خاموشش کن")
+        let news = element(app, "settingsNews")
+        XCTAssertTrue(news.exists)
+        XCTAssertEqual(news.value as? String, "0")  // the switch is off
+
+        news.tap()
+        let on = NSPredicate(format: "value == %@", "1")
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: on, object: news)], timeout: 5), .completed)
+
+        app.buttons["back"].tap()
+        app.buttons["settings"].tap()
+        XCTAssertTrue(element(app, "settingsNews").waitForExistence(timeout: 10))
+        XCTAssertEqual(element(app, "settingsNews").value as? String, "1")  // still on
+    }
+
+    @MainActor func testAGuestSeesNeitherTheEmailNorTheNewsSwitch() {
+        let app = launch(["-beytRoute", "settings"])
+        XCTAssertTrue(app.buttons["settingsSignIn"].waitForExistence(timeout: 10))
+        XCTAssertFalse(element(app, "settingsEmail").exists)
+        XCTAssertFalse(element(app, "settingsNews").exists)
+    }
+
     @MainActor func testInviteAsksAGuestForAnAccountFirst() {
         let app = launch(["-beytRoute", "me"])
         app.buttons["inviteFriends"].tap()

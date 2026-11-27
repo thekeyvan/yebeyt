@@ -46,7 +46,8 @@ struct AccountLaunchOptions {
     /// The signed-in user of `-beytSignedIn 1`.
     static let debugUser = APIUser(
         id: "00000000-0000-0000-0000-000000000001", username: "niloofar", displayName: nil,
-        usernameChangedAt: nil, createdAt: "2026-11-23T08:00:00.000Z", providers: [.apple]
+        usernameChangedAt: nil, createdAt: "2026-11-23T08:00:00.000Z", providers: [.apple],
+        email: "niloofar@example.com", newsOptIn: false
     )
 
     /// The client: the real server, `-beytAPI`, or with `-beytSignedIn` a stand-in on the phone.
@@ -93,6 +94,7 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
         case (_, "/v1/me/divan"): (200, #"{"items":[]}"#)
         case (_, "/v1/me/privacy"): (200, Self.privacyJSON)
         case ("PUT", "/v1/me/avatar"): (200, Self.userJSON)
+        case ("PUT", "/v1/me/news"): (200, Self.setNews(Self.bodyOf(request)))
         case ("DELETE", "/v1/me"): (204, "")
         case (_, "/v1/poets/pictures"): (200, "[]")
         default:
@@ -109,7 +111,17 @@ final class DebugBackend: URLProtocol, @unchecked Sendable {
 
     private static let privacyJSON = #"{"keptVisibility":"friends","dailyVisibility":"friends","showOnline":true,"inGlobalLeaderboard":false,"messagesFrom":"friends","gameInvitesFrom":"all","allowReposts":true}"#
 
-    private static let userJSON = #"{"id":"00000000-0000-0000-0000-000000000001","username":"niloofar","displayName":null,"usernameChangedAt":null,"createdAt":"2026-11-23T08:00:00.000Z","providers":["apple"]}"#
+    /// The news choice, kept for the run (`PUT /v1/me/news`), so a reopened screen still has it.
+    nonisolated(unsafe) private static var newsOptIn = false
+
+    private static var userJSON: String {
+        #"{"id":"00000000-0000-0000-0000-000000000001","username":"niloofar","displayName":null,"usernameChangedAt":null,"createdAt":"2026-11-23T08:00:00.000Z","providers":["apple"],"email":"niloofar@example.com","newsOptIn":\#(newsOptIn)}"#
+    }
+
+    private static func setNews(_ body: Data) -> String {
+        newsOptIn = (try? JSONSerialization.jsonObject(with: body) as? [String: Any])?["optIn"] as? Bool ?? newsOptIn
+        return userJSON
+    }
 }
 
 extension DebugBackend {

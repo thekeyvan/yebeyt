@@ -87,6 +87,12 @@ struct API: Sendable {
         try await call("PUT", "/v1/me/avatar", body: parts, token: token)
     }
 
+    /// «خبرهای یه بیت رو برام ایمیل کن»: the person's own choice; answers the user with it.
+    func setNews(_ optIn: Bool, token: String) async throws -> APIUser {
+        struct Body: Encodable { var optIn: Bool }
+        return try await call("PUT", "/v1/me/news", body: Body(optIn: optIn), token: token)
+    }
+
     /// Deletes the account and everything stored for it. 502 `apple_revoke_failed` leaves it as it was.
     func deleteAccount(token: String) async throws {
         _ = try await data(for: request("DELETE", "/v1/me", query: [], body: nil, token: token))
