@@ -1,4 +1,5 @@
 import type { components } from "../api/schema";
+import { feedbackLog } from "../feedback/log";
 import { friendsApi } from "../friends/api";
 import { messagesApi } from "../messages/api";
 import { playApi } from "../play/api";
@@ -67,8 +68,12 @@ export class ApiError extends Error {
   }
 }
 
-/** The line to show for anything thrown by a call. */
-export const messageOf = (error: unknown): string => (error instanceof ApiError ? error.persianMessage : new ApiError(500).persianMessage);
+/** The line to show for anything thrown by a call. Its code is noted for a bug report (`feedbackLog`: codes only, never the message). */
+export function messageOf(error: unknown): string {
+  if (!(error instanceof ApiError)) return new ApiError(500).persianMessage;
+  feedbackLog.record(error);
+  return error.persianMessage;
+}
 
 type Fetch = typeof fetch;
 
