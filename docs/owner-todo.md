@@ -64,10 +64,19 @@ For you:
 - **The screen recording for App Review:** on your phone, once 2.0 is on TestFlight: launch, browse, a game, sign in with Apple, a friend request, a message, report and block, delete the account. The lead writes the script when the build is ready.
 - **Permission from Ganjoor (for Apple's point 6):** ganjoor-data has no licence file. The poems are public domain, but the meanings and summaries are Ganjoor's own work. Ganjoor's about page says it publishes its data so others can do similar work, which shows intent but isn't a permission. Please send this from hello@yebeyt.com through https://ganjoor.net/contact (or to Hamid Reza Mohammadi directly) and keep the reply; the lead attaches it to the App Review notes:
 
-  > سلام آقای محمدی، وقت‌تون بخیر.
-  > من کیوان محمودی هستم، سازندهٔ «یه بیت» (yebeyt.com)، یک اپ رایگان iOS برای خواندن و بازی با شعر فارسی، بدون تبلیغ و بدون فروش داده. متن شعرها، معنی‌ها و خلاصه‌ها را از مخزن عمومی ganjoor-data برمی‌داریم و خوانش‌ها را از API عمومی گنجور پخش می‌کنیم؛ در اپ و سایت، گنجور با لینک به‌عنوان منبع آمده است.
-  > اپل برای انتشار اپ مدرکی می‌خواهد که اجازهٔ استفاده از این محتوا را داریم. ممکن است لطف کنید با یک پاسخ کوتاه به همین ایمیل اجازه بدهید که از متن شعرها، معنی‌ها، خلاصه‌ها و خوانش‌های گنجور با ذکر منبع در «یه بیت» استفاده کنیم؟ اگر شرطی برای ذکر منبع یا نحوهٔ استفاده دارید، با کمال میل رعایت می‌کنیم.
-  > از سال‌ها کاری که برای شعر فارسی کرده‌اید سپاسگزارم.
+  > **Subject:** Permission to use Ganjoor's poems, meanings and recitations in Yebeyt
+  >
+  > Dear Mr Mohammadi,
+  >
+  > I'm Keyvan Mahmoudi, the maker of Yebeyt («یه بیت», yebeyt.com), a free iOS and web app for reading and playing with Persian poetry. It has no ads, and we don't sell any data. We take the poems, meanings and summaries from the public ganjoor-data repository, and play recitations from Ganjoor's public API. Ganjoor is credited with a link as the source, both in the app and on the website.
+  >
+  > Apple asks for proof that we are allowed to use this content before it publishes the app. Could you kindly reply to this email to confirm that Yebeyt may use Ganjoor's poem texts, meanings, summaries and recitations, with credit to Ganjoor? If you have any conditions on how the credit is shown or how the content is used, we will gladly follow them.
+  >
+  > Thank you for the years of work you have put into Persian poetry.
+  >
+  > Kind regards,
+  > Keyvan Mahmoudi
+  > hello@yebeyt.com
 - A second account for the reviewer: the lead builds the «یه بیت» demo friend (owner OK, 24 Nov).
 
 ## 5. App Store Connect: the privacy label (don't fill it in yet)
