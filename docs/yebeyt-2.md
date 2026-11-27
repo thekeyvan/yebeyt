@@ -108,6 +108,18 @@ One slice per branch, each reviewed before the next starts. The lead confirms th
 
 After these: the web app, the admin dashboard and Android, each designed first.
 
+**Status (27 Nov).**
+- **Done and merged:** slices 0–8, and the part of 9 that is the website (yebeyt.com in Persian and English, privacy, terms, support, the link pages `/c` `/i` `/g`, the AASA file). Also done: the web app (W0–W9, at app.yebeyt.com, all of iOS; see [web-app.md](web-app.md)), the owner's phone fixes through 27 Nov, sign-in on the web, one account per verified email, and the news opt-in. Last TestFlight build: 202611271816.
+- **Next, in this order:**
+  1. The rest of slice 9: Universal Links (`applinks:yebeyt.com`, the AASA already lists `/c /i /g`), the App Clip `com.yebeyt.app.Clip`, deferred links (clipboard plus a paste button), and invite rewards.
+  2. Push notifications (the APNs key is already on Railway).
+  3. App Store submission: the listing and review notes are drafted in [app-store.md](app-store.md); age rating, the full privacy label (owner-todo §5, which must now include the email), screenshots, and the owner's review recording.
+  4. The admin dashboard, then Android, each designed first.
+- **Known small issues:**
+  - `CoverUITests` (around line 112, `bar.isHittable` on the games tab) fails about 2 times in 10 on an iPhone SE simulator.
+  - The web follow-ups listed at the end of [web-app.md](web-app.md).
+
+
 **The web app started 26 Nov (owner: web first, at app.yebeyt.com, mobile first, Tailwind + UI SDK + Motion): the plan, the feature list and the slices are in [web-app.md](web-app.md).** The notes below still hold.
 
 **Getting ready for the web app (owner, 25 Nov: "at some point we need to start the web app").** It is the next big piece after the iOS submission (links and App Clip, push, App Store prep). Until then every slice keeps it possible:
