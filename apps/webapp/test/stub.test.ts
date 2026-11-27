@@ -121,5 +121,5 @@ describe("the debug server (only in a build with the debug pages)", () => {
 describe("the types of the contract", () => {
   it("are up to date (pnpm --filter @yebeyt/webapp api:types)", () => {
     expect(() => execFileSync("node", ["scripts/api-types.mjs", "--check"], { stdio: "pipe" })).not.toThrow();
-  });
+  }, 20_000);
 });

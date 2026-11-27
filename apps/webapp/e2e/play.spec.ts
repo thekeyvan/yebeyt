@@ -71,15 +71,18 @@ test.describe("«بازی با دوست»", () => {
 
   test("the inbox's button, the games tab's «+ بازی با دوست» and the catalog's cards open it", async ({ page }) => {
     await openSignedIn(page, "/messages");
+    await expect(page.getByTestId("inbox-row-sara.ghazal")).toBeVisible(); // a tap while the session is still being asked about is dropped, by design
     await page.getByRole("button", { name: "بازی با دوست" }).click();
     await expect(page).toHaveURL(/\/games\/lobby$/);
     await expect(page.getByTestId("lobby-game-mosh")).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("button", { name: "برگشت" }).click();
     await expect(page).toHaveURL(/\/messages$/);
     await page.goto("/games");
+    await expect(page.getByTestId("mosh-card")).toBeVisible(); // the session is known
     await page.getByTestId("new-friend-game").click();
     await expect(page).toHaveURL(/\/games\/lobby$/);
-    await page.goto("/games/catalog");
+    await page.getByRole("button", { name: "برگشت" }).click();
+    await page.getByTestId("all-games").click();
     await page.getByTestId("catalog-duel").click();
     await expect(page).toHaveURL(/\/games\/lobby\?game=duel$/);
     await expect(page.getByTestId("lobby-game-duel")).toHaveAttribute("aria-pressed", "true");
