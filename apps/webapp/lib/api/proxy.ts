@@ -16,6 +16,12 @@ export const isUsername = (text: string): boolean => username.test(text);
 /** A plain query value: short, no control characters. */
 const plain = (value: string): boolean => value.length <= 400 && !/[\u0000-\u001f\u007f]/.test(value);
 
+type Upload = {
+  /** The media types the file may be sent as. */
+  types: readonly string[];
+  maxBytes: number;
+};
+
 type Rule = {
   methods: readonly string[];
   /** The path's parts after `/api`, as Next gives them (decoded), checked one by one; the path they stand for, or undefined. */
@@ -24,6 +30,8 @@ type Rule = {
   query: Readonly<Record<string, (value: string) => boolean>>;
   /** Whether the session's access token goes with it: false for what a guest may ask; "optional" for what both may do (a result on a challenge is the account's, or a guest's with a name): the token goes when there is a session. */
   auth: boolean | "optional";
+  /** The body is a file, not JSON: sent as it is, up to `maxBytes`, as one of `types`. */
+  upload?: Upload;
 };
 
 const exact =
@@ -72,13 +80,29 @@ const challenge = named(code);
 /** The keys of the couplets whose counts are asked: up to 50 keys of 200 characters, comma separated (the server judges the keys). */
 const keys = (value: string): boolean => value.length <= 50 * 201 && !/[\u0000-\u001f\u007f]/.test(value);
 
+/** The id of a report: a UUID, as the server makes it. */
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** `/v1/feedback/<id>/<file>`: the file a report takes. */
+const feedbackFile =
+  (file: "screenshot" | "recording") =>
+  (segments: string[]): string | undefined => {
+    const [first, second, report, last, ...rest] = segments;
+    return first === "v1" && second === "feedback" && report !== undefined && uuid.test(report) && last === file && rest.length === 0 ? `/v1/feedback/${report}/${file}` : undefined;
+  };
+
+const MB = 1024 * 1024;
+/** What the server takes of each file of a report (`KINDS` in apps/server/src/routes/feedback.ts): the only bodies the door lets be bigger than a JSON body. */
+export const maxScreenshotBytes = 3 * MB;
+export const maxRecordingBytes = 25 * MB;
+
 /**
  * The only paths the web app's `/api` route passes on, each with its methods: the poet pictures (W2, no session) and, from W4, what the account, the
  * divan, the reactions and the scores use, which go with the session's access token, from W5 the avatar, the privacy settings and the deletion
  * of the account (only `DELETE /v1/me`: reading the account is `/auth/session`'s), from W6 the friends: searching people, a person's profile, the friend
  * requests and friends, blocking and reporting, the leaderboard, the feed, the reactions' counts and the unread count (not unblocking, not the blocks list), and from W7
  * the messages: the chats, their messages and read marks, deleting a message, and the shared divans with their couplets and likes, and from W8 the games with friends
- * (making one, reading, joining, a move, giving up, my list; not joining by code) and the challenges (making one; reading one and leaving a result need no session: they go with it when there is one, and a guest's result has the name). The sign-in routes are not here (`/auth/*` makes them). Every part of the path is checked on its own and the address is built from the checked parts, so
+ * (making one, reading, joining, a move, giving up, my list; not joining by code) and the challenges (making one; reading one and leaving a result need no session: they go with it when there is one, and a guest's result has the name), and from W9 the feedback: a report (with the session when there is one) and its two files, a screenshot and a recording, which go with the upload token and no session and are the only bodies that may be more than 1 MB. The sign-in routes are not here (`/auth/*` makes them). Every part of the path is checked on its own and the address is built from the checked parts, so
  * nothing a visitor sends can make it point anywhere else on the server.
  */
 const rules: readonly Rule[] = [
@@ -131,10 +155,13 @@ const rules: readonly Rule[] = [
   { methods: ["POST"], path: exact("v1", "challenges"), query: {}, auth: true },
   { methods: ["GET"], path: challenge(["v1", "challenges"]), query: {}, auth: "optional" },
   { methods: ["POST"], path: challenge(["v1", "challenges"], "results"), query: {}, auth: "optional" },
+  { methods: ["POST"], path: exact("v1", "feedback"), query: {}, auth: "optional" },
+  { methods: ["PUT"], path: feedbackFile("screenshot"), query: {}, auth: false, upload: { types: ["image/jpeg", "image/png"], maxBytes: maxScreenshotBytes } },
+  { methods: ["PUT"], path: feedbackFile("recording"), query: {}, auth: false, upload: { types: ["video/mp4"], maxBytes: maxRecordingBytes } },
 ];
 
-/** Where a request goes on the server (path and query), and whether it carries the session; undefined for anything not allowed. */
-export function upstreamRoute(method: string, segments: string[], search: URLSearchParams): { path: string; auth: boolean | "optional" } | undefined {
+/** Where a request goes on the server (path and query), whether it carries the session, and for a file what it may be; undefined for anything not allowed. */
+export function upstreamRoute(method: string, segments: string[], search: URLSearchParams): { path: string; auth: boolean | "optional"; upload?: Upload } | undefined {
   for (const rule of rules) {
     if (!rule.methods.includes(method)) continue;
     const path = rule.path(segments);
@@ -145,7 +172,7 @@ export function upstreamRoute(method: string, segments: string[], search: URLSea
       if (value !== null && check(value)) query.set(name, value);
     }
     const text = query.toString();
-    return { path: text ? `${path}?${text}` : path, auth: rule.auth };
+    return { path: text ? `${path}?${text}` : path, auth: rule.auth, ...(rule.upload ? { upload: rule.upload } : {}) };
   }
   return undefined;
 }

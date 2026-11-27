@@ -6,8 +6,8 @@ import { secondsLeft } from "./jwt";
 import { upstreamRoute } from "./proxy";
 import { createRefresher } from "./refresh";
 
-/** A call to the server: `credential` is the access token of a request that carries the session, or the refresh token of `/v1/auth/refresh` and `/v1/auth/logout`. */
-export type Call = { method: string; path: string; credential?: string; body?: string; headers?: Record<string, string> };
+/** A call to the server: `credential` is the access token of a request that carries the session, or the refresh token of `/v1/auth/refresh` and `/v1/auth/logout`. `file` is the body of a feedback upload instead of a JSON one. */
+export type Call = { method: string; path: string; credential?: string; body?: string; file?: { type: string; bytes: Uint8Array }; headers?: Record<string, string> };
 export type Upstream = (call: Call) => Promise<Response>;
 
 /** The most a body may be: the divan of 2000 couplets is a few hundred kilobytes. */
@@ -18,6 +18,12 @@ const minLiveSeconds = 60;
 
 /** What of the server's answer is passed on: the type and what lets the browser cache a picture and ask again. */
 const passed = ["content-type", "etag", "cache-control"];
+
+/** The upload token the server made for a report (random, base64url): only that, so nothing else can ride in the header. */
+const uploadToken = /^[A-Za-z0-9_-]{1,128}$/;
+
+/** The longest a busy server may ask a file to wait, in seconds (the page waits at most as long). */
+const maxRetryAfter = 10;
 
 const secureAnswer = (body: unknown, status: number, cookies: string[] = []): Response => {
   const headers = new Headers({ "cache-control": "no-store" });
@@ -105,11 +111,35 @@ export function createBff(send: Upstream) {
   async function body(request: Request): Promise<{ text?: string; refusal?: Response }> {
     if (request.method === "GET") return {};
     if (Number(request.headers.get("content-length") ?? 0) > maxBody) return { refusal: new Response(null, { status: 413 }) };
-    const text = await readCapped(request);
-    if (text === undefined) return { refusal: new Response(null, { status: 413 }) };
-    if (text === "") return {};
+    const bytes = await readCapped(request, maxBody);
+    if (bytes === undefined) return { refusal: new Response(null, { status: 413 }) };
+    if (bytes.length === 0) return {};
     if (!(request.headers.get("content-type") ?? "").startsWith("application/json")) return { refusal: new Response(null, { status: 415 }) };
-    return { text };
+    return { text: new TextDecoder().decode(bytes) };
+  }
+
+  /**
+   * A feedback file (`route.upload`): its bytes as they are, with the type the page says (one the rule names) and the upload token, which is all that
+   * lets it in (no session). Cut off at the rule's size, and the server is not asked about one that is over it. A busy server's answer keeps its `Retry-After`.
+   */
+  async function upload(request: Request, route: { path: string; upload: { types: readonly string[]; maxBytes: number } }): Promise<Response> {
+    const type = (request.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+    if (!route.upload.types.includes(type)) return new Response(null, { status: 415 });
+    const token = request.headers.get("x-upload-token") ?? "";
+    if (!uploadToken.test(token)) return new Response(null, { status: 403 });
+    if (Number(request.headers.get("content-length") ?? 0) > route.upload.maxBytes) return new Response(null, { status: 413 });
+    const bytes = await readCapped(request, route.upload.maxBytes);
+    if (bytes === undefined) return new Response(null, { status: 413 });
+    if (bytes.length === 0) return new Response(null, { status: 400 });
+    let answer: Response;
+    try {
+      answer = await send({ method: request.method, path: route.path, file: { type, bytes }, headers: { "x-upload-token": token } });
+    } catch {
+      return new Response(null, { status: 502 });
+    }
+    if (answer.status !== 503) return await answerOf(answer, [], false);
+    const wait = Math.min(Math.max(Number(answer.headers.get("retry-after")) || 1, 1), maxRetryAfter);
+    return Response.json({ error: "busy" }, { status: 503, headers: { "retry-after": String(wait), "cache-control": "no-store" } });
   }
 
   return {
@@ -118,6 +148,7 @@ export function createBff(send: Upstream) {
       const route = upstreamRoute(request.method, segments, new URL(request.url).searchParams);
       if (!route) return new Response(null, { status: 404 });
       if (request.method !== "GET" && !isSameOrigin(request)) return new Response(null, { status: 403 });
+      if (route.upload) return await upload(request, { path: route.path, upload: route.upload });
       const { text, refusal } = await body(request);
       if (refusal) return refusal;
       const call = { method: request.method, path: route.path, ...(text === undefined ? {} : { body: text }) };
@@ -195,21 +226,21 @@ export function createBff(send: Upstream) {
   };
 }
 
-/** The body as text, read as it arrives so that a chunked body (which has no length to check first) is cut off at `maxBody` bytes: undefined when it is longer. */
-async function readCapped(request: Request): Promise<string | undefined> {
-  if (!request.body) return "";
+/** The body, read as it arrives so that a chunked body (which has no length to check first) is cut off at `max` bytes: undefined when it is longer. */
+async function readCapped(request: Request, max: number): Promise<Uint8Array | undefined> {
+  if (!request.body) return new Uint8Array(0);
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
   for (let part = await reader.read(); !part.done; part = await reader.read()) {
     size += part.value.byteLength;
-    if (size > maxBody) {
+    if (size > max) {
       await reader.cancel();
       return undefined;
     }
     chunks.push(part.value);
   }
-  return new TextDecoder().decode(Buffer.concat(chunks));
+  return Buffer.concat(chunks);
 }
 
 const text = (value: unknown, max: number): value is string => typeof value === "string" && value.length >= 1 && value.length <= max;
