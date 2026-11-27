@@ -4,7 +4,7 @@ import { GameDeck, coupletId, type GameCouplet } from "../lib/games/couplet";
 import { JigsawRound } from "../lib/games/jigsawRound";
 import { poetItemsRound } from "../lib/games/quizRounds";
 import { SeededGenerator } from "../lib/games/seeded";
-import { boardPath, codeIn, codeOfUrl, linked } from "../lib/play/challengeLink";
+import { codeIn, linked } from "../lib/play/challengeLink";
 import { isInDeck, offerOf, type ChallengeOffer } from "../lib/play/challengeOffer";
 import { ChallengeAccept, ChallengeSender, cleaned, coupletsOf, outcomeOf } from "../lib/play/challengeModels";
 import { playCopy } from "../lib/play/copy";
@@ -27,10 +27,9 @@ describe("the link of a challenge", () => {
     expect(codeIn("other.com/c/7KQ2")).toBeUndefined();
   });
 
-  it("gives the code of a tapped address", () => {
-    expect(codeOfUrl("https://yebeyt.com/c/7KQ2")).toBe("7KQ2");
-    expect(codeOfUrl("https://example.com")).toBeUndefined();
-    expect(boardPath("7KQ2")).toBe("/c/7KQ2");
+  it("is found in a link with its address", () => {
+    expect(codeIn("https://yebeyt.com/c/7KQ2")).toBe("7KQ2");
+    expect(codeIn("https://example.com")).toBeUndefined();
   });
 
   it("is made a link in a text, and the text stays the same", () => {

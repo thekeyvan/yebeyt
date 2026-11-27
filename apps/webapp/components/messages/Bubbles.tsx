@@ -6,7 +6,8 @@ import { cn } from "../../lib/cn";
 import { feedbackPrivate } from "../../lib/feedbackPrivate";
 import { messageCopy } from "../../lib/messages/copy";
 import type { Pending } from "../../lib/messages/chat";
-import { boardPath, linked } from "../../lib/play/challengeLink";
+import { linked } from "../../lib/play/challengeLink";
+import { challengeURL } from "../../lib/play/routes";
 import { useLongPress } from "../reader/useLongPress";
 
 /** The words under a bubble: «۹:۴۰» for the other person's, «تو · ۹:۴۲ · دیده شد» for mine (Messages/ChatBubbles.swift `MessageMeta`). */
@@ -32,7 +33,7 @@ export function TextBubble({ text, mine, muted = false, faded = false }: { text:
     >
       {linked(text).map((part, index) =>
         part.code ? (
-          <Link key={index} href={boardPath(part.code)} prefetch={false} data-testid="challenge-link-in-chat" className="underline">
+          <Link key={index} href={challengeURL(part.code)} prefetch={false} data-testid="challenge-link-in-chat" className="underline">
             {part.text}
           </Link>
         ) : (

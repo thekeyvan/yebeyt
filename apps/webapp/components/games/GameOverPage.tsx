@@ -1,4 +1,5 @@
 import { parsePoet, type PlayableKind } from "../../lib/games/kinds";
+import { parseInvite } from "../../lib/play/routes";
 import { GameCover } from "./GameCover";
 
 /**
@@ -7,5 +8,6 @@ import { GameCover } from "./GameCover";
  * (`/games/catalog`) and keep them from opening.
  */
 export async function GameOverPage({ kind, searchParams }: { kind: PlayableKind; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <GameCover kind={kind} modal poet={kind === "misra" ? parsePoet((await searchParams).poet) : undefined} />;
+  const query = await searchParams;
+  return <GameCover kind={kind} modal poet={kind === "misra" ? parsePoet(query.poet) : undefined} invite={kind === "poet" ? parseInvite(query.invite) : undefined} />;
 }

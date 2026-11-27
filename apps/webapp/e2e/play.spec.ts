@@ -325,6 +325,19 @@ test.describe("challenges", () => {
     await expect(page.getByTestId("challenge-link-in-chat")).toHaveAttribute("href", "/c/7KQ2");
   });
 
+  test("from the lobby a جورچین is played first and the challenge goes to the friends picked there when it is made", async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.addInitScript(() => sessionStorage.setItem("beytSeed", "1"));
+    await openSignedIn(page, "/games/lobby?game=jigsaw&with=sara.ghazal");
+    await expect(page.getByTestId("lobby-person-sara.ghazal")).toHaveAttribute("aria-pressed", "true");
+    await page.getByTestId("lobby-create").click();
+    await expect(page).toHaveURL(/\/games\/jigsaw\?invite=sara\.ghazal$/);
+    await playRound(page);
+    await expect(page.getByTestId("challenge-link")).toHaveText("yebeyt.com/c/7KQ2");
+    await page.goto(sara);
+    await expect(page.locator("[data-testid^=bubble-sent-]")).toContainText("نیلوفر تو رو به جورچین بیت چالش کشید · yebeyt.com/c/7KQ2");
+  });
+
   test("a guest plays /c/7KQ2 on the web, is asked for a name at the end and posts the result", async ({ page }) => {
     test.setTimeout(180_000);
     await openAsGuest(page, "/c/7KQ2");
