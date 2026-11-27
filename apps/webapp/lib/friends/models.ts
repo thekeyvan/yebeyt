@@ -30,6 +30,3 @@ export const loaded: Phase = { kind: "loaded" };
 
 /** What a row calls someone: the name, else the username. */
 export const nameOf = (person: Pick<PersonShort, "username" | "displayName">): string => person.displayName ?? person.username;
-
-/** The short person of a search result, a request or a profile. */
-export const shortOf = ({ username, displayName, avatar }: PersonShort): PersonShort => ({ username, displayName, avatar });

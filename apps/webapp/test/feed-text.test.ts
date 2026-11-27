@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { action, coupletRoute, dailyDay, headline, isTodaysDaily, relativeTime } from "../lib/friends/feedText";
+import { action, coupletRoute, dailyDay, isTodaysDaily, relativeTime } from "../lib/friends/feedText";
 import type { FeedItem } from "../lib/friends/models";
 
 // Friends/Feed/FeedText.swift: the words of a feed item. The day is Tuesday 24 November 2026, 12:00 in Tehran.
@@ -8,11 +8,9 @@ const user = { username: "kian_k", displayName: "کیان", avatar: null };
 const item = (extra: Partial<FeedItem>): FeedItem => ({ type: "like", user, at: "2026-11-24T08:00:00.000Z", ...extra });
 
 describe("the words of a feed item", () => {
-  it("says what the friend did, and the headline puts their name first", () => {
+  it("says what the friend did", () => {
     expect(action(item({ type: "repost" }), now)).toBe("یه بیت به اشتراک گذاشت");
     expect(action(item({ type: "like" }), now)).toBe("یه بیت پسندید");
-    expect(headline(item({ type: "repost" }), now)).toBe("کیان یه بیت به اشتراک گذاشت");
-    expect(headline(item({ user: { ...user, displayName: null } }), now)).toBe("kian_k یه بیت پسندید");
   });
 
   it("names the day of a daily result: today, yesterday, else the date", () => {

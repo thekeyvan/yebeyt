@@ -38,6 +38,11 @@ export class MyStats extends Store<{ remote?: RemoteStats; friendsCount?: number
     return this.snapshot().friendsCount;
   }
 
+  /** Signed out: the count of the account's friends is not shown on. */
+  clearFriendsCount(): void {
+    if (this.snapshot().friendsCount !== undefined) this.set({ ...this.snapshot(), friendsCount: undefined });
+  }
+
   /** Asks the server again; a failure keeps what is shown. */
   async refresh(): Promise<void> {
     if (!this.session.isSignedIn) {
@@ -55,12 +60,10 @@ export class MyStats extends Store<{ remote?: RemoteStats; friendsCount?: number
   /** «۱۲ دوست» on the profile: how many friends I have, from my own public profile; undefined until the server has said. */
   async refreshFriendsCount(): Promise<void> {
     const username = this.session.user?.username;
-    if (!this.session.isSignedIn || !username) {
-      if (this.snapshot().friendsCount !== undefined) this.set({ ...this.snapshot(), friendsCount: undefined });
-      return;
-    }
+    if (!this.session.isSignedIn || !username) return this.clearFriendsCount();
     try {
       const { friendsCount } = await this.api.profile(username);
+      if (this.session.user?.username !== username) return; // signed out, or another account, while it was on its way
       this.set({ ...this.snapshot(), friendsCount });
     } catch {
       // What is shown stays.

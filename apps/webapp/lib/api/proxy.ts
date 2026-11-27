@@ -7,6 +7,9 @@ const version = /^[A-Za-z0-9_-]{1,64}$/;
 /** A username in the server's address: it starts with a letter, then letters, digits, «_» and «.» (never «.» or «..»). */
 const username = /^[A-Za-z][A-Za-z0-9_.]{0,63}$/;
 
+/** Whether `text` can be a username at all: what a page may show of an address before the server has said anything. */
+export const isUsername = (text: string): boolean => username.test(text);
+
 /** A plain query value: short, no control characters. */
 const plain = (value: string): boolean => value.length <= 400 && !/[\u0000-\u001f\u007f]/.test(value);
 

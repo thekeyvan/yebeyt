@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import type { Services } from "../../lib/account/services";
+import { isUsername } from "../../lib/api/proxy";
 import { buttonsOf, friendCopy, isMain, titleOf } from "../../lib/friends/friendship";
 import { leagueName } from "../../lib/friends/leaderboardLayout";
 import { nameOf } from "../../lib/friends/models";
@@ -37,9 +38,11 @@ function Person({ services, username }: { services: Services; username: string }
   const { status } = useStore(services.session)!;
   const { friendsRevision } = useStore(services.friends)!;
   const signedIn = status === "in";
+  // What is not a username is nobody, and the address is never drawn: the page says so, as it does for a name the server does not know.
+  const missing = !isUsername(username) || phase.kind === "notFound";
   // A guest has no page to read yet: the face of nobody and a button that asks for the account.
   useEffect(() => {
-    if (signedIn) void model.load();
+    if (signedIn && !missing) void model.load();
   }, [model, signedIn, friendsRevision]);
 
   const name = profile ? nameOf(profile) : username;
@@ -54,11 +57,11 @@ function Person({ services, username }: { services: Services; username: string }
       header={
         <div className="flex items-center justify-between">
           <BackButton fallback="/" />
-          <PersonMenu model={model} name={name} isFriend={profile?.friendship === "friends"} unfriend={() => model.perform("unfriend")} blocked={leave} />
+          {!missing && <PersonMenu model={model} name={name} isFriend={profile?.friendship === "friends"} unfriend={() => model.perform("unfriend")} blocked={leave} />}
         </div>
       }
     >
-      {phase.kind === "notFound" ? (
+      {missing ? (
         <p data-testid="person-not-found" className="pt-10 text-center font-title text-xl text-muted">
           این آدم پیدا نشد
         </p>

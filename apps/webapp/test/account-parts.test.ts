@@ -141,4 +141,34 @@ describe("MyStats (Games/MyStats.swift)", () => {
     await f.mine.refreshFriendsCount();
     expect(f.mine.friendsCount).toBeUndefined();
   });
+
+  it("keeps both results when the points and the friend count are asked at once, whichever answers first", async () => {
+    for (const statsFirst of [true, false]) {
+      const f = fixture(true);
+      let answerStats = () => {};
+      let answerProfile = () => {};
+      f.api.stats.mockImplementation(() => new Promise((resolve) => (answerStats = () => resolve({ totalPoints: 500, weekPoints: 0, streakDays: 4, league: { tier: 1 } }))));
+      f.api.profile.mockImplementation(() => new Promise((resolve) => (answerProfile = () => resolve({ friendsCount: 12 } as never))));
+      const both = Promise.all([f.mine.refresh(), f.mine.refreshFriendsCount()]);
+      (statsFirst ? [answerStats, answerProfile] : [answerProfile, answerStats]).forEach((answer) => answer());
+      await both;
+      expect([f.mine.points, f.mine.streak, f.mine.friendsCount], statsFirst ? "stats first" : "profile first").toEqual([500, 4, 12]);
+    }
+  });
+
+  it("drops a friend count that comes after the person signed out, and forgets it on request", async () => {
+    const f = fixture(true);
+    let answer = () => {};
+    f.api.profile.mockImplementation(() => new Promise((resolve) => (answer = () => resolve({ friendsCount: 12 } as never))));
+    const asked = f.mine.refreshFriendsCount();
+    f.session.user = undefined;
+    answer();
+    await asked;
+    expect(f.mine.friendsCount).toBeUndefined();
+    f.session.user = sessionOf(true).user;
+    f.api.profile.mockResolvedValue({ friendsCount: 3 } as never);
+    await f.mine.refreshFriendsCount();
+    f.mine.clearFriendsCount();
+    expect(f.mine.friendsCount).toBeUndefined();
+  });
 });

@@ -24,9 +24,6 @@ type Source = {
  * badge: the server's number until the list is read, then the list's.
  */
 export class FriendRequestsModel extends Store<State> {
-  /** Told when the incoming count changes (the tab bar's badge). */
-  onCountChange?: (count: number) => void;
-
   constructor(private readonly api: Source) {
     super({ incoming: [], outgoing: [], phase: loading, incomingCount: 0, pending: new Set() });
   }
@@ -127,9 +124,6 @@ export class FriendRequestsModel extends Store<State> {
   }
 
   private update(change: Partial<State>): void {
-    const before = this.snapshot().incomingCount;
     this.set({ ...this.snapshot(), ...change });
-    const now = this.snapshot().incomingCount;
-    if (now !== before) this.onCountChange?.(now);
   }
 }

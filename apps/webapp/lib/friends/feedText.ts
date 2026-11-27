@@ -31,9 +31,6 @@ export function action(item: FeedItem, now: Date): string {
   }
 }
 
-/** «کیان یه بیت به اشتراک گذاشت», for screen readers and tests. */
-export const headline = (item: FeedItem, now: Date): string => `${item.user.displayName ?? item.user.username} ${action(item, now)}`;
-
 /** «تو هم» is for today's puzzle only. */
 export function isTodaysDaily(item: FeedItem, now: Date): boolean {
   const day = TehranDay.fromKey(item.date ?? "");

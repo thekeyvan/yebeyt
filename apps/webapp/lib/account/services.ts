@@ -45,7 +45,7 @@ function build() {
   const privacy = new PrivacyStore(localStorage, session, api);
   const avatar = new AvatarStore(localStorage, session, api);
   const friends = new FriendsCenter(session, api);
-  const data = { marks, stats, reactions, scores, divan, privacy, avatar, friends };
+  const data = { marks, stats, reactions, scores, divan, privacy, avatar, friends, myStats };
   return {
     session,
     api,

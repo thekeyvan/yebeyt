@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "../../lib/cn";
 import { reasons } from "../../lib/friends/person";
 import type { ReportRequest } from "../../lib/friends/models";
@@ -13,13 +13,17 @@ export function ReportSheet({ name, open, onOpenChange, send }: { name: string; 
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Each time the sheet opens it starts fresh: «اسپم» and no note.
+  useEffect(() => {
+    if (!open) return;
+    setReason("spam");
+    setNote("");
+  }, [open]);
+
   async function submit() {
     setBusy(true);
     try {
-      if (await send(reason, note)) {
-        onOpenChange(false);
-        setNote("");
-      }
+      if (await send(reason, note)) onOpenChange(false);
     } finally {
       setBusy(false);
     }

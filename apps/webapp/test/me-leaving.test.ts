@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { FriendsCenter } from "../lib/friends/center";
+import { MyStats } from "../lib/account/myStats";
 import { ApiError } from "../lib/account/api";
 import { AccountDeletion } from "../lib/account/deleteAccount";
 import { DivanSync } from "../lib/account/divanSync";
@@ -47,19 +48,22 @@ function fixture(deleteAnswer: () => Promise<void> = async () => {}) {
   const privacy = new PrivacyStore(storage, session, server);
   const avatar = new AvatarStore(storage, session, server);
   const friends = new FriendsCenter(session, { unread: async () => ({ total: 0, friendRequests: 2 }), friendRequests: async () => ({ items: [], nextCursor: null }), friendAction: async () => "none" });
-  const data = { marks, stats, reactions, scores, divan, privacy, avatar, friends };
+  const myStats = new MyStats(stats, session, { stats: async () => ({ totalPoints: 0, weekPoints: 0, streakDays: 0, league: { tier: 0 } }), profile: async () => ({ friendsCount: 12 }) as never });
+  const data = { marks, stats, reactions, scores, divan, privacy, avatar, friends, myStats };
   return { storage, session, server, ...data, leaving: new AccountSignOut(session, data), deletion: new AccountDeletion(session, server, data) };
 }
 
 type Fixture = ReturnType<typeof fixture>;
 
 /** What an account has made in this browser: a kept couplet, a like, a privacy setting, a face. */
-function fill(f: Fixture) {
+async function fill(f: Fixture) {
   f.marks.toggle("kept", "/a/b/c", 0);
   f.marks.toggle("liked", "/a/b/c", 1);
   f.privacy.change("allowReposts", false);
   f.avatar.save({ ...standardParts, hair: "fire" });
   f.friends.requests.setCount(2);
+  await f.myStats.refreshFriendsCount();
+  expect(f.myStats.friendsCount).toBe(12);
 }
 
 function expectNothingLeft(f: Fixture) {
@@ -71,6 +75,7 @@ function expectNothingLeft(f: Fixture) {
   expect(f.avatar.parts).toEqual(standardParts);
   expect(f.avatar.isUnsent).toBe(false);
   expect(f.friends.requests.snapshot().incomingCount).toBe(0);
+  expect(f.myStats.friendsCount).toBeUndefined();
   expect(f.storage.getItem("me.avatar")).toBeNull();
   expect(f.storage.getItem("me.privacy")).toBeNull();
 }
@@ -78,7 +83,7 @@ function expectNothingLeft(f: Fixture) {
 describe("AccountSignOut (Me/Settings/AccountLeaving.swift)", () => {
   it("syncs once more, then forgets the account's data here: the divan, the likes, the privacy settings, the face", async () => {
     const f = fixture();
-    fill(f);
+    await fill(f);
     f.stats.award(100);
     f.stats.claim("u1");
     expect(await f.leaving.signOut()).toBe("done");
@@ -106,7 +111,7 @@ describe("AccountSignOut (Me/Settings/AccountLeaving.swift)", () => {
   it("signs out anyway when the person insists, without trying the sync again", async () => {
     const f = fixture();
     f.server.divan.mockRejectedValue(offline());
-    fill(f);
+    await fill(f);
     await f.leaving.signOut();
     f.server.divan.mockClear();
     expect(await f.leaving.signOut(true)).toBe("done");
@@ -171,7 +176,7 @@ describe("AccountSignOut (Me/Settings/AccountLeaving.swift)", () => {
 describe("AccountDeletion", () => {
   it("sends the call, signs out, and forgets the account's data", async () => {
     const f = fixture();
-    fill(f);
+    await fill(f);
     expect(await f.deletion.delete()).toBeUndefined();
     expect(f.server.deleteAccount).toHaveBeenCalledTimes(1);
     expect(f.session.isSignedIn).toBe(false);
@@ -180,7 +185,7 @@ describe("AccountDeletion", () => {
 
   it("keeps the account and its data, and says so, when the server cannot do it", async () => {
     const f = fixture(async () => Promise.reject(new ApiError(502)));
-    fill(f);
+    await fill(f);
     await f.server.setAvatar.mockClear();
     expect(await f.deletion.delete()).toBe(new ApiError(502).persianMessage);
     expect(f.session.isSignedIn).toBe(true);
@@ -192,7 +197,7 @@ describe("AccountDeletion", () => {
 
   it("says «الان نشد…» when Apple cannot be reached to revoke its token, and keeps the account and its data", async () => {
     const f = fixture(async () => Promise.reject(new ApiError(502, "apple_revoke_failed")));
-    fill(f);
+    await fill(f);
     expect(await f.deletion.delete()).toBe("الان نشد، یه کم دیگه دوباره امتحان کن");
     expect(f.session.isSignedIn).toBe(true);
     expect([...f.marks.keys("kept")]).toEqual(["/a/b/c#0"]);

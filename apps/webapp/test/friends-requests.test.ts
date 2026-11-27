@@ -387,16 +387,12 @@ describe("the requests (FriendRequestsModelTests)", () => {
     expect(requests.snapshot().incomingCount).toBe(0); // never below nothing
   });
 
-  it("the count from the server stands until the list is read, and is told to the tab bar when it changes; signing out clears it", () => {
+  it("the count from the server stands until the list is read, and signing out clears it", () => {
     const requests = new FriendRequestsModel(fakeServer(() => none()).api);
-    const counts: number[] = [];
-    requests.onCountChange = (count) => counts.push(count);
     requests.setCount(3);
-    requests.setCount(3);
-    requests.setCount(4);
-    expect(counts).toEqual([3, 4]);
+    expect(requests.snapshot().incomingCount).toBe(3);
     requests.reset();
-    expect([requests.snapshot().incomingCount, requests.snapshot().incoming, counts]).toEqual([0, [], [3, 4, 0]]);
+    expect([requests.snapshot().incomingCount, requests.snapshot().incoming]).toEqual([0, []]);
   });
 
   it("my friends list comes from the friends endpoint as friends", async () => {
@@ -411,6 +407,8 @@ describe("the requests (FriendRequestsModelTests)", () => {
 // MARK: The badge and what happens elsewhere
 
 describe("the badge and the lists that follow (FriendRequestsCenterTests)", () => {
+  /** The tab badge: the unread messages plus the friend requests waiting for my answer (the shell adds them). */
+  const badge = (friends: FriendsCenter) => friends.snapshot().unreadMessages + friends.requests.snapshot().incomingCount;
   const user = { id: "u1" } as never;
 
   function center(unread: { total: number; friendRequests: number }, after = unread) {
@@ -426,21 +424,21 @@ describe("the badge and the lists that follow (FriendRequestsCenterTests)", () =
 
   it("the badge is the unread messages plus the incoming requests", async () => {
     const { center: friends } = center({ total: 2, friendRequests: 3 });
-    expect(friends.badge).toBe(0);
+    expect(badge(friends)).toBe(0);
     await friends.refreshUnread();
-    expect([friends.snapshot().unreadMessages, friends.requests.snapshot().incomingCount, friends.badge]).toEqual([2, 3, 5]);
+    expect([friends.snapshot().unreadMessages, friends.requests.snapshot().incomingCount, badge(friends)]).toEqual([2, 3, 5]);
     friends.reset();
-    expect(friends.badge).toBe(0);
+    expect(badge(friends)).toBe(0);
   });
 
   it("accepting a request lowers the badge", async () => {
     const { center: friends } = center({ total: 0, friendRequests: 1 }, { total: 0, friendRequests: 0 });
     const badges: number[] = [];
-    friends.requests.onCountChange = () => badges.push(friends.badge);
+    friends.requests.subscribe(() => badges.push(badge(friends)));
     await friends.refreshUnread();
     await friends.requests.load();
     expect(await friends.requests.perform("accept", "aryan")).toBeUndefined();
-    expect(badges).toEqual([1, 0]);
+    expect([...new Set(badges)]).toEqual([1, 0]);
   });
 
   it("a failed unread call keeps the badge", async () => {
@@ -448,7 +446,7 @@ describe("the badge and the lists that follow (FriendRequestsCenterTests)", () =
     await friends.refreshUnread();
     server.respond(() => "offline");
     await friends.refreshUnread();
-    expect(friends.badge).toBe(2);
+    expect(badge(friends)).toBe(2);
   });
 
   it("accepting on a person's page lowers the badge at once, refreshes my friends, and reads the server's count again", async () => {

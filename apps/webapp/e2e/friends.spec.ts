@@ -254,6 +254,12 @@ test.describe("رده‌بندی", () => {
     await expect(page.getByTestId("board-row-9")).toContainText("یه نفر");
     expect(await clearOfTabBar(page)).toBe(true);
 
+    // A row reads as one thing, «نفر ۱، آرین، ۲٬۹۱۰», as on the phone: a link for a person, a group for my row and the hidden stranger.
+    await expect(page.getByRole("list").getByRole("link", { name: "نفر ۱، آرین، ۲٬۹۱۰" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "نفر ۳، تو، ۲٬۴۸۰" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "نفر ۹، یه نفر، ۱٬۵۰۰" })).toBeVisible();
+    await expect(page.getByRole("listitem")).toHaveCount(10);
+
     // Switching slides the page in and never fades it.
     await page.evaluate(() => {
       const seen = { opacity: 1, moved: 0 };
@@ -338,6 +344,35 @@ test.describe("an account is needed", () => {
     await page.goto("/messages/requests");
     await expect(gate(page)).toBeVisible();
   });
+});
+
+test("an address that is not a username is never drawn: signed in or not, the page says «این آدم پیدا نشد»", async ({ page }) => {
+  const spoof = "/u/" + encodeURIComponent("پشتیبانی یه بیت");
+  await openAccountApp(page, spoof); // a guest
+  await expect(page.getByTestId("person-not-found")).toHaveText("این آدم پیدا نشد");
+  await expect(page.getByTestId("person-name")).toHaveCount(0);
+  await expect(page.getByTestId("person-menu")).toHaveCount(0);
+  expect(await page.locator("body").innerText()).not.toContain("پشتیبانی");
+  await page.goto("/u/" + encodeURIComponent("<b>x</b>"));
+  await expect(page.getByTestId("person-not-found")).toBeVisible();
+  expect(await page.locator("body").innerText()).not.toContain("<b>");
+  await openSignedIn(page, spoof);
+  await expect(page.getByTestId("person-not-found")).toBeVisible();
+  expect(await page.locator("body").innerText()).not.toContain("پشتیبانی");
+});
+
+test("the report sheet starts fresh every time it opens", async ({ page }) => {
+  await openSignedIn(page, "/u/raha");
+  await expect(page.getByTestId("person-name")).toHaveText("رها");
+  await chooseFromMenu(page, "report");
+  const report = asked(page, "گزارش رها");
+  await report.getByTestId("reason-other").click();
+  await report.getByTestId("report-note").fill("یه چیزی");
+  await page.keyboard.press("Escape");
+  await expect(report).toHaveCount(0);
+  await chooseFromMenu(page, "report");
+  await expect(report.getByTestId("reason-spam")).toHaveAttribute("aria-checked", "true");
+  await expect(report.getByTestId("report-note")).toHaveValue("");
 });
 
 test("a person who is not there says so", async ({ page }) => {

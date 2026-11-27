@@ -25,11 +25,6 @@ export class FriendsCenter extends Store<State> {
     this.blocked = new BlockedPeople(session);
   }
 
-  /** The tab badge: the unread messages and the friend requests waiting for my answer. */
-  get badge(): number {
-    return this.snapshot().unreadMessages + this.requests.snapshot().incomingCount;
-  }
-
   /** The server's counts; a failure keeps what is shown. */
   async refreshUnread(): Promise<void> {
     try {

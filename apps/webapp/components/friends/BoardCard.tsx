@@ -19,12 +19,15 @@ function Rank({ entry }: { entry: LeaderboardEntry }) {
   );
 }
 
-/** A row: the rank (a medal for 1–3), the face, the name and the points; my own row is tinted, and a person's row opens their page (Friends/Leaderboard/LeaderboardScreen.swift `BoardRow`). */
+/**
+ * A row: the rank (a medal for 1–3), the face, the name and the points; my own row is tinted, and a person's row opens their page (Friends/Leaderboard/LeaderboardScreen.swift
+ * `BoardRow`). It is one item that reads «نفر ۱، آرین، ۲٬۹۱۰», as on the phone (the link's own name, or the name of a group for a row that opens nothing).
+ */
 function BoardRow({ entry, last }: { entry: LeaderboardEntry; last: boolean }) {
+  const label = `نفر ${entry.rankText}، ${entry.name}، ${entry.points}`;
   const row = (
     <div
       data-testid={`board-row-${entry.rank}`}
-      aria-label={`نفر ${entry.rankText}، ${entry.name}، ${entry.points}`}
       className={cn("flex h-[54px] items-center gap-3 px-4", entry.isMe && "bg-lapis-tint", !last && "border-b border-chip-border")}
     >
       <Rank entry={entry} />
@@ -33,14 +36,26 @@ function BoardRow({ entry, last }: { entry: LeaderboardEntry; last: boolean }) {
       <span className="text-[15px] font-bold text-ink">{entry.points}</span>
     </div>
   );
-  return entry.opens ? <Link href={`/u/${entry.opens}`}>{row}</Link> : row;
+  return (
+    <div role="listitem">
+      {entry.opens ? (
+        <Link href={`/u/${entry.opens}`} aria-label={label}>
+          {row}
+        </Link>
+      ) : (
+        <div role="group" aria-label={label}>
+          {row}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** The white card of rows; `reachedEnd` is called when its last row scrolls into view (the next page of the global list). */
 export function BoardCard({ items, reachedEnd }: { items: readonly LeaderboardItem[]; reachedEnd?: () => void }) {
   const end = useEndOfList(items.at(-1)?.id, () => reachedEnd?.());
   return (
-    <div className="overflow-hidden rounded-3xl bg-white shadow-[0_3px_6px_rgba(20,17,43,0.12)]">
+    <div role="list" className="overflow-hidden rounded-3xl bg-white shadow-[0_3px_6px_rgba(20,17,43,0.12)]">
       {items.map((item, index) => {
         switch (item.kind) {
           case "entry":
@@ -53,14 +68,16 @@ export function BoardCard({ items, reachedEnd }: { items: readonly LeaderboardIt
             );
           case "promoteBand":
             return (
-              <p key={item.id} data-testid="promote-band" className="flex items-center justify-center gap-1.5 bg-green py-[5px] text-xs font-bold text-ink">
-                <UpArrowIcon />
-                این {persianDigits(item.count)} نفر می‌رن لیگ بالاتر
-              </p>
+              <div key={item.id} role="listitem">
+                <p data-testid="promote-band" className="flex items-center justify-center gap-1.5 bg-green py-[5px] text-xs font-bold text-ink">
+                  <UpArrowIcon />
+                  این {persianDigits(item.count)} نفر می‌رن لیگ بالاتر
+                </p>
+              </div>
             );
         }
       })}
-      <div ref={end} />
+      <div ref={end} aria-hidden />
     </div>
   );
 }

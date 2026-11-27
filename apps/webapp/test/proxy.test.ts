@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { upstreamRoute } from "../lib/api/proxy";
+import { isUsername, upstreamRoute } from "../lib/api/proxy";
 
 const route = (method: string, path: string, query = "") => upstreamRoute(method, path.split("/").filter(Boolean), new URLSearchParams(query));
 
@@ -119,5 +119,12 @@ describe("what the /api proxy lets through", () => {
     expect(route("GET", "v1/usernames/check", `u=${"a".repeat(500)}`)?.path).toBe("/v1/usernames/check");
     expect(route("GET", "v1/usernames/check", "u=a%0Ab")?.path).toBe("/v1/usernames/check");
     expect(route("GET", "v1/usernames/check", "u=a&u=b")?.path).toBe("/v1/usernames/check?u=a");
+  });
+});
+
+describe("what a page may take for a username", () => {
+  it("is the pattern the door passes on: a letter first, then letters, digits, «_» and «.»", () => {
+    for (const name of ["aryan", "kian_k", "sara.ghazal", "Raha9"]) expect(isUsername(name), name).toBe(true);
+    for (const text of ["", "..", ".x", "9a", "a b", "a/b", "<b>x</b>", "حافظ", "پشتیبانی یه بیت", "a".repeat(65), "x?y"]) expect(isUsername(text), text).toBe(false);
   });
 });
