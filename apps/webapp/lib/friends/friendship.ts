@@ -48,6 +48,9 @@ export const confirmationFor = (action: FriendAction): Question | undefined =>
       ? { title: "درخواستش رو رد کنی؟", message: "بهش خبر نمی‌دیم.", confirm: "رد کن" }
       : undefined;
 
+/** «سارا درخواستت رو قبول کرد» */
+export const friendAccepted = (name: string): string => `${name} درخواستت رو قبول کرد`;
+
 export const confirmUnfriend = (name: string): string => `${name} از دوستات حذف بشه؟`;
 
 /** The line a failed call shows as a toast; the hourly limit on new requests is asked to wait. */

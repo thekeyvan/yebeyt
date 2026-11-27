@@ -36,6 +36,16 @@ export class FriendsCenter extends Store<State> {
     }
   }
 
+  /** A live message that counts as unread came to a chat that is not open: the badge is one more. */
+  messageArrived(): void {
+    this.set({ ...this.snapshot(), unreadMessages: this.snapshot().unreadMessages + 1 });
+  }
+
+  /** My friends changed (someone asked, accepted, or I did something): a list on screen reads again. */
+  friendsChanged(): void {
+    this.set({ ...this.snapshot(), friendsRevision: this.snapshot().friendsRevision + 1 });
+  }
+
   /** What a friend action did elsewhere than the requests screen: the badge and the lists follow. */
   friendshipChanged(username: string, action: FriendAction, state: Friendship): void {
     if (action === "accept" || action === "reject" || (action === "send" && state === "friends")) {
@@ -43,7 +53,7 @@ export class FriendsCenter extends Store<State> {
       void this.refreshUnread();
     }
     if (action === "cancel" || state === "friends") this.requests.removeSent(username);
-    if (state === "friends" || action === "unfriend") this.set({ ...this.snapshot(), friendsRevision: this.snapshot().friendsRevision + 1 });
+    if (state === "friends" || action === "unfriend") this.friendsChanged();
   }
 
   /** I blocked `username`: they leave the lists I loaded, and any request between us is gone (the server drops them). */

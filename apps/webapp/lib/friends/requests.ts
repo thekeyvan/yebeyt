@@ -2,7 +2,7 @@ import { messageOf } from "../account/api";
 import { Store } from "../reader/store";
 import type { FriendRequestDirection } from "./api";
 import { friendToast, type FriendAction } from "./friendship";
-import { loaded, loading, type FriendRequest, type Phase } from "./models";
+import { loaded, loading, type FriendRequest, type Phase, type PersonShort } from "./models";
 
 type State = {
   incoming: readonly FriendRequest[];
@@ -24,6 +24,9 @@ type Source = {
  * badge: the server's number until the list is read, then the list's.
  */
 export class FriendRequestsModel extends Store<State> {
+  /** The requests screen is showing: a reconnect of the live socket reads it again. */
+  isVisible = false;
+
   constructor(private readonly api: Source) {
     super({ incoming: [], outgoing: [], phase: loading, incomingCount: 0, pending: new Set() });
   }
@@ -99,6 +102,13 @@ export class FriendRequestsModel extends Store<State> {
     if (on) pending.add(username);
     else pending.delete(username);
     this.update({ pending });
+  }
+
+  /** Live `friend.request`: a new row on top (the same request twice changes nothing). */
+  received(person: PersonShort, now: Date = new Date()): void {
+    const { incoming, incomingCount } = this.snapshot();
+    if (incoming.some((request) => request.username === person.username)) return;
+    this.update({ incoming: [{ ...person, createdAt: now.toISOString() }, ...incoming], incomingCount: incomingCount + 1 });
   }
 
   /** I answered (or answered by asking back) the request of `username` somewhere other than this screen: the row goes, or, when the list was not read, the count is one less. */
