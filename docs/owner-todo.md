@@ -8,7 +8,21 @@ Only what is still open. These need accounts or devices the agents don't have he
 
 ## 1b. The web app (app.yebeyt.com)
 
-- Before web sign-in (slice W4): in developer.apple.com → Identifiers → Services IDs, make `com.yebeyt.web` with Sign in with Apple on, domain `app.yebeyt.com`, return URL `https://app.yebeyt.com/auth/apple`. In Google Cloud (the yebeyt project) → Credentials, make an OAuth client of type *Web application* with origin `https://app.yebeyt.com`. Send the lead both ids (they aren't secret).
+All of iOS is on the web now (27 Nov), except sign-in, which waits for the two ids below. Without them the Apple and Google buttons say «ورود روی وب به‌زودی», so everything that needs an account (likes, scores, friends, messages, games with friends) can't be tried on the web yet.
+
+- **Sign-in ids (they aren't secret; send them to the lead):**
+  - Apple: developer.apple.com → Identifiers → + → Services IDs. Identifier `com.yebeyt.web`, Sign in with Apple on, primary App ID `com.yebeyt.app`, domain `app.yebeyt.com`, return URL `https://app.yebeyt.com/auth/apple`.
+  - Google: console.cloud.google.com, the yebeyt project → Credentials → OAuth client ID, type *Web application*. Origin `https://app.yebeyt.com`, redirect `https://app.yebeyt.com/auth/google`.
+  - The lead then sets `NEXT_PUBLIC_APPLE_SERVICES_ID` and `NEXT_PUBLIC_GOOGLE_CLIENT_ID` on the webapp service, and adds the two ids to the server's `APPLE_BUNDLE_IDS` and `GOOGLE_CLIENT_IDS`. `APPLE_REDIRECT_URIS` is already set. Then the lead rebuilds, because the ids are baked in at build time.
+- **Try it on your phone** (Safari, and add it to the home screen):
+  - Onboarding on the first visit.
+  - Today's couplet: keep it, or «رد کن» and then «برگردون».
+  - A poem: swipe up and down, play the recitation, hold a couplet.
+  - Every solo game. In «گوش کن», does the clip stop before the second line?
+  - Kept couplets in من → دیوان.
+  - Settings → «بازخورد» → send a bug with a screenshot. Check it in `GET /v1/admin/feedback`.
+- **On a computer** (Chrome): the side rail, two panes in پیام‌ها, the keyboard in the reader (←/→) and in the daily puzzle, and a screen recording from the bug form (Chrome only lets you pick this tab).
+- **After sign-in works:** a friend request with the second account, a message (it should arrive live on the phone app too), a مشاعره and a duel between the web and the phone, and a challenge link opened as a guest in a private window.
 
 ## 2. Test on a real phone
 
