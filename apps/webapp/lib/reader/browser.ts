@@ -11,6 +11,8 @@ let settings: TextSettingsStore | undefined;
 let marks: ReaderMarks | undefined;
 
 const settingsStore = (): TextSettingsStore => (settings ??= new TextSettingsStore(localStorage));
+/** The text settings now, for what is not drawn again when they change (a bug report's state). */
+export const currentTextSettings = (): TextSettings => settingsStore().snapshot();
 /** The marks of this browser (also what the account syncs). A debug build can be told to keep sample couplets first (`sessionStorage.beytSeedDivan = "1"`, the phone's `-beytSeedDivan 1`). */
 export function marksStore(): ReaderMarks {
   if (!marks) {
