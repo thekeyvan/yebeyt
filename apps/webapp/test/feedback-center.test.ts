@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FeedbackCenter, feedbackCopy, recordingNote, type Browser } from "../lib/feedback/center";
 import { FeedbackLog } from "../lib/feedback/log";
 import { FeedbackModel } from "../lib/feedback/model";
+import type { Mark } from "../lib/feedback/markup";
 import { bitrate, maxBytes, maxSeconds, type Clip, type ScreenRecording, type StartResult } from "../lib/feedback/recorder";
 import { FeedbackSender, offlineLine } from "../lib/feedback/sender";
 import type { TechnicalInfo } from "../lib/feedback/technical";
@@ -221,6 +222,31 @@ describe("which files go with a report", () => {
   it("the recording goes with a bug, after the screenshot", async () => {
     expect(await files("bug", {}, true)).toEqual(["PUT /api/v1/feedback/<id>/screenshot", "PUT /api/v1/feedback/<id>/recording"]);
     expect(await files("idea", {}, true)).toEqual([]);
+  });
+});
+
+describe("the editor's marks", () => {
+  const model = () => new FeedbackModel("bug", { screenshot: new Blob(["png"]), info, device }, undefined, undefined, async () => new Blob(["marked"]));
+  const box: Mark = { kind: "cover", rect: { x: 0.1, y: 0.1, width: 0.5, height: 0.5 } };
+
+  it("«تمام» with marks makes the marked picture the one that is sent, and it is work that closing asks about", async () => {
+    const draft = model();
+    draft.show("editor");
+    expect(draft.snapshot().over).toBe("editor");
+    expect(draft.hasUnsentWork).toBe(false);
+    await draft.finishEditing([box]);
+    expect(draft.snapshot().over).toBeUndefined();
+    expect(await draft.image?.text()).toBe("marked");
+    expect(draft.hasUnsentWork).toBe(true);
+  });
+
+  it("× or «تمام» with no marks leaves the picture as it was", async () => {
+    const draft = model();
+    draft.show("editor");
+    await draft.finishEditing([]);
+    expect(draft.snapshot().over).toBeUndefined();
+    expect(await draft.image?.text()).toBe("png");
+    expect(draft.hasUnsentWork).toBe(false);
   });
 });
 

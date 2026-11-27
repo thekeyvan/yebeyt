@@ -1,8 +1,9 @@
 import { Store } from "../reader/store";
 import type { DeviceInfo } from "./device";
 import { buildPayload } from "./payload";
+import type { Mark } from "./markup";
 import { FeedbackSender, type Files } from "./sender";
-import { toJpeg } from "./screenshot";
+import { toJpeg, withMarks } from "./screenshot";
 import type { TechnicalInfo } from "./technical";
 import { canSendDraft, hasTypedText, newDraft, sendsScreenshot, takesRecording, type Draft, type FeedbackType } from "./types";
 
@@ -19,6 +20,8 @@ type State = {
   edited?: Blob;
   recording?: Recording;
   technicalOpen: boolean;
+  /** What is over the form: the editor of the screenshot, or the question before the recording is deleted. These are the sheet's own business, so the host shows them beside it, not inside it. */
+  over?: "editor" | "recording";
   phase: Phase;
   /** The line to show after a send that failed; the button is still there. */
   failure?: string;
@@ -31,6 +34,7 @@ export class FeedbackModel extends Store<State> {
     readonly moment: Moment,
     private readonly sender: FeedbackSender = new FeedbackSender(),
     private readonly jpeg: (picture: Blob) => Promise<Blob | undefined> = toJpeg,
+    private readonly mark: (picture: Blob, marks: readonly Mark[]) => Promise<Blob | undefined> = withMarks,
   ) {
     super({ draft: newDraft(type), technicalOpen: false, phase: "editing" });
   }
@@ -83,6 +87,18 @@ export class FeedbackModel extends Store<State> {
 
   toggleTechnical(): void {
     this.patch({ technicalOpen: !this.snapshot().technicalOpen });
+  }
+
+  show(over: State["over"]): void {
+    this.patch({ over });
+  }
+
+  /** The editor was closed: «تمام» gives the marks (the picture with them drawn is what is sent from now on), × gives none. */
+  async finishEditing(marks: readonly Mark[]): Promise<void> {
+    this.patch({ over: undefined });
+    const picture = this.image;
+    const marked = picture && marks.length > 0 ? await this.mark(picture, marks) : undefined;
+    if (marked) this.setEdited(marked);
   }
 
   async send(): Promise<void> {

@@ -89,7 +89,10 @@ function Editor({ image, done }: { image: Blob; done: (marks: Mark[]) => void })
   );
 }
 
-/** «خط بکش یا بپوشون»: a full screen to draw ink lines or cover parts of the screenshot with solid ink before it is sent. «تمام» hands back the marks; × keeps the picture as it was. */
+/**
+ * «خط بکش یا بپوشون»: a full screen to draw ink lines or cover parts of the screenshot with solid ink before it is sent. «تمام» hands back the marks; × keeps the picture as it was.
+ * It is made beside the feedback sheet (`FeedbackHost`), not inside it: made inside, it would be part of the sheet to UI SDK, and the sheet's own drag (down a finger) would take a stroke.
+ */
 export function ScreenshotEditor({ open, image, done }: { open: boolean; image: Blob; done: (marks: Mark[]) => void }) {
   return (
     <Dialog open={open} onOpenChange={(next) => !next && done([])}>

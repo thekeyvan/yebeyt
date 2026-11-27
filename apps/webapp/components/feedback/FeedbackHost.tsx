@@ -17,6 +17,7 @@ import { FeedbackChoices, choicesLead, choicesTitle } from "./FeedbackChoices";
 import { FeedbackForm } from "./FeedbackForm";
 import { FeedbackGameForm } from "./FeedbackGameForm";
 import { RecordingPill } from "./RecordingPill";
+import { ScreenshotEditor } from "./ScreenshotEditor";
 
 /** The keys that open the sheet from anywhere: «?» (with Shift on most keyboards), not while a field has the keys and not over another dialog. */
 function useShortcut() {
@@ -56,6 +57,7 @@ export function FeedbackHost() {
   const model = open ? state.model : shown.current;
   const form = useStore(model);
   const canSend = form !== undefined && model !== undefined && model.canSend;
+  const picture = model?.image;
 
   return (
     <>
@@ -76,6 +78,16 @@ export function FeedbackHost() {
           {model ? <Form model={model} /> : <FeedbackChoices choose={(type) => center.choose(type)} />}
         </div>
       </Sheet>
+      {/* What the form opens is beside the sheet, not inside it (see `ScreenshotEditor`). */}
+      {model && picture && <ScreenshotEditor open={form?.over === "editor"} image={picture} done={(marks) => void model.finishEditing(marks)} />}
+      <ConfirmSheet
+        open={form?.over === "recording"}
+        onOpenChange={(next) => !next && model?.show(undefined)}
+        title={feedbackCopy.recordingTitle}
+        confirm={feedbackCopy.recordingDelete}
+        cancel={feedbackCopy.recordingKeep}
+        onConfirm={() => model?.setRecording(undefined)}
+      />
       <ConfirmSheet open={isConfirmingClose} onOpenChange={(next) => center.confirm(next)} title={center.closeQuestion} confirm={feedbackCopy.discard} cancel={feedbackCopy.stay} onConfirm={() => center.close()} />
       {isRecording && <RecordingPill stop={() => void center.stopRecording()} />}
     </>

@@ -424,6 +424,7 @@ test.describe("in a game", () => {
     await expect(page.getByTestId("feedback-recorded")).toBeVisible();
     await page.getByTestId("feedback-remove-recording").click();
     await asking(page, "فیلم پاک بشه؟").getByRole("button", { name: "پاک کن" }).click();
+    await expect(asking(page, "فیلم پاک بشه؟")).toBeHidden();
     await expect(page.getByTestId("feedback-recorded")).toHaveCount(0);
     await expect(page.getByTestId("feedback-record")).toBeVisible();
     await page.getByTestId("feedback-text").fill("بدون فیلم");
