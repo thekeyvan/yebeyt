@@ -60,7 +60,7 @@ Each slice is on its own branch (`feat/web-<name>`), built by **builder**, revie
 - **W3 Solo games**, in two parts: **W3a** (merged 26 Nov) the catalog, معمای امروز, جورچین, the after-answer sheet, round end and stats; **W3b** حدس شاعر، مصراع دوم، از کدوم کتاب؟، معنی‌یاب، گوش کن (the iOS names), with the poet page's game card. گوش کن stops its clip with `timeupdate` plus an animation-frame check and fades it with a Web Audio gain.
 - **W4 Accounts and sync**: the web sign-in, username, gate, onboarding, carry-over, the typed API client, divan/scores/reactions sync.
 - **W5 Me** (built 26 Nov): `/me` and its screens (divan, avatar, invite, settings with deleting the account, privacy, badges, licences); the avatar drawing moved to `packages/avatar`, shared with `apps/web`. Left out of the settings as they make no sense in a browser: the shake for feedback and the version line; there is no blocked-people screen on the phone, so none here. «بازخورد» says «به‌زودی» until W9.
-- **W6 Friends and leaderboard.**
+- **W6 Friends and leaderboard** (built 27 Nov): `/people`, `/u/<username>`, `/messages/requests` (with its row and the tab badge in پیام‌ها), `/me/friends` and the profile's friend count, «دوستات» on the home, `/games/leaderboard`, blocking and reporting; the invite page of yebeyt.com opens the person's page here. «پیام بده» on a person's page and the live `friend.request` and `friend.accepted` events come with the messages (W7), because they need the chat and the socket.
 - **W7 Messages and shared divans.**
 - **W8 Playing with friends.**
 - **W9 Feedback.**
