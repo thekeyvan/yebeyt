@@ -3,8 +3,8 @@ import { sha256Hex } from "../crypto.js";
 import type { Deps } from "../deps.js";
 import { ApiError } from "../errors.js";
 
-/** `email` is set only when the provider says it is verified (Apple's private relay address included): lower-cased and trimmed. */
-export type VerifiedIdentity = { subject: string; audience: string; email: string | null };
+/** `email` is set only when the provider says it is verified (Apple's private relay address included): lower-cased and trimmed. `emailLinkable` says whether it may join accounts: always for Apple; for Google only when the address is @gmail.com or the token has an `hd` claim (a Workspace domain), the only cases where Google is the authority for the address (its own guidance). */
+export type VerifiedIdentity = { subject: string; audience: string; email: string | null; emailLinkable: boolean };
 
 const APPLE_ISSUER = "https://appleid.apple.com";
 const GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
@@ -51,7 +51,7 @@ export async function verifyAppleIdentityToken(
   const { payload, identity } = await verify(token, deps, deps.appleKeys, APPLE_ISSUER, deps.config.appleBundleIds);
   if (payload.nonce !== sha256Hex(nonce)) throw new ApiError(401, "invalid_token");
   const email = isTrue(payload.email_verified) ? cleanEmail(payload.email) : null;
-  return { ...identity, email };
+  return { ...identity, email, emailLinkable: email !== null };
 }
 
 export async function verifyGoogleIdToken(
@@ -59,5 +59,7 @@ export async function verifyGoogleIdToken(
   deps: Pick<Deps, "now" | "googleKeys" | "config">,
 ): Promise<VerifiedIdentity> {
   const { payload, identity } = await verify(token, deps, deps.googleKeys, GOOGLE_ISSUERS, deps.config.googleClientIds);
-  return { ...identity, email: payload.email_verified === true ? cleanEmail(payload.email) : null };
+  const email = payload.email_verified === true ? cleanEmail(payload.email) : null;
+  const workspace = typeof payload.hd === "string" && payload.hd !== "";
+  return { ...identity, email, emailLinkable: email !== null && (workspace || email.endsWith("@gmail.com")) };
 }

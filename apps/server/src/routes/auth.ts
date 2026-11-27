@@ -37,7 +37,7 @@ export function authRoutes(deps: Deps) {
   const app = newRouter();
 
   const startSession = async (provider: Provider, identity: VerifiedIdentity, appleToken?: string | null) => {
-    const userId = await upsertUser(deps.db, provider, identity.subject, identity.email, appleToken);
+    const userId = await upsertUser(deps.db, provider, identity.subject, identity.email ? { address: identity.email, linkable: identity.emailLinkable } : null, appleToken);
     const tokens = await issueSession(deps, userId);
     return { ...tokens, user: (await getUserView(deps.db, userId))! };
   };

@@ -1,0 +1,1 @@
+ALTER TABLE "identities" ADD COLUMN "email_linkable" boolean DEFAULT false NOT NULL;

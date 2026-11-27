@@ -9,6 +9,7 @@ import {
   conversationReads,
   conversations,
   dailyResults,
+  feedback,
   friendRequests,
   friendships,
   gamePlayers,
@@ -35,6 +36,7 @@ import { mergeProgress } from "./routes/progress.js";
  * - identities (all of them, with their sealed Apple tokens), so account deletion still revokes them at Apple;
  * - progress, merged with the larger value of each field (as `PUT /v1/me/progress`);
  * - divan items, the later time of each key wins (as `PUT /v1/me/divan`);
+ * - feedback reports (a signed-in person's reports belong to their account, so they follow it);
  * - privacy settings, only when the other account has none (its own choice stands); display name and avatar likewise.
  * Sessions go with the empty account (its refresh tokens stop working: the person signs in again and lands on the real one).
  *
@@ -42,7 +44,7 @@ import { mergeProgress } from "./routes/progress.js";
  * account not empty: nothing is merged and both accounts stay. `test/email-linking.test.ts` checks that these lists
  * name every table with a foreign key to users, so a new table cannot be forgotten.
  */
-export const MERGED_TABLES = ["identities", "sessions", "progress", "divan_items", "privacy_settings"];
+export const MERGED_TABLES = ["identities", "sessions", "progress", "divan_items", "privacy_settings", "feedback"];
 
 const blockers: [PgTable, PgColumn[]][] = [
   [friendships, [friendships.userLow, friendships.userHigh]],
@@ -65,8 +67,8 @@ const blockers: [PgTable, PgColumn[]][] = [
 ];
 export const BLOCKING_TABLES = blockers.map(([table]) => getTableName(table));
 
-/** Rows that point at the user with "on delete set null": they stay, anonymous, as when an account is deleted (feedback, reports, games, mosh moves). Every one needs a username or a game player row first. */
-export const IGNORED_TABLES = ["feedback", "reports", "games", "mosh_moves"];
+/** Rows that point at the user with "on delete set null" and cannot exist for an account with no username (reports, games, mosh moves need a username or a game player row first). */
+export const IGNORED_TABLES = ["reports", "games", "mosh_moves"];
 
 async function hasRows(tx: Db, userId: string): Promise<boolean> {
   for (const [table, columns] of blockers) {
@@ -97,6 +99,10 @@ export async function mergeEmptyAccount(db: Db, identityId: string, fromId: stri
     // A share lock: a deletion of the target waits for this merge, and merges into one target do not wait for each other.
     const [to] = await tx.select({ username: users.username, displayName: users.displayName, avatar: users.avatar }).from(users).where(eq(users.id, toId)).for("share");
     if (from.username !== null || !to?.username || (await hasRows(tx, fromId))) return fromId;
+    // One account never gets two sign-in methods of the same provider (a recycled address is not the same person).
+    const providers = async (id: string) => (await tx.select({ p: identities.provider }).from(identities).where(eq(identities.userId, id))).map((r) => r.p);
+    const theirs = new Set(await providers(toId));
+    if ((await providers(fromId)).some((p) => theirs.has(p))) return fromId;
 
     const [fromProgress] = await tx.select().from(progress).where(eq(progress.userId, fromId));
     if (fromProgress) {
@@ -121,6 +127,7 @@ export async function mergeEmptyAccount(db: Db, identityId: string, fromId: stri
       .set({ displayName: to.displayName ?? from.displayName, avatar: to.avatar ?? from.avatar })
       .where(eq(users.id, toId));
 
+    await tx.update(feedback).set({ userId: toId }).where(eq(feedback.userId, fromId));
     await tx.update(identities).set({ userId: toId }).where(eq(identities.userId, fromId));
     await tx.delete(sessions).where(eq(sessions.userId, fromId)); // revoked: its refresh tokens are gone, its access tokens fail because the user is
     await tx.delete(users).where(eq(users.id, fromId)); // the rest of its rows (progress, divan, privacy) cascade

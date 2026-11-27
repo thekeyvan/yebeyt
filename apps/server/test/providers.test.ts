@@ -32,6 +32,7 @@ describe("Apple identity token", () => {
       subject: "001.abc",
       audience: BUNDLE_ID,
       email: null,
+      emailLinkable: false,
     });
   });
 
@@ -64,6 +65,7 @@ describe("Google id token", () => {
         subject: "1234567890",
         audience: GOOGLE_CLIENT,
         email: null,
+        emailLinkable: false,
       });
     }
   });
@@ -102,5 +104,25 @@ describe("the verified email claim", () => {
     expect(await appleEmail({ email: "x@privaterelay.appleid.com", email_verified: true, is_private_email: true })).toBe("x@privaterelay.appleid.com");
     expect(await appleEmail({ email: "ali@example.com", email_verified: "false" })).toBeNull();
     expect(await appleEmail({ email: "ali@example.com" })).toBeNull();
+  });
+});
+
+describe("which emails may join accounts", () => {
+  const google = async (claims: object) => verifyGoogleIdToken(await signGoogle({}, claims), googleDeps());
+  const appleId = async (claims: object) => verifyAppleIdentityToken(await signApple(claims), "n", appleDeps());
+
+  it("Google: @gmail.com or a Workspace domain (hd); any other address is kept but never links", async () => {
+    expect(await google({ email: "ali@gmail.com", email_verified: true })).toMatchObject({ email: "ali@gmail.com", emailLinkable: true });
+    expect(await google({ email: "Ali@GMAIL.com", email_verified: true })).toMatchObject({ emailLinkable: true });
+    expect(await google({ email: "ali@corp.example", email_verified: true, hd: "corp.example" })).toMatchObject({ email: "ali@corp.example", emailLinkable: true });
+    expect(await google({ email: "ali@example.com", email_verified: true })).toMatchObject({ email: "ali@example.com", emailLinkable: false });
+    expect(await google({ email: "ali@example.com", email_verified: true, hd: "" })).toMatchObject({ emailLinkable: false });
+    expect(await google({ email: "ali@gmail.com", email_verified: false })).toMatchObject({ email: null, emailLinkable: false });
+  });
+
+  it("Apple: every verified address, the private relay too", async () => {
+    expect(await appleId({ email: "ali@example.com", email_verified: true })).toMatchObject({ emailLinkable: true });
+    expect(await appleId({ email: "x@privaterelay.appleid.com", email_verified: "true", is_private_email: "true" })).toMatchObject({ emailLinkable: true });
+    expect(await appleId({ email: "ali@example.com", email_verified: false })).toMatchObject({ emailLinkable: false });
   });
 });

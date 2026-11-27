@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { divanItems, identities, progress, scoreEvents, sessions, users } from "../src/db/schema.js";
+import { divanItems, feedback, identities, progress, scoreEvents, sessions, users } from "../src/db/schema.js";
 import { MERGED_TABLES, BLOCKING_TABLES, IGNORED_TABLES } from "../src/mergeAccounts.js";
 import { makeHarness, NONCE, type Harness } from "./helpers.js";
 
@@ -11,8 +11,11 @@ beforeEach(async () => {
 
 type Session = Awaited<ReturnType<Harness["signIn"]>>;
 
-const google = async (sub: string, email?: string, verified: unknown = true) => {
-  const claims = email === undefined ? {} : { email, email_verified: verified };
+/** A Google sign-in. An address that is not @gmail.com gets the Workspace claim `hd` (the only kind Google vouches for), unless `hd` is false. */
+const google = async (sub: string, email?: string, verified: unknown = true, hd?: string | false) => {
+  const domain = email?.split("@")[1]?.toLowerCase();
+  const workspace = hd === undefined ? (domain && domain !== "gmail.com" ? domain : undefined) : hd || undefined;
+  const claims = email === undefined ? {} : { email, email_verified: verified, ...(workspace ? { hd: workspace } : {}) };
   const res = await h.request("/v1/auth/google", { method: "POST", json: { idToken: await h.googleToken(sub, {}, claims) } });
   expect(res.status).toBe(200);
   return (await res.json()) as Session;
@@ -129,9 +132,18 @@ describe("one account per verified email", () => {
     expect(await rowsOf("identities")).toBe(1);
   });
 
-  it("concurrent first sign-ins of two methods with one email all succeed", async () => {
-    await Promise.all([google("g1", "ali@example.com"), apple("a1", verified("ali@example.com")), google("g1", "ali@example.com")]);
+  it("concurrent first sign-ins of two methods with one email make one account", async () => {
+    const results = await Promise.all([google("g1", "ali@example.com"), apple("a1", verified("ali@example.com")), google("g1", "ali@example.com"), apple("a1", verified("ali@example.com"))]);
+    expect(new Set(results.map((r) => r.user.id)).size).toBe(1);
+    expect(await userCount()).toBe(1);
     expect(await rowsOf("identities")).toBe(2);
+  });
+
+  it("the advisory lock on an email works in the test database and never blocks different emails", async () => {
+    const results = await Promise.all(
+      Array.from({ length: 6 }, (_, i) => (i % 2 === 0 ? apple(`a${i}`, verified(`person${i % 3}@gmail.com`)) : google(`g${i}`, `person${i % 3}@gmail.com`))),
+    );
+    expect(new Set(results.map((r) => r.user.id)).size).toBe(3);
   });
 
   it("concurrent sign-ins of an empty account's identity move it once", async () => {
@@ -142,6 +154,70 @@ describe("one account per verified email", () => {
     expect(new Set(results.map((r) => r.user.id))).toEqual(new Set([real.user.id]));
     expect(await userCount()).toBe(1);
     expect(await rowsOf("identities")).toBe(2);
+  });
+});
+
+describe("a provider's second account with one address is not the same person", () => {
+  it("a second Google account with the same Workspace address makes a new user, but Apple still joins the first", async () => {
+    const first = await google("g1", "ali@corp.example");
+    const recycled = await google("g2", "ali@corp.example");
+    expect(recycled.user.id).not.toBe(first.user.id);
+    expect(await userCount()).toBe(2);
+    expect((await apple("a1", verified("ali@corp.example"))).user.id).toBe(first.user.id);
+    expect(await userCount()).toBe(2);
+  });
+
+  it("an empty Google account is not merged into the account that already has a Google sign-in", async () => {
+    const real = await google("g1", "ali@corp.example");
+    await setUsername(real, "ali");
+    const empty = await google("g2", "other@corp.example");
+    await h.db.update(identities).set({ email: "ali@corp.example" }).where(eq(identities.subject, "g2"));
+    const again = await google("g2", "ali@corp.example");
+    expect(again.user.id).toBe(empty.user.id);
+    expect(await userCount()).toBe(2);
+  });
+
+  it("an empty account with Apple and Google is not merged into one that has Google", async () => {
+    const real = await google("g1", "ali@corp.example");
+    await setUsername(real, "ali");
+    const empty = await google("g2", "other@corp.example");
+    const orphan = await apple("a1", {});
+    await h.db.update(identities).set({ userId: empty.user.id }).where(eq(identities.subject, "a1"));
+    await h.db.delete(users).where(eq(users.id, orphan.user.id));
+    const again = await apple("a1", verified("ali@corp.example"));
+    expect(again.user.id).toBe(empty.user.id);
+    expect(await userCount()).toBe(2);
+    expect(await identitiesOf(empty.user.id)).toHaveLength(2);
+  });
+});
+
+describe("only an address Google vouches for joins an account", () => {
+  it("a Google address that is not @gmail.com and has no hd is stored but never links, in either direction", async () => {
+    const g = await google("g1", "ali@example.com", true, false);
+    expect(await emailOf(g.user.id)).toEqual(["ali@example.com"]);
+    const a = await apple("a1", verified("ali@example.com"));
+    expect(a.user.id).not.toBe(g.user.id);
+    const g2 = await google("g2", "sara@example.com", true, false);
+    const a2 = await apple("a2", verified("sara@example.com"));
+    expect(a2.user.id).not.toBe(g2.user.id);
+    expect(await userCount()).toBe(4);
+  });
+
+  it("@gmail.com links without hd, and a Workspace address links with it", async () => {
+    const gmail = await google("g1", "Ali@gmail.com", true, false);
+    expect((await apple("a1", verified("ali@gmail.com"))).user.id).toBe(gmail.user.id);
+    const work = await google("g2", "sara@corp.example", true, "corp.example");
+    expect((await apple("a2", verified("sara@corp.example"))).user.id).toBe(work.user.id);
+    expect(await userCount()).toBe(2);
+  });
+
+  it("an empty account does not move on an address Google does not vouch for", async () => {
+    const real = await apple("a1", verified("ali@example.com"));
+    await setUsername(real, "ali");
+    const empty = await google("g1", undefined);
+    const again = await google("g1", "ali@example.com", true, false);
+    expect(again.user.id).toBe(empty.user.id);
+    expect(await userCount()).toBe(2);
   });
 });
 
@@ -211,6 +287,16 @@ describe("an account still at the username step", () => {
     expect((await json<{ displayName: string }>(h.request("/v1/me", { token: real.accessToken }))).displayName).toBe("Real");
   });
 
+  it("keeps the feedback reports of the empty account, now on the real one", async () => {
+    const { real, empty } = await ownersCase();
+    const body = { type: "idea", text: "یک ایده", appVersion: "2.0.0", deviceModel: "iPhone17,1", osVersion: "26.0" };
+    expect((await h.request("/v1/feedback", { method: "POST", token: empty.accessToken, json: body })).status).toBe(201);
+    await apple("a1", verified("ali@example.com"));
+    const rows = await h.db.select().from(feedback);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.userId).toBe(real.user.id);
+  });
+
   it("does not merge when the empty-looking account holds scores: both stay, the email is kept", async () => {
     const { real, empty } = await ownersCase();
     await h.db.insert(scoreEvents).values({ id: crypto.randomUUID(), userId: empty.user.id, game: "poet", points: 20, playedAt: h.clock.time, week: "2026-W23" });
@@ -224,7 +310,8 @@ describe("an account still at the username step", () => {
   it("moves every identity of the empty account, not only the one that signed in", async () => {
     const real = await google("g1", "ali@example.com");
     await setUsername(real, "ali");
-    const empty = await google("g2", "other@example.com");
+    // An account from before linking can have two Apple sign-ins (one per app, say); both move together.
+    const empty = await apple("a2", {});
     const orphan = await apple("a1", {});
     await h.db.update(identities).set({ userId: empty.user.id }).where(eq(identities.subject, "a1"));
     await h.db.delete(users).where(eq(users.id, orphan.user.id));
@@ -256,7 +343,7 @@ describe("an account still at the username step", () => {
 });
 
 describe("accounts from before linking, with one email on several", () => {
-  const sameEmail = () => h.db.update(identities).set({ email: "ali@example.com" });
+  const sameEmail = () => h.db.update(identities).set({ email: "ali@example.com", emailLinkable: true });
 
   it("never merges two accounts that both have usernames", async () => {
     const one = await google("g1");

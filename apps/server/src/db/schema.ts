@@ -34,9 +34,9 @@ export const users = pgTable(
     displayName: text("display_name"),
     avatar: jsonb("avatar").$type<Avatar>(),
     /** The built-in demo friend «یه بیت» (src/house.ts): no identity, so nobody signs in as it. At most one user has it. */
+    isHouse: boolean("is_house").notNull().default(false),
     /** When the person switched on «خبرهای یه بیت رو برام ایمیل کن» (news and offers by email); null is no. */
     newsOptInAt: timestamptz("news_opt_in_at"),
-    isHouse: boolean("is_house").notNull().default(false),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
   (t) => [
@@ -61,6 +61,8 @@ export const identities = pgTable(
     subject: text("subject").notNull(),
     appleRefreshToken: text("apple_refresh_token"),
     email: text("email"),
+    /** Whether `email` may join accounts: Apple's always; Google's only for @gmail.com or a Workspace domain (`hd`), where Google is the authority for the address. */
+    emailLinkable: boolean("email_linkable").notNull().default(false),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
   (t) => [unique("identities_provider_subject").on(t.provider, t.subject), index("identities_user").on(t.userId), index("identities_email").on(t.email)],
