@@ -262,9 +262,14 @@ test.describe("live", () => {
     await expect(messagesTab(page)).toHaveAccessibleName("پیام‌ها ۲ پیام نخونده، ۲ درخواست دوستی");
     setUnread({ total: 2 });
     const again = live.expectNewSocket();
+    const lists: string[] = [];
+    page.on("response", (response) => /\/api\/v1\/conversations\??$/.test(response.url()) && lists.push(response.url()));
     await page.goto("/messages");
     await again();
     await expect(page.locator("[data-testid^=inbox-row-]")).toHaveCount(5);
+    // The inbox is read when it opens and again when the socket connects; an event is for the list as it is after that (the real server's list holds it).
+    await expect.poll(() => lists.length).toBeGreaterThanOrEqual(2);
+    await page.waitForTimeout(250); // …and the page has put that list on screen
     await live.push(message("live-3", "این یکی توی صندوقه"));
     await expect(page.getByTestId("inbox-row-sara.ghazal")).toContainText("این یکی توی صندوقه");
     await expect(page.getByTestId("inbox-row-sara.ghazal")).toHaveAttribute("data-unread", "1");
