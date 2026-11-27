@@ -1,5 +1,6 @@
 import type { components } from "../api/schema";
 import { friendsApi } from "../friends/api";
+import { messagesApi } from "../messages/api";
 import { fromWire, toWire, type DivanItem } from "../reader/divan";
 
 export type User = components["schemas"]["User"];
@@ -124,6 +125,7 @@ export function createApi(onSignedOut: () => void = () => {}, send: Fetch = (...
     postDaily: (request: DailyRequest) => call<unknown>("POST", "/v1/daily", { body: request }).then((): void => {}),
     stats: () => call<RemoteStats>("GET", "/v1/me/stats"),
     ...friendsApi(call),
+    ...messagesApi(call),
   };
 }
 

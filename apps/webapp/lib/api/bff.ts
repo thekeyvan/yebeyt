@@ -1,5 +1,6 @@
 import { clearSession, isSecure, readSession, writeSession, type Tokens } from "./cookies";
 import { isSameOrigin } from "./csrf";
+import { secondsLeft } from "./jwt";
 import { upstreamRoute } from "./proxy";
 import { createRefresher } from "./refresh";
 
@@ -9,6 +10,9 @@ export type Upstream = (call: Call) => Promise<Response>;
 
 /** The most a body may be: the divan of 2000 couplets is a few hundred kilobytes. */
 const maxBody = 1_000_000;
+
+/** A token with less time left than this is not handed to a socket (the server closes the socket when its token expires): the session is refreshed first. */
+const minLiveSeconds = 60;
 
 /** What of the server's answer is passed on: the type and what lets the browser cache a picture and ask again. */
 const passed = ["content-type", "etag", "cache-control"];
@@ -48,8 +52,8 @@ type Run = { kind: "none" } | { kind: "signedOut" } | { kind: "offline" } | { ki
 export function createBff(send: Upstream) {
   const refresh = createRefresher((token) => send({ method: "POST", path: "/v1/auth/refresh", credential: token, body: JSON.stringify({ refreshToken: token }) }));
 
-  /** Runs `ask` with the access token; when the server refuses it, once more after a refresh. */
-  async function withSession(request: Request, ask: (access: string) => Promise<Response>): Promise<Run> {
+  /** Runs `ask` with the access token; when the server refuses it, once more after a refresh (`renewFirst`: after a refresh at once). */
+  async function withSession(request: Request, ask: (access: string) => Promise<Response>, renewFirst = false): Promise<Run> {
     const { access, refresh: refreshToken } = readSession(request);
     if (!access && !refreshToken) return { kind: "none" };
     try {
@@ -61,7 +65,7 @@ export function createBff(send: Upstream) {
         tokens = result.tokens;
         return "ok";
       };
-      let token = access;
+      let token = renewFirst ? undefined : access;
       if (token === undefined) {
         const renewed = await renew();
         if (renewed !== "ok") return renewed;
@@ -161,6 +165,17 @@ export function createBff(send: Upstream) {
           return secureAnswer(user ? { signedIn: true, user } : { signedIn: true }, 200, cookies);
         }
       }
+    },
+
+    /**
+     * `/auth/live`: the access token for the live socket (its first message) and the socket's address, the one place a token reaches page script. The token is the
+     * cookie's while it has time left, else the session is refreshed first (the cookies are set, and the page still never sees a refresh token).
+     */
+    async live(request: Request, url: string): Promise<Response> {
+      if (!isSameOrigin(request)) return new Response(null, { status: 403 });
+      const { access } = readSession(request);
+      const renewFirst = access === undefined || secondsLeft(access) < minLiveSeconds;
+      return await finish(await withSession(request, async (token) => Response.json({ token, url }), renewFirst), request);
     },
 
     /** `/auth/logout`: the server is told (its answer does not matter), and the cookies go. */

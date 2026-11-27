@@ -7,6 +7,9 @@ const version = /^[A-Za-z0-9_-]{1,64}$/;
 /** A username in the server's address: it starts with a letter, then letters, digits, «_» and «.» (never «.» or «..»). */
 const username = /^[A-Za-z][A-Za-z0-9_.]{0,63}$/;
 
+/** An id of the server (a chat, a message, a shared divan, one of its couplets: a UUID, here also what the debug server makes): letters, digits, «_» and «-». */
+const id = /^[A-Za-z0-9_-]{1,64}$/;
+
 /** Whether `text` can be a username at all: what a page may show of an address before the server has said anything. */
 export const isUsername = (text: string): boolean => username.test(text);
 
@@ -38,13 +41,26 @@ const reaction = (segments: string[]): string | undefined => {
   return first === "v1" && second === "reactions" && (kind === "like" || kind === "repost") && rest.length === 0 ? `/v1/reactions/${kind}` : undefined;
 };
 
-/** `/v1/<prefix…>/<username><suffix…>`: the person is one checked part of the path. */
-const person =
+/** `/v1/<prefix…>/<name><suffix…>`: the person (or the id) is one part of the path, checked against `pattern`. */
+const named =
+  (pattern: RegExp) =>
   (prefix: readonly string[], ...suffix: string[]) =>
   (segments: string[]): string | undefined => {
     const name = segments[prefix.length];
     const fits = segments.length === prefix.length + 1 + suffix.length && prefix.every((part, index) => segments[index] === part) && suffix.every((part, index) => segments[prefix.length + 1 + index] === part);
-    return fits && name !== undefined && username.test(name) ? `/${[...prefix, name, ...suffix].join("/")}` : undefined;
+    return fits && name !== undefined && pattern.test(name) ? `/${[...prefix, name, ...suffix].join("/")}` : undefined;
+  };
+
+const person = named(username);
+const identified = named(id);
+
+/** `/v1/shared-divans/<id>/items/<item><suffix…>`: a couplet of a shared divan, both ids checked. */
+const sharedItem =
+  (...suffix: string[]) =>
+  (segments: string[]): string | undefined => {
+    const [first, second, divan, items, item, ...rest] = segments;
+    const fits = first === "v1" && second === "shared-divans" && items === "items" && rest.length === suffix.length && suffix.every((part, index) => rest[index] === part);
+    return fits && divan !== undefined && item !== undefined && id.test(divan) && id.test(item) ? `/${[first, second, divan, items, item, ...suffix].join("/")}` : undefined;
   };
 
 /** The keys of the couplets whose counts are asked: up to 50 keys of 200 characters, comma separated (the server judges the keys). */
@@ -53,8 +69,9 @@ const keys = (value: string): boolean => value.length <= 50 * 201 && !/[\u0000-\
 /**
  * The only paths the web app's `/api` route passes on, each with its methods: the poet pictures (W2, no session) and, from W4, what the account, the
  * divan, the reactions and the scores use, which go with the session's access token, from W5 the avatar, the privacy settings and the deletion
- * of the account (only `DELETE /v1/me`: reading the account is `/auth/session`'s), and from W6 the friends: searching people, a person's profile, the friend
- * requests and friends, blocking and reporting, the leaderboard, the feed, the reactions' counts and the unread count (not unblocking, not the blocks list). The sign-in routes are not here (`/auth/*` makes them). Every part of the path is checked on its own and the address is built from the checked parts, so
+ * of the account (only `DELETE /v1/me`: reading the account is `/auth/session`'s), from W6 the friends: searching people, a person's profile, the friend
+ * requests and friends, blocking and reporting, the leaderboard, the feed, the reactions' counts and the unread count (not unblocking, not the blocks list), and from W7
+ * the messages: the chats, their messages and read marks, deleting a message, and the shared divans with their couplets and likes. The sign-in routes are not here (`/auth/*` makes them). Every part of the path is checked on its own and the address is built from the checked parts, so
  * nothing a visitor sends can make it point anywhere else on the server.
  */
 const rules: readonly Rule[] = [
@@ -90,6 +107,14 @@ const rules: readonly Rule[] = [
   { methods: ["GET"], path: exact("v1", "leaderboard", "global"), query: { cursor: plain }, auth: true },
   { methods: ["GET"], path: exact("v1", "feed"), query: { cursor: plain }, auth: true },
   { methods: ["GET"], path: exact("v1", "reactions", "counts"), query: { keys }, auth: true },
+  { methods: ["GET", "POST"], path: exact("v1", "conversations"), query: { cursor: plain }, auth: true },
+  { methods: ["GET", "POST"], path: identified(["v1", "conversations"], "messages"), query: { before: plain }, auth: true },
+  { methods: ["PUT"], path: identified(["v1", "conversations"], "read"), query: {}, auth: true },
+  { methods: ["DELETE"], path: identified(["v1", "messages"]), query: {}, auth: true },
+  { methods: ["GET", "POST"], path: exact("v1", "shared-divans"), query: { cursor: plain }, auth: true },
+  { methods: ["GET", "POST"], path: identified(["v1", "shared-divans"], "items"), query: { by: (value) => ["all", "me", "them"].includes(value), cursor: plain }, auth: true },
+  { methods: ["DELETE"], path: sharedItem(), query: {}, auth: true },
+  { methods: ["PUT", "DELETE"], path: sharedItem("like"), query: {}, auth: true },
 ];
 
 /** Where a request goes on the server (path and query), and whether it carries the session; undefined for anything not allowed. */

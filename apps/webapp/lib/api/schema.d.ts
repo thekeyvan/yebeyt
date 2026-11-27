@@ -2265,6 +2265,973 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My chats with the latest message and the unread count, newest first, 50 a page
+         * @description Only chats with at least one message, and not with someone blocked either way.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of chats. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConversationPage"];
+                    };
+                };
+                /** @description A malformed cursor. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Open the chat with someone (made if it does not exist)
+         * @description Allowed when the other person takes messages from everyone («بهم پیام بده: همه»), or from friends and we are friends, or already wrote to me in this chat; otherwise 403 messages_closed. If either of us blocked the other, the person is not found (404). The chat shows in the list once it has a message.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OpenConversationRequest"];
+                };
+            };
+            responses: {
+                /** @description The chat. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Conversation"];
+                    };
+                };
+                /** @description invalid_request: that is yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required, or messages_closed: they do not take messages from me. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No user with that username, or one of us blocked the other. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Messages of a chat, newest first
+         * @description Only for the two people of the chat. 50 at most per page (`limit`); `before` is the `nextBefore` of the previous page.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    before?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of messages. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessagePage"];
+                    };
+                };
+                /** @description A malformed id, cursor or limit. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such chat, or I am not in it, or one of us blocked the other. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Send a text or a couplet
+         * @description `kind` is `text` (`text`, 1–1000 characters) or `couplet` (`key` and an optional `note` of up to 200). Idempotent per sender and `clientId`: a repeat answers 200 with the first message. Blocks and «بهم پیام بده» are checked on every send (403 messages_closed); answering a person who already wrote in the chat is always allowed, unless blocked. 30 messages a minute per user. Both people get a live `message` event. A message to the demo friend «یه بیت» (`yebeyt`) gets one couplet back after 1–2 seconds, as a normal live `message` (at most one reply per 2 seconds and 30 a day per person; none while blocked).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SendMessageRequest"];
+                };
+            };
+            responses: {
+                /** @description This client id was already sent; the first message. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Message"];
+                    };
+                };
+                /** @description Sent. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Message"];
+                    };
+                };
+                /** @description Bad request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required, or messages_closed: blocked, or they do not take messages from me. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such chat, or I am not in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description conflict: the client id was used for a message in another chat. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Too many messages (30 a minute per user). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark a chat as read up to a message
+         * @description Never moves backwards. The other person gets a live `read` event (with my username) when the mark moved, which is their «دیده شد».
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MarkReadRequest"];
+                };
+            };
+            responses: {
+                /** @description Done. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such chat, or I am not in it, or the message is not in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/messages/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a message I sent
+         * @description Idempotent. The message stays in the chat as «deleted»; its text, couplet and note are removed. System lines cannot be deleted. Both people get a live `deleted` event.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description A malformed id. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description forbidden: not my message. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such message, or I am not in its chat. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shared-divans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My shared divans with their counts, newest first, 50 a page
+         * @description Not including divans with someone blocked either way.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of divans. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SharedDivanPage"];
+                    };
+                };
+                /** @description A malformed cursor. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Open the divan I share with a friend (made if it does not exist)
+         * @description Only between friends (403 forbidden otherwise). If either of us blocked the other, the person is not found (404).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OpenSharedDivanRequest"];
+                };
+            };
+            responses: {
+                /** @description The divan. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SharedDivan"];
+                    };
+                };
+                /** @description invalid_request: that is yourself. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required, or forbidden: we are not friends. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No user with that username, or one of us blocked the other. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shared-divans/{id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The couplets of a shared divan, newest first, 50 a page
+         * @description `by` keeps the ones added by me (`me`), by them (`them`) or all (default). `counts` always count the whole divan. Stays readable if we stop being friends.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                    by?: "me" | "them" | "all";
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of couplets. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SharedDivanItemPage"];
+                    };
+                };
+                /** @description A malformed id, cursor or `by`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such divan, or I am not in it, or one of us blocked the other. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Add a couplet
+         * @description Only while we are friends. Puts a system line `{ event: "divan_add", key }` in our chat (made if there is none; it ignores «بهم پیام بده» because we are friends), and both of us get live `message` and `divan` events. Adding a couplet that is already there answers 200 with the item that is there, and adds nothing. 60 a minute per user.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddSharedDivanItemRequest"];
+                };
+            };
+            responses: {
+                /** @description Already in the divan. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SharedDivanItem"];
+                    };
+                };
+                /** @description Added. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SharedDivanItem"];
+                    };
+                };
+                /** @description Bad request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required, or forbidden: we are not friends any more. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such divan, or I am not in it, or one of us blocked the other. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Too many requests (60 a minute per user). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shared-divans/{id}/items/{itemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a couplet I added
+         * @description Only the person who added it. Its likes go with it. Both people get a live `divan.removed` event (see the README); the chat line from when it was added stays.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    itemId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description A malformed id. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description forbidden: they added it; or username_required. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such divan or couplet, or I am not in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shared-divans/{id}/items/{itemId}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Like a couplet of the shared divan
+         * @description Idempotent. Either of the two people may like any couplet in it.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    itemId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The couplet with the likes now. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SharedDivanItem"];
+                    };
+                };
+                /** @description A malformed id. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such divan or couplet, or I am not in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /**
+         * Take back my like
+         * @description Idempotent. Either of the two people may like any couplet in it.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    itemId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The couplet with the likes now. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SharedDivanItem"];
+                    };
+                };
+                /** @description A malformed id. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required: set a username first. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such divan or couplet, or I am not in it. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/scores": {
         parameters: {
             query?: never;
@@ -2646,6 +3613,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddSharedDivanItemRequest: {
+            /**
+             * @description <poemPath>#<coupletIndex>
+             * @example /hafez/ghazal/sh3#0
+             */
+            key: string;
+            note?: string;
+        };
         AppleSignInRequest: {
             identityToken: string;
             authorizationCode?: string;
@@ -2667,6 +3642,43 @@ export interface components {
             accessory: string;
             background: string;
         } | null;
+        ChatPerson: components["schemas"]["PersonShort"] & {
+            /** @description Whether this person can be invited to a game; when false an invitation is skipped as `not_found`, so leave them out of invite pickers. */
+            canPlay: boolean;
+            /** @description Connected right now; null when they do not let others see it («آنلاین» off). */
+            online: boolean | null;
+        };
+        Conversation: {
+            /** Format: uuid */
+            id: string;
+            other: components["schemas"]["ChatPerson"];
+        };
+        ConversationLast: {
+            /** @enum {string} */
+            kind: "text" | "couplet" | "system" | "game";
+            text: string | null;
+            /** @description A couplet message's couplet key; the app shows its first hemistich. */
+            key: string | null;
+            note: string | null;
+            deleted: boolean;
+            /** Format: date-time */
+            at: string;
+            fromMe: boolean;
+            /** @description A system or game message's `payload.event` (`divan_add`, `game_invite`, …); null for texts, couplets and deleted messages. */
+            event: string | null;
+        };
+        ConversationListItem: {
+            /** Format: uuid */
+            id: string;
+            other: components["schemas"]["ChatPerson"];
+            last: components["schemas"]["ConversationLast"];
+            unread: number;
+        };
+        ConversationPage: {
+            items: components["schemas"]["ConversationListItem"][];
+            /** @description Pass as `cursor` for the next page; null on the last page. */
+            nextCursor: string | null;
+        };
         DailyRequest: {
             /**
              * @description A Tehran calendar day, yyyy-mm-dd.
@@ -2832,6 +3844,46 @@ export interface components {
             /** @enum {number} */
             demoteCount: 5;
         };
+        MarkReadRequest: {
+            /** Format: uuid */
+            messageId: string;
+        };
+        Message: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            conversationId: string;
+            /** @enum {string} */
+            kind: "text" | "couplet" | "system" | "game";
+            fromMe: boolean;
+            /** @description `text` messages only. */
+            text: string | null;
+            /**
+             * @description `couplet` messages only: the couplet to show.
+             * @example /hafez/ghazal/sh3#0
+             */
+            key: string | null;
+            /** @description `couplet` messages only: the optional note that came with it. */
+            note: string | null;
+            /** @description `system` and `game` messages: `{ event, ... }`, e.g. `{ event: "divan_add", key }`. */
+            payload: {
+                [key: string]: unknown;
+            } | null;
+            /** @description The sender deleted it; text, key, note and payload are then null. */
+            deleted: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        MessagePage: {
+            items: components["schemas"]["Message"][];
+            /** @description Pass as `before` for older messages; null at the start of the chat. */
+            nextBefore: string | null;
+            /**
+             * Format: uuid
+             * @description The last message the other person has read («دیده شد» up to it); null if none.
+             */
+            otherReadMessageId: string | null;
+        };
         MyReactions: {
             items: {
                 /**
@@ -2846,6 +3898,14 @@ export interface components {
             }[];
             /** @description Pass as `cursor` for the next page; null on the last page. */
             nextCursor: string | null;
+        };
+        OpenConversationRequest: {
+            /** @example hafez_fan */
+            username: string;
+        };
+        OpenSharedDivanRequest: {
+            /** @example hafez_fan */
+            username: string;
         };
         PersonShort: {
             username: string;
@@ -2956,6 +4016,30 @@ export interface components {
             week: string;
             weekPoints: number;
         };
+        SendMessageRequest: {
+            /**
+             * Format: uuid
+             * @description Made by the phone for each message; sending it again returns the same message, so a retry never doubles it.
+             */
+            clientId: string;
+            /** @enum {string} */
+            kind: "text";
+            text: string;
+        } | {
+            /**
+             * Format: uuid
+             * @description Made by the phone for each message; sending it again returns the same message, so a retry never doubles it.
+             */
+            clientId: string;
+            /** @enum {string} */
+            kind: "couplet";
+            /**
+             * @description <poemPath>#<coupletIndex>
+             * @example /hafez/ghazal/sh3#0
+             */
+            key: string;
+            note?: string;
+        };
         Session: {
             /** @description JWT, valid 15 minutes. */
             accessToken: string;
@@ -2973,6 +4057,45 @@ export interface components {
         SetUsernameRequest: {
             /** @example hafez_fan */
             username: string;
+        };
+        SharedDivan: {
+            /** Format: uuid */
+            id: string;
+            other: components["schemas"]["PersonShort"];
+            counts: components["schemas"]["SharedDivanCounts"];
+        };
+        SharedDivanCounts: {
+            total: number;
+            /** @description Added by me. */
+            mine: number;
+            /** @description Added by them. */
+            theirs: number;
+        };
+        SharedDivanItem: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description <poemPath>#<coupletIndex>
+             * @example /hafez/ghazal/sh3#0
+             */
+            key: string;
+            note: string | null;
+            addedByMe: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            likedByMe: boolean;
+            likedByThem: boolean;
+        };
+        SharedDivanItemPage: {
+            items: components["schemas"]["SharedDivanItem"][];
+            /** @description Pass as `cursor` for the next page; null on the last page. */
+            nextCursor: string | null;
+            counts: components["schemas"]["SharedDivanCounts"];
+        };
+        SharedDivanPage: {
+            items: components["schemas"]["SharedDivan"][];
+            /** @description Pass as `cursor` for the next page; null on the last page. */
+            nextCursor: string | null;
         };
         Stats: {
             totalPoints: number;
