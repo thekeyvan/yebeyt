@@ -8,12 +8,9 @@ Only what is still open. These need accounts or devices the agents don't have he
 
 ## 1b. The web app (app.yebeyt.com)
 
-All of iOS is on the web now (27 Nov), except sign-in, which waits for the two ids below. Without them the Apple and Google buttons say «ورود روی وب به‌زودی», so everything that needs an account (likes, scores, friends, messages, games with friends) can't be tried on the web yet.
+All of iOS is on the web now (27 Nov). Sign-in is on: the Apple Services ID `com.yebeyt.web` and the Google web client are set on Railway (27 Nov).
 
-- **Sign-in ids (they aren't secret; send them to the lead):**
-  - Apple: developer.apple.com → Identifiers → + → Services IDs. Identifier `com.yebeyt.web`, Sign in with Apple on, primary App ID `com.yebeyt.app`, domain `app.yebeyt.com`, return URL `https://app.yebeyt.com/auth/apple`.
-  - Google: console.cloud.google.com, the yebeyt project → Credentials → OAuth client ID, type *Web application*. Origin `https://app.yebeyt.com`, redirect `https://app.yebeyt.com/auth/google`.
-  - The lead then sets `NEXT_PUBLIC_APPLE_SERVICES_ID` and `NEXT_PUBLIC_GOOGLE_CLIENT_ID` on the webapp service, and adds the two ids to the server's `APPLE_BUNDLE_IDS` and `GOOGLE_CLIENT_IDS`. `APPLE_REDIRECT_URIS` is already set. Then the lead rebuilds, because the ids are baked in at build time.
+- **Sign in on the web** with Apple and with Google, on the phone and on a computer, then pick a username. Tell the lead if either fails, with a screenshot.
 - **Try it on your phone** (Safari, and add it to the home screen):
   - Onboarding on the first visit.
   - Today's couplet: keep it, or «رد کن» and then «برگردون».
@@ -92,6 +89,8 @@ Notes:
 - The privacy policy on the new website already has this clause: «اگه بازخورد بفرستی، متن، عکس صفحه و (اگه بخوای) فیلم صفحه‌ات رو می‌گیریم. اگه باگ گزارش کنی، اطلاعات فنی گوشی (نسخه‌ی اپ، مدل و نسخه‌ی سیستم، صفحه‌ای که بودی، چند صفحه‌ی قبلش، کدهای خطاهای اخیر) هم همراهشه. اگه وارد حساب شده باشی، گزارش به نام کاربریت ثبت می‌شه؛ اگه نه، بی‌نام. چیزی که جای دیگه تایپ کردی، پیام‌هات، شماره‌ات، آی‌پی یا مکانت هیچ‌وقت همراهش نمی‌ره.»
 
 ## Done
+
+- 27 Nov: Apple Services ID `com.yebeyt.web` and the Google web client `461381422799-lhn3…` made; set on the webapp and in the server's `APPLE_BUNDLE_IDS` and `GOOGLE_CLIENT_IDS`.
 
 - 26 Nov: Cloudflare records for app.yebeyt.com; Railway's certificate is valid.
 
