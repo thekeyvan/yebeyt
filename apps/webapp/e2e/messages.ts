@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { tabBar } from "./browse";
 
 /**
@@ -111,13 +111,3 @@ export async function serverUnread(page: Page, initial: { total: number; friendR
   await page.route("**/api/v1/me/unread", (route) => route.fulfill({ json: now }));
   return (next: Partial<typeof now>) => void Object.assign(now, next);
 }
-
-/**
- * Types into a field of a page that has only just come up. In WebKit, under load, text put in the first moment after a page loads is sometimes wiped again (the field is
- * empty again afterwards; the cause was not found, and the same page typed into later keeps it); so what was typed is looked at, and typed again until it stays.
- */
-export const typeIn = (field: Locator, text: string) =>
-  expect(async () => {
-    await field.fill(text);
-    await expect(field).toHaveValue(text, { timeout: 1000 });
-  }).toPass({ timeout: 15_000 });
