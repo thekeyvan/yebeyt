@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { secondsLeft } from "../lib/api/jwt";
 import { upstream } from "../lib/api/upstream";
 
 // The debug server's messages (Debug/MessagesBackend.swift): the answers the screenshots and the end-to-end tests rely on are what the app reads.
@@ -7,7 +8,7 @@ const spec = (account: object) => `debug-${Buffer.from(JSON.stringify(account)).
 
 async function signIn() {
   const answer = await upstream({ method: "POST", path: "/v1/auth/apple", body: JSON.stringify({ identityToken: spec({ id: crypto.randomUUID(), username: "niloofar" }), nonce: "n" }) });
-  return (await answer.json()) as { accessToken: string };
+  return (await answer.json()) as { accessToken: string; refreshToken: string };
 }
 
 async function account() {
@@ -18,6 +19,15 @@ async function account() {
   };
   return call;
 }
+
+describe("the debug session", () => {
+  it("has an access token that carries an expiry like the server's, so the live socket's token is handed out as it is", async () => {
+    const session = await signIn();
+    expect(secondsLeft(session.accessToken)).toBeGreaterThan(800);
+    const refreshed = (await (await upstream({ method: "POST", path: "/v1/auth/refresh", credential: session.refreshToken, body: JSON.stringify({ refreshToken: session.refreshToken }) })).json()) as { accessToken: string };
+    expect(secondsLeft(refreshed.accessToken)).toBeGreaterThan(800); // a refreshed one too
+  });
+});
 
 describe("the debug server's chats", () => {
   it("the inbox has the five chats of the boards, newest first, with the unread ones and the badge's total", async () => {

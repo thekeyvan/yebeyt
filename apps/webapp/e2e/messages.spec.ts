@@ -367,6 +367,7 @@ test.describe("the shared divan", () => {
   test("«+» adds a couplet through the picker, and a live one of hers comes in at the top", async ({ page }) => {
     const live = await fakeLive(page);
     await openSignedIn(page, "/messages/sara.ghazal/divan");
+    await expect(page.getByTestId("shared-item-i1")).toBeVisible(); // the divan is read: adding to it needs it
     await page.getByTestId("add-to-divan").click();
     const picker = page.getByRole("dialog", { name: "یه بیت اضافه کن" });
     await picker.getByRole("searchbox").fill("اگر آن ترک");

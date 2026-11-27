@@ -35,13 +35,16 @@ export const takenUsernames = ["sara", "sara.ghazal", "aryan", "hafez", "niloofa
 
 const encode = (spec: Spec): string => Buffer.from(JSON.stringify(spec)).toString("base64url");
 
+/** The access token of a debug session: like the server's JWT it carries an expiry (`exp`, in 15 minutes) and has three parts, so the door treats it as one (`POST /auth/live` hands it out until a minute is left). */
+const accessToken = (spec: Spec): string => `debug-access.${encode({ ...spec, exp: Math.floor(Date.now() / 1000) + 900 } as Spec)}.signature`;
+
 const isDebugToken = (token: unknown): token is string => typeof token === "string" && token.startsWith("debug-");
 
 /** The session of a debug sign-in; the access token carries who it is, so the server needs no table of sessions. */
 function debugSession(given: Partial<Spec>): Response {
   const spec: Spec = { id: crypto.randomUUID(), username: null, displayName: null, provider: "apple", syncFails: false, ...given };
   deleted.delete(spec.id); // signing in again after a deletion makes a new account
-  return Response.json({ accessToken: `debug-access.${encode(spec)}`, refreshToken: `debug-refresh.${encode(spec)}`, user: accountOf(spec).user });
+  return Response.json({ accessToken: accessToken(spec), refreshToken: `debug-refresh.${encode(spec)}`, user: accountOf(spec).user });
 }
 
 function accountOf(spec: Spec): Account {
@@ -85,7 +88,7 @@ function stubAnswer({ method, path, credential, body }: Call): Response {
 
   switch (route) {
     case "POST /v1/auth/refresh":
-      return Response.json({ accessToken: `debug-access.${encode(account.spec)}`, refreshToken: `debug-refresh.${encode(account.spec)}`, user: account.user });
+      return Response.json({ accessToken: accessToken(account.spec), refreshToken: `debug-refresh.${encode(account.spec)}`, user: account.user });
     case "POST /v1/auth/logout":
       return new Response(null, { status: 204 });
     case "GET /v1/me":
