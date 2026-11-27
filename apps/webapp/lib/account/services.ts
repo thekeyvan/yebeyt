@@ -8,6 +8,7 @@ import { liveSockets } from "../messages/liveBrowser";
 import { fetchLiveToken } from "../messages/liveToken";
 import { CoupletResolver } from "../messages/resolver";
 import { poetryStore } from "../poetry/browser";
+import { FriendGames } from "../play/friendGames";
 import { AvatarStore } from "../me/avatarStore";
 import { PrivacyStore } from "../me/privacyStore";
 import { Taste } from "../onboarding/taste";
@@ -51,6 +52,10 @@ function build() {
   const avatar = new AvatarStore(localStorage, session, api);
   const friends = new FriendsCenter(session, api);
   const messages = new MessagesCenter({ friends, api, sockets: liveSockets, token: fetchLiveToken });
+  const games = new FriendGames({ api, me: () => session.user?.username ?? undefined });
+  games.sendLive = (text) => messages.sendLive(text);
+  messages.onLive = (event) => games.handle(event);
+  messages.onConnected = () => void games.reconnected();
   const data = { marks, stats, reactions, scores, divan, privacy, avatar, friends, myStats };
   return {
     session,
@@ -68,6 +73,7 @@ function build() {
     avatar,
     friends,
     messages,
+    games,
     resolver: new CoupletResolver(poetryStore),
     taste: new Taste(localStorage),
     account: new AccountModel(session, stats, source, api),

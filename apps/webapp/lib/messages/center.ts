@@ -36,6 +36,10 @@ export class MessagesCenter extends Store<State> {
   readonly friends: FriendsCenter;
   /** Shows a line («<name> درخواستت رو قبول کرد»). */
   onToast?: (line: string) => void;
+  /** Every event after the messages have seen it: the games with friends take theirs from here (`MessagesCenter.onLive`). */
+  onLive?: (event: LiveEvent) => void;
+  /** The socket is ready (after every connect): events were missed while it was closed. */
+  onConnected?: () => void;
   private readonly chats = new Map<string, ChatModel>();
   private readonly chatsByUsername = new Map<string, ChatModel>();
   private readonly divans = new Map<string, SharedDivanModel>();
@@ -64,6 +68,7 @@ export class MessagesCenter extends Store<State> {
 
   /** Events are not kept while the socket is closed: every connect reads again what is on screen (a screen that comes back reads its own list when it appears). */
   async reconnected(): Promise<void> {
+    this.onConnected?.();
     await this.friends.refreshUnread();
     if (this.inbox.isVisible) await this.inbox.load();
     if (this.friends.requests.isVisible) await this.friends.requests.load();
@@ -96,6 +101,23 @@ export class MessagesCenter extends Store<State> {
     if (this.inbox.apply(event, viewing)) void this.inbox.load();
     for (const chat of this.chats.values()) chat.apply(event);
     for (const divan of this.divans.values()) divan.apply(event);
+    this.onLive?.(event);
+  }
+
+  /** Sends a text frame over the live socket (a duel's answer); false when it is not open or the frame is too big for the server. */
+  sendLive(text: string): boolean {
+    return this.live.send(text);
+  }
+
+  /** Sends a text to a person without leaving the screen: finds or makes the chat, then sends. A chat that is open gets the message from the live event. Returns the line to show when it could not be sent. */
+  async sendText(text: string, username: string): Promise<string | undefined> {
+    try {
+      const chat = await this.options.api.openConversation(username);
+      await this.options.api.sendMessage(chat.id, crypto.randomUUID(), { kind: "text", text });
+      return undefined;
+    } catch (error) {
+      return messageToast(error);
+    }
   }
 
   // MARK: Chats and divans

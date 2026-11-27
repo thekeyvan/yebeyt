@@ -14,16 +14,18 @@ const hiddenMs = 60_000;
  * and when they sign out, and forgets the chats then (the phone's `MessagesCenter.setActive`, in RootView). One socket per tab: it lives in the center, which is made once.
  */
 export function MessagesHost({ services }: { services: Services }) {
-  const { session, messages } = services;
+  const { session, messages, games } = services;
   const status = useStore(session)?.status;
   const signedIn = status === "in";
 
   useEffect(() => {
     messages.onToast = toast;
+    games.toast = toast;
     return () => {
       messages.onToast = undefined;
+      games.toast = undefined;
     };
-  }, [messages]);
+  }, [messages, games]);
 
   // In a debug build `sessionStorage.beytDivanSheet = "1"` opens the sheet of «به دیوان مشترک» for a Hafez couplet once someone is signed in (the phone's `-beytDivanSheet 1`).
   useEffect(() => {
@@ -33,7 +35,10 @@ export function MessagesHost({ services }: { services: Services }) {
   useEffect(() => {
     if (!signedIn) {
       // Only a person known to be signed out forgets the chats: while the session is still being asked about, a chat on screen has what was typed in it.
-      if (status === "guest") messages.reset();
+      if (status === "guest") {
+        messages.reset();
+        games.reset();
+      }
       return;
     }
     let away: ReturnType<typeof setTimeout> | undefined;
@@ -49,7 +54,7 @@ export function MessagesHost({ services }: { services: Services }) {
       document.removeEventListener("visibilitychange", change);
       messages.setActive(false);
     };
-  }, [messages, status]);
+  }, [messages, games, status]);
 
   return null;
 }

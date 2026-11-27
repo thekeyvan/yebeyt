@@ -16,7 +16,8 @@ import { BackButton } from "../library/chrome";
 import { toast } from "../ui/Toast";
 import { DayLabel } from "./Bubbles";
 import { ChatHeader } from "./ChatHeader";
-import { CoupletMessage, DivanLine, GameLine, PendingMessage, TextMessage } from "./ChatMessages";
+import { CoupletMessage, DivanLine, PendingMessage, TextMessage } from "./ChatMessages";
+import { GameCard } from "./GameCard";
 import { Composer } from "./Composer";
 import { NewMessageAnnouncer } from "./NewMessageAnnouncer";
 import { CoupletPickerSheet } from "./CoupletPickerSheet";
@@ -67,7 +68,7 @@ function Row({ entry, chat, services, hold }: { entry: Entry; chat: ChatModel; s
   if (message.kind === "text" || (message.kind === "couplet" && message.deleted)) return <TextMessage message={message} other={other} seen={seen} hold={() => hold.holdMessage(message)} />;
   if (message.kind === "couplet") return <CoupletMessage message={message} other={other} seen={seen} hold={() => hold.holdMessage(message)} />;
   if (message.kind === "system" && message.payload?.event === "divan_add") return <DivanLine message={message} other={other} />;
-  return <GameLine message={message} other={other} myId={myId} />;
+  return <GameCard message={message} other={other} myId={myId} />;
 }
 
 function ChatView({ chat, services }: { chat: ChatModel; services: Services }) {

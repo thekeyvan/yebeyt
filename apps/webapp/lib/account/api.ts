@@ -1,6 +1,8 @@
 import type { components } from "../api/schema";
 import { friendsApi } from "../friends/api";
 import { messagesApi } from "../messages/api";
+import { playApi } from "../play/api";
+import { playStubHeaders } from "../play/debug";
 import { fromWire, toWire, type DivanItem } from "../reader/divan";
 
 export type User = components["schemas"]["User"];
@@ -85,7 +87,8 @@ export function createApi(onSignedOut: () => void = () => {}, send: Fetch = (...
       response = await send(`/api${path}${query}`, {
         method,
         credentials: "same-origin",
-        ...(options.body === undefined ? {} : { headers: { "content-type": "application/json" }, body: JSON.stringify(options.body) }),
+        headers: { ...playStubHeaders(), ...(options.body === undefined ? {} : { "content-type": "application/json" }) },
+        ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
       });
     } catch {
       throw new ApiError(0);
@@ -126,6 +129,7 @@ export function createApi(onSignedOut: () => void = () => {}, send: Fetch = (...
     stats: () => call<RemoteStats>("GET", "/v1/me/stats"),
     ...friendsApi(call),
     ...messagesApi(call),
+    ...playApi(call),
   };
 }
 

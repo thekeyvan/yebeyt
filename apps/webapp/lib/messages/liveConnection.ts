@@ -17,6 +17,9 @@ export function backoffMs(failures: number, jitter: () => number = () => 0.8 + M
   return Math.round(Math.min(30, 2 ** (Math.max(failures, 1) - 1)) * jitter() * 1000);
 }
 
+/** The server closes a socket that sends a frame of more than 4 KB (1009): the page never sends one. */
+export const maxFrameBytes = 4096;
+
 export type LiveState = "stopped" | "connecting" | "ready" | "evicted";
 
 type Outcome = { kind: "noToken"; error: unknown } | { kind: "lost"; wasReady: boolean; code?: number };
@@ -37,7 +40,7 @@ type Options = {
  * access token; the server answers `ready`. It reconnects with a growing wait; when the token has expired (close 4401, the server closes at its expiry) it asks
  * for a new one at once, which `/auth/live` makes by refreshing the session; when a sixth socket of the same person closed this one (4409) it stops until
  * the next `start()` after a `stop()` (the page coming back). Events are handed on as they come; they are not kept while the socket is closed, so `onReady`
- * (called after every connect) is where the stores read their lists again. A browser cannot send a ping: the server's are answered by the browser itself.
+ * (called after every connect) is where the stores read their lists again. `send` is for a duel's answers. A browser cannot send a ping: the server's are answered by the browser itself.
  */
 export class LiveConnection {
   private current: LiveState = "stopped";
@@ -66,6 +69,17 @@ export class LiveConnection {
     this.socket?.close();
     this.socket = undefined;
     this.current = "stopped";
+  }
+
+  /** Sends a text frame (a duel answer). False when the socket is not ready, or the frame is over the server's 4 KB, which would close the socket: nothing is sent then. */
+  send(text: string): boolean {
+    if (this.current !== "ready" || !this.socket || new TextEncoder().encode(text).length > maxFrameBytes) return false;
+    try {
+      this.socket.send(text);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private async loop(run: number): Promise<void> {
@@ -125,7 +139,14 @@ export class LiveConnection {
             this.options.onEvent(event);
           }
         },
-        close: (code) => resolve({ kind: "lost", wasReady: ready, code }),
+        close: (code) => {
+          // A lost socket sends nothing more, while the next try waits.
+          if (run === this.run && this.socket === socket) {
+            this.socket = undefined;
+            this.current = "connecting";
+          }
+          resolve({ kind: "lost", wasReady: ready, code });
+        },
       });
       this.socket = socket; // only the current run gets here: an old one returned above
       this.cancel = () => resolve({ kind: "lost", wasReady: ready });

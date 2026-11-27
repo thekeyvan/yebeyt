@@ -19,8 +19,6 @@ export const messageCopy = {
   newMessage: "پیام تازه",
   divanOpenFailed: "دیوان مشترک باز نشد",
   divanAddedByMe: "تو یه بیت به دیوان مشترک اضافه کردی",
-  /** What a game's button says until the games with friends are on the web (W8). */
-  soon: "به‌زودی روی وب",
 } as const;
 
 /** «سارا یه بیت به دیوان مشترک اضافه کرد» */

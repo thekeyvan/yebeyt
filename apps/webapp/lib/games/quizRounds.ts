@@ -24,6 +24,10 @@ function make(kind: QuizKind, couplets: readonly GameCouplet[], generator: Seede
 export const poetRound = (deck: GameDeck, poets: readonly LibraryPoet[], generator: SeededGenerator): QuizRound | undefined =>
   make("poet", deck.couplets, generator, (couplet) => poetQuestion(couplet, poets, generator));
 
+/** حدس شاعر with exactly these couplets, in this order (a challenge's round). */
+export const poetItemsRound = (couplets: readonly GameCouplet[], poets: readonly LibraryPoet[], generator: SeededGenerator): QuizRound | undefined =>
+  QuizRound.of("poet", couplets.flatMap((couplet) => poetQuestion(couplet, poets, generator) ?? []));
+
 /** مصراع دوم: ten couplets of the deck, or of one poet only (a poet with few couplets gets a shorter round). */
 export function secondRound(deck: GameDeck, only: string | undefined, generator: SeededGenerator): QuizRound | undefined {
   const pool = only === undefined ? deck.couplets : deck.couplets.filter((couplet) => couplet.poetSlug === only);

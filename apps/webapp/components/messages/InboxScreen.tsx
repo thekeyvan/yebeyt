@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Services } from "../../lib/account/services";
 import { accountFeatures } from "../../lib/account/features";
@@ -12,10 +12,9 @@ import { Busy, Note } from "../friends/chrome";
 import { PencilIcon } from "../me/icons";
 import { RequestsRow } from "../friends/RequestsRow";
 import { RoundButton, SearchBox } from "../library/chrome";
-import { messageCopy } from "../../lib/messages/copy";
+import { lobbyURL } from "../../lib/play/routes";
 import { Button } from "../ui/Button";
 import { GamesIcon } from "../ui/icons";
-import { toast } from "../ui/Toast";
 import { useEndOfList } from "../friends/useEndOfList";
 import { InboxRow } from "./InboxRow";
 import { NewChatSheet } from "./NewChatSheet";
@@ -30,6 +29,7 @@ function Inbox({ services }: { services: Services }) {
   const { messages } = services;
   const { inbox } = messages;
   const account = useAccount();
+  const router = useRouter();
   const { rows, phase, query } = useStore(inbox)!;
   const signedIn = useStore(services.session)?.status === "in";
   const pathname = usePathname();
@@ -54,7 +54,7 @@ function Inbox({ services }: { services: Services }) {
       <header className="dotted-paper sticky top-0 z-20 flex flex-col gap-4 px-[18px] pt-[calc(env(safe-area-inset-top)+6px)] pb-2">
         <div className="flex items-center gap-3">
           <h1 className="flex-1 pt-1 text-[30px] text-ink">پیام‌ها</h1>
-          <RoundButton label="بازی با دوست" onClick={() => toast(messageCopy.soon)}>
+          <RoundButton label="بازی با دوست" onClick={() => account.require("games", () => router.push(lobbyURL()))}>
             <GamesIcon size={20} lineWidth={2.2} />
           </RoundButton>
           <button

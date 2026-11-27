@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ApiError, messageOf } from "../lib/account/api";
 import { chatTime, gameName, leagueLine, limited, messageCopy, messageToast, parseCoupletKey, reportReasons } from "../lib/messages/copy";
-import { gameLine } from "../lib/messages/gameLine";
 import { CoupletResolver } from "../lib/messages/resolver";
 import { chatName } from "../lib/messages/models";
 import type { Poem } from "../lib/poetry/models";
@@ -71,33 +70,6 @@ describe("the lead's lines (MessageCopyTests)", () => {
     expect(limited("abc", 3)).toBe("abc");
     expect(chatName({ username: "sara", displayName: "  " })).toBe("sara");
     expect(chatName(sara)).toBe("سارا");
-  });
-});
-
-describe("the game lines of a chat (ChatGameLineTests, until the games with friends are on the web)", () => {
-  const game = (fromMe: boolean, payload: Record<string, unknown>, kind: "game" | "system" = "game") => message("m1", { kind, fromMe, text: null, payload: payload as never });
-
-  it("an invitation of theirs has «بزن بریم», one of mine «ببین»", () => {
-    const invite = { event: "game_invite", gameId: "g1", kind: "mosh", code: "M4R9" };
-    expect(gameLine(game(false, invite), sara, "u1")).toEqual({ kind: "invite", text: "سارا دعوتت کرد به مشاعره", button: { title: "بزن بریم" } });
-    expect(gameLine(game(true, { ...invite, kind: "duel" }), sara, "u1")).toEqual({ kind: "invite", text: "دعوتش کردی به بازی رودررو", button: { title: "ببین" } });
-  });
-
-  it("the result of a challenge is a line", () => {
-    expect(gameLine(game(false, { event: "challenge_result", code: "7KQ2", game: "jigsaw", score: 7, seconds: 90 }), sara, "u1")).toEqual({ kind: "line", text: "سارا توی چالشت ۷ از ۱۰ گرفت" });
-    expect(gameLine(game(true, { event: "challenge_result", score: 9 }), sara, "u1")).toEqual({ kind: "line", text: "توی چالش سارا ۹ از ۱۰ گرفتی" });
-  });
-
-  it("a game that ended is a line with who won", () => {
-    const ended = (by?: string) => game(false, { event: "game_ended", gameId: "g1", kind: "mosh", reason: "timeout", ...(by ? { by } : {}) }, "system");
-    expect(gameLine(ended("u1"), sara, "u1")).toEqual({ kind: "line", text: "مشاعره با سارا تموم شد · بردی!" });
-    expect(gameLine(ended("u2"), sara, "u1")).toEqual({ kind: "line", text: "مشاعره با سارا تموم شد · سارا برد" });
-    expect(gameLine(ended(), sara, "u1")).toEqual({ kind: "line", text: "مشاعره با سارا تموم شد · مساوی" });
-  });
-
-  it("other messages are not game lines", () => {
-    expect(gameLine(message("m1", { text: "سلام" }), sara, "u1")).toBeUndefined();
-    expect(gameLine(game(false, { event: "something_new" }), sara, "u1")).toBeUndefined();
   });
 });
 

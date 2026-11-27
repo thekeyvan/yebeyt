@@ -27,7 +27,7 @@ describe("what the /api door lets through for messages (W7)", () => {
     expect(route("DELETE", `v1/shared-divans/${id}/items/${item}/like`)?.path).toBe(`/v1/shared-divans/${id}/items/${item}/like`);
   });
 
-  it("lets nothing else of messages through: no other method, no sub-path, no game or admin route", () => {
+  it("lets nothing else of messages through: no other method, no sub-path, no live or admin route", () => {
     for (const [method, path] of [
       ["PUT", "v1/conversations"], ["DELETE", "v1/conversations"], ["GET", `v1/conversations/${id}`], ["DELETE", `v1/conversations/${id}`], ["PUT", `v1/conversations/${id}/messages`],
       ["DELETE", `v1/conversations/${id}/messages`], ["GET", `v1/conversations/${id}/read`], ["POST", `v1/conversations/${id}/read`], ["DELETE", `v1/conversations/${id}/read`],
@@ -35,7 +35,7 @@ describe("what the /api door lets through for messages (W7)", () => {
       ["PUT", "v1/shared-divans"], ["DELETE", "v1/shared-divans"], ["GET", `v1/shared-divans/${id}`], ["DELETE", `v1/shared-divans/${id}`], ["PUT", `v1/shared-divans/${id}/items`],
       ["DELETE", `v1/shared-divans/${id}/items`], ["GET", `v1/shared-divans/${id}/items/${item}`], ["PUT", `v1/shared-divans/${id}/items/${item}`], ["POST", `v1/shared-divans/${id}/items/${item}`],
       ["GET", `v1/shared-divans/${id}/items/${item}/like`], ["POST", `v1/shared-divans/${id}/items/${item}/like`], ["PUT", `v1/shared-divans/${id}/items/${item}/other`],
-      ["GET", "v1/games"], ["POST", "v1/games"], ["GET", "v1/live"], ["GET", "v1/admin/reports"],
+      ["GET", "v1/live"], ["GET", "v1/admin/reports"],
     ] as const) {
       expect(route(method, path), `${method} ${path}`).toBeUndefined();
     }

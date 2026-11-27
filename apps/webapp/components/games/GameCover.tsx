@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { gameInFront } from "../../lib/games/entry";
 import { isGamePage, type PlayableKind } from "../../lib/games/kinds";
@@ -10,6 +10,7 @@ import { deckStart, type JigsawStart } from "../../lib/games/jigsawStart";
 import { leaveGame } from "../../lib/games/leave";
 import { canGoBack } from "../../lib/nav";
 import { coverAway, coverDrop, coverRise, useVariant } from "../../lib/motion";
+import { RoundContext } from "../play/RoundContext";
 import { ConfirmSheet } from "../ui/ConfirmSheet";
 import { GameScreen } from "./GameScreen";
 
@@ -30,12 +31,23 @@ const GameContext = createContext<Game>({ requestClose: () => {}, leave: () => {
 
 export const useGame = (): Game => useContext(GameContext);
 
+/** A solo game in front of the tabs: `start` is where a جورچین round starts, `poet` the one a مصراع دوم round is of, `invite` the friends a challenge made from the round goes to. */
+export function GameCover({ kind, modal, start = deckStart, poet, invite }: { kind: PlayableKind; modal: boolean; start?: JigsawStart; poet?: string; invite?: readonly string[] }) {
+  return (
+    <GameLayer modal={modal}>
+      <RoundContext value={{ invite: invite ?? [] }}>
+        <GameScreen kind={kind} start={start} poet={poet} />
+      </RoundContext>
+    </GameLayer>
+  );
+}
+
 /**
  * A game in front of the tabs (Games/GameHost.swift): one layer, all of it, that rises from the bottom like the reader (the page under it and the
  * tab bar stay as they are) and drops when it closes. Opened inside the app (`modal`) it closes back to where it came from; opened by its link it is
  * just there (in a layer of the document's own), and closes to the games tab. Escape and the × close it, asking first when a round has started. The reader opens over it («کل شعر»).
  */
-export function GameCover({ kind, modal, start = deckStart, poet }: { kind: PlayableKind; modal: boolean; start?: JigsawStart; poet?: string }) {
+export function GameLayer({ modal, children }: { modal: boolean; children: ReactNode }) {
   const router = useRouter();
   const v = useVariant();
   const pathname = usePathname();
@@ -89,7 +101,7 @@ export function GameCover({ kind, modal, start = deckStart, poet }: { kind: Play
     >
       <div inert={reading} className="mx-auto h-full w-full max-w-[640px]">
         <GameContext value={{ requestClose, leave: close, setAsks, asking, active: !reading }}>
-          <GameScreen kind={kind} start={start} poet={poet} />
+          {children}
         </GameContext>
       </div>
       <ConfirmSheet open={asking} onOpenChange={setAsking} title={leaveGame.title} message={leaveGame.message} confirm={leaveGame.leave} cancel={leaveGame.stay} onConfirm={close} />

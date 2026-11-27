@@ -96,8 +96,11 @@ export const isPlayable = (kind: string): kind is PlayableKind => (playableKinds
 
 const pageOf = (kind: PlayableKind): string => `/games/${kind}`;
 
+/** The games with a friend and the board of a challenge have pages of their own: «بازی با دوست» (`/games/lobby`), a game by its id (`/games/mosh/<id>`, `/games/duel/<id>`) and a challenge by its code (`/c/<code>`). */
+const friendPage = /^\/(?:games\/lobby|games\/(?:mosh|duel)\/[A-Za-z0-9_-]+|c\/[0-9A-Za-z]{4})$/;
+
 /** Whether the path is a game's page: it covers the tabs, as the reader does. */
-export const isGamePage = (pathname: string): boolean => playableKinds.some((kind) => pageOf(kind) === pathname);
+export const isGamePage = (pathname: string): boolean => playableKinds.some((kind) => pageOf(kind) === pathname) || friendPage.test(pathname);
 
 /** مصراع دوم with the couplets of one poet only (from the poet's page): `/games/misra?poet=hafez`. */
 export const poetGameURL = (slug: string): string => `${pageOf("misra")}?${new URLSearchParams({ poet: slug })}`;
@@ -108,7 +111,7 @@ export function parsePoet(value: string | string[] | undefined): string | undefi
   return slug !== undefined && /^[A-Za-z0-9_-]+$/.test(slug) ? slug : undefined;
 }
 
-/** What a tap on the game does: opens its page, or (the games with a friend, which need the server) asks for an account. */
-export function opening(kind: GameKind): { page: string } | "account" {
-  return isPlayable(kind) ? { page: pageOf(kind) } : "account";
+/** What a tap on the game does: opens its page, or (the games with a friend, which need the server) asks for an account and then opens «بازی با دوست» with that game chosen (`GameKind.route`). */
+export function opening(kind: GameKind): { page: string } | { lobby: "mosh" | "duel" } {
+  return isPlayable(kind) ? { page: pageOf(kind) } : { lobby: kind as "mosh" | "duel" };
 }

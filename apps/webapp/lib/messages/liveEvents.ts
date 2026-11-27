@@ -1,7 +1,8 @@
 import type { PersonShort } from "../friends/models";
+import { decodeGameEvent, type GameEvent } from "../play/liveGameEvents";
 import { known, type Message, type SharedDivanItem } from "./models";
 
-/** What the server sends over `/v1/live` that this app uses (Messages/LiveSocket.swift `LiveEvent`). The games' events are `other` until the games with friends come to the web (W8). */
+/** What the server sends over `/v1/live` that this app uses (Messages/LiveSocket.swift `LiveEvent`). The games' events are `GameEvent`s (`lib/play/liveGameEvents.ts`). */
 export type LiveEvent =
   | { type: "ready" }
   | { type: "message"; message: Message }
@@ -15,6 +16,7 @@ export type LiveEvent =
   | { type: "friend.request"; from: PersonShort }
   /** Someone accepted the request I sent. */
   | { type: "friend.accepted"; from: PersonShort }
+  | GameEvent
   | { type: "other"; name: string };
 
 const isText = (value: unknown): value is string => typeof value === "string";
@@ -53,6 +55,6 @@ export function decodeLive(text: string): LiveEvent | undefined {
     case "friend.accepted":
       return isPerson(from) ? { type, from } : undefined;
     default:
-      return { type: "other", name: type };
+      return decodeGameEvent(type, frame) ?? { type: "other", name: type };
   }
 }

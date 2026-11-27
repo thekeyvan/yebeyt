@@ -1,7 +1,9 @@
 import { problem } from "../account/usernameRules";
 import type { Call } from "./bff";
 import { friendsAnswer, World, type Me } from "./stubFriends";
+import { playStubHeader } from "../play/debug";
 import { messagesAnswer, MessagesWorld } from "./stubMessages";
+import { playAnswer, PlayWorld } from "./stubPlay";
 
 // A server that answers for the debug sign-in (the phone's `-beytSignedIn 1`, which is answered on the phone): only in a dev build or one built with
 // NEXT_PUBLIC_DEV_PAGES=1 (`lib/dev.ts`; the switch is baked in at build time, so a variable set on a running server cannot turn it on), a session whose
@@ -20,6 +22,7 @@ type Account = {
   privacy: Record<string, unknown>;
   world: World;
   messages: MessagesWorld;
+  play: PlayWorld;
 };
 
 // On `globalThis`, so that the routes of the app, which may be built apart, share one set of accounts.
@@ -51,7 +54,7 @@ function accountOf(spec: Spec): Account {
   let account = accounts.get(spec.id);
   if (!account) {
     const user = { id: spec.id, username: spec.username, displayName: spec.displayName, avatar: null, usernameChangedAt: null, createdAt: "2026-11-20T08:00:00.000Z", providers: [spec.provider] };
-    account = { spec, user, divan: new Map(), reactions: new Map(), rounds: new Set(), points: 0, progress: { points: 0, streakDays: 0, streakLastDate: null, bestByGame: {} }, privacy: { ...privacyDefaults }, world: new World(), messages: new MessagesWorld() };
+    account = { spec, user, divan: new Map(), reactions: new Map(), rounds: new Set(), points: 0, progress: { points: 0, streakDays: 0, streakLastDate: null, bestByGame: {} }, privacy: { ...privacyDefaults }, world: new World(), messages: new MessagesWorld(), play: new PlayWorld() };
     accounts.set(spec.id, account);
   }
   return account;
@@ -74,6 +77,15 @@ export function debugAnswer(call: Call): Response | undefined {
   const token = call.path === "/v1/auth/google" ? given.idToken : call.path === "/v1/auth/apple" ? given.identityToken : undefined;
   if (isDebugToken(token)) return debugSession(JSON.parse(Buffer.from(token.slice("debug-".length), "base64url").toString()));
   return isDebugToken(call.credential) ? stubAnswer(call) : undefined;
+}
+
+/** What a visitor with no session that asks for the stub (`x-beyt-play-stub`, from `sessionStorage.beytPlayStub = "1"`: the phone's `-beytPlayStub 1`) is answered for games and challenges. */
+const guestPlay: PlayWorld = ((globalThis as { __beytGuestPlay?: PlayWorld }).__beytGuestPlay ??= new PlayWorld());
+
+export function playStubAnswer({ method, path, credential, body, headers }: Call): Response | undefined {
+  if (headers?.[playStubHeader] !== "1" || isDebugToken(credential)) return undefined;
+  const url = new URL(path, "http://stub");
+  return playAnswer({ method, pathname: url.pathname, given: body ? (JSON.parse(body) as Record<string, any>) : {}, hasToken: credential !== undefined, world: guestPlay });
 }
 
 /** Answers `call` as the server would, for an account that signed in with the debug sign-in. */
@@ -167,6 +179,7 @@ function stubAnswer({ method, path, credential, body }: Call): Response {
       return Response.json({ totalPoints: account.points, weekPoints: account.points, streakDays: account.progress.streakDays, league: { tier: 1 } });
     default:
       return (
+        playAnswer({ method, pathname: url.pathname, given, hasToken: true, world: account.play }) ??
         messagesAnswer({ method, pathname: url.pathname, search: searchParams, given, world: account.messages, friends: account.world }) ??
         friendsAnswer({ method, pathname: url.pathname, search: searchParams, given, world: account.world, me: account.user as Me, mine: new Set(account.reactions.keys()) }) ??
         error(404, "not_found")

@@ -187,6 +187,62 @@ describe("the proxy turns the session cookie into a Bearer token", () => {
   });
 });
 
+describe("a challenge may be read and answered without a session (W8)", () => {
+  it("reads a challenge with no session for a guest, and with the session of someone signed in", async () => {
+    const up = upstream(() => json(200, { score: 8 }));
+    const bff = createBff(up.send);
+    expect((await proxy(bff, request("GET", "/api/v1/challenges/7KQ2"))).status).toBe(200);
+    expect((await proxy(bff, request("GET", "/api/v1/challenges/7KQ2", { cookie: signedIn }))).status).toBe(200);
+    expect(up.calls).toEqual([{ method: "GET", path: "/v1/challenges/7KQ2" }, { method: "GET", path: "/v1/challenges/7KQ2", credential: "access-1" }]);
+  });
+
+  it("posts a result with the session when there is one", async () => {
+    const up = upstream(() => json(201, { id: "r1" }));
+    const response = await proxy(createBff(up.send), request("POST", "/api/v1/challenges/7KQ2/results", { cookie: signedIn, body: { score: 9, seconds: 80 } }));
+    expect(response.status).toBe(201);
+    expect(up.calls).toEqual([{ method: "POST", path: "/v1/challenges/7KQ2/results", credential: "access-1", body: '{"score":9,"seconds":80}' }]);
+  });
+
+  it("posts a guest's result with no credential, as a write from the page's own origin", async () => {
+    const up = upstream(() => json(201, { id: "r1" }));
+    const bff = createBff(up.send);
+    const response = await proxy(bff, request("POST", "/api/v1/challenges/7KQ2/results", { body: { score: 7, seconds: 90, name: "کیان" } }));
+    expect(response.status).toBe(201);
+    expect(up.calls).toEqual([{ method: "POST", path: "/v1/challenges/7KQ2/results", body: '{"score":7,"seconds":90,"name":"کیان"}' }]);
+    const foreign = await proxy(bff, request("POST", "/api/v1/challenges/7KQ2/results", { body: { score: 7, seconds: 90, name: "x" }, headers: { "sec-fetch-site": "cross-site" } }));
+    expect(foreign.status).toBe(403);
+    expect(up.calls).toHaveLength(1);
+  });
+
+  it("passes the server's refusal of a guest's result on, a 409 included", async () => {
+    const up = upstream(() => json(409, { error: "conflict" }));
+    const response = await proxy(createBff(up.send), request("POST", "/api/v1/challenges/7KQ2/results", { body: { score: 7, seconds: 90, name: "کیان" } }));
+    expect([response.status, await response.json()]).toEqual([409, { error: "conflict" }]);
+  });
+
+  it("signs out, as for any call with a session, when the session is refused for good", async () => {
+    const up = upstream((call) => (call.path === "/v1/auth/refresh" ? json(401, { error: "invalid_token" }) : json(401, { error: "unauthorized" })));
+    const response = await proxy(createBff(up.send), request("POST", "/api/v1/challenges/7KQ2/results", { cookie: signedIn, body: { score: 7, seconds: 90 } }));
+    expect(response.status).toBe(401);
+    expect(setCookies(response).map((line) => line.split(";")[0])).toEqual(["yb_access=", "yb_refresh="]);
+  });
+
+  it("sends the debug server's header only in a build with the debug pages, and only when the page asked for it", async () => {
+    const up = upstream(() => json(200, {}));
+    const bff = createBff(up.send);
+    const ask = () => proxy(bff, request("GET", "/api/v1/challenges/7KQ2", { headers: { "x-beyt-play-stub": "1" } }));
+    await ask();
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_DEV_PAGES", "");
+    await ask();
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_DEV_PAGES", "1");
+    await ask();
+    await proxy(bff, request("GET", "/api/v1/challenges/7KQ2"));
+    expect(up.calls.map((call) => call.headers)).toEqual([{ "x-beyt-play-stub": "1" }, undefined, { "x-beyt-play-stub": "1" }, undefined]);
+  });
+});
+
 describe("a 401 is refreshed once", () => {
   const refreshing = () =>
     upstream((call) => {

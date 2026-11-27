@@ -1,20 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState, type KeyboardEvent } from "react";
 import type { ChatModel } from "../../lib/messages/chat";
 import { feedbackPrivate } from "../../lib/feedbackPrivate";
 import { messageCopy } from "../../lib/messages/copy";
 import type { ChatPerson } from "../../lib/messages/models";
+import { lobbyURL } from "../../lib/play/routes";
 import { useStore } from "../../lib/library/browser";
 import { MessagesIcon } from "../ui/icons";
-import { toast } from "../ui/Toast";
 import { CoupletIcons } from "./CoupletIcons";
 
 const chip = "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-[7px] text-[13px] font-bold text-ink shadow-[0_2px_8px_rgba(20,17,43,0.14)]";
 
-/** «بیت بفرست», the two games with this friend (not for someone who can't play) and today's puzzle (Messages/ChatScreen.swift `quickActions`). Until the games with friends are on the web (W8) the two games say so. */
+/** «بیت بفرست», the two games with this friend (the lobby opens with them chosen; not for someone who can't play) and today's puzzle (Messages/ChatScreen.swift `quickActions`). */
 function QuickActions({ other, pick }: { other: ChatPerson; pick: () => void }) {
+  const router = useRouter();
   return (
     <div className="-mx-4 flex gap-2 overflow-x-auto px-4 py-0.5 [scrollbar-width:none]">
       <button type="button" data-testid="quick-couplet" onClick={pick} className={chip}>
@@ -23,11 +25,11 @@ function QuickActions({ other, pick }: { other: ChatPerson; pick: () => void }) 
       </button>
       {other.canPlay !== false && (
         <>
-          <button type="button" data-testid="quick-mosh" onClick={() => toast(messageCopy.soon)} className={chip}>
+          <button type="button" data-testid="quick-mosh" onClick={() => router.push(lobbyURL({ game: "mosh", friend: other.username }))} className={chip}>
             <CoupletIcons.Arrows />
             مشاعره
           </button>
-          <button type="button" data-testid="quick-duel" onClick={() => toast(messageCopy.soon)} className={chip}>
+          <button type="button" data-testid="quick-duel" onClick={() => router.push(lobbyURL({ game: "duel", friend: other.username }))} className={chip}>
             <CoupletIcons.Games />
             بازی رودررو
           </button>

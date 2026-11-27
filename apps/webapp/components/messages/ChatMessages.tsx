@@ -2,15 +2,13 @@
 
 import Link from "next/link";
 import { messageCopy, chatTime, divanAdded } from "../../lib/messages/copy";
-import { gameLine } from "../../lib/messages/gameLine";
 import { chatName, type ChatPerson, type Message } from "../../lib/messages/models";
 import type { Pending } from "../../lib/messages/chat";
 import { SharedDivanIcon } from "../ui/icons";
-import { toast } from "../ui/Toast";
 import { Holdable, MessageMeta, PendingLine, TextBubble } from "./Bubbles";
 import { CoupletCard } from "./CoupletCard";
 
-const clock = (message: Pick<Message, "createdAt">) => chatTime.clock(new Date(message.createdAt));
+export const clock = (message: Pick<Message, "createdAt">) => chatTime.clock(new Date(message.createdAt));
 
 /** What a screen reader says of a bubble (`TextMessageView.spoken`): «سارا: سلام، ۹:۴۰» · «تو: سلام، ۹:۴۲، دیده شد». */
 const spoken = (who: string, body: string, time: string, seen = false): string => `${who}: ${body}، ${time}${seen ? `، ${messageCopy.seen}` : ""}`;
@@ -85,32 +83,5 @@ export function DivanLine({ message, other }: { message: Message; other: ChatPer
       </span>
       {text}
     </Link>
-  );
-}
-
-/** A game line of a chat: an invitation with its button, or a line (a game that ended, the result of a challenge). Until the games with friends are on the web (W8) a button says so (Messages/GameCardView.swift). */
-export function GameLine({ message, other, myId }: { message: Message; other: ChatPerson; myId: string | undefined }) {
-  const line = gameLine(message, other, myId);
-  if (!line) return null;
-  if (line.kind === "line") {
-    return (
-      <p data-testid={`game-line-${message.id}`} className="mx-auto rounded-full bg-white/80 px-3 py-[5px] text-xs text-muted">
-        {line.text}
-      </p>
-    );
-  }
-  const mine = message.fromMe;
-  return (
-    <div className={`flex w-full flex-col gap-1.5 ${mine ? "items-end" : "items-start"}`}>
-      <span className="text-xs text-muted">{`${mine ? "تو" : chatName(other)} · ${clock(message)}`}</span>
-      <div data-testid={`game-card-${message.id}`} className="flex w-[262px] max-w-full items-center gap-3 rounded-[22px] bg-white p-3.5 shadow-[0_3px_8px_rgba(20,17,43,0.14)]">
-        <span className="flex-1 text-[13px] font-bold text-ink">{line.text}</span>
-        {line.button && (
-          <button type="button" data-testid={`game-go-${message.id}`} onClick={() => toast(messageCopy.soon)} className="rounded-xl bg-lapis px-[13px] pt-[7px] pb-[3px] font-title text-base text-white">
-            {line.button.title}
-          </button>
-        )}
-      </div>
-    </div>
   );
 }

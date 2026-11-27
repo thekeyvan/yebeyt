@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { liveListenLoader, statsStore } from "../../lib/games/browser";
-import type { GameDeck } from "../../lib/games/couplet";
+import type { GameCouplet, GameDeck } from "../../lib/games/couplet";
 import { roundSeed } from "../../lib/games/debug";
 import { listenQuestions } from "../../lib/games/listenLoader";
 import { QuizRound } from "../../lib/games/quizRound";
-import { bookRound, poetRound, secondRound } from "../../lib/games/quizRounds";
+import { bookRound, poetItemsRound, poetRound, secondRound } from "../../lib/games/quizRounds";
 import { QuizSession } from "../../lib/games/quizSession";
 import type { QuizKind } from "../../lib/games/quizQuestion";
 import { SeededGenerator } from "../../lib/games/seeded";
@@ -15,6 +15,7 @@ import type { Library } from "../../lib/library/library";
 import { LoadFailed } from "../library/WithLibrary";
 import { GameLoading } from "./chrome";
 import { useGame } from "./GameCover";
+import { useRound } from "../play/RoundContext";
 import { QuizPlay } from "./QuizPlay";
 import { useRecitationFailed } from "./useListen";
 import { WithDeck } from "./WithDeck";
@@ -22,10 +23,10 @@ import { WithDeck } from "./WithDeck";
 /** The listen game asks Ganjoor for five poems' recitations; the others make their ten questions at once. */
 const listenQuestionCount = 5;
 
-async function makeRound(kind: QuizKind, deck: GameDeck, library: Library, poet: string | undefined, generator: SeededGenerator): Promise<QuizRound | null> {
+async function makeRound(kind: QuizKind, deck: GameDeck, library: Library, poet: string | undefined, generator: SeededGenerator, items?: readonly GameCouplet[]): Promise<QuizRound | null> {
   switch (kind) {
     case "poet":
-      return poetRound(deck, library.poets, generator) ?? null;
+      return (items ? poetItemsRound(items, library.poets, generator) : poetRound(deck, library.poets, generator)) ?? null;
     case "misra":
       return secondRound(deck, poet, generator) ?? null;
     case "book":
@@ -45,10 +46,11 @@ export function QuizScreen({ kind, poet }: { kind: QuizKind; poet?: string }) {
 
 function Round({ deck, kind, poet }: { deck: GameDeck; kind: QuizKind; poet?: string }) {
   const game = useGame();
+  const { answering } = useRound();
   const library = useLibraryData().value?.library;
   const seed = roundSeed();
   const { value: round, failed, retry } = useLoaded(
-    async () => (library ? makeRound(kind, deck, library, poet, seed === undefined ? SeededGenerator.random() : new SeededGenerator(seed)) : undefined),
+    async () => (library ? makeRound(kind, deck, library, poet, seed === undefined ? SeededGenerator.random() : new SeededGenerator(seed), answering?.items) : undefined),
     undefined,
     `${kind} ${poet} ${library !== undefined}`,
   );

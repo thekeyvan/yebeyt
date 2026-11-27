@@ -85,7 +85,7 @@ test.describe("the inbox", () => {
 });
 
 test.describe("a chat", () => {
-  test("Sara's: a couplet card with its note, my text «دیده شد», the game line and its button, and the quick actions", async ({ page }) => {
+  test("Sara's: a couplet card with its note, my text «دیده شد», the game card and the quick actions", async ({ page }) => {
     await openSignedIn(page, sara);
     await expectRightToLeftAndFits(page);
     await expect(page.getByTestId("chat-name")).toHaveText("سارا");
@@ -100,10 +100,8 @@ test.describe("a chat", () => {
     await expect(page.getByTestId("bubble-m3")).toContainText("وای چقدر قشنگه! ممنون");
     await expect(page.getByTestId("bubble-m3")).toContainText("دیده شد");
     await expect(page.getByTestId("seen")).toHaveCount(1);
-    await expect(page.getByTestId("game-card-g1")).toContainText("سارا دعوتت کرد به مشاعره");
+    await expect(page.getByTestId("game-card-g1")).toContainText("مشاعره با سارا"); // the game has started: the card of the board (the games with friends are in play.spec.ts)
     for (const chip of ["quick-couplet", "quick-mosh", "quick-duel", "quick-daily"]) await expect(page.getByTestId(chip)).toBeVisible();
-    await page.getByTestId("game-go-g1").click(); // the games with friends come to the web later
-    await expect(toasts(page)).toContainText("به‌زودی روی وب");
     // The chat fits above its composer, and the page does not scroll.
     const composer = (await page.getByTestId("composer").boundingBox())!;
     expect(composer.y + composer.height).toBeLessThanOrEqual(page.viewportSize()!.height);

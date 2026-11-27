@@ -22,8 +22,8 @@ type Rule = {
   path: (segments: string[]) => string | undefined;
   /** The query names passed on, each with how its value is checked (`plain` when not named). */
   query: Readonly<Record<string, (value: string) => boolean>>;
-  /** Whether the session's access token goes with it: false for what a guest may ask. */
-  auth: boolean;
+  /** Whether the session's access token goes with it: false for what a guest may ask; "optional" for what both may do (a result on a challenge is the account's, or a guest's with a name): the token goes when there is a session. */
+  auth: boolean | "optional";
 };
 
 const exact =
@@ -63,6 +63,12 @@ const sharedItem =
     return fits && divan !== undefined && item !== undefined && id.test(divan) && id.test(item) ? `/${[first, second, divan, items, item, ...suffix].join("/")}` : undefined;
   };
 
+/** The code of a challenge: four letters or digits (the server reads it in any case). */
+const code = /^[0-9A-Za-z]{4}$/;
+
+/** `/v1/challenges/<code><suffix…>`: the code is one part of the path, checked. */
+const challenge = named(code);
+
 /** The keys of the couplets whose counts are asked: up to 50 keys of 200 characters, comma separated (the server judges the keys). */
 const keys = (value: string): boolean => value.length <= 50 * 201 && !/[\u0000-\u001f\u007f]/.test(value);
 
@@ -71,7 +77,8 @@ const keys = (value: string): boolean => value.length <= 50 * 201 && !/[\u0000-\
  * divan, the reactions and the scores use, which go with the session's access token, from W5 the avatar, the privacy settings and the deletion
  * of the account (only `DELETE /v1/me`: reading the account is `/auth/session`'s), from W6 the friends: searching people, a person's profile, the friend
  * requests and friends, blocking and reporting, the leaderboard, the feed, the reactions' counts and the unread count (not unblocking, not the blocks list), and from W7
- * the messages: the chats, their messages and read marks, deleting a message, and the shared divans with their couplets and likes. The sign-in routes are not here (`/auth/*` makes them). Every part of the path is checked on its own and the address is built from the checked parts, so
+ * the messages: the chats, their messages and read marks, deleting a message, and the shared divans with their couplets and likes, and from W8 the games with friends
+ * (making one, reading, joining, a move, giving up, my list; not joining by code) and the challenges (making one; reading one and leaving a result need no session: they go with it when there is one, and a guest's result has the name). The sign-in routes are not here (`/auth/*` makes them). Every part of the path is checked on its own and the address is built from the checked parts, so
  * nothing a visitor sends can make it point anywhere else on the server.
  */
 const rules: readonly Rule[] = [
@@ -115,10 +122,19 @@ const rules: readonly Rule[] = [
   { methods: ["GET", "POST"], path: identified(["v1", "shared-divans"], "items"), query: { by: (value) => ["all", "me", "them"].includes(value), cursor: plain }, auth: true },
   { methods: ["DELETE"], path: sharedItem(), query: {}, auth: true },
   { methods: ["PUT", "DELETE"], path: sharedItem("like"), query: {}, auth: true },
+  { methods: ["POST"], path: exact("v1", "games"), query: {}, auth: true },
+  { methods: ["GET"], path: identified(["v1", "games"]), query: {}, auth: true },
+  { methods: ["POST"], path: identified(["v1", "games"], "join"), query: {}, auth: true },
+  { methods: ["POST"], path: identified(["v1", "games"], "moves"), query: {}, auth: true },
+  { methods: ["POST"], path: identified(["v1", "games"], "resign"), query: {}, auth: true },
+  { methods: ["GET"], path: exact("v1", "me", "games"), query: {}, auth: true },
+  { methods: ["POST"], path: exact("v1", "challenges"), query: {}, auth: true },
+  { methods: ["GET"], path: challenge(["v1", "challenges"]), query: {}, auth: "optional" },
+  { methods: ["POST"], path: challenge(["v1", "challenges"], "results"), query: {}, auth: "optional" },
 ];
 
 /** Where a request goes on the server (path and query), and whether it carries the session; undefined for anything not allowed. */
-export function upstreamRoute(method: string, segments: string[], search: URLSearchParams): { path: string; auth: boolean } | undefined {
+export function upstreamRoute(method: string, segments: string[], search: URLSearchParams): { path: string; auth: boolean | "optional" } | undefined {
   for (const rule of rules) {
     if (!rule.methods.includes(method)) continue;
     const path = rule.path(segments);

@@ -19,7 +19,7 @@ import { GameIcon } from "./GameIcon";
 import { ListenCard } from "./ListenCard";
 import { ProgressDots } from "./ProgressDots";
 import { BookOption, HemistichOption, PoetOption, QuizCoupletCard } from "./QuizViews";
-import { RoundEnd } from "./RoundEnd";
+import { GameEnd } from "../play/GameEnd";
 import { useListen, useRecitationFailed } from "./useListen";
 
 /** «+۳۰ · ۷ ثانیه»; a wrong answer is not counted. */
@@ -58,7 +58,7 @@ export function QuizPlay({ session }: { session: QuizSession }) {
 
   useRecitationFailed(failed);
 
-  if (session.finished) return <RoundEnd summary={quizSummary(round)} />;
+  if (session.finished) return <GameEnd summary={quizSummary(round)} />;
   const answer = round.lastAnswer;
   const question = round.current;
   return (

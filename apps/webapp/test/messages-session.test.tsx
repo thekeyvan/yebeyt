@@ -20,6 +20,7 @@ vi.mock("../components/messages/NewChatSheet", () => ({ NewChatSheet: () => null
 const { ChatScreen } = await import("../components/messages/ChatScreen");
 const { InboxScreen } = await import("../components/messages/InboxScreen");
 const { MessagesHost } = await import("../components/messages/MessagesHost");
+const { FriendGames } = await import("../lib/play/friendGames");
 
 type Status = "loading" | "guest" | "in";
 
@@ -44,7 +45,8 @@ function services() {
   const session = new FakeSession();
   const friends = new FriendsCenter({ user: undefined }, server.api);
   const messages = new MessagesCenter({ friends, api: server.api, sockets: new FakeSockets(), token: async () => ({ token: "t", url: "wss://x/v1/live" }) });
-  const made = { session, api: server.api, friends, messages };
+  const games = new FriendGames({ api: server.api, me: () => undefined });
+  const made = { session, api: server.api, friends, messages, games };
   held.services = made;
   return made;
 }

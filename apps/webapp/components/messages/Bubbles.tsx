@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "../../lib/cn";
 import { feedbackPrivate } from "../../lib/feedbackPrivate";
 import { messageCopy } from "../../lib/messages/copy";
 import type { Pending } from "../../lib/messages/chat";
+import { boardPath, linked } from "../../lib/play/challengeLink";
 import { useLongPress } from "../reader/useLongPress";
 
 /** The words under a bubble: «۹:۴۰» for the other person's, «تو · ۹:۴۲ · دیده شد» for mine (Messages/ChatBubbles.swift `MessageMeta`). */
@@ -16,7 +18,7 @@ export function MessageMeta({ time, mine, seen = false }: { time: string; mine: 
   );
 }
 
-/** One text bubble: white and a straight corner at the top for the other person, lapis for me. It is message text, so it is private to the feedback screenshot. */
+/** One text bubble: white and a straight corner at the top for the other person, lapis for me; the link of a challenge in it opens its board (Messages/ChatBubbles.swift). It is message text, so it is private to the feedback screenshot. */
 export function TextBubble({ text, mine, muted = false, faded = false }: { text: string; mine: boolean; muted?: boolean; faded?: boolean }) {
   return (
     <p
@@ -28,7 +30,15 @@ export function TextBubble({ text, mine, muted = false, faded = false }: { text:
         faded && "opacity-85",
       )}
     >
-      {text}
+      {linked(text).map((part, index) =>
+        part.code ? (
+          <Link key={index} href={boardPath(part.code)} prefetch={false} data-testid="challenge-link-in-chat" className="underline">
+            {part.text}
+          </Link>
+        ) : (
+          part.text
+        ),
+      )}
     </p>
   );
 }

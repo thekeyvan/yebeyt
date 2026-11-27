@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useGameStats } from "../../lib/games/browser";
 import type { GameDeck } from "../../lib/games/couplet";
 import { pickPuzzle } from "../../lib/games/dailyPuzzle";
 import { tabCards } from "../../lib/games/kinds";
 import { persianDigits } from "../../lib/persian";
+import { lobbyURL } from "../../lib/play/routes";
+import { useStore } from "../../lib/library/browser";
 import { useAccount } from "../account/AccountProvider";
+import { useServices } from "../account/useServices";
+import { MoshCard } from "../play/MoshCard";
 import { useMyStats } from "../account/useMyStats";
 import { Screen } from "../shell/Screen";
 import { Badge } from "../ui/Badge";
@@ -25,6 +30,11 @@ function Games({ deck }: { deck: GameDeck }) {
   const account = useAccount();
   const router = useRouter();
   const mine = useMyStats();
+  const services = useServices();
+  const signedIn = useStore(services?.session)?.status === "in";
+  useEffect(() => {
+    if (signedIn) void services?.games.refreshMine();
+  }, [signedIn, services]);
   const puzzle = pickPuzzle(stats.today, deck);
   const solved = (stats.daily(stats.today)?.outcome ?? "playing") !== "playing";
   return (
@@ -42,9 +52,14 @@ function Games({ deck }: { deck: GameDeck }) {
           </div>
         </div>
         {puzzle && <DailyPuzzleCard puzzle={puzzle} day={stats.today} finished={solved} />}
+        {signedIn && services && (
+          <div className="pt-2.5">
+            <MoshCard services={services} />
+          </div>
+        )}
         <div className="flex items-center gap-3 pt-1.5">
           <h2 className="flex-1 text-2xl leading-[1.3] text-ink">بازی‌ها</h2>
-          <button type="button" onClick={() => account.require("games")} data-testid="new-friend-game" className="rounded-full bg-lapis px-3 py-1.5 text-[13px] font-bold leading-[1.4] text-white shadow-[0_2px_4px_rgba(47,53,245,0.25)]">
+          <button type="button" onClick={() => account.require("games", () => router.push(lobbyURL()))} data-testid="new-friend-game" className="rounded-full bg-lapis px-3 py-1.5 text-[13px] font-bold leading-[1.4] text-white shadow-[0_2px_4px_rgba(47,53,245,0.25)]">
             + بازی با دوست
           </button>
           <Link href="/games/catalog" data-testid="all-games" className="text-sm font-medium text-lapis">

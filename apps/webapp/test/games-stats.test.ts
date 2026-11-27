@@ -134,16 +134,17 @@ describe("the games", () => {
     expect(backgroundOf("duel")).toHaveLength(2);
   });
 
-  it("opens every solo game at its own page and asks an account for the friends' games", () => {
+  it("opens every solo game at its own page and the lobby, with that game chosen, for the friends' games", () => {
     expect(["daily", "jigsaw", "poet", "misra", "book", "match", "listen"].map((kind) => opening(kind as never))).toEqual(
       ["daily", "jigsaw", "poet", "misra", "book", "match", "listen"].map((kind) => ({ page: `/games/${kind}` })),
     );
-    expect([opening("mosh"), opening("duel")]).toEqual(["account", "account"]);
+    expect([opening("mosh"), opening("duel")]).toEqual([{ lobby: "mosh" }, { lobby: "duel" }]);
   });
 
   it("knows the pages that cover the tabs, a poet's round and a poet in an address", () => {
     expect(["/games/poet", "/games/listen", "/games/daily"].map(isGamePage)).toEqual([true, true, true]);
-    expect(["/games", "/games/catalog", "/games/poet/x", "/games/mosh"].map(isGamePage)).toEqual([false, false, false, false]);
+    expect(["/games", "/games/catalog", "/games/poet/x", "/games/mosh", "/games/mosh/", "/games/lobby/x", "/c", "/c/7KQ", "/c/7KQ22", "/games/duel/a/b"].map(isGamePage)).toEqual(Array(10).fill(false));
+    expect(["/games/lobby", "/games/mosh/g1", "/games/duel/new-duel", "/c/7KQ2"].map(isGamePage)).toEqual([true, true, true, true]);
     expect(poetGameURL("hafez")).toBe("/games/misra?poet=hafez");
     expect([parsePoet("hafez"), parsePoet(["saadi", "x"]), parsePoet("../x"), parsePoet(""), parsePoet(undefined)]).toEqual(["hafez", "saadi", undefined, undefined, undefined]);
   });

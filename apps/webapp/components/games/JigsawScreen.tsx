@@ -21,13 +21,16 @@ import { BigButton, Bulb, GameCloseButton, GameLoading, GamePage, RoundAction, S
 import { useGame } from "./GameCover";
 import { JigsawCard } from "./JigsawCard";
 import { ProgressDots } from "./ProgressDots";
-import { RoundEnd } from "./RoundEnd";
+import { GameEnd } from "../play/GameEnd";
+import { useRound } from "../play/RoundContext";
 import { StickerSheet } from "./StickerSheet";
 import { WithDeck } from "./WithDeck";
 
 /** JigsawE: ten couplets in two minutes. The first hemistich is whole, the second is word slots; stickers from the sheet go into them. Nothing teaches while the clock runs: the meaning waits in the sheet after each answer. */
 export function JigsawScreen({ start }: { start: JigsawStart }) {
-  return <WithDeck wrap={(placeholder) => <GameLoading>{placeholder}</GameLoading>}>{(deck) => <Opening deck={deck} start={start} />}</WithDeck>;
+  const { answering } = useRound();
+  // A challenge's round is exactly its ten couplets, in order: there is no poem to wait for.
+  return <WithDeck wrap={(placeholder) => <GameLoading>{placeholder}</GameLoading>}>{(deck) => (answering ? <Round deck={deck} opening={answering.items} /> : <Opening deck={deck} start={start} />)}</WithDeck>;
 }
 
 /** «بازی با این بیت / غزل»: the poem's couplets come first, so the round waits for the poem; one that can't be loaded just leaves a round from the deck. */
@@ -67,7 +70,7 @@ function Play({ session }: { session: JigsawSession }) {
   const asks = session.asksBeforeLeaving;
   useEffect(() => game.setAsks(asks), [game.setAsks, asks]);
 
-  if (session.finished) return <RoundEnd summary={jigsawSummary(round)} />;
+  if (session.finished) return <GameEnd summary={jigsawSummary(round)} />;
 
   function drop(sticker: { id: number; word: string }, point: { x: number; y: number }) {
     const frames = [...document.querySelectorAll<HTMLElement>("[data-drop]")].map((element) => ({ position: Number(element.dataset.drop), rect: element.getBoundingClientRect() }));

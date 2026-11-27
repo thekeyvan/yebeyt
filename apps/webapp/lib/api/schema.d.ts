@@ -3232,6 +3232,700 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a game with a friend
+         * @description Makes a game that waits for a second player (the first to join takes the seat), with a four-character `code`. Each `invite` becomes a chat message of kind `game` with payload `{gameId, kind, code}` (a chat is made if there is none, whatever their `messagesFrom` says); a person who blocked you or whom you blocked, who has no such username, the demo friend «یه بیت» (`yebeyt`, which takes no games), or who takes game invitations only from friends (`gameInvitesFrom`) when you are not one, is skipped and named in `skipped`. 20 games an hour per user.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateGameRequest"];
+                };
+            };
+            responses: {
+                /** @description The game, who was invited and who was skipped. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GameCreated"];
+                    };
+                };
+                /** @description invalid_request: مشاعره without a valid `turnSeconds`, or رودررو with one other than 8. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description rate_limited: 20 games an hour per user. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/games/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A game I play in
+         * @description Players only (404 for anyone else). A مشاعره game whose turn has run out is ended first, with the other player as winner.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The game with its couplets or rounds. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Game"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such game, or I am not a player. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/games/{id}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Join a waiting game
+         * @description Whoever comes first takes the second seat; the game is then active (a live `game.started` event goes to both). Joining a game I am already in answers 200 and changes nothing. A رودررو game then starts by itself once both players have a live socket (see the README).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The game (also when I was already in it). */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Game"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such game or code, or the person who made it and I blocked each other. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description game_full: somebody else took the seat, or the game is over. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/games/{id}/moves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Play a couplet in مشاعره
+         * @description My turn only. The creator opens with any couplet; each next one must start with the last letter of the previous couplet's second hemistich (letters compared without diacritics: آ as ا, ي as ی, ك as ک, ۀ and ة as ه, ئ as ی; punctuation and half-spaces skipped), and no couplet repeats in a game. `key` is the couplet the phone matched; the server fetches that poem from Ganjoor (at the commit the app's data comes from) and checks that `m1` and `m2` are its text, ignoring diacritics, punctuation and Arabic letter forms (400 `bad_couplet`; 503 `unavailable` when Ganjoor cannot be reached). A request after the turn's deadline (the last move, or the start, plus `turnSeconds`) ends the game with the other player as winner and answers 409 `turn_over`. 20 moves a minute per user. A good move is +1 for me, passes the turn, and sends live `game.move` and `game.turn` events to both players.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MoshMoveRequest"];
+                };
+            };
+            responses: {
+                /** @description The game after the move. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Game"];
+                    };
+                };
+                /** @description invalid_request, or bad_couplet: the key is not a couplet or its text is not Ganjoor's, or the couplet has no letter to continue from. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such game, or I am not a player. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description not_your_turn, wrong_letter, already_played, turn_over (the game just ended) or game_not_active (waiting or done). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description rate_limited: 20 moves a minute per user. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description unavailable: Ganjoor could not be reached; or busy: too many poems were fetched from Ganjoor in the last minute (60 for the whole server). */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/games/{id}/resign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * «کم آوردم»: give up
+         * @description Ends an active game with the other player as winner. Anytime in an active game, not only on my turn.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The game, ended. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Game"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such game, or I am not a player. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description game_not_active: waiting or already done. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My games: waiting and active ones, and the ones that ended in the last 7 days
+         * @description Newest first, at most 50, without the couplets or rounds (read one game for those). Overdue مشاعره games are ended first.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The games. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GameList"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Challenge friends to the ten couplets I just played
+         * @description Makes a challenge that lasts 30 days. Share `url` (yebeyt.com/c/<code>, four characters); anyone can play it, with or without an account. 30 an hour per user.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateChallengeRequest"];
+                };
+            };
+            responses: {
+                /** @description The code and the link. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChallengeCreated"];
+                    };
+                };
+                /** @description invalid_request: not ten different keys of couplets in the game deck, or a score or time out of range. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description username_required. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description rate_limited: 30 an hour per user. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/challenges/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A challenge, for the page and the app that open its link
+         * @description No account needed (all lookups together share 600 a minute). The code is read in any case, with O as 0 and I or L as 1. An expired or unknown code is 404.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Who made it, the couplets and their score. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Challenge"];
+                    };
+                };
+                /** @description No such challenge, or it expired. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description rate_limited: 600 lookups a minute for the whole server. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/challenges/{code}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave my result on a challenge
+         * @description Signing in is optional. Without an account `name` is required; with one the result is mine, one per person (a second is 409 `conflict`), and the maker's own challenge cannot be answered by the maker (409 `conflict`). The maker gets a live `challenge.result` event, and when the player has an account too (and nobody blocked the other) a `game` message `{event: "challenge_result", code, game, score, seconds}` in their chat. Signed-in users may send 60 an hour; all guests together 120 an hour.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ChallengeResultRequest"];
+                };
+            };
+            responses: {
+                /** @description Saved. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChallengeResultSaved"];
+                    };
+                };
+                /** @description invalid_request: a score or time out of range, or no valid `name` without an account. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description A token was sent and it is not valid. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such challenge, or it expired. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description conflict: I already left a result, or it is my own challenge. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description rate_limited. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/scores": {
         parameters: {
             query?: never;
@@ -3642,6 +4336,32 @@ export interface components {
             accessory: string;
             background: string;
         } | null;
+        Challenge: {
+            creator: components["schemas"]["PersonShort"];
+            /** @enum {string} */
+            game: "jigsaw" | "poet";
+            items: string[];
+            score: number;
+            seconds: number;
+            /** @description «۱۰ بیت سعدی» when every couplet is by the same poet, else null. */
+            label: string | null;
+        };
+        ChallengeCreated: {
+            /** @example 7KQ2 */
+            code: string;
+            /** @example https://yebeyt.com/c/7KQ2 */
+            url: string;
+        };
+        ChallengeResultRequest: {
+            score: number;
+            seconds: number;
+            /** @description Required without an account: 1 to 30 characters after trimming, no control characters. Ignored when signed in. */
+            name?: string;
+        };
+        ChallengeResultSaved: {
+            /** Format: uuid */
+            id: string;
+        };
         ChatPerson: components["schemas"]["PersonShort"] & {
             /** @description Whether this person can be invited to a game; when false an invitation is skipped as `not_found`, so leave them out of invite pickers. */
             canPlay: boolean;
@@ -3678,6 +4398,26 @@ export interface components {
             items: components["schemas"]["ConversationListItem"][];
             /** @description Pass as `cursor` for the next page; null on the last page. */
             nextCursor: string | null;
+        };
+        CreateChallengeRequest: {
+            /** @enum {string} */
+            game: "jigsaw" | "poet";
+            /** @description The ten couplet keys, in the order they were played; each must be a couplet of the game deck. */
+            items: string[];
+            /** @description How many of the ten the creator got. */
+            score: number;
+            seconds: number;
+        };
+        CreateGameRequest: {
+            /** @enum {string} */
+            kind: "mosh" | "duel";
+            /** @description مشاعره (required): 30, 120 or 86400. رودررو: 8, or leave it out. */
+            turnSeconds?: 30 | 120 | 86400 | 8;
+            /**
+             * @description Up to 5 usernames to send the invitation to, in their chats.
+             * @default []
+             */
+            invite: string[];
         };
         DailyRequest: {
             /**
@@ -3723,6 +4463,18 @@ export interface components {
                 /** Format: date-time */
                 removedAt?: string | null;
             }[];
+        };
+        DuelRoundResult: {
+            round: number;
+            /** @enum {string} */
+            type: "second" | "poet" | "book";
+            key: string;
+            m1: string;
+            m2: string;
+            meaning: string;
+            poet: string;
+            bookTitle: string;
+            winner: string | null;
         };
         Error: {
             /** @enum {string} */
@@ -3799,6 +4551,67 @@ export interface components {
         FriendshipState: {
             friendship: components["schemas"]["Friendship"];
         };
+        Game: components["schemas"]["GameSummary"] & {
+            /** @description مشاعره: the couplets played, in order. */
+            moves: components["schemas"]["MoshMove"][];
+            /** @description رودررو once done: the five couplets with their meanings and who won each round. */
+            rounds: components["schemas"]["DuelRoundResult"][];
+        };
+        GameCreated: {
+            game: components["schemas"]["Game"];
+            /** @description The usernames that got a `game` message. */
+            invited: string[];
+            /** @description Who could not be invited. `not_found` also covers a block, which nobody is told about; `friends_only`: they take game invitations only from friends. */
+            skipped: {
+                username: string;
+                /** @enum {string} */
+                reason: "not_found" | "friends_only" | "yourself";
+            }[];
+        };
+        GameList: {
+            items: components["schemas"]["GameSummary"][];
+        };
+        GamePlayer: {
+            username: string;
+            displayName: string | null;
+            avatar: components["schemas"]["Avatar"];
+            seat: number;
+            score: number;
+        };
+        GameSummary: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "mosh" | "duel";
+            /** @description مشاعره: 30, 120 or 86400. رودررو: 8 (seconds a round). */
+            turnSeconds: number;
+            /** @enum {string} */
+            status: "waiting" | "active" | "done";
+            /**
+             * @description Four characters (Crockford base32 without I, L, O, U); `yebeyt.com/g/<code>`.
+             * @example 7K3M
+             */
+            code: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            endedAt: string | null;
+            /** @description The winner's username when the game is done and somebody won. */
+            winner: string | null;
+            /** @enum {string|null} */
+            endReason: "timeout" | "resigned" | "left" | "finished" | "expired" | null;
+            players: components["schemas"]["GamePlayer"][];
+            turn: components["schemas"]["GameTurn"];
+        };
+        /** @description مشاعره while active: whose turn it is. Null otherwise. */
+        GameTurn: {
+            username: string;
+            /**
+             * Format: date-time
+             * @description When the turn runs out: the last move (or the start) plus `turnSeconds`.
+             */
+            deadline: string;
+        } | null;
         GlobalStandings: {
             /**
              * @description The Tehran week, Saturday to Friday.
@@ -3883,6 +4696,24 @@ export interface components {
              * @description The last message the other person has read («دیده شد» up to it); null if none.
              */
             otherReadMessageId: string | null;
+        };
+        MoshMove: {
+            n: number;
+            username: string | null;
+            key: string;
+            m1: string;
+            m2: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        MoshMoveRequest: {
+            /**
+             * @description <poemPath>#<coupletIndex>
+             * @example /hafez/ghazal/sh3#0
+             */
+            key: string;
+            m1: string;
+            m2: string;
         };
         MyReactions: {
             items: {

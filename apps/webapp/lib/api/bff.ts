@@ -1,4 +1,6 @@
 import { clearSession, isSecure, readSession, writeSession, type Tokens } from "./cookies";
+import { devPagesEnabled } from "../dev";
+import { playStubHeader } from "../play/debug";
 import { isSameOrigin } from "./csrf";
 import { secondsLeft } from "./jwt";
 import { upstreamRoute } from "./proxy";
@@ -119,15 +121,19 @@ export function createBff(send: Upstream) {
       const { text, refusal } = await body(request);
       if (refusal) return refusal;
       const call = { method: request.method, path: route.path, ...(text === undefined ? {} : { body: text }) };
-      if (!route.auth) {
+      // What is asked with no session: the conditional request of a picture, and in a debug build the page's ask for the debug server (`lib/play/debug.ts`).
+      const asGuest = async (): Promise<Response> => {
         const match = request.headers.get("if-none-match");
+        const headers = { ...(match ? { "if-none-match": match } : {}), ...(devPagesEnabled() && request.headers.get(playStubHeader) === "1" ? { [playStubHeader]: "1" } : {}) };
         try {
-          return await answerOf(await send({ ...call, ...(match ? { headers: { "if-none-match": match } } : {}) }), [], false);
+          return await answerOf(await send({ ...call, ...(Object.keys(headers).length > 0 ? { headers } : {}) }), [], false);
         } catch {
           return new Response(null, { status: 502 });
         }
-      }
-      return await finish(await withSession(request, (access) => send({ ...call, credential: access })), request);
+      };
+      if (route.auth === false) return await asGuest();
+      const run = await withSession(request, (access) => send({ ...call, credential: access }));
+      return route.auth === "optional" && run.kind === "none" ? await asGuest() : await finish(run, request);
     },
 
     /** `/auth/apple` and `/auth/google`: the provider's token goes to the server, the session's tokens into the cookies, and the page gets the user. */
