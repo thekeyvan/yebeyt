@@ -37,13 +37,14 @@ export const kept = (page: Page, key: string) => page.evaluate((name) => localSt
 /** What the account says of itself (the web app's own session route, which answers with the user). */
 export const sessionUser = (page: Page) => page.evaluate(async () => ((await (await fetch("/auth/session")).json()) as { user?: Record<string, unknown> }).user);
 
-/** After scrolling to the end: the page's content ends above the tab bar (phones) or beside the rail (wide screens), so nothing is under it. */
+/** After scrolling to the end: the page's content ends above the tab bar (phones) or beside the rail (wide screens), so nothing is under it (or there is no tab bar). */
 export async function clearOfTabBar(page: Page): Promise<boolean> {
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await page.waitForTimeout(150);
   return page.evaluate(() => {
     const nav = document.querySelector("nav[aria-label='تب‌ها']")!.getBoundingClientRect();
     const content = document.querySelector("main")!.firstElementChild!.getBoundingClientRect();
+    if (nav.width === 0) return true; // a screen drawn without the tab bar on a phone (a chat, the requests)
     return nav.height > nav.width ? content.right <= nav.left || content.left >= nav.right : content.bottom <= nav.top;
   });
 }

@@ -150,7 +150,7 @@ test.describe("requests and friends", () => {
   test("پیام‌ها has «درخواست‌های دوستی» with the count, and the tab bar's badge says it too; the lists accept, ask before rejecting and taking back", async ({ page }) => {
     await openSignedIn(page, "/messages");
     await expect(page.getByTestId("requests-count")).toHaveText("۲");
-    await expect(tabBar(page).getByRole("link", { name: "پیام‌ها ۲ درخواست دوستی" })).toBeVisible();
+    await expect(tabBar(page).getByRole("link", { name: "پیام‌ها ۲ پیام نخونده، ۲ درخواست دوستی" })).toBeVisible();
     await page.getByTestId("requests-row").click();
     await expect(page).toHaveURL(/\/messages\/requests$/);
     await expect(page.getByRole("heading", { name: "درخواست‌های دوستی" })).toBeVisible();

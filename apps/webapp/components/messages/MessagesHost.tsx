@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import type { Services } from "../../lib/account/services";
+import { devPagesEnabled } from "../../lib/dev";
 import { useStore } from "../../lib/library/browser";
 import { toast } from "../ui/Toast";
 
@@ -22,6 +23,11 @@ export function MessagesHost({ services }: { services: Services }) {
       messages.onToast = undefined;
     };
   }, [messages]);
+
+  // In a debug build `sessionStorage.beytDivanSheet = "1"` opens the sheet of «به دیوان مشترک» for a Hafez couplet once someone is signed in (the phone's `-beytDivanSheet 1`).
+  useEffect(() => {
+    if (signedIn && devPagesEnabled() && sessionStorage.getItem("beytDivanSheet") === "1") messages.askSharedDivan({ key: "/hafez/ghazal/sh8#4" });
+  }, [messages, signedIn]);
 
   useEffect(() => {
     if (!signedIn) {

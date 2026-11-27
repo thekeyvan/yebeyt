@@ -5,7 +5,6 @@ type Schemas = components["schemas"];
 
 /** The other person of a chat. `online` is null when they don't let others see it; `canPlay` is false only for the demo friend «یه بیت» (the chat hides the game chips), and a server that doesn't say counts as yes. */
 export type ChatPerson = Omit<Schemas["ChatPerson"], "online" | "canPlay"> & { online?: boolean | null; canPlay?: boolean };
-export type MessageKind = Schemas["Message"]["kind"];
 export type ConversationLast = Schemas["ConversationLast"];
 export type ConversationItem = Omit<Schemas["ConversationListItem"], "other"> & { other: ChatPerson };
 export type Conversation = Omit<Schemas["Conversation"], "other"> & { other: ChatPerson };

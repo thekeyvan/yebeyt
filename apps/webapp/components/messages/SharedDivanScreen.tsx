@@ -32,7 +32,7 @@ export function SharedDivanScreen({ username }: { username: string }) {
 function Divan({ services, username }: { services: Services; username: string }) {
   const account = useAccount();
   const model = services.messages.sharedDivan(username);
-  const { divan, filter, phase, counts, poetSlugs, toast: line } = useStore(model)!;
+  const { divan, filter, phase, poetSlugs, toast: line } = useStore(model)!;
   const signedIn = useStore(services.session)?.status === "in";
   const myFace = useAvatarParts(services);
   const poetName = usePoetName();

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState, type KeyboardEvent } from "react";
 import type { ChatModel } from "../../lib/messages/chat";
 import { feedbackPrivate } from "../../lib/feedbackPrivate";
@@ -7,7 +8,6 @@ import { messageCopy } from "../../lib/messages/copy";
 import type { ChatPerson } from "../../lib/messages/models";
 import { useStore } from "../../lib/library/browser";
 import { MessagesIcon } from "../ui/icons";
-import Link from "next/link";
 import { toast } from "../ui/Toast";
 import { CoupletIcons } from "./CoupletIcons";
 

@@ -30,6 +30,11 @@ export async function fakeLive(page: Page) {
       await expect.poll(() => sockets.some((socket) => socket.authenticated && !socket.closed)).toBe(true);
       sockets.findLast((socket) => socket.authenticated && !socket.closed)!.send(JSON.stringify(event));
     },
+    /** Call before a navigation that makes the page open a new socket; await the function it returns after it (the old page's socket may not be seen as closed yet). */
+    expectNewSocket() {
+      const before = sockets.length;
+      return () => expect.poll(() => sockets.slice(before).some((socket) => socket.authenticated && !socket.closed)).toBe(true);
+    },
     sockets: () => sockets.length,
   };
 }

@@ -112,8 +112,10 @@ test.describe("a chat", () => {
   test("reading it marks it read: the badge loses the chat's unread message", async ({ page }) => {
     await openSignedIn(page, "/");
     await expect(messagesTab(page)).toHaveAccessibleName("پیام‌ها ۲ پیام نخونده، ۲ درخواست دوستی");
+    const read = page.waitForResponse((response) => response.url().endsWith("/read") && response.request().method() === "PUT");
     await page.goto(sara);
     await expect(page.getByTestId("chat-name")).toHaveText("سارا");
+    await read; // the chat told the server it was read
     if (wide(page)) await expect(messagesTab(page)).toHaveAccessibleName("پیام‌ها ۱ پیام نخونده، ۲ درخواست دوستی");
     await page.goto("/messages");
     await expect(page.locator("[data-unread='1']")).toHaveCount(1);
@@ -252,12 +254,16 @@ test.describe("live", () => {
     // The chat is open, so the message is read as it comes and the badge does not move (the server's total follows the read).
     await page.waitForTimeout(300);
     setUnread({ total: 1 });
+    const reconnected = live.expectNewSocket();
     await page.goto("/");
+    await reconnected();
     await expect(messagesTab(page)).toHaveAccessibleName("پیام‌ها ۱ پیام نخونده، ۲ درخواست دوستی");
     await live.push(message("live-2", "یه پیام دیگه")); // away from the chat: it counts
     await expect(messagesTab(page)).toHaveAccessibleName("پیام‌ها ۲ پیام نخونده، ۲ درخواست دوستی");
     setUnread({ total: 2 });
+    const again = live.expectNewSocket();
     await page.goto("/messages");
+    await again();
     await expect(page.locator("[data-testid^=inbox-row-]")).toHaveCount(5);
     await live.push(message("live-3", "این یکی توی صندوقه"));
     await expect(page.getByTestId("inbox-row-sara.ghazal")).toContainText("این یکی توی صندوقه");
@@ -404,6 +410,15 @@ test.describe("the shared divan", () => {
     await page.goto("/messages/mahsa.m/divan");
     await expect(page.getByTestId("divan-subtitle")).toHaveText("۱ بیت · مهسا ۰، تو ۱");
     await expect(page.locator("[data-testid^=shared-item-]").first()).toContainText("یاد تو");
+  });
+
+  test("a debug build can open the sheet at once (beytDivanSheet), as the phone's launch argument does", async ({ page }) => {
+    await page.addInitScript(() => sessionStorage.setItem("beytDivanSheet", "1"));
+    await openSignedIn(page, "/messages");
+    const sheet = page.getByRole("dialog", { name: "به دیوان مشترک" });
+    await expect(sheet.getByTestId("divan-with-sara.ghazal")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
   });
 
   test("a guest who asks the hold menu for «به دیوان مشترک» gets the gate, and the sheet follows the sign-in", async ({ page }) => {

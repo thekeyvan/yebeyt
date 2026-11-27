@@ -9,7 +9,7 @@ The web app does everything the iOS app does, so people can read and play in a b
 - **Mobile first.** On a phone, each screen follows its iOS board in `design/canvas/project/`. Wider screens use the standard responsive patterns, with no new boards:
   - from 768 px, the content is a centred column (max 560 px; reader and games 640 px) on the dotted paper;
   - from 1024 px, the bottom tab bar becomes a right-hand side rail (RTL);
-  - from 1024 px, messages and the library show list and detail side by side (the library's is deferred to W7, built together with the messages' two panes; until then the library is the one column at every width);
+  - from 1024 px, messages and the library show list and detail side by side (messages: built in W7, the inbox stays beside the open chat; the library's list and detail are still the one column, which needs its screens (book, section, poet) re-cut as panes, so it waits for its own slice);
   - bottom sheets become centred dialogs at ≥ 768 px, with the same content.
 - **Design system: Tailwind v4 + UI SDK + Motion, with our own sticker components.**
   - The Tailwind theme (`@theme`) is generated from `packages/tokens/tokens.json` by `tools/make_tokens.py`, like the Swift and CSS files: colours, fonts, sticker border widths, radii and shadows. Never hand-edit it.
@@ -61,6 +61,6 @@ Each slice is on its own branch (`feat/web-<name>`), built by **builder**, revie
 - **W4 Accounts and sync**: the web sign-in, username, gate, onboarding, carry-over, the typed API client, divan/scores/reactions sync.
 - **W5 Me** (built 26 Nov): `/me` and its screens (divan, avatar, invite, settings with deleting the account, privacy, badges, licences); the avatar drawing moved to `packages/avatar`, shared with `apps/web`. Left out of the settings as they make no sense in a browser: the shake for feedback and the version line; there is no blocked-people screen on the phone, so none here. «بازخورد» says «به‌زودی» until W9.
 - **W6 Friends and leaderboard** (built 27 Nov): `/people`, `/u/<username>`, `/messages/requests` (with its row and the tab badge in پیام‌ها), `/me/friends` and the profile's friend count, «دوستات» on the home, `/games/leaderboard`, blocking and reporting; the invite page of yebeyt.com opens the person's page here. «پیام بده» on a person's page and the live `friend.request` and `friend.accepted` events come with the messages (W7), because they need the chat and the socket.
-- **W7 Messages and shared divans.**
+- **W7 Messages and shared divans** (built 27 Nov): `/messages` (the inbox), `/messages/<username>` (the chat), `/messages/<username>/divan` (the shared divan), «پیام بده» on a person's page, the reader's «به دیوان مشترک» sheet, and the live socket (`POST /auth/live` gives it a short-lived token and its address; one socket per tab, closed when the page is hidden for a minute and on sign-out; the friend events update the requests live). The server needed no change: `/v1/live` checks no Origin. Left out until W8: starting and joining a game from a chat (the buttons say «به‌زودی روی وب»); the long-press menu on a couplet card in a chat and on a shared divan's couplet is a question asked at once (delete, report, take out), because the web's hold menu belongs to the reader.
 - **W8 Playing with friends.**
 - **W9 Feedback.**

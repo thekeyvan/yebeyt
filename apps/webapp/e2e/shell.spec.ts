@@ -31,6 +31,11 @@ test("the five tabs navigate, and the open one is marked and lapis", async ({ pa
 
   for (const { title, href, heading } of tabs) {
     await bar.getByRole("link", { name: title }).click();
+    // A guest meets the gate on پیام‌ها (its chats need an account): «بعداً» puts it away.
+    if (href === "/messages") {
+      await page.getByRole("button", { name: "بعداً" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    }
     await expect(page).toHaveURL((url) => url.pathname === href);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(heading);
     const open = bar.getByRole("link", { name: title });
