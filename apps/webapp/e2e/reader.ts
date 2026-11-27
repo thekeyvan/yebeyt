@@ -47,7 +47,8 @@ export function ranged(route: Route, body: Buffer) {
 export async function stubNetwork(page: Page, { api = false }: { api?: boolean } = {}): Promise<void> {
   const recitations = fixture("recitations.json");
   const audio = silence(40);
-  await page.route((url) => url.hostname !== "localhost", (route) => {
+  // (A picture or a file the page made itself, a `blob:` address, is not the network.)
+  await page.route((url) => url.hostname !== "localhost" && url.protocol !== "blob:", (route) => {
     const url = route.request().url();
     if (url.endsWith("/recitations")) return route.fulfill({ contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: recitations });
     if (url.endsWith(".xml")) return route.fulfill({ contentType: "text/xml", headers: { "access-control-allow-origin": "*" }, body: timingXML });

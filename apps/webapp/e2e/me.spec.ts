@@ -231,7 +231,9 @@ test("the settings: a guest's sign-in row; the text, privacy, feedback, terms an
   await expect(page.getByTestId("sign-out")).toHaveCount(0);
   await expect(page.getByTestId("delete-account")).toHaveCount(0);
   await page.getByTestId("settings-feedback").click();
-  await expect(toasts(page).getByText("به‌زودی")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "می‌خوای چیزی بگی؟" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByTestId("terms")).toHaveAttribute("href", "https://yebeyt.com/terms");
   await expect(page.getByTestId("privacy-policy")).toHaveAttribute("href", "https://yebeyt.com/privacy");
   await page.getByTestId("settings-text").click();

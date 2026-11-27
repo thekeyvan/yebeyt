@@ -1,3 +1,4 @@
+import { bindPersistentLayer } from "@ui-sdk/core";
 import { colors } from "../tokens";
 import { privateSelector } from "./privacy";
 
@@ -47,13 +48,17 @@ function visibleBox(element: Element, view: Box): Box | undefined {
 /**
  * Covers every private view with a solid block while the screen is recorded (the covers of FeedbackPrivacy.swift): one block over each, kept where the view is drawn, every
  * frame, so scrolling, resizing, animations and new messages are all followed. It is on before the recording starts and off after it has stopped; answers the way to switch it off.
+ * The layer is in the browser's top layer, as the sheets are, so a private view in a sheet is covered too.
  */
 export function startCovers(): () => void {
   const layer = document.createElement("div");
   layer.setAttribute("data-feedback-covers", "");
   layer.setAttribute("aria-hidden", "true");
-  layer.style.cssText = "position:fixed;inset:0;z-index:9000;pointer-events:none;overflow:hidden";
+  layer.setAttribute("popover", "manual");
+  layer.style.cssText = "position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;background:transparent;pointer-events:none;overflow:hidden;z-index:9000";
   document.body.appendChild(layer);
+  layer.showPopover?.(); // a browser with no popovers has the z-index above
+  const release = bindPersistentLayer(layer);
   let frame = 0;
   const place = () => {
     const view = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
@@ -77,6 +82,7 @@ export function startCovers(): () => void {
   place();
   return () => {
     cancelAnimationFrame(frame);
+    release();
     layer.remove();
   };
 }

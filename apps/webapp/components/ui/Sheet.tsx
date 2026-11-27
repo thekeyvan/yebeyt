@@ -13,6 +13,8 @@ type SheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   description?: string;
+  /** On the board paper instead of white: for a form of white fields (the feedback sheet). */
+  paper?: boolean;
   children?: ReactNode;
 } & (
   | { title: string; header?: undefined }
@@ -21,7 +23,7 @@ type SheetProps = {
 );
 
 const backdrop = "fixed inset-0 z-40 bg-ink/30 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0";
-const surface = "z-50 bg-white px-[22px] text-ink outline-none";
+const surface = (paper?: boolean) => `z-50 ${paper ? "bg-board-paper" : "bg-white"} px-[22px] text-ink outline-none`;
 
 function Words({ Title, Description, title, header, description }: { Title: Part; Description: Part; title?: string; header?: (Title: Part) => ReactNode; description?: string }) {
   return (
@@ -33,13 +35,13 @@ function Words({ Title, Description, title, header, description }: { Title: Part
 }
 
 /** From the bottom: a grabber, 30 corners, as tall as its content (and scrolling when that is more than fits). */
-function BottomSheet({ open, onOpenChange, title, header, description, children }: SheetProps) {
+function BottomSheet({ open, onOpenChange, title, header, description, paper, children }: SheetProps) {
   return (
     // The pointer driver follows the finger and honours Reduce Motion (the scroll-snap one, which touch screens get by default, does not).
     <Drawer open={open} onOpenChange={onOpenChange} driver="pointer">
       <DrawerBackdrop className={backdrop} />
       <DrawerContent
-        className={`${surface} relative mx-auto flex max-h-[85dvh] w-full max-w-xl flex-col items-center gap-4 rounded-t-[30px] pt-3 pb-[max(16px,env(safe-area-inset-bottom))] after:absolute after:inset-x-0 after:top-full after:h-24 after:bg-white`}
+        className={`${surface(paper)} relative mx-auto flex max-h-[85dvh] w-full max-w-xl flex-col items-center gap-4 rounded-t-[30px] pt-3 pb-[max(16px,env(safe-area-inset-bottom))] after:absolute after:inset-x-0 after:top-full after:h-24 ${paper ? "after:bg-board-paper" : "after:bg-white"}`}
       >
         <div aria-hidden className="h-[5px] w-10 shrink-0 rounded-pill bg-ring" data-testid="grabber" />
         {/* Only this part scrolls (when the content is more than fits): the white strip under the sheet, for overscroll, is outside it. */}
@@ -53,13 +55,13 @@ function BottomSheet({ open, onOpenChange, title, header, description, children 
 }
 
 /** In the middle of the screen from 768 px: the same content, growing from a little smaller. */
-function CentredDialog({ open, onOpenChange, title, header, description, children }: SheetProps) {
+function CentredDialog({ open, onOpenChange, title, header, description, paper, children }: SheetProps) {
   const v = useVariant();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogBackdrop className={backdrop} />
       <DialogContent
-        className={`${surface} fixed inset-0 m-auto h-fit max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100%-2rem))] overflow-y-auto rounded-[30px] py-7 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0`}
+        className={`${surface(paper)} fixed inset-0 m-auto h-fit max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100%-2rem))] overflow-y-auto rounded-[30px] py-7 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0`}
       >
         <motion.div initial={menuArrival(v)} animate={{ scale: 1 }} transition={bouncy} className="flex flex-col items-center gap-4">
           <Words Title={DialogTitle} Description={DialogDescription} title={title} header={header} description={description} />

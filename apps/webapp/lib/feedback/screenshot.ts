@@ -55,6 +55,7 @@ function pinThings(): Pin[] {
     const position = getComputedStyle(element).position;
     if ((position !== "fixed" && position !== "sticky") || element.parentElement?.closest(`[${pinned}]`)) continue;
     const { left, top, width, height } = element.getBoundingClientRect();
+    if (width === 0 && height === 0) continue; // not drawn (a tab bar a phone does not show)
     element.setAttribute(pinned, String(pins.length));
     pins.push({ left, top, width, height });
   }
@@ -69,6 +70,7 @@ const unpin = (): void => document.querySelectorAll(`[${pinned}]`).forEach((elem
  */
 function arrange(copy: HTMLElement, pins: readonly Pin[], scrolled: number): void {
   copy.style.setProperty("position", "relative", "important");
+  copy.style.setProperty("margin", "0", "important"); // the copy's root loses its margins on the way, and a browser puts its own back
   copy.style.setProperty("top", `${-scrolled}px`, "important");
   copy.style.setProperty("isolation", "isolate", "important"); // what is pinned at the back (the dots) stays in front of the page's own colour
   for (const element of copy.querySelectorAll<HTMLElement>(`[${pinned}]`)) {
@@ -97,7 +99,7 @@ export async function capturePage(): Promise<Blob | undefined> {
     const canvas = await domToCanvas(document.body, {
       width: document.documentElement.clientWidth,
       height: window.innerHeight,
-      scale: Math.min(window.devicePixelRatio || 1, 2),
+      scale: 1, // a pixel to a CSS pixel: WebKit draws the shadows of a copy that is scaled up as hard blocks
       backgroundColor: colors.paper,
       timeout: timeoutMs,
       features: { restoreScrollPosition: true },

@@ -47,3 +47,4 @@ Thank you to Ganjoor and its contributors for making this poetry open and readab
 
 - [Next.js](https://github.com/vercel/next.js), [React](https://github.com/facebook/react), [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) and [Motion](https://github.com/motiondivision/motion) (all MIT).
 - [UI SDK](https://github.com/vercel-labs/ui) (Apache License 2.0): the headless behaviours (sheets, toasts, segmented controls) under our own look.
+- [modern-screenshot](https://github.com/qq15725/modern-screenshot) (MIT, Copyright (c) 2021-present wxm): draws the page into the picture a feedback report may carry (the private views are blank in the copy it draws).

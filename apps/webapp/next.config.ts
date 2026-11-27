@@ -1,5 +1,17 @@
 import type { NextConfig } from "next";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+
+/** The build's git sha, which is the app's version in a feedback report: Railway's variable (named in the Dockerfile so it reaches the build), else the checkout's own, else «dev». */
+function buildVersion(): string {
+  const railway = process.env.RAILWAY_GIT_COMMIT_SHA;
+  if (railway) return railway.slice(0, 12);
+  try {
+    return execSync("git rev-parse --short=12 HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim() || "dev";
+  } catch {
+    return "dev";
+  }
+}
 
 const config: NextConfig = {
   output: "standalone",
@@ -12,7 +24,7 @@ const config: NextConfig = {
   transpilePackages: ["@yebeyt/avatar"],
   // The debug switch is decided when the app is built, for the server's code as well as the page's: a variable set later on the running server cannot turn the debug pages
   // or the debug sign-in on (`lib/dev.ts`).
-  env: { NEXT_PUBLIC_DEV_PAGES: process.env.NEXT_PUBLIC_DEV_PAGES ?? "" },
+  env: { NEXT_PUBLIC_DEV_PAGES: process.env.NEXT_PUBLIC_DEV_PAGES ?? "", NEXT_PUBLIC_BUILD: buildVersion() },
 };
 
 export default config;

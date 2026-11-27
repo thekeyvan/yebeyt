@@ -33,6 +33,7 @@ export const creditGroups: CreditGroup[] = [
     credits: [
       { name: "Next.js, React, Tailwind CSS, Motion", by: "Vercel, Meta, Tailwind Labs, Matt Perry", license: "MIT License" },
       { name: "UI SDK", by: "Vercel", license: "Apache License 2.0" },
+      { name: "modern-screenshot", by: "wxm", license: "MIT License" },
     ],
   },
 ];

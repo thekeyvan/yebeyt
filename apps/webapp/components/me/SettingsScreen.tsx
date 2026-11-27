@@ -12,7 +12,7 @@ import { TextSheet } from "../reader/TextSheet";
 import { Screen } from "../shell/Screen";
 import { ConfirmSheet } from "../ui/ConfirmSheet";
 import { ChevronLeftIcon } from "../ui/icons";
-import { toast } from "../ui/Toast";
+import { openFeedback } from "../feedback/center";
 import { MeHeader, RowsCard } from "./chrome";
 import { DeleteAccountSheet } from "./DeleteAccountSheet";
 import { UnsyncedSignOutSheet } from "./UnsyncedSignOutSheet";
@@ -112,7 +112,7 @@ function Settings({ services }: { services: Services }) {
         <RowsCard title="درباره">
           <LinkRow label="شرایط استفاده" href="https://yebeyt.com/terms" testId="terms" />
           <LinkRow label="سیاست حریم خصوصی" href="https://yebeyt.com/privacy" testId="privacy-policy" />
-          <Row label="بازخورد" testId="settings-feedback" onClick={() => toast("به‌زودی")} />
+          <Row label="بازخورد" testId="settings-feedback" onClick={openFeedback} />
           <LinkRow label="مجوزها" href="/me/licenses" internal testId="licenses" />
         </RowsCard>
       </div>
