@@ -39,6 +39,7 @@ These can't be tested in the simulator here (build from Xcode onto the phone):
 - The «یه بیت» demo friend: search `yebeyt`, send a request (accepted at once), send a message (it answers with a couplet).
 - Build 202611242331 and later: back/close rows stay pinned at the top while you scroll; every bottom sheet shows a grabber and closes with a drag down; tabs slide, the reader springs up, lists spring instead of fading. Invite links on yebeyt.com show your own avatar.
 - Build 202611260306 and later: in «گوش کن» the clip stops before the second line starts (tell the lead if one gives the answer away); the games tab is a grid of boards; the «یه بیت» friend has no game chips in its chat; in chat, drag down or tap outside to close the keyboard, and shake works with the keyboard open; removing your couplet from a shared divan disappears for both people; on a small phone (SE) the daily puzzle and onboarding fit without scrolling and the back swipe works from the edge.
+- Build 202611271816 and later: من → تنظیمات shows your email (a «Hide My Email» address shows as «مخفی (اپل)») and the switch «خبرهای یه بیت رو برام ایمیل کن», off by default; turning it on stays after reopening. Signing in with Apple after Google (same email) lands in the same account.
 
 ## 3. Read when there's time
 
