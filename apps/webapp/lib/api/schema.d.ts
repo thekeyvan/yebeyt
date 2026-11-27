@@ -4952,6 +4952,10 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             providers: ("apple" | "google")[];
+            /** @description The verified email Apple or Google gave for this account (the newest sign-in method that has one; Apple's private relay address counts), or null. */
+            email: string | null;
+            /** @description Whether the person chose to get news and offers by email. Off by default; `PUT /v1/me/news` changes it. */
+            newsOptIn: boolean;
         };
         UserSearch: {
             items: components["schemas"]["FoundPerson"][];

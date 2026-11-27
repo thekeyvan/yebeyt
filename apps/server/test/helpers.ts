@@ -119,8 +119,8 @@ export async function makeHarness(uploadBudgets?: UploadBudgets) {
   const nowSec = () => Math.floor(clock.time.getTime() / 1000);
   const appleToken = (sub: string, extra: JWTPayload = {}, opts: Partial<{ iss: string; aud: string; exp: number }> = {}) =>
     apple.sign({ sub, nonce: nonceHash(NONCE), ...extra }, { iss: "https://appleid.apple.com", aud: BUNDLE_ID, iat: nowSec(), exp: nowSec() + 600, ...opts });
-  const googleToken = (sub: string, opts: Partial<{ iss: string; aud: string; exp: number }> = {}) =>
-    google.sign({ sub }, { iss: "https://accounts.google.com", aud: GOOGLE_CLIENT, iat: nowSec(), exp: nowSec() + 600, ...opts });
+  const googleToken = (sub: string, opts: Partial<{ iss: string; aud: string; exp: number }> = {}, claims: JWTPayload = {}) =>
+    google.sign({ sub, ...claims }, { iss: "https://accounts.google.com", aud: GOOGLE_CLIENT, iat: nowSec(), exp: nowSec() + 600, ...opts });
 
   const request = (path: string, init: RequestInit & { token?: string; json?: unknown } = {}) => {
     const { token, json, ...rest } = init;

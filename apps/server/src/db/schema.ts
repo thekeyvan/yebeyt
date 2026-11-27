@@ -34,6 +34,8 @@ export const users = pgTable(
     displayName: text("display_name"),
     avatar: jsonb("avatar").$type<Avatar>(),
     /** The built-in demo friend «یه بیت» (src/house.ts): no identity, so nobody signs in as it. At most one user has it. */
+    /** When the person switched on «خبرهای یه بیت رو برام ایمیل کن» (news and offers by email); null is no. */
+    newsOptInAt: timestamptz("news_opt_in_at"),
     isHouse: boolean("is_house").notNull().default(false),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
@@ -44,7 +46,12 @@ export const users = pgTable(
   ],
 );
 
-/** One sign-in method of a user. `appleRefreshToken` is stored encrypted (see src/crypto.ts). */
+/**
+ * One sign-in method of a user. `appleRefreshToken` is stored encrypted (see src/crypto.ts). `email` is the address the
+ * provider said is verified (lower-cased, trimmed; Apple's private relay address too), null when it gave none. It runs the
+ * account, links sign-in methods (two with one email are one person, src/users.ts) and is where mail to the person goes.
+ * Never log it.
+ */
 export const identities = pgTable(
   "identities",
   {
@@ -53,9 +60,10 @@ export const identities = pgTable(
     provider: text("provider", { enum: ["apple", "google"] }).notNull(),
     subject: text("subject").notNull(),
     appleRefreshToken: text("apple_refresh_token"),
+    email: text("email"),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
   },
-  (t) => [unique("identities_provider_subject").on(t.provider, t.subject), index("identities_user").on(t.userId)],
+  (t) => [unique("identities_provider_subject").on(t.provider, t.subject), index("identities_user").on(t.userId), index("identities_email").on(t.email)],
 );
 
 /** Refresh tokens. Only the sha256 of the token is stored. A family is one sign-in and its rotations. */

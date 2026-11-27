@@ -61,6 +61,7 @@ describe("OpenAPI document", () => {
       "/v1/me/friend-requests",
       "/v1/me/friends",
       "/v1/me/games",
+      "/v1/me/news",
       "/v1/me/privacy",
       "/v1/me/profile",
       "/v1/me/progress",

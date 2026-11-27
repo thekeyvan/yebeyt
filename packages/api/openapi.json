@@ -100,6 +100,17 @@
                 "google"
               ]
             }
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The verified email Apple or Google gave for this account (the newest sign-in method that has one; Apple's private relay address counts), or null."
+          },
+          "newsOptIn": {
+            "type": "boolean",
+            "description": "Whether the person chose to get news and offers by email. Off by default; `PUT /v1/me/news` changes it."
           }
         },
         "required": [
@@ -109,7 +120,9 @@
           "avatar",
           "usernameChangedAt",
           "createdAt",
-          "providers"
+          "providers",
+          "email",
+          "newsOptIn"
         ]
       },
       "Avatar": {
@@ -306,6 +319,18 @@
         "required": [
           "displayName"
         ]
+      },
+      "SetNewsRequest": {
+        "type": "object",
+        "properties": {
+          "optIn": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "optIn"
+        ],
+        "additionalProperties": false
       },
       "SetUsernameRequest": {
         "type": "object",
@@ -3420,6 +3445,62 @@
           },
           "400": {
             "description": "invalid_request: empty, longer than 30 characters, or with control characters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/news": {
+      "put": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Choose whether to get news and offers by email",
+        "description": "Off by default. `optIn: true` records now as the time of the choice (a repeat keeps the first time); `false` clears it. Only the person's own choice sends anything: the email is the one in `GET /v1/me`.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetNewsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The user with the new choice.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: `optIn` is missing or not a boolean.",
             "content": {
               "application/json": {
                 "schema": {

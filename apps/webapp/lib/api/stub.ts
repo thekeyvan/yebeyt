@@ -53,7 +53,7 @@ function debugSession(given: Partial<Spec>): Response {
 function accountOf(spec: Spec): Account {
   let account = accounts.get(spec.id);
   if (!account) {
-    const user = { id: spec.id, username: spec.username, displayName: spec.displayName, avatar: null, usernameChangedAt: null, createdAt: "2026-11-20T08:00:00.000Z", providers: [spec.provider] };
+    const user = { id: spec.id, username: spec.username, displayName: spec.displayName, avatar: null, usernameChangedAt: null, createdAt: "2026-11-20T08:00:00.000Z", providers: [spec.provider], email: null, newsOptIn: false };
     account = { spec, user, divan: new Map(), reactions: new Map(), rounds: new Set(), points: 0, progress: { points: 0, streakDays: 0, streakLastDate: null, bestByGame: {} }, privacy: { ...privacyDefaults }, world: new World(), messages: new MessagesWorld(), play: new PlayWorld() };
     accounts.set(spec.id, account);
   }

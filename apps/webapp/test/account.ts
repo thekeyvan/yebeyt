@@ -2,7 +2,7 @@ import { ApiError, type User } from "../lib/account/api";
 import type { SessionLike } from "../lib/account/session";
 
 /** A user of the contract with only an id that matters. */
-export const userOf = (id = "u1", username: string | null = "niloofar"): User => ({ id, username, displayName: null, avatar: null, usernameChangedAt: null, createdAt: "2026-11-20T08:00:00.000Z", providers: ["apple"] });
+export const userOf = (id = "u1", username: string | null = "niloofar"): User => ({ id, username, displayName: null, avatar: null, usernameChangedAt: null, createdAt: "2026-11-20T08:00:00.000Z", providers: ["apple"], email: null, newsOptIn: false });
 
 /** A session that is signed in as `id`, or a guest's. */
 export function sessionOf(signedIn = true, id = "u1"): SessionLike & { user: User | undefined; isSignedIn: boolean } {

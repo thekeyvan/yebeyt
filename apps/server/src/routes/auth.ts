@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { exchangeAppleCode } from "../auth/apple.js";
-import { verifyAppleIdentityToken, verifyGoogleIdToken } from "../auth/providers.js";
+import { verifyAppleIdentityToken, verifyGoogleIdToken, type VerifiedIdentity } from "../auth/providers.js";
 import { issueSession, logoutSession, rotateSession } from "../auth/sessions.js";
 import type { Deps } from "../deps.js";
 import { errorResponse } from "../errors.js";
@@ -36,8 +36,8 @@ const googleBody = z.object({ idToken: z.string().min(1).max(8192) }).openapi("G
 export function authRoutes(deps: Deps) {
   const app = newRouter();
 
-  const startSession = async (provider: Provider, subject: string, appleToken?: string | null) => {
-    const userId = await upsertUser(deps.db, provider, subject, appleToken);
+  const startSession = async (provider: Provider, identity: VerifiedIdentity, appleToken?: string | null) => {
+    const userId = await upsertUser(deps.db, provider, identity.subject, identity.email, appleToken);
     const tokens = await issueSession(deps, userId);
     return { ...tokens, user: (await getUserView(deps.db, userId))! };
   };
@@ -56,7 +56,7 @@ export function authRoutes(deps: Deps) {
       if (body.redirectUri !== undefined && !deps.config.appleRedirectUris.includes(body.redirectUri)) return c.json({ error: "invalid_request" as const }, 400);
       const identity = await verifyAppleIdentityToken(body.identityToken, body.nonce, deps);
       const sealed = body.authorizationCode ? await exchangeAppleCode(deps, body.authorizationCode, identity.audience, body.redirectUri) : null;
-      return c.json(await startSession("apple", identity.subject, sealed), 200);
+      return c.json(await startSession("apple", identity, sealed), 200);
     },
   );
 
@@ -71,7 +71,7 @@ export function authRoutes(deps: Deps) {
     }),
     async (c) => {
       const identity = await verifyGoogleIdToken(c.req.valid("json").idToken, deps);
-      return c.json(await startSession("google", identity.subject), 200);
+      return c.json(await startSession("google", identity), 200);
     },
   );
 

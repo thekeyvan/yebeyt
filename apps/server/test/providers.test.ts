@@ -23,14 +23,15 @@ const appleDeps = () => ({ now: () => now, appleKeys: apple.keys, config });
 const googleDeps = () => ({ now: () => now, googleKeys: google.keys, config });
 const signApple = (claims = {}, o: Partial<{ iss: string; aud: string; exp: number }> = {}) =>
   apple.sign({ sub: "001.abc", nonce: nonceHash("n"), ...claims }, { iss: APPLE, aud: BUNDLE_ID, iat: sec, exp: sec + 600, ...o });
-const signGoogle = (o: Partial<{ iss: string; aud: string; exp: number }> = {}) =>
-  google.sign({ sub: "1234567890" }, { iss: "https://accounts.google.com", aud: GOOGLE_CLIENT, iat: sec, exp: sec + 600, ...o });
+const signGoogle = (o: Partial<{ iss: string; aud: string; exp: number }> = {}, claims = {}) =>
+  google.sign({ sub: "1234567890", ...claims }, { iss: "https://accounts.google.com", aud: GOOGLE_CLIENT, iat: sec, exp: sec + 600, ...o });
 
 describe("Apple identity token", () => {
   it("accepts a good token", async () => {
     expect(await verifyAppleIdentityToken(await signApple({ nonce: nonceHash("n") }), "n", appleDeps())).toEqual({
       subject: "001.abc",
       audience: BUNDLE_ID,
+      email: null,
     });
   });
 
@@ -62,6 +63,7 @@ describe("Google id token", () => {
       expect(await verifyGoogleIdToken(await signGoogle({ iss }), googleDeps())).toEqual({
         subject: "1234567890",
         audience: GOOGLE_CLIENT,
+        email: null,
       });
     }
   });
@@ -74,5 +76,31 @@ describe("Google id token", () => {
     ]) {
       await expect(verifyGoogleIdToken(token, googleDeps())).rejects.toMatchObject({ code: "invalid_token", status: 401 });
     }
+  });
+});
+
+describe("the verified email claim", () => {
+  const appleEmail = async (claims: object) => (await verifyAppleIdentityToken(await signApple(claims), "n", appleDeps())).email;
+  const googleEmail = async (claims: object) => (await verifyGoogleIdToken(await signGoogle({}, claims), googleDeps())).email;
+
+  it("Google: only when email_verified is true; lower-cased and trimmed", async () => {
+    expect(await googleEmail({ email: "  Ali@Example.COM ", email_verified: true })).toBe("ali@example.com");
+    expect(await googleEmail({ email: "ali@example.com", email_verified: false })).toBeNull();
+    expect(await googleEmail({ email: "ali@example.com", email_verified: "true" })).toBeNull();
+    expect(await googleEmail({ email: "ali@example.com" })).toBeNull();
+    expect(await googleEmail({ email_verified: true })).toBeNull();
+    expect(await googleEmail({ email: "   ", email_verified: true })).toBeNull();
+    expect(await googleEmail({ email: 42, email_verified: true })).toBeNull();
+  });
+
+  it("Apple: verified as a boolean or the string \"true\"; the private relay address counts", async () => {
+    expect(await appleEmail({ email: "Ali@Example.com", email_verified: true })).toBe("ali@example.com");
+    expect(await appleEmail({ email: "ali@example.com", email_verified: "true" })).toBe("ali@example.com");
+    expect(await appleEmail({ email: "ali@example.com", email_verified: "true", is_private_email: "false" })).toBe("ali@example.com");
+    expect(await appleEmail({ email: "ali@example.com", email_verified: true, is_private_email: false })).toBe("ali@example.com");
+    expect(await appleEmail({ email: "X@privaterelay.appleid.com", email_verified: "true", is_private_email: "true" })).toBe("x@privaterelay.appleid.com");
+    expect(await appleEmail({ email: "x@privaterelay.appleid.com", email_verified: true, is_private_email: true })).toBe("x@privaterelay.appleid.com");
+    expect(await appleEmail({ email: "ali@example.com", email_verified: "false" })).toBeNull();
+    expect(await appleEmail({ email: "ali@example.com" })).toBeNull();
   });
 });

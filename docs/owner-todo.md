@@ -61,6 +61,7 @@ State now:
 - TestFlight: internal group «K&S Team» exists. Test Information (beta description, feedback email, privacy URL, review contact) is empty; needed only for external testers.
 
 For you:
+- **Apple email sources (before any email is sent):** in developer.apple.com → Certificates, Identifiers & Profiles → More → Sign in with Apple → «Register Email Sources for Communication», register the domain `yebeyt.com` and the sender `hello@yebeyt.com`. Until then, mail to a person who chose Apple's «Hide My Email» (an address `…@privaterelay.appleid.com`) is dropped by Apple. The server already keeps these relay addresses.
 - **The screen recording for App Review:** on your phone, once 2.0 is on TestFlight: launch, browse, a game, sign in with Apple, a friend request, a message, report and block, delete the account. The lead writes the script when the build is ready.
 - **Permission from Ganjoor (for Apple's point 6):** ganjoor-data has no licence file. The poems are public domain, but the meanings and summaries are Ganjoor's own work. Ganjoor's about page says it publishes its data so others can do similar work, which shows intent but isn't a permission. Please send this from hello@yebeyt.com through https://ganjoor.net/contact (or to Hamid Reza Mohammadi directly) and keep the reply; the lead attaches it to the App Review notes:
 
@@ -81,8 +82,11 @@ The app has a privacy manifest (`apps/ios/Yebeyt/PrivacyInfo.xcprivacy`): no tra
 | Diagnostics → Other Diagnostic Data | The «اطلاعات فنی» of a bug report (screen, couplet, reader mode, recitation position, text settings, network type, account state, recent error codes), plus app version, phone model and system version on every report | Yes (the report carries the user when signed in; a guest's report carries nobody) | No | App Functionality |
 | Usage Data → Product Interaction | The last ≤20 screen names visited, sent only with a bug report (names only, never text) | Yes (same) | No | App Functionality |
 | User Content → Other User Content | The text of a report, its screenshot (the person may draw on or cover parts of it) and the optional screen recording | Yes (same) | No | App Functionality |
+| Contact Info → Email Address | The verified email Apple or Google gives at sign-in, kept on the account (Apple's private relay address too) to run the account, to make Apple and Google with one email a single account, and to write to the person about the account | Yes | No | App Functionality |
+| Contact Info → Email Address (the same row) | The same email, used for news and offers **only** when the person switches on «خبرهای یه بیت رو برام ایمیل کن» (off by default; `users.news_opt_in_at`) | Yes | No | Developer's Advertising or Marketing |
 
 Notes:
+- The email rows were added on 27 Nov (the owner chose to keep the email). `PrivacyInfo.xcprivacy` does not list account data (name, user id, email) yet; the lead adds them with the rest of the account entries (see the last note), so this slice did not touch the file.
 - Reports also keep nothing about the connection: no IP address, location or device id (the server logs only method, route, status and time).
 - The manifest can only say «linked», not «linked when signed in», so it says linked. In the label, answer «Yes, linked to the user» as above.
 - Questions for the lead's review: should the report text be filed under **Customer Support** and screenshots/recordings under **Photos or Videos** instead of Other User Content? Sign-in and sync already send a name, a username and a user id, the divan and game scores: the manifest and the label need those entries too when the accounts slices are reviewed for the App Store (this slice added only the feedback ones).

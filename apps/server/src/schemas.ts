@@ -16,6 +16,8 @@ export const userSchema = z
     usernameChangedAt: z.iso.datetime().nullable(),
     createdAt: z.iso.datetime(),
     providers: z.array(z.enum(["apple", "google"])),
+    email: z.string().nullable().openapi({ description: "The verified email Apple or Google gave for this account (the newest sign-in method that has one; Apple's private relay address counts), or null." }),
+    newsOptIn: z.boolean().openapi({ description: "Whether the person chose to get news and offers by email. Off by default; `PUT /v1/me/news` changes it." }),
   })
   .openapi("User");
 

@@ -3,7 +3,8 @@ import { sha256Hex } from "../crypto.js";
 import type { Deps } from "../deps.js";
 import { ApiError } from "../errors.js";
 
-export type VerifiedIdentity = { subject: string; audience: string };
+/** `email` is set only when the provider says it is verified (Apple's private relay address included): lower-cased and trimmed. */
+export type VerifiedIdentity = { subject: string; audience: string; email: string | null };
 
 const APPLE_ISSUER = "https://appleid.apple.com";
 const GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
@@ -14,7 +15,7 @@ async function verify(
   keys: Deps["appleKeys"],
   issuer: string | string[],
   allowedAudiences: string[],
-): Promise<{ payload: Awaited<ReturnType<typeof jwtVerify>>["payload"]; identity: VerifiedIdentity }> {
+): Promise<{ payload: Awaited<ReturnType<typeof jwtVerify>>["payload"]; identity: Pick<VerifiedIdentity, "subject" | "audience"> }> {
   try {
     const { payload } = await jwtVerify(token, keys, {
       issuer,
@@ -32,6 +33,15 @@ async function verify(
   }
 }
 
+/** Apple sends these claims as booleans or as the strings "true"/"false"; Google sends booleans. */
+const isTrue = (claim: unknown): boolean => claim === true || claim === "true";
+
+const cleanEmail = (claim: unknown): string | null => {
+  if (typeof claim !== "string") return null;
+  const email = claim.trim().toLowerCase();
+  return email.length > 0 && email.length <= 320 ? email : null;
+};
+
 /** Apple puts sha256(nonce) in the token's `nonce` claim; the app sends the raw nonce and we always compare. */
 export async function verifyAppleIdentityToken(
   token: string,
@@ -40,12 +50,14 @@ export async function verifyAppleIdentityToken(
 ): Promise<VerifiedIdentity> {
   const { payload, identity } = await verify(token, deps, deps.appleKeys, APPLE_ISSUER, deps.config.appleBundleIds);
   if (payload.nonce !== sha256Hex(nonce)) throw new ApiError(401, "invalid_token");
-  return identity;
+  const email = isTrue(payload.email_verified) ? cleanEmail(payload.email) : null;
+  return { ...identity, email };
 }
 
 export async function verifyGoogleIdToken(
   token: string,
   deps: Pick<Deps, "now" | "googleKeys" | "config">,
 ): Promise<VerifiedIdentity> {
-  return (await verify(token, deps, deps.googleKeys, GOOGLE_ISSUERS, deps.config.googleClientIds)).identity;
+  const { payload, identity } = await verify(token, deps, deps.googleKeys, GOOGLE_ISSUERS, deps.config.googleClientIds);
+  return { ...identity, email: payload.email_verified === true ? cleanEmail(payload.email) : null };
 }

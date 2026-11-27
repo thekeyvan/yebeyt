@@ -2,7 +2,7 @@
 
 The backend at **api.yebeyt.com** (Railway): Hono, Postgres with Drizzle, Zod. The HTTP contract is `packages/api/openapi.json`, written from the code (see "The contract").
 
-Sign-in is Apple or Google only. The server keeps the provider's account id, the username and an optional display name (the name the person chose to show; it is never read from the provider's token), and nothing else about the person: no email, no IP. Logs are one line per request (method, route pattern, status, ms).
+Sign-in is Apple or Google only. The server keeps the provider's account id, the verified email the provider gives (to link Apple and Google with one email into one account, and to write to the person; never logged), the choice to get news by email (off by default), the username and an optional display name (the name the person chose to show; it is never read from the provider's token), and nothing else about the person: no IP. Logs are one line per request (method, route pattern, status, ms).
 
 ## Commands
 

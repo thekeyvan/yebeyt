@@ -23,7 +23,8 @@ export default function Privacy() {
         <h2>With an account (Sign in with Apple or Google)</h2>
         <p>An account is needed only for what has a server behind it: points and leagues, friends, messages, syncing your divan. If you sign in, we store this on our server:</p>
         <ul>
-          <li>The identifier Apple or Google gives us for your account. We do not store your email address. The app shows you the name Apple or Google gives it as a suggestion, but only the display name you keep is stored on our server. For Sign in with Apple we also keep an encrypted token so we can revoke the sign-in when you delete your account.</li>
+          <li>The identifier Apple or Google gives us for your account. The app shows you the name Apple or Google gives it as a suggestion, but only the display name you keep is stored on our server. For Sign in with Apple we also keep an encrypted token so we can revoke the sign-in when you delete your account.</li>
+          <li><b>Your email:</b> we keep the email address Apple or Google gives us, to run your account, so that signing in with Apple and with Google using the same email stays one account, and to write to you about your account. News and offers reach you only if you switch on «Email me yebeyt news» (خبرهای یه بیت رو برام ایمیل کن) in settings, and every such email has a way to stop them. With Apple&apos;s «Hide My Email» we only get Apple&apos;s relay address. Your email is deleted when you delete your account.</li>
           <li>Your username, the display name you kept (optional) and the face you built. These three are public: anyone with your invite link (yebeyt.com/i/…) can see them, and they are shown as the maker on the page of a challenge or game link you create.</li>
           <li>Sign-in tokens (only a one-way hash of them), which are replaced regularly.</li>
         </ul>
@@ -38,7 +39,7 @@ export default function Privacy() {
           <li><b>Games with friends and challenges:</b> مشاعره and the live duel with their moves, and the challenges you make with the results of the people who played them. A challenge and its results are deleted after 30 days.</li>
           <li><b>Privacy settings:</b> who sees your kept couplets and daily result, whether you show as online, who may message you or invite you to a game.</li>
         </ul>
-        <p>We use this only to make the app work. Nothing is sold.</p>
+        <p>We use this only to make the app work and to write to you. Nothing is sold.</p>
 
         <h2>Reporting people and messages</h2>
         <p>

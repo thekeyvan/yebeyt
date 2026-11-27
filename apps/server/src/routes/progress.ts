@@ -27,7 +27,7 @@ const progressSchema = z
   })
   .openapi("Progress");
 
-type Progress = z.infer<typeof progressSchema>;
+export type Progress = z.infer<typeof progressSchema>;
 
 const security = [{ bearerAuth: [] }];
 const okResponse = {
@@ -35,7 +35,8 @@ const okResponse = {
   401: errorResponse("Not signed in."),
 };
 
-function merge(a: Progress, b: Progress): Progress {
+/** The larger value of each field; also used when an empty account is merged into another (src/mergeAccounts.ts). */
+export function mergeProgress(a: Progress, b: Progress): Progress {
   const best = { ...a.bestByGame };
   for (const [game, points] of Object.entries(b.bestByGame)) best[game] = Math.max(best[game] ?? 0, points);
   const dates = [a.streakLastDate, b.streakLastDate].filter((d): d is string => d !== null).sort();
@@ -82,7 +83,7 @@ export function progressRoutes(deps: Deps) {
       const merged = await db.transaction(async (tx) => {
         await tx.insert(progress).values({ userId }).onConflictDoNothing();
         const [row] = await tx.select().from(progress).where(eq(progress.userId, userId)).for("update");
-        const next = merge(
+        const next = mergeProgress(
           { points: row!.points, streakDays: row!.streakDays, streakLastDate: row!.streakLastDate, bestByGame: row!.bestByGame },
           incoming,
         );

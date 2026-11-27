@@ -1,5 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import { and, eq, isNotNull, isNull, lte, or } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { revokeAppleToken } from "../auth/apple.js";
 import { isUniqueViolation } from "../db/index.js";
 import { identities, users } from "../db/schema.js";
@@ -79,6 +79,32 @@ export function meRoutes(deps: Deps) {
     async (c) => {
       const userId = c.get("userId");
       await db.update(users).set({ displayName: normalizeDisplayName(c.req.valid("json").displayName) }).where(eq(users.id, userId));
+      return c.json((await getUserView(db, userId))!, 200);
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "put",
+      path: "/v1/me/news",
+      tags: ["me"],
+      summary: "Choose whether to get news and offers by email",
+      description: "Off by default. `optIn: true` records now as the time of the choice (a repeat keeps the first time); `false` clears it. Only the person's own choice sends anything: the email is the one in `GET /v1/me`.",
+      security,
+      request: { body: { required: true, content: { "application/json": { schema: z.object({ optIn: z.boolean() }).strict().openapi("SetNewsRequest") } } } },
+      responses: {
+        200: { description: "The user with the new choice.", content: { "application/json": { schema: userSchema } } },
+        400: errorResponse("invalid_request: `optIn` is missing or not a boolean."),
+        401: errorResponse("Not signed in."),
+      },
+    }),
+    async (c) => {
+      const userId = c.get("userId");
+      const { optIn } = c.req.valid("json");
+      await db
+        .update(users)
+        .set({ newsOptInAt: optIn ? sql`coalesce(${users.newsOptInAt}, ${deps.now().toISOString()}::timestamptz)` : null })
+        .where(eq(users.id, userId));
       return c.json((await getUserView(db, userId))!, 200);
     },
   );
