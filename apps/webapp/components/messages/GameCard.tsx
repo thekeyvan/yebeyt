@@ -2,12 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useLibraryData, useStore } from "../../lib/library/browser";
+import { useStore } from "../../lib/library/browser";
 import { plain } from "../../lib/library/normalize";
 import { gameLine, type GameAction } from "../../lib/messages/gameLine";
 import { chatName, payloadOf, type ChatPerson, type Message } from "../../lib/messages/models";
 import { persianDigits } from "../../lib/persian";
-import { playCopy } from "../../lib/play/copy";
 import { gameURL } from "../../lib/play/routes";
 import { useServices } from "../account/useServices";
 import { LastLetter } from "../play/MoshMoves";

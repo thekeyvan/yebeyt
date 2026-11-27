@@ -76,8 +76,8 @@ const duel = (id = duelId) => ({ id, kind: "duel", turnSeconds: 8, status: "acti
 
 /** The first `count` couplets of the deck by a poet that a جورچین can be made of (a second hemistich of 3 to 14 words), as keys. */
 function deckKeys(poet: string, count: number): string[] {
-  const file = ["public/data/games.json", "../ios/Yebeyt/Resources/Data/games.json"].map((path) => join(process.cwd(), path)).find(existsSync);
-  if (!file) return [];
+  const file = join(process.cwd(), "public", "data", "games.json");
+  if (!existsSync(file)) return [];
   const entries = JSON.parse(readFileSync(file, "utf8")) as { poem: string; index: number; m2: string; poet: string }[];
   return entries.filter((entry) => entry.poet === poet && entry.m2.split(/\s+/).filter(Boolean).length >= 3 && entry.m2.split(/\s+/).filter(Boolean).length <= 14).slice(0, count).map((entry) => `${entry.poem}#${entry.index}`);
 }

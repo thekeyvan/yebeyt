@@ -57,6 +57,17 @@ describe("the lobby's choices", () => {
     expect(model.people.map((one) => one.username)).toEqual(["sara.ghazal", "kian_k", "mahsa.m"]);
   });
 
+  it("does not pick the friend of an address who cannot play or is not a friend, but keeps one who may be on a later page", async () => {
+    const named = { game: "duel", friend: face("yebeyt", "یه بیت") } as const;
+    const demo = await lobby(named, ["yebeyt", "sara.ghazal"], ["yebeyt"]);
+    expect([demo.selected, demo.people.map((one) => one.username)]).toEqual([[], ["sara.ghazal"]]);
+    const stranger = await lobby({ game: "mosh", friend: face("ghost") }, ["sara.ghazal"]);
+    expect([stranger.selected, stranger.people.map((one) => one.username)]).toEqual([[], ["sara.ghazal"]]);
+    const more = new LobbyModel({ friend: face("late.one") }, { friends: async () => ({ ...page(["sara.ghazal"]), nextCursor: "2" }) });
+    await more.loadFriends();
+    expect(more.selected).toEqual(["late.one"]);
+  });
+
   it("leaves a friend who cannot play out of the row", async () => {
     const model = await lobby({}, ["yebeyt", "sara.ghazal", "kian_k", "mahsa.m", "bardia"], ["yebeyt"]);
     expect(model.people.map((one) => one.username)).toEqual(["sara.ghazal", "kian_k", "mahsa.m"]);

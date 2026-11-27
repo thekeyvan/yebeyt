@@ -78,9 +78,12 @@ type AcceptApi = Pick<Api, "challenge" | "postChallengeResult">;
 
 export type AcceptPhase = { kind: "loading" } | { kind: "ready"; challenge: Challenge } | { kind: "failed"; line: string };
 
-/** The name a guest gives: trimmed, up to 30 characters (the server's limit); undefined when nothing is left. */
+/** The most characters of a guest's name (the server's limit). */
+export const nameMaxLength = 30;
+
+/** The name a guest gives: trimmed, up to `nameMaxLength` characters; undefined when nothing is left. */
 export function cleaned(name: string): string | undefined {
-  const trimmed = [...name.trim()].slice(0, 30).join("");
+  const trimmed = [...name.trim()].slice(0, nameMaxLength).join("");
   return trimmed === "" ? undefined : trimmed;
 }
 

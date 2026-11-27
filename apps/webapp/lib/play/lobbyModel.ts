@@ -59,7 +59,7 @@ export class LobbyModel extends Store<number> {
   private lateFailures = new Map<string, string>();
   private friends: PersonShort[] = [];
   private extras: PersonShort[] = [];
-  private readonly start?: PersonShort;
+  private start?: PersonShort;
 
   constructor(
     start: LobbyStart,
@@ -113,11 +113,19 @@ export class LobbyModel extends Store<number> {
     return { kind: "friendGame", game: this.chosenGame === "duel" ? "duel" : "mosh", ...(this.chosenGame === "mosh" ? { turnSeconds: this.seconds } : {}), invite: [...this.picked] };
   }
 
-  /** My friends who can play: «یه بیت» (`canPlay: false`) is not offered; a server that doesn't say counts as yes. */
+  /**
+   * My friends who can play: «یه بیت» (`canPlay: false`) is not offered; a server that doesn't say counts as yes. The friend an address names is dropped (not picked, not in the
+   * row) when they can't play, or when the whole list is read and they are not in it.
+   */
   async loadFriends(): Promise<void> {
     try {
       const page = await this.api.friends();
       this.friends = page.items.filter((friend) => friend.canPlay !== false);
+      const named = this.start?.username;
+      if (named !== undefined && !this.friends.some((friend) => friend.username === named) && (page.nextCursor === null || page.items.some((friend) => friend.username === named))) {
+        this.start = undefined;
+        this.picked = this.picked.filter((username) => username !== named);
+      }
       this.changed();
     } catch {
       // The row stays as it is.

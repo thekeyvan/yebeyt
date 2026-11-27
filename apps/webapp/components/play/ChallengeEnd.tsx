@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { feedbackPrivate } from "../../lib/feedbackPrivate";
 import type { RoundSummary } from "../../lib/games/summary";
-import { outcomeOf } from "../../lib/play/challengeModels";
+import { nameMaxLength, outcomeOf } from "../../lib/play/challengeModels";
 import { playCopy } from "../../lib/play/copy";
 import { playerName } from "../../lib/play/models";
 import { BigButton } from "../games/chrome";
@@ -68,6 +68,7 @@ export function ChallengeEnd({ answering, summary }: { answering: ChallengeAnswe
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 autoComplete="off"
+                maxLength={nameMaxLength}
                 enterKeyHint="send"
                 aria-label="اسمت"
                 placeholder="اسمت"

@@ -5,7 +5,7 @@ import { CoupletResolver } from "../lib/messages/resolver";
 import { chatName } from "../lib/messages/models";
 import type { Poem } from "../lib/poetry/models";
 import { fakeServer, none, ok } from "./friends";
-import { message, now, sara, utc } from "./messages";
+import { now, sara, utc } from "./messages";
 
 describe("the lead's lines (MessageCopyTests)", () => {
   it("errors become the lead's lines, and nothing technical reaches the screen", () => {
