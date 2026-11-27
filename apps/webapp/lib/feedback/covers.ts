@@ -33,7 +33,7 @@ function isHiddenBy(front: Element, element: Element): boolean {
   return false;
 }
 
-/** Where the private view is drawn (the part of it in the window and not clipped by an ancestor), unless something solid is in front of its middle. */
+/** Where the private view is drawn (the part of it in the window and not clipped by an ancestor), unless something solid is in front of all of it (every one of nine points over it: corners, edges, middle). */
 function visibleBox(element: Element, view: Box): Box | undefined {
   let box = intersect(boxOf(element.getBoundingClientRect()), view);
   for (let up = element.parentElement; up && box; up = up.parentElement) {
@@ -41,8 +41,19 @@ function visibleBox(element: Element, view: Box): Box | undefined {
     if (overflowX !== "visible" || overflowY !== "visible") box = intersect(box, boxOf(up.getBoundingClientRect()));
   }
   if (!box) return undefined;
-  const front = document.elementFromPoint((box.left + box.right) / 2, (box.top + box.bottom) / 2);
-  return front !== null && isHiddenBy(front, element) ? undefined : box;
+  return samples(box).every(([x, y]) => {
+    const front = document.elementFromPoint(x, y);
+    return front !== null && isHiddenBy(front, element);
+  })
+    ? undefined
+    : box;
+}
+
+/** Nine points of `box`: its corners and the middles of its edges (a pixel inside) and its middle. */
+export function samples(box: Box): [number, number][] {
+  const xs = [box.left + Math.min(1, (box.right - box.left) / 2), (box.left + box.right) / 2, box.right - Math.min(1, (box.right - box.left) / 2)];
+  const ys = [box.top + Math.min(1, (box.bottom - box.top) / 2), (box.top + box.bottom) / 2, box.bottom - Math.min(1, (box.bottom - box.top) / 2)];
+  return ys.flatMap((y) => xs.map((x): [number, number] => [x, y]));
 }
 
 /**

@@ -157,7 +157,7 @@ const rules: readonly Rule[] = [
   { methods: ["POST"], path: challenge(["v1", "challenges"], "results"), query: {}, auth: "optional" },
   { methods: ["POST"], path: exact("v1", "feedback"), query: {}, auth: "optional" },
   { methods: ["PUT"], path: feedbackFile("screenshot"), query: {}, auth: false, upload: { types: ["image/jpeg", "image/png"], maxBytes: maxScreenshotBytes } },
-  { methods: ["PUT"], path: feedbackFile("recording"), query: {}, auth: false, upload: { types: ["video/mp4"], maxBytes: maxRecordingBytes } },
+  { methods: ["PUT"], path: feedbackFile("recording"), query: {}, auth: false, upload: { types: ["video/mp4", "video/webm"], maxBytes: maxRecordingBytes } },
 ];
 
 /** Where a request goes on the server (path and query), whether it carries the session, and for a file what it may be; undefined for anything not allowed. */

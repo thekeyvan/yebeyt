@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { feedbackCopy } from "../../lib/feedback/center";
+import { feedbackCopy, stopWhenHidden } from "../../lib/feedback/center";
 import { feedbackLog } from "../../lib/feedback/log";
 import type { FeedbackModel } from "../../lib/feedback/model";
 import { privateSelector } from "../../lib/feedback/privacy";
@@ -48,6 +48,7 @@ export function FeedbackHost() {
   const pathname = usePathname();
   useEffect(() => feedbackLog.visit(screenAt(pathname)), [pathname]);
   useShortcut();
+  useEffect(() => stopWhenHidden(center), [center]);
 
   const { moment, isRecording, starting, isConfirmingClose } = state;
   const open = moment !== undefined && !isRecording && !starting;

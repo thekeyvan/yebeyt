@@ -8271,7 +8271,7 @@
           "feedback"
         ],
         "summary": "Attach a recording to a report",
-        "description": "For reports of type bug; video/mp4, at most 25 MB, and the first bytes must match the declared type; one per report, within 15 minutes of sending it. Hourly budget: 200 MB per signed-in user, 500 MB for all guests' reports together; refused uploads cost nothing. At most 3 uploads are handled at once, and the file must arrive within 60 seconds.",
+        "description": "For reports of type bug; video/mp4 or video/webm, at most 25 MB, and the first bytes must match the declared type; one per report, within 15 minutes of sending it. Hourly budget: 200 MB per signed-in user, 500 MB for all guests' reports together; refused uploads cost nothing. At most 3 uploads are handled at once, and the file must arrive within 60 seconds.",
         "parameters": [
           {
             "schema": {
@@ -8297,6 +8297,12 @@
           "required": true,
           "content": {
             "video/mp4": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "video/webm": {
               "schema": {
                 "type": "string",
                 "format": "binary"
@@ -8516,6 +8522,12 @@
                   "type": "string",
                   "format": "binary"
                 }
+              },
+              "video/webm": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
@@ -8591,6 +8603,12 @@
                 }
               },
               "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "video/webm": {
                 "schema": {
                   "type": "string",
                   "format": "binary"

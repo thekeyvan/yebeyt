@@ -274,7 +274,7 @@ describe("feedback attachments", () => {
     for (const type of ["image/webp", "image/gif", "text/html", "video/mp4", "application/octet-stream"]) {
       expect((await put(id, "screenshot", fakeFile("png", 10), type, uploadToken)).status).toBe(415);
     }
-    for (const type of ["image/png", "video/quicktime", "text/html"]) {
+    for (const type of ["image/png", "video/quicktime", "text/html", "video/x-matroska"]) {
       expect((await put(id, "recording", fakeFile("png", 10), type, uploadToken)).status).toBe(415);
     }
     expect((await put(id, "screenshot", fakeFile("png", 10), "image/png; charset=binary", uploadToken)).status).toBe(204);
@@ -303,6 +303,8 @@ describe("attachment contents", () => {
     expect((await put(id, "screenshot", fakeFile("jpeg", 100), "image/jpeg", uploadToken)).status).toBe(204);
     expect((await put(id, "recording", fakeFile("mp4", 100), "video/mp4", uploadToken)).status).toBe(204);
     await h.db.delete(feedbackAttachments);
+    expect((await put(id, "recording", fakeFile("webm", 100), "video/webm; codecs=vp9", uploadToken)).status).toBe(204);
+    await h.db.delete(feedbackAttachments);
     expect((await put(id, "screenshot", fakeFile("png", 100), "image/png", uploadToken)).status).toBe(204);
   });
 
@@ -314,6 +316,9 @@ describe("attachment contents", () => {
     ["screenshot", "mp4", "image/png"],
     ["recording", "png", "video/mp4"],
     ["recording", "html", "video/mp4"],
+    ["recording", "html", "video/webm"],
+    ["recording", "mp4", "video/webm"],
+    ["recording", "webm", "video/mp4"],
   ] as const)("refuses a %s whose bytes are %s but declared %s", async (kind, real, declared) => {
     const { id, uploadToken } = await created();
     const res = await put(id, kind, fakeFile(real, 100), declared, uploadToken);
@@ -326,6 +331,7 @@ describe("attachment contents", () => {
     const { id, uploadToken } = await created();
     expect((await put(id, "screenshot", fakeFile("png", 4), "image/png", uploadToken)).status).toBe(415);
     expect((await put(id, "recording", fakeFile("mp4", 6), "video/mp4", uploadToken)).status).toBe(415);
+    expect((await put(id, "recording", fakeFile("webm", 3), "video/webm", uploadToken)).status).toBe(415);
   });
 });
 

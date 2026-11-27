@@ -13,7 +13,7 @@ describe("what the /api door lets through for feedback (W9)", () => {
 
   it("lets the two uploads through with no session (the upload token is their key), each with its types and its size", () => {
     expect(route("PUT", `v1/feedback/${id}/screenshot`)).toEqual({ path: `/v1/feedback/${id}/screenshot`, auth: false, upload: { types: ["image/jpeg", "image/png"], maxBytes: 3 * MB } });
-    expect(route("PUT", `v1/feedback/${id}/recording`)).toEqual({ path: `/v1/feedback/${id}/recording`, auth: false, upload: { types: ["video/mp4"], maxBytes: 25 * MB } });
+    expect(route("PUT", `v1/feedback/${id}/recording`)).toEqual({ path: `/v1/feedback/${id}/recording`, auth: false, upload: { types: ["video/mp4", "video/webm"], maxBytes: 25 * MB } });
     expect([maxScreenshotBytes, maxRecordingBytes]).toEqual([3 * MB, 25 * MB]);
   });
 
@@ -63,9 +63,12 @@ describe("uploads through the door", () => {
 
   it("takes a recording of up to 25 MB and a screenshot of up to 3 MB, and not a byte more", async () => {
     const mp4 = (size: number) => put(filmPath, new Uint8Array(size), { "content-type": "video/mp4", ...token });
+    const webm = (size: number) => put(filmPath, new Uint8Array(size), { "content-type": "video/webm;codecs=vp9", ...token });
     const jpeg = (size: number) => put(shotPath, new Uint8Array(size), { "content-type": "image/jpeg", ...token });
     expect((await proxy(createBff(calls().send), mp4(25 * MB))).status).toBe(204);
     expect((await proxy(createBff(calls().send), mp4(25 * MB + 1))).status).toBe(413);
+    expect((await proxy(createBff(calls().send), webm(25 * MB))).status).toBe(204);
+    expect((await proxy(createBff(calls().send), webm(25 * MB + 1))).status).toBe(413);
     expect((await proxy(createBff(calls().send), jpeg(3 * MB))).status).toBe(204);
     expect((await proxy(createBff(calls().send), jpeg(3 * MB + 1))).status).toBe(413);
   });
@@ -91,6 +94,8 @@ describe("uploads through the door", () => {
     const bff = createBff(up.send);
     expect((await proxy(bff, put(shotPath, new Uint8Array(4), { "content-type": "video/mp4", ...token }))).status).toBe(415);
     expect((await proxy(bff, put(filmPath, new Uint8Array(4), { "content-type": "image/jpeg", ...token }))).status).toBe(415);
+    expect((await proxy(bff, put(shotPath, new Uint8Array(4), { "content-type": "video/webm", ...token }))).status).toBe(415);
+    expect((await proxy(bff, put(filmPath, new Uint8Array(4), { "content-type": "video/quicktime", ...token }))).status).toBe(415);
     expect((await proxy(bff, put(shotPath, new Uint8Array(4), { "content-type": "text/html", ...token }))).status).toBe(415);
     expect((await proxy(bff, put(shotPath, new Uint8Array(4), { "content-type": "image/jpeg" }))).status).toBe(403);
     expect((await proxy(bff, put(shotPath, new Uint8Array(4), { "content-type": "image/jpeg", "x-upload-token": "a b" }))).status).toBe(403);

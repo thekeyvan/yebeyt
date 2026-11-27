@@ -27,8 +27,8 @@ class Refused extends ApiError {
 type Created = { id: string; uploadToken: string };
 type Kind = "screenshot" | "recording";
 
-/** The media type each file is sent as: what the server accepts (JPEG or PNG for a screenshot, MP4 for a recording), whatever the blob says. */
-const mediaTypes: Record<Kind, string> = { screenshot: "image/jpeg", recording: "video/mp4" };
+/** The media type a file is sent as: what the server accepts. A screenshot is always the JPEG made of it; a recording is the WebM or MP4 it was recorded as (without its codecs). */
+const mediaTypeOf = (kind: Kind, file: Blob): string => (kind === "screenshot" ? "image/jpeg" : file.type.startsWith("video/webm") ? "video/webm" : "video/mp4");
 
 /** The line to show for a call that failed. */
 export function lineFor(error: ApiError): string {
@@ -121,7 +121,7 @@ export class FeedbackSender {
 
   /** Busy servers are asked once more after their `Retry-After`. A file the server will never take (too big, the wrong kind, a token that ran out) or already has is left out: the report itself has arrived. */
   private async attach(kind: Kind, file: Blob, report: Created): Promise<void> {
-    const put = () => this.call(`/v1/feedback/${report.id}/${kind}`, { method: "PUT", headers: { "content-type": mediaTypes[kind], "x-upload-token": report.uploadToken }, body: file });
+    const put = () => this.call(`/v1/feedback/${report.id}/${kind}`, { method: "PUT", headers: { "content-type": mediaTypeOf(kind, file), "x-upload-token": report.uploadToken }, body: file });
     try {
       try {
         await put();

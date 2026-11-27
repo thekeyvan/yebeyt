@@ -27,7 +27,7 @@ export const UPLOAD_BUDGETS: UploadBudgets = { guests: 500 * MB, user: 200 * MB 
 
 const KINDS = {
   screenshot: { types: ["bug", "annoyed", "idea"], contentTypes: ["image/jpeg", "image/png"], maxBytes: 3 * MB },
-  recording: { types: ["bug"], contentTypes: ["video/mp4"], maxBytes: 25 * MB },
+  recording: { types: ["bug"], contentTypes: ["video/mp4", "video/webm"], maxBytes: 25 * MB },
 } as const;
 
 /**

@@ -49,6 +49,14 @@ describe("sending a report (FeedbackSenderTests)", () => {
     expect(door.seen[0]!.headers["content-type"]).toBe("application/json");
   });
 
+  it("a WebM recording goes as video/webm (without its codecs), an MP4 one as video/mp4", async () => {
+    for (const [type, sent] of [["video/webm;codecs=vp9", "video/webm"], ["video/webm", "video/webm"], ["video/mp4", "video/mp4"], ["", "video/mp4"]] as const) {
+      const door = server(happy);
+      await new FeedbackSender({ send: door.send, log: new FeedbackLog() }).submit(payload(), { recording: new Blob([new Uint8Array([1, 2])], { type }) });
+      expect(door.seen[1]!.headers["content-type"], type).toBe(sent);
+    }
+  });
+
   it("a report refused with 401 (a session the server no longer knows) is sent again, as a guest's", async () => {
     let first = true;
     const door = server((call) => (call.path === reportPath && first ? ((first = false), json(401, { error: "unauthorized" })) : happy(call)));

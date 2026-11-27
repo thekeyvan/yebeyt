@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FeedbackCenter, feedbackCopy, recordingNote, type Browser } from "../lib/feedback/center";
+import { FeedbackCenter, feedbackCopy, recordingNote, stopWhenHidden, wrongPageNote, type Browser } from "../lib/feedback/center";
 import { FeedbackLog } from "../lib/feedback/log";
 import { FeedbackModel } from "../lib/feedback/model";
 import type { Mark } from "../lib/feedback/markup";
@@ -326,6 +326,49 @@ describe("recording", () => {
     const none = fixture();
     none.recorder.isAvailable = false;
     expect(none.center.recordingAvailable).toBe(false);
+  });
+
+  it("another tab, a window or the screen is refused with a line, the covers come off, and the option stays", async () => {
+    const f = fixture();
+    f.recorder.result = "elsewhere";
+    await start(f);
+    expect(f.said).toEqual([wrongPageNote]);
+    expect(wrongPageNote).toBe("فقط همین صفحه رو انتخاب کن");
+    expect(f.center.snapshot()).toMatchObject({ isRecording: false, starting: false, recordingRefused: false });
+    expect(f.covers).toEqual({ on: 1, off: 1 });
+    expect(f.center.recordingAvailable).toBe(true);
+  });
+
+  it("the recording stops when the page is hidden or left, and not when it is shown", async () => {
+    const f = fixture();
+    f.recorder.clip = { blob: new Blob(["v"]), seconds: 4 };
+    const hidden = (state: DocumentVisibilityState) => Object.defineProperty(document, "visibilityState", { value: state, configurable: true });
+    const stopListening = stopWhenHidden(f.center);
+    await start(f);
+    hidden("visible");
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(f.center.snapshot().isRecording).toBe(true);
+    hidden("hidden");
+    document.dispatchEvent(new Event("visibilitychange"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.center.snapshot().isRecording).toBe(false);
+    expect(f.center.snapshot().model?.snapshot().recording?.seconds).toBe(4);
+    expect(f.covers).toEqual({ on: 1, off: 1 });
+
+    hidden("visible");
+    await f.center.startRecording();
+    expect(f.center.snapshot().isRecording).toBe(true);
+    window.dispatchEvent(new Event("pagehide"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.center.snapshot().isRecording).toBe(false);
+
+    stopListening();
+    await f.center.startRecording();
+    hidden("hidden");
+    document.dispatchEvent(new Event("visibilitychange"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.center.snapshot().isRecording).toBe(true);
+    hidden("visible");
   });
 
   it("only a bug takes a recording, and not while one is on", async () => {

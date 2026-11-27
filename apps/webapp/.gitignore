@@ -9,3 +9,5 @@ public/data/
 test-results/
 e2e/__screenshots__/
 .next-prod/
+# Written by every Next build (agent rules for Next)
+AGENTS.md

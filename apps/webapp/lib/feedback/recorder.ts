@@ -7,10 +7,11 @@ export const maxBytes = 25_000_000;
 /** Bits per second that keep a full-length recording at 80% of the size limit, and never above 2.5 Mbit. */
 export const bitrate = (seconds = maxSeconds, bytes = maxBytes): number => Math.min(2_500_000, Math.floor((bytes * 8 * 8) / 10 / Math.max(seconds, 1)));
 
-/** What was recorded: an MP4 (the only kind the server takes) and its length in seconds. */
+/** What was recorded: an MP4 or a WebM (the two kinds the server takes) and its length in seconds. */
 export type Clip = { blob: Blob; seconds: number };
 
-export type StartResult = "started" | "denied" | "failed";
+/** «elsewhere»: the person chose another tab, a window or the whole screen, which is refused (only this page is recorded). */
+export type StartResult = "started" | "denied" | "failed" | "elsewhere";
 
 /** What the feedback flow needs from a screen recorder (a fake one stands in for it in tests). */
 export interface ScreenRecording {
@@ -21,13 +22,18 @@ export interface ScreenRecording {
   stop(): Promise<Clip | undefined>;
 }
 
-const mp4Types = ["video/mp4;codecs=avc1", "video/mp4"];
+/** What the browser records, the one it likes best first: MP4 where it can (it plays everywhere), else WebM. */
+const recordingTypes = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
 
-const mp4Type = (): string | undefined => (typeof MediaRecorder === "undefined" ? undefined : mp4Types.find((type) => MediaRecorder.isTypeSupported(type)));
+const recordingType = (): string | undefined => (typeof MediaRecorder === "undefined" ? undefined : recordingTypes.find((type) => MediaRecorder.isTypeSupported(type)));
+
+type Devices = MediaDevices & { setCaptureHandleConfig?: (config: { handle: string; exposeOrigin: boolean; permittedOrigins: string[] }) => void };
+type CapturedTrack = MediaStreamTrack & { getCaptureHandle?: () => { handle?: string } | null | undefined };
 
 /**
- * The browser's own screen capture (`getDisplayMedia`) recorded with `MediaRecorder`, no sound. The server takes only MP4, so a browser that can't record MP4 (Firefox, a
- * Chrome older than 126) has no recording; a browser with no `getDisplayMedia` (iPhone Safari) neither.
+ * The browser's own screen capture (`getDisplayMedia`) recorded with `MediaRecorder`, no sound, of this page only: the prompt is asked for this tab (and offers no other
+ * tab, window or screen where the browser lets it be so), and a stream that is not this tab is refused and stopped. A browser with no `getDisplayMedia` (iPhone Safari), none that
+ * can record MP4 or WebM, or none that says which surface it captures (`displaySurface`, so it can't be checked) has no recording.
  */
 export class BrowserRecorder implements ScreenRecording {
   private recorder?: MediaRecorder;
@@ -35,29 +41,51 @@ export class BrowserRecorder implements ScreenRecording {
   private started = 0;
 
   get isAvailable(): boolean {
-    return typeof navigator.mediaDevices?.getDisplayMedia === "function" && mp4Type() !== undefined;
+    const devices = navigator.mediaDevices;
+    return typeof devices?.getDisplayMedia === "function" && devices.getSupportedConstraints?.().displaySurface === true && recordingType() !== undefined;
   }
 
   async start(ended: () => void): Promise<StartResult> {
-    const type = mp4Type();
+    const type = recordingType();
     if (!type) return "failed";
+    const devices = navigator.mediaDevices as Devices;
+    // Capture Handle, where there is one: this tab gives itself a name only it knows, and the captured tab must say it.
+    const handle = crypto.randomUUID();
+    try {
+      devices.setCaptureHandleConfig?.({ handle, exposeOrigin: false, permittedOrigins: [location.origin] });
+    } catch {
+      // No handle: the surface is checked without it.
+    }
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false, preferCurrentTab: true } as DisplayMediaStreamOptions);
+      stream = await devices.getDisplayMedia({
+        video: { frameRate: 30, displaySurface: "browser" },
+        audio: false,
+        preferCurrentTab: true,
+        selfBrowserSurface: "include",
+        surfaceSwitching: "exclude",
+        monitorTypeSurfaces: "exclude",
+      } as DisplayMediaStreamOptions);
     } catch (error) {
       return error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError") ? "denied" : "failed";
+    }
+    const track = stream.getVideoTracks()[0] as CapturedTrack | undefined;
+    const handled = typeof devices.setCaptureHandleConfig !== "function" || typeof track?.getCaptureHandle !== "function" || track.getCaptureHandle()?.handle === handle;
+    if (!track || (track.getSettings() as { displaySurface?: string }).displaySurface !== "browser" || !handled) {
+      stream.getTracks().forEach((each) => each.stop());
+      return "elsewhere";
     }
     try {
       const recorder = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: bitrate() });
       this.chunks = [];
       recorder.ondataavailable = ({ data }) => data.size > 0 && this.chunks.push(data);
-      stream.getVideoTracks().forEach((track) => track.addEventListener("ended", ended));
+      track.addEventListener("ended", ended);
       recorder.start(1000);
       this.started = Date.now();
       this.recorder = recorder;
       return "started";
     } catch {
-      stream.getTracks().forEach((track) => track.stop());
+      stream.getTracks().forEach((each) => each.stop());
       return "failed";
     }
   }
@@ -74,7 +102,12 @@ export class BrowserRecorder implements ScreenRecording {
       });
     }
     recorder.stream.getTracks().forEach((track) => track.stop());
-    const blob = new Blob(this.chunks, { type: "video/mp4" });
+    try {
+      (navigator.mediaDevices as Devices).setCaptureHandleConfig?.({ handle: "", exposeOrigin: false, permittedOrigins: [] });
+    } catch {
+      // Nothing to take back.
+    }
+    const blob = new Blob(this.chunks, { type: recorder.mimeType.split(";")[0] });
     this.chunks = [];
     return blob.size > 0 && blob.size <= maxBytes ? { blob, seconds } : undefined;
   }

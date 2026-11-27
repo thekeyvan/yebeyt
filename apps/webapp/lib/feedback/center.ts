@@ -20,6 +20,8 @@ export const feedbackCopy = {
 } as const;
 
 export const recordingNote = "فیلم ضبط نشد؛ دوباره امتحان کن";
+/** The person chose another tab, a window or the screen: only this page is recorded. */
+export const wrongPageNote = "فقط همین صفحه رو انتخاب کن";
 
 type State = {
   /** What was known when the sheet was asked for; there is a report open while it is there. */
@@ -152,7 +154,8 @@ export class FeedbackCenter extends Store<State> {
     this.patch({ starting: true });
     this.uncover = this.browser.cover();
     await this.browser.drawn(); // the covers are drawn before the first frame is recorded
-    switch (await this.browser.recorder.start(() => void this.stopRecording())) {
+    const result = await this.browser.recorder.start(() => void this.stopRecording());
+    switch (result) {
       case "started":
         this.patch({ starting: false, isRecording: true });
         this.limit = setTimeout(() => void this.stopRecording(), maxSeconds * 1000);
@@ -162,9 +165,10 @@ export class FeedbackCenter extends Store<State> {
         this.patch({ starting: false, recordingRefused: true });
         break;
       case "failed":
+      case "elsewhere":
         this.uncover();
         this.patch({ starting: false });
-        this.browser.say(recordingNote);
+        this.browser.say(result === "failed" ? recordingNote : wrongPageNote);
         break;
     }
   }
@@ -179,4 +183,16 @@ export class FeedbackCenter extends Store<State> {
     this.snapshot().model?.setRecording(clip);
     if (!clip) this.browser.say(recordingNote);
   }
+}
+
+/** The recording stops when the page is left or hidden (another tab, a locked phone, a closed page): the tab is not watched any more, and the covers are drawn by a page nobody sees. Answers the way to stop listening. */
+export function stopWhenHidden(center: FeedbackCenter, doc: Document = document, win: Window = window): () => void {
+  const stop = () => void center.stopRecording();
+  const hidden = () => doc.visibilityState === "hidden" && stop();
+  win.addEventListener("pagehide", stop);
+  doc.addEventListener("visibilitychange", hidden);
+  return () => {
+    win.removeEventListener("pagehide", stop);
+    doc.removeEventListener("visibilitychange", hidden);
+  };
 }

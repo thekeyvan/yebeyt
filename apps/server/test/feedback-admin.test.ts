@@ -124,6 +124,16 @@ describe("admin feedback", () => {
     const rec = await h.request(`/v1/admin/feedback/${id}/recording`, { token: ADMIN });
     expect(rec.headers.get("content-type")).toBe("video/mp4");
     expect(rec.headers.get("content-disposition")).toMatch(/^attachment/);
+    expect(rec.headers.get("content-disposition")).toContain(".mp4");
+  });
+
+  it("serves a WebM recording with its own type and extension", async () => {
+    const { id, uploadToken } = await send({ type: "bug", text: "x" });
+    await upload(id, "recording", uploadToken, "video/webm", fakeFile("webm", 40));
+    const rec = await h.request(`/v1/admin/feedback/${id}/recording`, { token: ADMIN });
+    expect(rec.status).toBe(200);
+    expect(rec.headers.get("content-type")).toBe("video/webm");
+    expect(rec.headers.get("content-disposition")).toBe(`attachment; filename="feedback-${id}-recording.webm"`);
   });
 
   it("answers 404 when there is no such attachment or report", async () => {

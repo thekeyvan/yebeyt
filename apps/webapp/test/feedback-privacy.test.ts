@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alphaOf, intersect } from "../lib/feedback/covers";
+import { alphaOf, intersect, samples } from "../lib/feedback/covers";
 import { addMark, clamp01, drawMarks, lineWidth, rectBetween, undoMark, type Mark } from "../lib/feedback/markup";
 import { blankPrivate, privateSelector } from "../lib/feedback/privacy";
 import { fitSize } from "../lib/feedback/screenshot";
@@ -68,6 +68,15 @@ describe("the covers of a recording", () => {
   it("box intersection", () => {
     expect(intersect({ left: 0, top: 0, right: 10, bottom: 10 }, { left: 5, top: 5, right: 20, bottom: 8 })).toEqual({ left: 5, top: 5, right: 10, bottom: 8 });
     expect(intersect({ left: 0, top: 0, right: 10, bottom: 10 }, { left: 10, top: 0, right: 20, bottom: 10 })).toBeUndefined();
+  });
+
+  it("a view is looked at in nine places: the corners, the middles of the edges and the middle", () => {
+    const points = samples({ left: 10, top: 20, right: 110, bottom: 60 });
+    expect(points).toHaveLength(9);
+    expect(points[0]).toEqual([11, 21]);
+    expect(points[4]).toEqual([60, 40]);
+    expect(points[8]).toEqual([109, 59]);
+    expect(samples({ left: 0, top: 0, right: 1, bottom: 1 }).every(([x, y]) => x >= 0 && x <= 1 && y >= 0 && y <= 1)).toBe(true);
   });
 
   it("how much of a colour is there", () => {

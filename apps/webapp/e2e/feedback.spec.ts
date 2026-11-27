@@ -459,6 +459,54 @@ test.describe("in a game", () => {
     await expect(page.getByTestId("feedback-cover")).toHaveCount(0);
   });
 
+  test("a private view that is partly under the tab bar, the sticky header or the pill is covered whole, not left readable", async ({ page }) => {
+    await fakeRecorder(page);
+    await feedbackServer(page);
+    await page.setViewportSize({ width: 375, height: 420 }); // a phone's layout, with little room: things overlap
+    await openSignedIn(page, "/messages");
+    await expect(page.locator("[data-testid^=inbox-row-]").first()).toBeVisible();
+    await openForm(page, "bug", titles.bug);
+    await page.getByTestId("feedback-record").click();
+    await expect(page.getByTestId("recording-pill")).toBeVisible();
+    // Three private views, each half under one of them (and so under it for the middle, or a corner, whichever a test of one point looks at).
+    const probes = await page.evaluate(() => {
+      const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const header = rect("header");
+      const bar = rect("nav[aria-label='تب‌ها']");
+      const pill = rect("[data-testid=recording-stop]");
+      const make = (id: string, top: number, left: number, z: number) => {
+        const view = document.createElement("div");
+        view.id = id;
+        view.setAttribute("data-feedback-private", "");
+        view.style.cssText = `position:fixed;top:${top}px;left:${left}px;width:140px;height:50px;z-index:${z};background:#fff`;
+        document.body.append(view);
+      };
+      make("under-header", header.bottom - 25, 10, 5); // header is z-20: its lower half is over this
+      make("under-bar", bar.top - 25, 10, 5); // the bar is z-30
+      make("under-pill", pill.bottom - 25, pill.left + pill.width / 2 - 70, 100); // the pill is in the top layer
+      return ["under-header", "under-bar", "under-pill"].map((id) => {
+        const box = document.getElementById(id)!.getBoundingClientRect();
+        const front = (y: number) => document.elementFromPoint(box.left + box.width / 2, y);
+        return { id, coveredAtMiddle: !document.getElementById(id)!.contains(front(box.top + box.height / 2)), coveredAtBottom: !document.getElementById(id)!.contains(front(box.bottom - 2)), coveredAtTop: !document.getElementById(id)!.contains(front(box.top + 2)) };
+      });
+    });
+    // The premise: something solid really is over part of each (the pill over the top edge, the bar over the bottom, the header over the top).
+    expect(probes.find((probe) => probe.id === "under-header")!.coveredAtTop).toBe(true);
+    expect(probes.find((probe) => probe.id === "under-bar")!.coveredAtBottom).toBe(true);
+    expect(probes.find((probe) => probe.id === "under-pill")!.coveredAtTop).toBe(true);
+    const missing = () =>
+      page.evaluate(() => {
+        const covers = [...document.querySelectorAll("[data-testid=feedback-cover]")].map((cover) => cover.getBoundingClientRect());
+        return ["under-header", "under-bar", "under-pill"].filter((id) => {
+          const view = document.getElementById(id)!.getBoundingClientRect();
+          return !covers.some((cover) => cover.left <= view.left + 1 && cover.top <= view.top + 1 && cover.right >= view.right - 1 && cover.bottom >= view.bottom - 1);
+        });
+      });
+    await expect.poll(missing).toEqual([]);
+    await page.getByTestId("recording-stop").click();
+    await expect(page.getByTestId("feedback-cover")).toHaveCount(0);
+  });
+
   test("the pill stays live over a sheet that opens under it", async ({ page }) => {
     await fakeRecorder(page);
     await feedbackServer(page);

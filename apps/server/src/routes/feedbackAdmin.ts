@@ -129,7 +129,7 @@ export function feedbackAdminRoutes(deps: Deps) {
         responses: {
           200: {
             description: "The file, as an attachment.",
-            content: { "image/jpeg": { schema: binary }, "image/png": { schema: binary }, "video/mp4": { schema: binary } },
+            content: { "image/jpeg": { schema: binary }, "image/png": { schema: binary }, "video/mp4": { schema: binary }, "video/webm": { schema: binary } },
           },
           400: errorResponse("Bad request."),
           401: errorResponse("Wrong or missing admin token."),
@@ -143,7 +143,7 @@ export function feedbackAdminRoutes(deps: Deps) {
           .from(feedbackAttachments)
           .where(and(eq(feedbackAttachments.feedbackId, id), eq(feedbackAttachments.kind, kind)));
         if (!row) throw new ApiError(404, "not_found");
-        const extension = { "image/jpeg": "jpg", "image/png": "png", "video/mp4": "mp4" }[row.contentType];
+        const extension = { "image/jpeg": "jpg", "image/png": "png", "video/mp4": "mp4", "video/webm": "webm" }[row.contentType];
         return c.body(row.bytes as unknown as ArrayBuffer, 200, {
           "content-type": row.contentType,
           "content-disposition": `attachment; filename="feedback-${id}-${kind}.${extension}"`,
