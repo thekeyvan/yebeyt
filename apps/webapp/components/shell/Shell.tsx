@@ -38,12 +38,12 @@ export function Shell({ children, reader, game }: { children: ReactNode; reader:
   return (
     <>
       <div inert={covered} className="overflow-x-clip">
-        <motion.div key={under} initial={{ x: from }} animate={{ x: 0 }} transition={settle(v)}>
+        <motion.div key={current ?? under} initial={{ x: from }} animate={{ x: 0 }} transition={settle(v)}>
           {children}
         </motion.div>
       </div>
       <div inert={covered}>
-        <TabBar current={current} unread={unread} requests={requests} />
+        <TabBar current={current} unread={unread} requests={requests} hiddenOnPhone={under.startsWith("/messages/")} />
       </div>
       {game}
       {reader}

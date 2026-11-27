@@ -90,16 +90,17 @@ function icon(index: number, on: boolean, unread: string | null): ReactNode {
  * (70 with its top gap) with 14 at the sides and 18 below; lapis on the open tab with a 16×3 line under it; the raised
  * round «بازی» in the middle. From 1024 px it is a rail on the right (the start side), in a column.
  * `current` is the open tab's index (null on a page outside the tabs); the badge on «پیام‌ها» counts the `unread` messages and the friend `requests`
- * waiting for an answer, and says each to screen readers (`unreadAccessibilityLabel` in App/AppModel.swift).
+ * waiting for an answer, and says each to screen readers (`unreadAccessibilityLabel` in App/AppModel.swift). `hiddenOnPhone` is for a chat, a shared divan and the requests, which are drawn
+ * without it (`showsTabBar` in App/AppModel.swift); the rail stays from 1024 px.
  */
-export function TabBar({ current, unread = 0, requests = 0 }: { current: number | null; unread?: number; requests?: number }) {
+export function TabBar({ current, unread = 0, requests = 0, hiddenOnPhone = false }: { current: number | null; unread?: number; requests?: number; hiddenOnPhone?: boolean }) {
   const press = usePress();
   const unreadLabel = unreadText(unread + requests);
   const spoken = [unread > 0 && `${persianDigits(unread)} پیام نخونده`, requests > 0 && `${persianDigits(requests)} درخواست دوستی`].filter(Boolean).join("، ");
   return (
     <nav
       aria-label="تب‌ها"
-      className="fixed start-[max(14px,env(safe-area-inset-right))] end-[max(14px,env(safe-area-inset-left))] bottom-[calc(18px+env(safe-area-inset-bottom))] z-30 grid h-[70px] grid-cols-5 items-center rounded-tab-bar bg-white pt-1.5 shadow-tab-bar lg:start-4 lg:end-auto lg:top-1/2 lg:bottom-auto lg:flex lg:h-auto lg:w-24 lg:-translate-y-1/2 lg:flex-col lg:gap-6 lg:py-6"
+      className={cn("fixed start-[max(14px,env(safe-area-inset-right))] end-[max(14px,env(safe-area-inset-left))] bottom-[calc(18px+env(safe-area-inset-bottom))] z-30 grid h-[70px] grid-cols-5 items-center rounded-tab-bar bg-white pt-1.5 shadow-tab-bar lg:start-4 lg:end-auto lg:top-1/2 lg:bottom-auto lg:flex lg:h-auto lg:w-24 lg:-translate-y-1/2 lg:flex-col lg:gap-6 lg:py-6", hiddenOnPhone && "max-lg:hidden")}
     >
       {tabs.map((tab, index) => {
         const on = current === index;

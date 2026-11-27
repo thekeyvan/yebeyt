@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { accountServices, type Services } from "../../lib/account/services";
 import type { AccountFeature } from "../../lib/account/features";
 import { useStore } from "../../lib/library/browser";
+import { MessagesHost } from "../messages/MessagesHost";
+import { SharedDivanSheetHost } from "../messages/SharedDivanSheet";
 import { OnboardingHost } from "../onboarding/OnboardingHost";
 import { AccountGateSheet } from "./AccountGateSheet";
 import { SyncHost } from "./SyncHost";
@@ -49,6 +51,8 @@ function AccountRuntime() {
   return services ? (
     <>
       <SyncHost services={services} />
+      <MessagesHost services={services} />
+      <SharedDivanSheetHost services={services} />
       <AccountPrompt services={services} />
       <OnboardingHost services={services} />
     </>

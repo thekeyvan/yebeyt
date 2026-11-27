@@ -25,7 +25,7 @@ import { useFriendAsk } from "./useFriendAsk";
 /**
  * Another person's page: Profile without the private parts (Friends/PersonScreen.swift). Face, name, @username, «<n> دوست», the league, then the button of the
  * friendship («درخواست دوستی», «درخواست فرستادی», «قبول» with «رد», or the chip «دوستین») and a ⋯ menu with «حذف از دوستا» (for a friend), «بلاک» and «گزارش».
- * «پیام بده» comes with the messages (W7).
+ * «پیام بده» (when the server says messages are allowed) opens the chat with them.
  */
 export function PersonScreen({ username }: { username: string }) {
   return <WithServices>{(services) => <Person services={services} username={username} />}</WithServices>;
@@ -50,6 +50,12 @@ function Person({ services, username }: { services: Services; username: string }
     if (!model.snapshot().profile) await model.load(); // after the sign-in of a guest
     await model.perform(action);
   });
+  /** «پیام بده»: finds or makes the chat, then shows it; a chat that cannot be opened says why. */
+  async function openChat() {
+    const opened = await services.messages.openChat(username);
+    if ("error" in opened) toast(opened.error);
+    else router.push(`/messages/${username}`);
+  }
   const leave = () => (canGoBack() ? router.back() : router.push("/"));
 
   return (
@@ -104,6 +110,11 @@ function Person({ services, username }: { services: Services; username: string }
                 {titleOf(action)}
               </Button>
             ))}
+            {profile?.canMessage && (
+              <Button variant="ghost" className="flex-1" data-testid="person-message" onClick={() => void openChat()}>
+                پیام بده
+              </Button>
+            )}
           </div>
         </div>
       )}

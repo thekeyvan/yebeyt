@@ -4,8 +4,10 @@ import { Dialog, DialogBackdrop, DialogContent, DialogTitle } from "@ui-sdk/reac
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { useAccount } from "../account/AccountProvider";
+import { useServices } from "../account/useServices";
 import { bouncy, menuArrival, useVariant } from "../../lib/motion";
 import { listFactor, listSize, type TextSettings } from "../../lib/reader/settings";
+import { coupletKey } from "../../lib/reader/marks";
 import { caption } from "../../lib/reader/text";
 import { MarkButton } from "../ui/MarkButton";
 import { BookIcon, BookmarkIcon, CopyIcon, CoupletFocusIcon, GamesIcon, HeartIcon, MessagesIcon, RepostIcon, SharedDivanIcon } from "../ui/icons";
@@ -33,6 +35,7 @@ function Item({ icon, onPress, children }: { icon: ReactNode; onPress: () => voi
  */
 export function HoldMenu({ reader, index, settings, onPlay }: { reader: Reader; index: number; settings: TextSettings; onPlay: (index: number) => void }) {
   const account = useAccount();
+  const messages = useServices()?.messages;
   const v = useVariant();
   const actions = useCoupletActions(reader, index);
   const couplet = reader.couplets[index]!;
@@ -100,7 +103,7 @@ export function HoldMenu({ reader, index, settings, onPlay }: { reader: Reader; 
               icon={<SharedDivanIcon size={20} lineWidth={2.2} />}
               onPress={() => {
                 close();
-                account.require("messages");
+                account.require("messages", () => messages?.askSharedDivan({ key: coupletKey(reader.content!.poem.path, index) }));
               }}
             >
               به دیوان مشترک

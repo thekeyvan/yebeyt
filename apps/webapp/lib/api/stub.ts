@@ -1,6 +1,7 @@
 import { problem } from "../account/usernameRules";
 import type { Call } from "./bff";
 import { friendsAnswer, World, type Me } from "./stubFriends";
+import { messagesAnswer, MessagesWorld } from "./stubMessages";
 
 // A server that answers for the debug sign-in (the phone's `-beytSignedIn 1`, which is answered on the phone): only in a dev build or one built with
 // NEXT_PUBLIC_DEV_PAGES=1 (`lib/dev.ts`; the switch is baked in at build time, so a variable set on a running server cannot turn it on), a session whose
@@ -18,6 +19,7 @@ type Account = {
   progress: { points: number; streakDays: number; streakLastDate: string | null; bestByGame: Record<string, number> };
   privacy: Record<string, unknown>;
   world: World;
+  messages: MessagesWorld;
 };
 
 // On `globalThis`, so that the routes of the app, which may be built apart, share one set of accounts.
@@ -46,7 +48,7 @@ function accountOf(spec: Spec): Account {
   let account = accounts.get(spec.id);
   if (!account) {
     const user = { id: spec.id, username: spec.username, displayName: spec.displayName, avatar: null, usernameChangedAt: null, createdAt: "2026-11-20T08:00:00.000Z", providers: [spec.provider] };
-    account = { spec, user, divan: new Map(), reactions: new Map(), rounds: new Set(), points: 0, progress: { points: 0, streakDays: 0, streakLastDate: null, bestByGame: {} }, privacy: { ...privacyDefaults }, world: new World() };
+    account = { spec, user, divan: new Map(), reactions: new Map(), rounds: new Set(), points: 0, progress: { points: 0, streakDays: 0, streakLastDate: null, bestByGame: {} }, privacy: { ...privacyDefaults }, world: new World(), messages: new MessagesWorld() };
     accounts.set(spec.id, account);
   }
   return account;
@@ -161,6 +163,10 @@ function stubAnswer({ method, path, credential, body }: Call): Response {
     case "GET /v1/me/stats":
       return Response.json({ totalPoints: account.points, weekPoints: account.points, streakDays: account.progress.streakDays, league: { tier: 1 } });
     default:
-      return friendsAnswer({ method, pathname: url.pathname, search: searchParams, given, world: account.world, me: account.user as Me, mine: new Set(account.reactions.keys()) }) ?? error(404, "not_found");
+      return (
+        messagesAnswer({ method, pathname: url.pathname, search: searchParams, given, world: account.messages, friends: account.world }) ??
+        friendsAnswer({ method, pathname: url.pathname, search: searchParams, given, world: account.world, me: account.user as Me, mine: new Set(account.reactions.keys()) }) ??
+        error(404, "not_found")
+      );
   }
 }

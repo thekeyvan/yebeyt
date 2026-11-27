@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
-import { RequestsRow } from "../../../components/friends/RequestsRow";
-import { Page } from "../../../components/shell/Page";
 
 export const metadata: Metadata = { title: "پیام‌ها" };
 
-/** The chats come with the messages (W7); until then the requests row of friends is what the tab shows. */
+/** The inbox is drawn by the layout (it stays beside a chat from 1024 px); this is the empty detail's page. */
 export default function MessagesPage() {
-  return (
-    <Page title="پیام‌ها">
-      <RequestsRow />
-    </Page>
-  );
+  return null;
 }
