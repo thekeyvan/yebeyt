@@ -193,6 +193,7 @@ test.describe("sending", () => {
     await editor.getByText("بپوشون", { exact: true }).click();
     const canvas = page.getByTestId("editor-picture");
     await expect(canvas).toBeVisible();
+    await expect.poll(() => canvas.evaluate((element) => (element as HTMLCanvasElement).width)).toBeGreaterThan(300); // the picture has loaded, and has its size
     const box = (await canvas.boundingBox())!;
     await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.3);
     await page.mouse.down();

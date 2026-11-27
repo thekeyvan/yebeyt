@@ -1,4 +1,4 @@
-import { test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { openApp } from "./browse";
 import { openSignedIn } from "./friends";
@@ -33,6 +33,7 @@ test("the choices, the bug form with its screenshot, the editor, and the game id
   await page.getByTestId("feedback-edit").click();
   const canvas = page.getByTestId("editor-picture");
   await canvas.waitFor();
+  await expect.poll(() => canvas.evaluate((element) => (element as HTMLCanvasElement).width)).toBeGreaterThan(300);
   const box = (await canvas.boundingBox())!;
   await page.mouse.move(box.x + box.width * 0.15, box.y + box.height * 0.25);
   await page.mouse.down();

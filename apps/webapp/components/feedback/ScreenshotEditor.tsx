@@ -14,13 +14,15 @@ const tools = [
   { value: "cover", label: "بپوشون" },
 ] as const;
 
+/** The picture with the marks being drawn over it, in the picture's own pixels so they match what is sent, the tools, «برگردون» and the two ends («تمام», ×). */
 function Editor({ image, done }: { image: Blob; done: (marks: Mark[]) => void }) {
   const url = useObjectUrl(image);
   const [marks, setMarks] = useState<Mark[]>([]);
   const [tool, setTool] = useState<Tool>("line");
   const [live, setLive] = useState<Mark>();
   const [loaded, setLoaded] = useState(false);
-  const from = useRef<Point>(undefined);
+  // What is being drawn, kept in a ref too: a move is not flushed to the screen before the finger lets go, and the end must see the last of it.
+  const drawing = useRef<{ mark: Mark; from: Point }>(undefined);
   const picture = useRef<HTMLImageElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
 
@@ -41,18 +43,20 @@ function Editor({ image, done }: { image: Blob; done: (marks: Mark[]) => void })
   const down = (event: PointerEvent) => {
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = at(event);
-    from.current = point;
-    setLive(tool === "line" ? { kind: "line", points: [point] } : { kind: "cover", rect: rectBetween(point, point) });
+    drawing.current = { from: point, mark: tool === "line" ? { kind: "line", points: [point] } : { kind: "cover", rect: rectBetween(point, point) } };
+    setLive(drawing.current.mark);
   };
   const move = (event: PointerEvent) => {
-    const start = from.current;
-    if (!start) return;
+    const current = drawing.current;
+    if (!current) return;
     const point = at(event);
-    setLive((mark) => (mark?.kind === "line" ? { kind: "line", points: [...mark.points, point] } : { kind: "cover", rect: rectBetween(start, point) }));
+    current.mark = current.mark.kind === "line" ? { kind: "line", points: [...current.mark.points, point] } : { kind: "cover", rect: rectBetween(current.from, point) };
+    setLive(current.mark);
   };
   const up = () => {
-    from.current = undefined;
-    if (live) setMarks(addMark(marks, live));
+    const current = drawing.current;
+    drawing.current = undefined;
+    if (current) setMarks((all) => addMark(all, current.mark));
     setLive(undefined);
   };
 

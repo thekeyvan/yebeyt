@@ -86,17 +86,18 @@ function arrange(copy: HTMLElement, pins: readonly Pin[], scrolled: number): voi
 }
 
 /** How long drawing the page may take before the report goes without a picture. */
-const timeoutMs = 6000;
+const timeoutMs = 5000;
 
 /**
- * The picture of the page as it is now (the part in the window), taken just before the feedback sheet opens: a PNG, or undefined when the browser can't draw it.
- * Every private view (`lib/feedback/privacy.ts`) is blank in it, and a picture from another site that can't be read is left empty, so the picture is never tainted.
+ * The picture of the page as it is now (the part in the window), taken just before the feedback sheet opens: a PNG, or undefined when the browser can't draw it (or not within
+ * `timeoutMs`). Every private view (`lib/feedback/privacy.ts`) is blank in it, and a picture from another site that can't be read is left empty, so the picture is never tainted.
  */
 export async function capturePage(): Promise<Blob | undefined> {
+  let giveUp: ReturnType<typeof setTimeout> | undefined;
   try {
     const { domToCanvas } = await import("modern-screenshot"); // only when it is wanted
     const pins = pinThings();
-    const canvas = await domToCanvas(document.body, {
+    const drawn = domToCanvas(document.body, {
       width: document.documentElement.clientWidth,
       height: window.innerHeight,
       scale: 1, // a pixel to a CSS pixel: WebKit draws the shadows of a copy that is scaled up as hard blocks
@@ -105,10 +106,12 @@ export async function capturePage(): Promise<Blob | undefined> {
       features: { restoreScrollPosition: true },
       onCloneNode: (copy) => arrange(copy as HTMLElement, pins, window.scrollY),
     });
+    const canvas = await Promise.race([drawn, new Promise<never>((_, reject) => (giveUp = setTimeout(reject, timeoutMs)))]);
     return (await canvasBlob(canvas, "image/png")) ?? undefined;
   } catch {
     return undefined;
   } finally {
+    clearTimeout(giveUp);
     unpin();
   }
 }
