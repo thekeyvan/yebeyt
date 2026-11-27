@@ -15,7 +15,8 @@ const hiddenMs = 60_000;
  */
 export function MessagesHost({ services }: { services: Services }) {
   const { session, messages } = services;
-  const signedIn = useStore(session)?.status === "in";
+  const status = useStore(session)?.status;
+  const signedIn = status === "in";
 
   useEffect(() => {
     messages.onToast = toast;
@@ -31,7 +32,8 @@ export function MessagesHost({ services }: { services: Services }) {
 
   useEffect(() => {
     if (!signedIn) {
-      messages.reset();
+      // Only a person known to be signed out forgets the chats: while the session is still being asked about, a chat on screen has what was typed in it.
+      if (status === "guest") messages.reset();
       return;
     }
     let away: ReturnType<typeof setTimeout> | undefined;
@@ -47,7 +49,7 @@ export function MessagesHost({ services }: { services: Services }) {
       document.removeEventListener("visibilitychange", change);
       messages.setActive(false);
     };
-  }, [messages, signedIn]);
+  }, [messages, status]);
 
   return null;
 }

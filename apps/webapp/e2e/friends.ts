@@ -6,7 +6,8 @@ import { newId, openAccountApp, type FakeAccount } from "./account";
  * nothing): the sign-in is made as the buttons make it (the door's `/auth/apple`, which the debug server answers), and the page is opened after it.
  */
 export async function openSignedIn(page: Page, path: string, account: FakeAccount = {}) {
-  await openAccountApp(page, "/messages");
+  // A page that is none of the tests' own (a navigation to the address already open makes WebKit return before the new page is there).
+  await openAccountApp(page, "/me/licenses");
   const spec = { id: newId(), username: "niloofar", displayName: "نیلوفر", ...account };
   const answered = await page.evaluate(async (who) => {
     const token = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(who)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");

@@ -3,7 +3,7 @@ import { expectReader, tabBar } from "./browse";
 import { openAccountApp } from "./account";
 import { asked, expectRightToLeftAndFits, openSignedIn } from "./friends";
 import { toasts } from "./me";
-import { endsClearOfTabs, expectAllPrivate, fakeLive, messagesTab, serverUnread } from "./messages";
+import { endsClearOfTabs, expectAllPrivate, fakeLive, messagesTab, serverUnread, typeIn } from "./messages";
 
 const gate = (page: import("@playwright/test").Page) => page.getByRole("dialog", { name: /یه حساب لازمه/ });
 const wide = (page: import("@playwright/test").Page) => (page.viewportSize()?.width ?? 0) >= 1024;
@@ -34,7 +34,7 @@ test.describe("the inbox", () => {
   test("a search filters the rows by name or username; the compose button opens the people search, and a person opens their chat", async ({ page }) => {
     await openSignedIn(page, "/messages");
     const search = page.getByRole("searchbox", { name: "جستجو بین دوستات" });
-    await search.fill("سار");
+    await typeIn(search, "سار");
     await expect(page.locator("[data-testid^=inbox-row-]")).toHaveCount(1);
     await search.fill("kian");
     await expect(page.getByTestId("inbox-row-kian_k")).toBeVisible();
@@ -125,10 +125,10 @@ test.describe("a chat", () => {
   test("a text I send is in the list at once and stays; Enter sends, an empty field sends nothing, and Escape puts the keyboard away", async ({ page }) => {
     await openSignedIn(page, sara);
     const composer = page.getByTestId("composer");
-    await composer.fill("   ");
+    await typeIn(composer, "   ");
     await composer.press("Enter");
     await expect(page.locator("[data-testid^=pending-]")).toHaveCount(0);
-    await composer.fill("سلام سارا جان");
+    await typeIn(composer, "سلام سارا جان");
     await composer.press("Enter");
     await expect(composer).toHaveValue("");
     const sent = page.locator("[data-testid^=bubble-sent-]").filter({ hasText: "سلام سارا جان" });
@@ -155,7 +155,7 @@ test.describe("a chat", () => {
       tries += 1;
       return failing ? route.abort("failed") : route.fallback();
     });
-    await page.getByTestId("composer").fill("دوباره بفرست");
+    await typeIn(page.getByTestId("composer"), "دوباره بفرست");
     await page.getByTestId("composer").press("Enter");
     const retry = page.locator("[data-testid^=retry-]");
     await expect(retry).toHaveText("نرسید · دوباره");
@@ -288,7 +288,7 @@ test.describe("live", () => {
     await expect(announcer).toHaveAttribute("role", "status");
     await expect(page.getByTestId("bubble-o2")).toBeVisible(); // the older page was added at the top
     await expect(announcer).toHaveText("");
-    await page.getByTestId("composer").fill("از طرف من");
+    await typeIn(page.getByTestId("composer"), "از طرف من");
     await page.getByTestId("composer").press("Enter");
     await expect(page.locator("[data-testid^=bubble-sent-]")).toBeVisible();
     await expect(announcer).toHaveText("");
@@ -495,7 +495,7 @@ test.describe("what is private to the feedback screenshot", () => {
 
     await page.goto(sara);
     await expect(page.getByTestId("bubble-m3")).toBeVisible();
-    await page.getByTestId("composer").fill("پیام آزمایشی خصوصی");
+    await typeIn(page.getByTestId("composer"), "پیام آزمایشی خصوصی");
     await page.getByTestId("composer").press("Enter");
     await expect(page.locator("[data-testid^=bubble-sent-]")).toBeVisible();
     await live.push({ type: "message", message: { id: "live-p", conversationId: "c-sara_ghazal", kind: "text", fromMe: false, text: "یه پیام زنده خصوصی", key: null, note: null, payload: null, deleted: false, createdAt: new Date().toISOString() } });
