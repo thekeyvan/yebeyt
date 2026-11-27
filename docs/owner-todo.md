@@ -61,7 +61,13 @@ State now:
 - TestFlight: internal group «K&S Team» exists. Test Information (beta description, feedback email, privacy URL, review contact) is empty; needed only for external testers.
 
 For you:
-- **Apple email sources (before any email is sent):** in developer.apple.com → Certificates, Identifiers & Profiles → More → Sign in with Apple → «Register Email Sources for Communication», register the domain `yebeyt.com` and the sender `hello@yebeyt.com`. Until then, mail to a person who chose Apple's «Hide My Email» (an address `…@privaterelay.appleid.com`) is dropped by Apple. The server already keeps these relay addresses.
+- **Apple email sources (before any email is sent; no rush, nothing sends email yet).** People who sign in with Apple's «Hide My Email» give us an address like `…@privaterelay.appleid.com`. Apple only passes on mail from senders you register:
+  1. Open https://developer.apple.com/account/resources (Certificates, Identifiers & Profiles).
+  2. In the **left sidebar**, click **Services** (under Identifiers, Profiles, Keys …).
+  3. Find **Sign in with Apple for Email Communication** and click **Configure**.
+  4. In **Email Sources**, click **+**, type `yebeyt.com`, then Next → Register.
+  5. Click **+** again, type `hello@yebeyt.com`, then Next → Register.
+  6. Both rows should show a green SPF check. yebeyt.com already has the SPF record for Zoho (`v=spf1 include:zohomail.eu ~all`), so it should pass. Send the lead a screenshot if it doesn't.
 - **The screen recording for App Review:** on your phone, once 2.0 is on TestFlight: launch, browse, a game, sign in with Apple, a friend request, a message, report and block, delete the account. The lead writes the script when the build is ready.
 - **Permission from Ganjoor (for Apple's point 6):** ganjoor-data has no licence file. The poems are public domain, but the meanings and summaries are Ganjoor's own work. Ganjoor's about page says it publishes its data so others can do similar work, which shows intent but isn't a permission. Please send this from hello@yebeyt.com through https://ganjoor.net/contact (or to Hamid Reza Mohammadi directly) and keep the reply; the lead attaches it to the App Review notes:
 
