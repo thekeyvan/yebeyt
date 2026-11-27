@@ -1,4 +1,6 @@
 export const SITE_URL = "https://yebeyt.com";
+/** The web app (apps/webapp): the invite page opens a person's page there. */
+export const WEBAPP_URL = "https://app.yebeyt.com";
 export const SUPPORT_EMAIL = "hello@yebeyt.com";
 
 /**

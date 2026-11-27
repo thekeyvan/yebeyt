@@ -4,7 +4,7 @@ import NotFound from "../app/global-not-found";
 import ErrorPage from "../app/(fa)/error";
 import { LinkPage } from "../components/LinkPage";
 import { Missing, Unavailable } from "../components/Missing";
-import { challengeView } from "../lib/links";
+import { challengeView, inviteView } from "../lib/links";
 import { lookupMetadata } from "../lib/pageMeta";
 import config, { securityHeaders } from "../next.config";
 
@@ -45,6 +45,20 @@ describe("LinkPage", () => {
     const html = renderToStaticMarkup(<LinkPage view={view} appClip />);
     expect(html).toContain("همین‌جا بازی کن");
     expect(html).toMatch(/class="button secondary"[^>]*>نصب «یه بیت» از اپ‌استور/);
+  });
+});
+
+describe("the invite page's «روی وب باز کن»", () => {
+  const person = { username: "niloofar", displayName: "نیلوفر", avatar: null };
+
+  it("is a link to the person's page in the web app, after the store button", () => {
+    const html = renderToStaticMarkup(<LinkPage view={inviteView(person)} />);
+    expect(html).toMatch(/<a class="button secondary" href="https:\/\/app\.yebeyt\.com\/u\/niloofar">روی وب باز کن<\/a>/);
+    expect(html.indexOf("نصب «یه بیت» از اپ‌استور")).toBeLessThan(html.indexOf("روی وب باز کن"));
+  });
+
+  it("is not on the game and challenge pages", () => {
+    expect(renderToStaticMarkup(<LinkPage view={challengeView(challenge, "7KQ2")} />)).not.toContain("روی وب باز کن");
   });
 });
 

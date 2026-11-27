@@ -51,6 +51,13 @@ describe("inviteView and gameView", () => {
     });
   });
 
+  it("invite: opens the person's page in the web app; the other links have no web page", () => {
+    expect(inviteView(creator).webUrl).toBe("https://app.yebeyt.com/u/niloofar");
+    expect(inviteView({ ...creator, username: "kian_k.2" }).webUrl).toBe("https://app.yebeyt.com/u/kian_k.2");
+    expect(gameView({ kind: "mosh", creator, status: "waiting" }, "k3m9").webUrl).toBeUndefined();
+    expect(challengeView(challenge, "7KQ2").webUrl).toBeUndefined();
+  });
+
   it("game: مشاعره or بازی رودررو, with the code", () => {
     expect(gameView({ kind: "mosh", creator, status: "waiting" }, "k3m9")).toMatchObject({
       heading: "نیلوفر دعوتت کرده به مشاعره",

@@ -1,5 +1,5 @@
 import type { Avatar, Challenge, Person, PublicGame } from "./api";
-import { APP_CLIP_BUNDLE_ID, APP_STORE_ID, SITE_URL } from "./config";
+import { APP_CLIP_BUNDLE_ID, APP_STORE_ID, SITE_URL, WEBAPP_URL } from "./config";
 import { persianNumber } from "./persian";
 
 /** Everything a link page shows, worked out from what the server said. */
@@ -12,6 +12,8 @@ export type LinkView = {
   codeLabel: string;
   code: string;
   url: string;
+  /** Where the same thing opens in the web app (the invite: the person's page), when it does. */
+  webUrl?: string;
 };
 export type ChallengeView = LinkView & { mine: string; yours: string };
 
@@ -55,6 +57,7 @@ export function inviteView(person: Person): LinkView {
     codeLabel: "نام کاربری",
     code: person.username,
     url: `${SITE_URL}/i/${person.username}`,
+    webUrl: `${WEBAPP_URL}/u/${encodeURIComponent(person.username)}`,
   };
 }
 
