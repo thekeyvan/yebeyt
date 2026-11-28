@@ -216,7 +216,7 @@ The owner said «اینجا فقط دوستا نیستن. به نظرم پروف
   - A public profile shows the face, name, league, streak, favourite poets and badges, plus the likes and reposts and the daily results each setting allows as «همه».
   - A private profile shows only the lock to anyone who isn't a friend.
   - On `PrivacyVisibility`, the پسندیده‌ها و بازنشرها, معمای امروز and دیوان rows each take همه / دوستام / فقط خودم. Likes and reposts are no longer tied to the divan setting.
-- **Default.** New accounts choose on `OnbVisibility`, right after the username, with «عمومی» preselected as «پیشنهاد ما». Accounts made before this release stay private and get a one-time card asking them. Open for the owner: whether a preselected public choice is fine for EU users (GDPR privacy by default) and for teenagers, since the app is rated 13+.
+- **Default.** New accounts choose on `OnbVisibility`, right after the username, with «عمومی» preselected as «پیشنهاد ما». Accounts made before this release stay private and get a one-time card asking them. **Owner, 28 Nov: «عمومی» stays preselected** (asked about GDPR privacy by default and teenagers; chose to keep it). The person still taps «بعدی» on that step, so the choice is seen, and the privacy policy says it plainly.
 - **No follower counts.** Following and follower numbers are not shown anywhere, keeping the calm rule from 20 Nov. Ask before adding any count.
 - **«تازه‌ها» never empty.** When I follow nobody, or the last 7 days have fewer than 10 items, it adds public items from others, marked «پیشنهاد», and a row of people to follow. People are picked by shared favourite poets, the same league group, or friends of friends, never anyone blocked.
 - **Contacts by email.**
@@ -259,7 +259,7 @@ Signing in with Apple and with Google using the same email gives one account, on
 
 ## Still open (ask the user)
 
-- Public profiles: is «عمومی» preselected in onboarding acceptable (GDPR privacy by default, users under 16)? Should any follower count ever show?
+- Public profiles: should any follower count ever show?
 - The fal's reading text («حافظ چی می‌گه؟»): who writes the 495 short readings.
 - A full end-of-round screen per game (for now `ChallengeSend` covers it).
 

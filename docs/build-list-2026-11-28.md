@@ -179,7 +179,7 @@ Owner, 28 Nov: «پروفایل‌ها باید بتونن پابلیک یا پ�
 - New accounts choose on `OnbVisibility`, a step after the username. «عمومی» is preselected and marked «پیشنهاد ما», and the person taps «بعدی». The choice is sent with the username.
 - Accounts made before this release stay `private`, so nothing they did becomes public without them. They get a one-time card on the من tab («صفحه‌ت می‌تونه عمومی باشه») that opens `PrivacyVisibility`.
 - The divan's default stays as it is.
-- **Ask the owner:** is a preselected «عمومی» acceptable for EU users and minors? The app is rated 13+ and doesn't know ages. The safer choice is no preselection.
+- **Decided (owner, 28 Nov):** «عمومی» stays preselected. The step can't be skipped (no «رد شو»), so everyone sees the choice; the privacy policy (both languages) says profiles are public unless you choose private, and how to change it.
 
 **Clients**
 - Onboarding: new step `OnbVisibility` between username and friends. iOS: `Onboarding/OnboardingFlow.swift` and a new view next to `OnbFriendsView.swift`. Web: `webapp/components/onboarding/OnboardingHost.tsx`. The step bar gets a fourth step «صفحه‌ت».
