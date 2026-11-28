@@ -13,15 +13,20 @@ It is a new app built from scratch, in a monorepo (layout in `AGENTS.md`). Nothi
 
 | Row | Flow | Boards (in order) |
 |---|---|---|
-| ۰ | Reference | `StickerSystem` design language · `Map` app map · `Poets` poet portraits · `GameIcons` · `GamesCatalog` |
+| ۰ | Reference | `StickerSystem` design language · `Map` app map · `Poets` poet portraits · `GameIcons` · `GamesCatalog` · `EmptyRules` empty states |
 | ۱ | شروع و حساب | `OnbWelcome` · `OnbTaste` · `OnbGame` · `OnbAccount` · `OnbUsername` · `OnbFriends` · `AccountGate` |
-| ۲ | خونه، کاوش و کتابخونه | `Calm` · `Explore` · `Poet` · `Library` · `Book` · `BookSection` |
+| ۲ | خونه، کاوش و کتابخونه | `Calm` · `Explore` · `Poet` · `PoetMany` · `Library` · `Book` · `BookSection` |
 | ۳ | خوندن شعر | `Poem` · `PoemMeaning` · `PoemText` · `PoemScroll` · `PoemScrollHold` |
 | ۴ | تب بازی و بازی‌های تکی | `GamesE` · `PlayDaily` · `JigsawE` · `JigsawResult` · `PlayPoet` · `PlayPoetAnswer` · `PlaySecond` · `PlayBook` · `PlayMatch` · `PlayListen` · `ChallengeSend` · `LeaderboardS` |
 | ۵ | بازی با دوست | `GameLobby` · `ChallengeWeb` · `ChallengeAccept` · `PlayMosh` · `PlayDuel` |
 | ۶ | پیام‌ها | `Inbox` · `Direct` · `SharedDivan` |
 | ۷ | من | `Profile` · `Divan` · `Privacy` · `Avatar` · `InviteFriends` |
 | ۸ | بازخورد | `FeedbackShake` · `FeedbackBug` · `FeedbackGame` |
+| ۹ | حالت‌های خالی: خونه، کاوش و خوندن | `EmptyHomeFriends` · `EmptySearchStart` · `EmptySearchNone` · `EmptyLibraryNone` · `EmptySectionNone` · `EmptyNotFound` · `EmptyPoemOffline` · `EmptyReaderLoading` · `EmptyOffline` |
+| ۱۰ | حالت‌های خالی: بازی | `EmptyDailyDone` · `EmptyDailyMissing` · `EmptyGameFailed` · `EmptyBoardNoPoints` · `EmptyBoardNoFriends` · `EmptyBoardNewWeek` · `EmptyBadges` · `EmptyLobbyNoFriends` · `EmptyGamesFriends` · `EmptyChallengeGone` |
+| ۱۱ | حالت‌های خالی: دوستا، پیام‌ها و من | `EmptyPeopleNone` · `EmptyRequests` · `EmptyFriends` · `EmptyInbox` · `EmptyInboxGuest` · `EmptyChatNew` · `EmptySharedDivan` · `EmptyPickerSheet` · `EmptyDivan` · `EmptyDivanNone` · `EmptyDivanOffline` · `EmptyProfileGuest` · `EmptyInviteNoName` · `EmptyFalHistory` |
+| ۱۲ | فال حافظ | `FalIntro` · `FalOpening` · `FalResult` · `FalGhazal` · `FalShare` · `FalFriend` · `FalPair` · `FalPairResult` · `FalHistory` |
+| ۱۳ | صفحه‌ی عمومی و پیدا کردن دوست | `OnbVisibility` · `PersonPublic` · `PersonPrivate` · `PrivacyVisibility` · `PeopleStart` · `ContactsAsk` · `ContactsFound` · `ContactsNone` |
 
 Boards on the second canvas page (`Main`, `Games`, `GamesA`–`GamesD`, `Jigsaw`, `Leaderboard`, `Circle`, `Player`, `PoemFonts`) are old explorations. Don't build from them.
 
@@ -135,7 +140,98 @@ After these: the web app, the admin dashboard and Android, each designed first.
 - Feedback goes inside the app to api.yebeyt.com.
 - Long-press on a couplet works everywhere a couplet is shown (home, games, divan, messages), with the same menu; add it to the map.
 - In chat, a system line appears when a friend adds to a shared divan, and the long-press menu has «به دیوان مشترک».
-- فال حافظ stays a random Hafez ghazal in the whole-poem view; no separate flow.
+- ~~فال حافظ stays a random Hafez ghazal in the whole-poem view; no separate flow.~~ Replaced on 28 Nov: the owner asked for a fal screen and flow (row ۱۲, see «Empty states and the fal» below).
+
+## Empty states and the fal (owner, 28 Nov: «we forgot to have nice empty states … design the empty states … then design a nice faale haafez screen and flow too»)
+
+**Empty states (rows ۹–۱۱, rules on `EmptyRules`).** Every screen that can have nothing to show is one of six kinds: هنوز چیزی نیست (first time), پیدا نشد (search or filter), تموم شد (done for today), نرسید (no internet or the server failed), حساب لازمه (guest), داره میاد (loading). The rules:
+- Always a way forward: one main button, at most one link beside it. Say what it is for; never «متأسفیم» or «خطا», never blame the person.
+- The picture is the sticker sheet: dashed empty slots and one sticker on its way in (`design/canvas/emptyart.py`). Title in Lalezar, one or two lines in everyday Persian.
+- When something still works without the missing thing (offline, no account), show it right there as chips («بدون اینترنت هم می‌شه: خوندن، بازی‌های تکی، دیوانت»).
+- Inside one section of a screen: a small dashed card. When the whole screen is empty: centred.
+- No blank screen and no endless spinner: loading shows the screen's shape (`EmptyReaderLoading`), and after 10 seconds a «دوباره» appears. Every full-screen state has a close or back button.
+- A search that finds nothing repeats the words in «», offers a fix («شاید منظورت … بود؟») and a «پاک کن».
+
+What each screen shows (copy is on the boards; the code inventory of 28 Nov found where they go):
+
+| Board | When | Main button · link |
+|---|---|---|
+| `EmptyHomeFriends` | following nobody yet: «تازه‌ها» fills with suggested people and suggested public items (see «Public profiles») | دنبال کن on each person |
+| `EmptySearchStart` | search open, nothing typed (no blank screen) | examples and «این روزا زیاد می‌گردن» chips |
+| `EmptySearchNone` | search and mood with no result | (suggestion) · پاک کن و از اول |
+| `EmptyLibraryNone` | library search or chip with no book (also explains contemporary poets) | همه‌ی کتاب‌ها رو ببین · بگو کدوم شاعر رو می‌خوای |
+| `EmptySectionNone` | a section's search with no poem | توی همه‌ی شعرها بگرد · پاک کن |
+| `EmptyNotFound` | unknown book, section, poet, mood, person, or a bad link (iOS shows a blank screen today) | برو به خونه · برگرد |
+| `EmptyPoemOffline` | a poem not on the phone, offline | دوباره · chips of the bundled books |
+| `EmptyReaderLoading` | the reader while a poem loads (blank today) | — |
+| `EmptyOffline` | a server screen offline or the server busy (inbox, chat, leaderboard, friends, people, requests, shared divan, person) | دوباره · what works offline |
+| `EmptyDailyDone` | today's puzzle solved: countdown to the next one, friends who solved it | یه بازی دیگه · کل بیت رو بخون |
+| `EmptyDailyMissing` | no puzzle today (blank screen with no close today) | دوباره · یه جورچین بزن |
+| `EmptyGameFailed` | a solo round can't start (listen offline here; جورچین, quiz and match the same with their own line); no silent close | دوباره · games that work now |
+| `EmptyBoardNoPoints` | league tab before any points (and a nil league) | بزن بریم |
+| `EmptyBoardNoFriends` | friends tab with no friends | پیدا کردن دوست · دعوت با لینک |
+| `EmptyBoardNewWeek` | global tab, nobody scored yet this week | بزن بریم |
+| `EmptyBadges` | badges and stats of a new player: each locked badge says how to earn it | اولین جورچین رو بزن |
+| `EmptyLobbyNoFriends` | lobby with no friends | لینک بازی رو بفرست · پیدا کردن دوست |
+| `EmptyGamesFriends` | games tab when no game with friends is going on | مشاعره با یه دوست |
+| `EmptyChallengeGone` | a challenge or game link that is over or wrong, and a مشاعره or duel that fails to load (spinner forever today) | خودت یه چالش بساز · برو به بازی‌ها |
+| `EmptyPeopleNone` | people search with no match (also the invite picker) | لینک دعوت رو بفرست |
+| `EmptyRequests` | no friend requests | پیدا کردن دوست |
+| `EmptyFriends` | my friends, none yet (the copy names a button that isn't there today) | پیدا کردن دوست · دعوت با لینک |
+| `EmptyInbox` | no conversations | دوستاتو پیدا کن (→ `PeopleStart`) · دعوت با لینک |
+| `EmptyInboxGuest` | a guest on the پیام‌ها tab, and every friend screen a guest reaches after «بعداً» on the gate (endless spinners on the web today) | ادامه با اپل / گوگل · فعلاً نه |
+| `EmptyChatNew` | a chat with no messages yet (blank today): starters | یه بیت بفرست · مشاعره · فال دونفره |
+| `EmptySharedDivan` | a shared divan with nothing in it; with a chip on, its own line («سارا هنوز بیتی نذاشته»), not the empty-divan line | اولین بیت رو بذار |
+| `EmptyPickerSheet` | the couplet picker with an empty divan: offers today's couplet. Show «چیزی پیدا نشد» only after the search has finished (no flash) | بفرست |
+| `EmptyDivan` | nothing kept yet (also the profile's divan preview) | بیت امروز رو ببین · برو کاوش |
+| `EmptyDivanNone` | divan search or chip with no match | توی همه‌ی شعرها بگرد · پاک کن |
+| `EmptyDivanOffline` | kept couplets whose poems aren't on the phone: keep them as placeholder cards with poet and place, never «هنوز بیتی نگه نداشتی» | — |
+| `EmptyProfileGuest` | the من tab for a guest | ادامه با اپل / گوگل |
+| `EmptyInviteNoName` | invite before a username exists | نام کاربری بساز |
+| `EmptyFalHistory` | no fal yet | یه فال بگیر |
+
+**Bugs the inventory found (fix with these screens):** a chat with no messages is blank; Section and Library filtered to nothing are blank (iOS); the home feed with no entries has no copy; the lobby with no friends has no copy; a loaded nil league is blank; search and mood stay blank when the couplet index fails (iOS); a nil daily puzzle and a nil جورچین round are blank with no close (iOS); مشاعره and duel spin forever when loading fails; the divan drops couplets whose poems can't load and says nothing is kept; the shared divan's chips reuse the empty-divan line; the couplet picker flashes «دیوانت هنوز خالیه» and shows «چیزی پیدا نشد» before the search ends (iOS); an unknown destination is blank (iOS); a web guest who dismisses the gate gets endless spinners; badges and stats have no line for a new player; a feed card whose poem can't load shows no couplet and «بفرست» does nothing.
+
+**فال حافظ (row ۱۲).** Opened from the کاوش card «باز کن».
+- `FalIntro`: a calm night page (deep lapis with light dots): the closed divan, Hafez and a شاخ نبات sticker (the fal's own picture), the old words to Hafez without the oath to God («ای حافظ شیرازی، تو محرم هر رازی. به شاخ نباتت قسم، هر چی صلاحه برام آشکار کن.»), and «نگه دار»: a press-and-hold ring (about 2 seconds, with soft haptics that grow). Letting go early starts over. Also «با یه دوست فال بگیر» and the clock button to past fals.
+- `FalOpening`: pages turning while the ring fills.
+- `FalResult` (back on paper): the fal's couplet (the ghazal's first) on a big card, «حافظ چی می‌گه؟» (a short plain reading of the ghazal), then کل غزل · بشنو · نگه دار, the next couplets fading out, «کارتش رو بفرست» and «برای یه نیت دیگه».
+- `FalGhazal`: the whole-poem view with «بیتِ فالت» marked; the recitation starts from it.
+- `FalShare`: a story card (night lapis, the couplet, one line of the reading, yebeyt.com). No name and no intention on it.
+- `FalFriend` → `FalPair` → `FalPairResult`: pick a friend (or send a link), both hold at the same time, one ghazal opens for both and lands in their chat. Needs an account (`AccountGate`); the solo fal doesn't.
+- `FalHistory`: past fals on this phone only, with day and ghazal; the intention is never written anywhere.
+- Works offline (Hafez is bundled). The fal's ghazal is random among the 495 of the main section, as today.
+- **Open:** the reading text («حافظ چی می‌گه؟») needs a source: one short reading per ghazal, written by us (or AI-written and checked), kept in the curation data. Until then the card can show the first couplet's meaning from Ganjoor.
+
+**No recitation (owner, 28 Nov):** when a poem has no recitation, the play button isn't shown at all, as the app does today. No toast and no disabled button.
+
+**Building all this:** the work list with files, server changes, acceptance criteria and tests is [build-list-2026-11-28.md](build-list-2026-11-28.md).
+
+## Public profiles and finding friends (owner, 28 Nov)
+
+The owner said «اینجا فقط دوستا نیستن. به نظرم پروفایل‌ها باید بتونن پابلیک یا پرایوت بشن و دیفالت باید پابلیک باشن که بتونیم اینجا چیز میز نشون بدیم. حتی برای کسی که دوستی نداره. مثل اینستا.» About finding friends: «ما شماره سیو نمی‌کنیم ولی ایمیل‌ها رو داریم. باید بتونیم به یه طریقی دوستاش رو از ایمیل ایمپورت کنیم.» The boards are in row ۱۳.
+
+- **Two relations.** Friends are mutual, made by request, and unchanged: messages, games and shared divans stay with friends. **Follow** is new: one-way, and needs no approval for a public profile. The people I follow fill my «تازه‌ها» on home. Following a private profile isn't possible; you send a friend request instead.
+- **Public or private.**
+  - A public profile shows the face, name, league, streak, favourite poets and badges, plus the likes and reposts and the daily results each setting allows as «همه».
+  - A private profile shows only the lock to anyone who isn't a friend.
+  - On `PrivacyVisibility`, the پسندیده‌ها و بازنشرها, معمای امروز and دیوان rows each take همه / دوستام / فقط خودم. Likes and reposts are no longer tied to the divan setting.
+- **Default.** New accounts choose on `OnbVisibility`, right after the username, with «عمومی» preselected as «پیشنهاد ما». Accounts made before this release stay private and get a one-time card asking them. Open for the owner: whether a preselected public choice is fine for EU users (GDPR privacy by default) and for teenagers, since the app is rated 13+.
+- **No follower counts.** Following and follower numbers are not shown anywhere, keeping the calm rule from 20 Nov. Ask before adding any count.
+- **«تازه‌ها» never empty.** When I follow nobody, or the last 7 days have fewer than 10 items, it adds public items from others, marked «پیشنهاد», and a row of people to follow. People are picked by shared favourite poets, the same league group, or friends of friends, never anyone blocked.
+- **Contacts by email.**
+  - With the person's permission, the phone reads only its contacts' email addresses, hashes them (SHA-256) and sends the hashes.
+  - The server matches them against the verified emails it already keeps and returns people, never emails. Nothing sent is stored.
+  - Only accounts with «با ایمیلم پیدام کنن» switched on (on by default) can be found. Apple relay addresses never match.
+  - Contacts who aren't here get «دعوت», which opens the share sheet. We never email anyone.
+  - The web has no contacts access, so it shows only the invite link.
+
+## A poet's books are books (owner, 28 Nov: «کتاب‌های شاعر رو توی صفحه‌ی شاعر باید به شکل کتاب نشون بدیم … شبیه pill هست که خیلی مفهوم نیست»)
+
+The row of white pills under the poet card is replaced by the same book covers as the library (`gen_poetbooks.py`):
+- **One book** (`Poet`, Hafez): one card with the cover, «کتابِ حافظ», the title, «ادامه: …» with progress when there is any, and «باز کن» (opens `Book`). Under it the book's sections as page tiles in a two-column grid: name, count («۴۹۵ غزل»), the book's spine colour on the edge, a chevron; each opens its `BookSection`. Today's rule (one book with more than one section shows the sections) stays; only their look changes.
+- **Several books** (`PoetMany`, Saadi): «کتاب‌های سعدی · ۶ کتاب» with «همه» (the library filtered to this poet), and a shelf of covers that scrolls sideways: cover, title (two lines at most), kind («مثنوی»، «نثر و شعر»…). Each opens its `Book`.
+- Covers use each book's colour from `tools/ganjoor/curation.json`, as in the library.
 
 ## Asking before it hurts (lead, 24 Nov, after the owner: «any action that can be dangerous should have a confirmation»)
 
@@ -163,6 +259,8 @@ Signing in with Apple and with Google using the same email gives one account, on
 
 ## Still open (ask the user)
 
+- Public profiles: is «عمومی» preselected in onboarding acceptable (GDPR privacy by default, users under 16)? Should any follower count ever show?
+- The fal's reading text («حافظ چی می‌گه؟»): who writes the 495 short readings.
 - A full end-of-round screen per game (for now `ChallengeSend` covers it).
 
 ## Decisions the lead made while the owner was away (please check)
@@ -183,7 +281,7 @@ The owner asked the lead to keep going alone. These were not settled on a board 
 - **Popularity («پرخواننده»):** until our server counts reads, a poem's popularity is the number of recitations Ganjoor has for it (`/api/audio/published`, counted by the pipeline).
 - **Home and Explore before friends exist:** the friends sections («دوستات» on home, «پرطرفدارها» on Explore) stay hidden until slice 7.
 - **Mood chips** open a list of couplets from the bundled books that contain the mood's words; tapping one opens the reader there. **Search** results (no board yet) are grouped as poets, books and couplets, in the same row styles as the Library.
-- **فال حافظ** (no flow designed yet): «باز کن» opens a random Hafez ghazal in the whole-poem view.
+- **فال حافظ** (until 28 Nov, no flow): «باز کن» opens a random Hafez ghazal in the whole-poem view. Now designed as row ۱۲; see «Empty states and the fal».
 - **دنبال کن** on a poet and the bookmark on a book are kept on the phone.
 - **Poet pictures** are the default sticker circles until slice 4.
 - **Owner's answers (23 Nov):** contemporary poets stay out until there is a source or permission. Slices are merged and pushed when the reviewer calls them clean. The old Railway `api` service and its Postgres (1.0 data) are deleted once the new server runs. hello@yebeyt.com (Zoho) is the public contact address; accounts@ksco.nl (Google) is the support email on Google's consent screen.

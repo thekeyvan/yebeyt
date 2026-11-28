@@ -15,7 +15,7 @@ Run each script with the `project` folder as its only argument, in this order. L
 cd design/canvas
 for g in gen_explore gen_calm gen_home gen_player gen_fonts gen_v11 gen_map gen_divan; do python3 -I $g.py project; done
 cp Explore_before_names.html project/Explore.dc.html
-for g in gen_names gen_shared gen_library gen_games gen_invite gen_play gen_icons gen_onboard gen_links apply_fonts gen_v12 gen_feedback; do python3 -I $g.py project; done
+for g in gen_names gen_shared gen_library gen_games gen_invite gen_play gen_icons gen_onboard gen_links gen_poetbooks apply_fonts gen_v12 gen_feedback gen_fal gen_empty gen_social; do python3 -I $g.py project; done
 ```
 
 | Script | What it makes |
@@ -32,9 +32,13 @@ for g in gen_names gen_shared gen_library gen_games gen_invite gen_play gen_icon
 | `gen_invite` | Challenge by link, invite friends, play-with-a-friend lobby |
 | `gen_onboard` | Onboarding (welcome, taste, first game), account with Apple or Google only, username, find friends, and the sign-in gate for account-only features |
 | `gen_links` | Wires buttons to the screens they open |
+| `gen_poetbooks` | A poet's books as book covers on the poet page: one book with its sections (Hafez), or a shelf (Saadi, `PoetMany`) |
 | `apply_fonts` | Self-hosted fonts and bold Parastoo as the poem font on every board |
 | `gen_v12` | Whole-poem view with the shared header, long-press state, mode toggle on every reading screen |
 | `gen_feedback` | Shake-to-feedback sheet, bug report, game suggestion |
+| `gen_fal` | فال حافظ: make a wish and hold, the opening, the result with what Hafez says, the whole ghazal, the share card, a fal with a friend, past fals |
+| `gen_empty` | Every empty state (first time, nothing found, done for today, offline or failed, guest, loading) and the rules board; `emptyart.py` holds the sticker illustrations both use |
+| `gen_social` | Public and private profiles (onboarding choice, someone's public or private page, privacy), finding friends: the people screen and contacts by email |
 
 ## Previewing a board without the canvas
 

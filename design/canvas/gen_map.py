@@ -48,7 +48,7 @@ TABS = [
      [("ردیف ۲", "Flow1.dc.html")], False),
     ("کاوش", "#6CCB3A", "#14112B",
      ["جستجو: شاعر، شعر، یه کلمه، یه تیکه از بیت", "<b>فال حافظ</b>", "موضوع‌ها، پرطرفدارها", "شاعر ← صفحه‌ی شاعر", "<b>کتابخونه:</b> کتاب ← بخش ← فهرست ← غزل"],
-     [("ردیف ۲", "Flow1.dc.html")], False),
+     [("ردیف ۲", "Flow1.dc.html"), ("ردیف ۱۲", "FlowFal.dc.html")], False),
     ("بازی", "#FFB703", "#14112B",
      ["<b>معمای امروز</b>", "<b>مشاعره:</b> با یه دوست یا با «یه بیت»", "جورچین بیت · حدس شاعر · مصراع دوم", "از کدوم کتاب؟ · معنی‌یاب · گوش کن", "بازی رودررو · رده‌بندی و لیگ", "<b>بازی با دوست:</b> بساز و با لینک دعوت کن، حتی کسی که اپ رو نداره"],
      [("ردیف ۴", "Flow2.dc.html"), ("ردیف ۵", "FlowPlay.dc.html")], True),
@@ -83,7 +83,7 @@ def step(t, hi=False):
     st = "background: #6CCB3A; color: #14112B; font-weight: 700;" if hi else "background: #F1EFEA; color: #14112B; font-weight: 500;"
     return f'<span style="{st} border-radius: 999px; padding: 6px 14px; font-size: 13px; white-space: nowrap;">{t}</span>'
 arrow = '<span aria-hidden="true" style="color: #8A8698; font-size: 14px;">←</span>'
-entry = arrow.join([step("خوش اومدی"), step("سلیقه"), step("یه بازی ۳۰ ثانیه‌ای"), step("حساب با اپل یا گوگل", True) + '<span style="font-size: 12px; color: #4A4660;">یا</span>' + step("«فعلاً بدون حساب»"), step("نام کاربری"), step("دوستات")]) + chip("ردیف ۱", "FlowStart.dc.html", False)
+entry = arrow.join([step("خوش اومدی"), step("سلیقه"), step("یه بازی ۳۰ ثانیه‌ای"), step("حساب با اپل یا گوگل", True) + '<span style="font-size: 12px; color: #4A4660;">یا</span>' + step("«فعلاً بدون حساب»"), step("نام کاربری"), step("عمومی یا خصوصی"), step("دوستات")]) + chip("ردیف ۱", "FlowStart.dc.html", False)
 
 body = f'''<div dir="rtl" style="width: 1280px; height: 880px; box-sizing: border-box; padding: 36px 48px 0; background-color: #F1EFEA; background-image: radial-gradient(#D9D5CE 1.2px, transparent 1.2px); background-size: 18px 18px; color: #14112B; font-family: 'Vazirmatn', sans-serif; display: flex; flex-direction: column; gap: 18px; overflow: hidden;">
   <div style="display: flex; align-items: baseline; gap: 14px;">

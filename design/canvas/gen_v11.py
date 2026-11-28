@@ -98,7 +98,7 @@ FLOWS = [
         ("OnbAccount.dc.html", "حساب با اپل یا گوگل"), ("OnbUsername.dc.html", "نام کاربری"), ("OnbFriends.dc.html", "دوستات"),
         ("AccountGate.dc.html", "وقتی حساب لازمه")]),
     ("Flow1.dc.html", "۲", "خونه، کاوش و کتابخونه", "#2F35F5", "#FFFFFF", [
-        ("Calm.dc.html", "خونه: بیت امروز و دوستات"), ("Explore.dc.html", "کاوش"), ("Poet.dc.html", "صفحه‌ی شاعر"),
+        ("Calm.dc.html", "خونه: بیت امروز و دوستات"), ("Explore.dc.html", "کاوش"), ("Poet.dc.html", "صفحه‌ی شاعر: یه کتاب (حافظ)"), ("PoetMany.dc.html", "صفحه‌ی شاعر: چند کتاب (سعدی)"),
         ("Library.dc.html", "همه‌ی کتاب‌ها"), ("Book.dc.html", "یه کتاب: دیوان حافظ"), ("BookSection.dc.html", "فهرست غزل‌ها")]),
     ("FlowRead.dc.html", "۳", "خوندن شعر", "#6CCB3A", "#14112B", [
         ("Poem.dc.html", "بیت به بیت"), ("PoemMeaning.dc.html", "معنی بیت"), ("PoemText.dc.html", "تنظیم متن (آ)"),
@@ -118,23 +118,48 @@ FLOWS = [
         ("Avatar.dc.html", "ساختن چهره"), ("InviteFriends.dc.html", "دوستاتو بیار")]),
     ("FlowFeedback.dc.html", "۸", "بازخورد", "#1C20B8", "#FFFFFF", [
         ("FeedbackShake.dc.html", "تکون بده: بازخورد"), ("FeedbackBug.dc.html", "باگ دیدم"), ("FeedbackGame.dc.html", "یه بازی پیشنهاد بده")]),
+    ("FlowEmpty1.dc.html", "۹", "حالت‌های خالی: خونه، کاوش و خوندن", "#C9C5D3", "#14112B", [
+        ("EmptyHomeFriends.dc.html", "خونه: هنوز کسی رو دنبال نمی‌کنی"), ("EmptySearchStart.dc.html", "جستجو: هنوز چیزی ننوشتی"), ("EmptySearchNone.dc.html", "جستجو: چیزی پیدا نشد"),
+        ("EmptyLibraryNone.dc.html", "کتابخونه: کتابی پیدا نشد"), ("EmptySectionNone.dc.html", "فهرست غزل‌ها: پیدا نشد"), ("EmptyNotFound.dc.html", "لینک یا صفحه‌ای که نیست"),
+        ("EmptyPoemOffline.dc.html", "شعر بدون اینترنت"), ("EmptyReaderLoading.dc.html", "شعر داره باز می‌شه"),
+        ("EmptyOffline.dc.html", "اینترنت نیست (هر تبی که سرور می‌خواد)")]),
+    ("FlowEmpty2.dc.html", "۱۰", "حالت‌های خالی: بازی", "#C9C5D3", "#14112B", [
+        ("EmptyDailyDone.dc.html", "معمای امروز: حل شد"), ("EmptyDailyMissing.dc.html", "معمای امروز: نرسید"), ("EmptyGameFailed.dc.html", "بازی باز نشد (گوش کن)"),
+        ("EmptyBoardNoPoints.dc.html", "رده‌بندی: هنوز امتیازی نیست"), ("EmptyBoardNoFriends.dc.html", "رده‌بندی: دوستی نیست"), ("EmptyBoardNewWeek.dc.html", "رده‌بندی: هفته‌ی تازه"),
+        ("EmptyBadges.dc.html", "نشان‌ها: هنوز هیچی"), ("EmptyLobbyNoFriends.dc.html", "بازی با دوست: دوستی نیست"), ("EmptyGamesFriends.dc.html", "تب بازی: بازی با دوستی نیست"),
+        ("EmptyChallengeGone.dc.html", "چالش تموم شده یا نیست")]),
+    ("FlowEmpty3.dc.html", "۱۱", "حالت‌های خالی: دوستا، پیام‌ها و من", "#C9C5D3", "#14112B", [
+        ("EmptyPeopleNone.dc.html", "پیدا کردن دوست: کسی نیست"), ("EmptyRequests.dc.html", "درخواست‌ها: خالی"), ("EmptyFriends.dc.html", "دوستام: هنوز هیچ‌کس"),
+        ("EmptyInbox.dc.html", "پیام‌ها: هنوز گفتگویی نیست"), ("EmptyInboxGuest.dc.html", "پیام‌ها: مهمان"), ("EmptyChatNew.dc.html", "گفتگوی تازه"),
+        ("EmptySharedDivan.dc.html", "دیوان مشترک: خالی"), ("EmptyPickerSheet.dc.html", "انتخاب بیت: دیوان خالی"), ("EmptyDivan.dc.html", "دیوان من: خالی"),
+        ("EmptyDivanNone.dc.html", "دیوان من: پیدا نشد"), ("EmptyDivanOffline.dc.html", "دیوان من: بدون اینترنت"), ("EmptyProfileGuest.dc.html", "من: مهمان"),
+        ("EmptyInviteNoName.dc.html", "دعوت: نام کاربری نداری"), ("EmptyFalHistory.dc.html", "فال‌های من: هنوز هیچی")]),
+    ("FlowFal.dc.html", "۱۲", "فال حافظ", "#FFB703", "#14112B", [
+        ("FalIntro.dc.html", "نیت کن و نگه دار"), ("FalOpening.dc.html", "داره باز می‌شه"), ("FalResult.dc.html", "فال تو"),
+        ("FalGhazal.dc.html", "کل غزل، بیتِ فالت پررنگ"), ("FalShare.dc.html", "کارت فال"), ("FalFriend.dc.html", "فال با دوست: انتخاب"),
+        ("FalPair.dc.html", "با هم نگه دارید"), ("FalPairResult.dc.html", "فال تو و سارا"), ("FalHistory.dc.html", "فال‌های من")]),
+    ("FlowSocial.dc.html", "۱۳", "صفحه‌ی عمومی و پیدا کردن دوست", "#FF3D8B", "#FFFFFF", [
+        ("OnbVisibility.dc.html", "شروع: عمومی یا خصوصی"), ("PersonPublic.dc.html", "صفحه‌ی عمومی یه نفر"), ("PersonPrivate.dc.html", "صفحه‌ی خصوصی یه نفر"),
+        ("PrivacyVisibility.dc.html", "حریم خصوصی: کی چی ببینه"), ("PeopleStart.dc.html", "پیدا کردن دوست"), ("ContactsAsk.dc.html", "مخاطبات: قبل از اجازه"),
+        ("ContactsFound.dc.html", "مخاطبات: کیا اینجان"), ("ContactsNone.dc.html", "مخاطبات: هیچ‌کس هنوز نیومده")]),
 ]
 REFERENCE = [  # row ۰: the wide reference boards
     ("StickerSystem.dc.html", 880, "زبان طراحی استیکری"), ("Map.dc.html", 880, "نقشه‌ی اپ"), ("Poets.dc.html", 880, "چهره‌ی شاعرها"),
     ("GameIcons.dc.html", 844, "آیکن بازی‌ها"), ("GamesCatalog.dc.html", 844, "همه‌ی بازی‌ها"),
+    ("EmptyRules.dc.html", 880, "حالت‌های خالی: قاعده‌ها"),
 ]
 SECTIONS = [(h, n, t, bg, fg, [pt for _, pt in pages]) for h, n, t, bg, fg, pages in FLOWS]
 def fa(n):
     return "".join("۰۱۲۳۴۵۶۷۸۹"[int(d)] for d in str(n))
 def section_board(num, title, bg, fg, items):
-    pad = "4px 12px" if len(items) > 9 else ("6px 14px" if len(items) > 7 else "10px 14px")
+    pad = "2px 12px" if len(items) > 12 else ("4px 12px" if len(items) > 9 else ("6px 14px" if len(items) > 7 else "10px 14px"))
     rows = "".join(f'''      <div style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; border-radius: 16px; padding: {pad}; box-shadow: 0 2px 8px rgba(20,17,43,0.06);"><span style="flex-shrink: 0; min-width: 34px; font-family: 'Lalezar', sans-serif; font-size: 16px; color: #2F35F5; padding-top: 2px;">{num}-{fa(i + 1)}</span><span style="font-size: 14px; font-weight: 500;">{it}</span></div>
 ''' for i, it in enumerate(items))
     return HEAD.format(title=title) + f'''<div dir="rtl" style="position: relative; width: 390px; height: 844px; box-sizing: border-box; padding: 64px 26px 0; background-color: #F1EFEA; background-image: radial-gradient(#D9D5CE 1.2px, transparent 1.2px); background-size: 18px 18px; color: #14112B; font-family: 'Vazirmatn', sans-serif; display: flex; flex-direction: column; gap: 18px; overflow: hidden;">
   <span aria-hidden="true" style="align-self: flex-start; width: 92px; height: 92px; box-sizing: border-box; border-radius: 50%; background: {bg}; color: {fg}; border: 5px solid #FFFFFF; box-shadow: 0 4px 14px rgba(20,17,43,0.18); display: flex; align-items: center; justify-content: center; font-family: 'Lalezar', sans-serif; font-size: 50px; padding-top: 8px; transform: rotate(-6deg);">{num}</span>
-  <div style="font-family: 'Lalezar', sans-serif; font-size: 40px; line-height: 1.15;">{title}</div>
+  <div style="font-family: 'Lalezar', sans-serif; font-size: {32 if len(items) > 12 else 40}px; line-height: 1.15;">{title}</div>
   <div style="font-size: 14px; color: #4A4660; line-height: 1.7;">صفحه‌ها به همین ترتیب، از راست به چپ کنار هم هستن.</div>
-  <div style="display: flex; flex-direction: column; gap: {"5px" if len(items) > 9 else "8px"};">
+  <div style="display: flex; flex-direction: column; gap: {"3px" if len(items) > 12 else ("5px" if len(items) > 9 else "8px")};">
 {rows}  </div>
   <div aria-hidden="true" style="position: absolute; left: 22px; bottom: 6px; font-family: 'Lalezar', sans-serif; font-size: 44px; color: #2F35F5;">←</div>
 </div>
@@ -145,7 +170,7 @@ for key, num, title, bg, fg, items in SECTIONS:
 # ---------- canvas layout ----------
 d = json.load(open(os.path.join(P, "canvas.json"), encoding="utf-8"))
 B = d["boards"]
-for gone in ["PoemScrollA.dc.html", "PoemScrollB.dc.html", "PoemScrollC.dc.html", "PoemScrollGulzar.dc.html", "PoemScrollMirza.dc.html"]:
+for gone in ["EmptyNoRecitation.dc.html", "PoemScrollA.dc.html", "PoemScrollB.dc.html", "PoemScrollC.dc.html", "PoemScrollGulzar.dc.html", "PoemScrollMirza.dc.html"]:
     B.pop(gone, None)
 
 R = 0              # right edge of every row; rows read right to left
